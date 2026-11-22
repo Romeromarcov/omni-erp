@@ -1,7 +1,10 @@
 # Plan B (apps multiplataforma) — Empaquetado de shells nativos.
 #
 # Genera los binarios distribuibles de Omni a partir de la MISMA base web:
-#   - Windows: instalador NSIS + portable (.exe) vía Electron + electron-builder.
+#   - Windows: instalador NSIS + portable (.exe) + metadata auto-update
+#     (latest.yml, *.blockmap) vía Electron + electron-builder.
+#   - Linux: AppImage (.AppImage) + metadata auto-update (latest-linux.yml)
+#     vía Electron + electron-builder.
 #   - Android: .apk debug (instalable directo) y, si hay keystore en secrets,
 #     .apk release firmado + .aab para Play Store, vía Capacitor + Gradle.
 #
@@ -11,9 +14,10 @@
 # Firma:
 #   - Windows: sin certificado Authenticode los .exe van SIN firmar (SmartScreen
 #     avisará). Cuando exista cert EV: añadir CSC_LINK / CSC_KEY_PASSWORD.
+#   - Linux: AppImage sin firma (CSC_IDENTITY_AUTO_DISCOVERY: "false").
 #   - Android: secrets opcionales ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD,
 #     ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD. Sin ellos solo se genera el debug.
-name: Package — apps nativas (Windows + Android)
+name: Package — apps nativas (Windows + Linux + Android)
 
 on:
   workflow_dispatch:
@@ -39,10 +43,10 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Node 22
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: npm
@@ -55,15 +59,56 @@ jobs:
       - name: Build Electron (NSIS + portable)
         working-directory: frontend
         env:
-          # Sin cert de firma: electron-builder no debe intentar auto-descubrir uno.
-          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          # Firma Authenticode opt-in: usa CSC_LINK/CSC_KEY_PASSWORD si están definidos;
+          # sin CSC_LINK desactiva auto-discovery para evitar errores en runner Windows.
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          CSC_IDENTITY_AUTO_DISCOVERY: ${{ secrets.CSC_LINK != '' && 'true' || 'false' }}
         run: npm run electron:build
 
       - name: Publicar artefactos
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: omni-erp-windows
-          path: frontend/release/*.exe
+          path: |
+            frontend/release/*.exe
+            frontend/release/*.blockmap
+            frontend/release/latest.yml
+          if-no-files-found: error
+          retention-days: 90
+
+  linux:
+    name: "Linux (.AppImage)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Node 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependencias
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build Electron (AppImage)
+        working-directory: frontend
+        env:
+          # Sin firma de código en Linux: desactiva auto-discovery.
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: npm run electron:build:linux
+
+      - name: Publicar artefactos
+        uses: actions/upload-artifact@v7
+        with:
+          name: omni-erp-linux
+          path: |
+            frontend/release/*.AppImage
+            frontend/release/latest-linux.yml
           if-no-files-found: error
           retention-days: 90
 
@@ -72,23 +117,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Node 22
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
       - name: JDK 21 (Capacitor 8 compila con source release 21)
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "21"
 
       - name: Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
 
       - name: Instalar dependencias
         working-directory: frontend
@@ -137,7 +182,7 @@ jobs:
           rm -f /tmp/omni-release.keystore
 
       - name: Publicar artefactos
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: omni-erp-android
           path: |
@@ -150,21 +195,25 @@ jobs:
   release:
     name: "GitHub Release (solo tags app-v*)"
     if: startsWith(github.ref, 'refs/tags/app-v')
-    needs: [windows, android]
+    needs: [windows, linux, android]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - name: Descargar artefactos
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: artifacts
 
       - name: Crear release con binarios
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           draft: true
           files: |
-            artifacts/omni-erp-windows/*
+            artifacts/omni-erp-windows/*.exe
+            artifacts/omni-erp-windows/*.blockmap
+            artifacts/omni-erp-windows/latest.yml
+            artifacts/omni-erp-linux/*.AppImage
+            artifacts/omni-erp-linux/latest-linux.yml
             artifacts/omni-erp-android/**/*.apk
             artifacts/omni-erp-android/**/*.aab

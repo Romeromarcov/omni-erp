@@ -5,7 +5,11 @@ Uso:
     python manage.py consumir_eventos
     python manage.py consumir_eventos --topics omni.ventas omni.inventario
     python manage.py consumir_eventos --topics omni.ventas --group mi-grupo
+
+Nota RLS: ``apps.eventos.consumers._process_message`` envuelve cada handler en
+``rls_tenant_context([empresa_id])`` (o ``rls_bypass()`` cuando el envelope es global).
 """
+
 from django.core.management.base import BaseCommand
 
 
@@ -37,11 +41,7 @@ class Command(BaseCommand):
         group = options["group"]
         poll_timeout = options["poll_timeout"]
 
-        self.stdout.write(
-            self.style.SUCCESS(
-                f"Iniciando OmniEventConsumer — topics={topics} group={group}"
-            )
-        )
+        self.stdout.write(self.style.SUCCESS(f"Iniciando OmniEventConsumer — topics={topics} group={group}"))
 
         from apps.eventos.consumers import run_consumer
 

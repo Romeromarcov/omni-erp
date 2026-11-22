@@ -81,9 +81,7 @@ def test_rls_no_permite_insertar_en_otra_empresa(sucursales, empresa_a, empresa_
     rls.apply_context([empresa_a.id_empresa], bypass=False)
     with pytest.raises((IntegrityError, ProgrammingError)):
         with transaction.atomic():
-            Sucursal.objects.create(
-                id_empresa=empresa_b, nombre="Intrusa", codigo_sucursal="X999"
-            )
+            Sucursal.objects.create(id_empresa=empresa_b, nombre="Intrusa", codigo_sucursal="X999")
 
 
 def test_rls_bypass_context_manager(sucursales):
@@ -91,8 +89,8 @@ def test_rls_bypass_context_manager(sucursales):
     assert Sucursal.objects.count() == 0
     with rls.rls_bypass():
         assert Sucursal.objects.count() == 2
-    # Al salir vuelve al default de sistema (bypass on).
-    assert Sucursal.objects.count() == 2
+    # Al salir restaura el estado GUC previo (bypass off).
+    assert Sucursal.objects.count() == 0
 
 
 # --- SQL builders -----------------------------------------------------------

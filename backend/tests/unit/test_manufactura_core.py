@@ -1,4 +1,5 @@
 """Ola 5.3 — Tests del núcleo puro de manufactura (BOM, MRP, costeo). Sin BD."""
+
 from decimal import Decimal
 
 import pytest
@@ -58,7 +59,7 @@ def test_mrp_calcula_faltante():
     reqs = [RequerimientoMaterial("madera", D("10")), RequerimientoMaterial("tornillo", D("40"))]
     stock = {"madera": D("3"), "tornillo": D("50")}
     res = {f.producto_id: f for f in calcular_mrp(reqs, stock)}
-    assert res["madera"].a_comprar == D("7")    # 10 - 3
+    assert res["madera"].a_comprar == D("7")  # 10 - 3
     assert res["tornillo"].a_comprar == D("0")  # 40 - 50 → 0 (sobra)
 
 
@@ -78,8 +79,8 @@ def test_costo_produccion_materiales_mano_obra_indirectos():
         consumos, mano_obra=D("60"), costos_indirectos=D("20"), cantidad_producida=D("4")
     )
     assert costo["costo_materiales"] == D("240")
-    assert costo["costo_total"] == D("320")          # 240 + 60 + 20
-    assert costo["costo_unitario"] == D("80.0000")   # 320 / 4
+    assert costo["costo_total"] == D("320")  # 240 + 60 + 20
+    assert costo["costo_unitario"] == D("80.0000")  # 320 / 4
 
 
 def test_costo_produccion_sin_extras():

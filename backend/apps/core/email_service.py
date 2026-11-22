@@ -26,6 +26,7 @@ logger = logging.getLogger("omni.core.email")
 
 class EmailError(Exception):
     """Error en el envío de correo."""
+
     pass
 
 
@@ -125,7 +126,9 @@ def _enviar_smtp(
         msg.send(fail_silently=False)
         logger.info(
             "email_smtp | to=%s | asunto=%s | adjuntos=%d",
-            destinatarios, asunto, len(adjuntos),
+            destinatarios,
+            asunto,
+            len(adjuntos),
         )
         return True
     except Exception as exc:
@@ -162,8 +165,14 @@ def _enviar_sendgrid(
     except ImportError:
         logger.warning("sendgrid SDK no instalado, fallback a SMTP")
         return _enviar_smtp(
-            destinatarios, asunto, cuerpo_html, cuerpo_texto,
-            adjuntos, remitente, cc, reply_to,
+            destinatarios,
+            asunto,
+            cuerpo_html,
+            cuerpo_texto,
+            adjuntos,
+            remitente,
+            cc,
+            reply_to,
         )
 
     sg = sendgrid.SendGridAPIClient(api_key=api_key)
@@ -196,7 +205,9 @@ def _enviar_sendgrid(
         response = sg.send(message)
         logger.info(
             "email_sendgrid | to=%s | asunto=%s | status=%d",
-            destinatarios, asunto, response.status_code,
+            destinatarios,
+            asunto,
+            response.status_code,
         )
         return response.status_code in (200, 202)
     except Exception as exc:
@@ -210,6 +221,7 @@ def _enviar_sendgrid(
 def _html_a_texto(html: str) -> str:
     """Extrae texto plano desde HTML (versión simple sin dependencias)."""
     import re
+
     texto = re.sub(r"<[^>]+>", " ", html)
     texto = re.sub(r"\s+", " ", texto).strip()
     return texto

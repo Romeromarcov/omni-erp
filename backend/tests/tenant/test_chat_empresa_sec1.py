@@ -23,9 +23,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.tenant]
 def user_ab(db, empresa_a, empresa_b):
     """Usuario con permiso sobre AMBAS empresas."""
     User = get_user_model()
-    u = User.objects.create_user(
-        username="user_ab_sec1", password="x", email="ab_sec1@x.com", is_active=True
-    )
+    u = User.objects.create_user(username="user_ab_sec1", password="x", email="ab_sec1@x.com", is_active=True)
     u.empresas.add(empresa_a, empresa_b)
     return u
 

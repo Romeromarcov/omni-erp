@@ -44,13 +44,9 @@ class Command(BaseCommand):
             help="Nombre o id de la instancia origen (de la que exportar).",
         )
         parser.add_argument("--nombre", default="Google Sheets Export")
-        parser.add_argument(
-            "--folder", default="", help="ID de carpeta de Drive (opcional)."
-        )
+        parser.add_argument("--folder", default="", help="ID de carpeta de Drive (opcional).")
         parser.add_argument("--spreadsheet-id", dest="spreadsheet_id", default="")
-        parser.add_argument(
-            "--titulo", default="", help="Título si se auto-crea la planilla."
-        )
+        parser.add_argument("--titulo", default="", help="Título si se auto-crea la planilla.")
         parser.add_argument(
             "--entidades",
             default="contactos,productos",
@@ -62,41 +58,42 @@ class Command(BaseCommand):
             default=0,
             help="Minutos entre exports (0 = manual).",
         )
-        parser.add_argument(
-            "--test", action="store_true", help="Prueba la conexión tras crear."
-        )
+        parser.add_argument("--test", action="store_true", help="Prueba la conexión tras crear.")
 
     def handle(self, *args, **opts):
+        from apps.core import rls
         from apps.core.models import Empresa
         from apps.integration_hub.models import ConectorInstancia, ConectorProveedor
 
         empresa = self._resolver_empresa(Empresa, opts["empresa"])
         service_account = self._leer_service_account(opts["service_account"])
-        proveedor = self._proveedor_sheets(ConectorProveedor)
-        origen = self._resolver_origen(ConectorInstancia, empresa, opts["source"])
         entidades = [e.strip() for e in opts["entidades"].split(",") if e.strip()]
 
-        configuracion = {
-            "service_account": service_account,
-            "source_instancia_id": str(origen.pk),
-            "drive_folder_id": opts["folder"],
-            "spreadsheet_id": opts["spreadsheet_id"],
-            "titulo": opts["titulo"] or f"Omni Export - {empresa.nombre_legal}",
-        }
+        with rls.rls_tenant_context([empresa.pk]):
+            proveedor = self._proveedor_sheets(ConectorProveedor)
+            origen = self._resolver_origen(ConectorInstancia, empresa, opts["source"])
 
-        with transaction.atomic():
-            instancia, creada = ConectorInstancia.objects.update_or_create(
-                id_empresa=empresa,
-                nombre=opts["nombre"],
-                defaults={
-                    "id_proveedor": proveedor,
-                    "configuracion": configuracion,
-                    "estado": "configurando",
-                    "intervalo_sync_minutos": opts["intervalo"],
-                    "entidades_activas": entidades,
-                    "activo": True,
-                },
-            )
+            configuracion = {
+                "service_account": service_account,
+                "source_instancia_id": str(origen.pk),
+                "drive_folder_id": opts["folder"],
+                "spreadsheet_id": opts["spreadsheet_id"],
+                "titulo": opts["titulo"] or f"Omni Export - {empresa.nombre_legal}",
+            }
+
+            with transaction.atomic():
+                instancia, creada = ConectorInstancia.objects.update_or_create(
+                    id_empresa=empresa,
+                    nombre=opts["nombre"],
+                    defaults={
+                        "id_proveedor": proveedor,
+                        "configuracion": configuracion,
+                        "estado": "configurando",
+                        "intervalo_sync_minutos": opts["intervalo"],
+                        "entidades_activas": entidades,
+                        "activo": True,
+                    },
+                )
 
         verbo = "creado" if creada else "actualizado"
         # NUNCA imprimir configuracion (contiene la clave del service account).
@@ -108,7 +105,8 @@ class Command(BaseCommand):
         )
 
         if opts["test"]:
-            self._probar(instancia)
+            with rls.rls_tenant_context([empresa.pk]):
+                self._probar(instancia)
 
     def _resolver_empresa(self, Empresa, valor):
         from django.core.exceptions import ValidationError
@@ -128,13 +126,9 @@ class Command(BaseCommand):
             with open(ruta, "r", encoding="utf-8") as fh:
                 data = json.load(fh)
         except (json.JSONDecodeError, OSError) as exc:
-            raise CommandError(
-                f"No se pudo leer el service account JSON: {type(exc).__name__}"
-            )
+            raise CommandError(f"No se pudo leer el service account JSON: {type(exc).__name__}")
         if "client_email" not in data:
-            raise CommandError(
-                "El JSON no parece un service account (falta 'client_email')."
-            )
+            raise CommandError("El JSON no parece un service account (falta 'client_email').")
         return data
 
     def _proveedor_sheets(self, ConectorProveedor):
@@ -162,16 +156,12 @@ class Command(BaseCommand):
     def _resolver_origen(self, ConectorInstancia, empresa, valor):
         from django.core.exceptions import ValidationError
 
-        origen = ConectorInstancia.objects.filter(
-            id_empresa=empresa, nombre=valor
-        ).first()
+        origen = ConectorInstancia.objects.filter(id_empresa=empresa, nombre=valor).first()
         if origen is None:
             # El pk es UUID: si 'valor' no es un UUID válido, el filtro lanza
             # ValidationError → lo tratamos como "no encontrado".
             try:
-                origen = ConectorInstancia.objects.filter(
-                    id_empresa=empresa, pk=valor
-                ).first()
+                origen = ConectorInstancia.objects.filter(id_empresa=empresa, pk=valor).first()
             except (ValidationError, ValueError):
                 origen = None
         if origen is None:
@@ -203,7 +193,5 @@ class Command(BaseCommand):
         else:
             instancia.estado = "error"
             instancia.mensaje_estado = resultado.message
-            instancia.save(
-                update_fields=["estado", "mensaje_estado", "ultimo_test_conexion"]
-            )
+            instancia.save(update_fields=["estado", "mensaje_estado", "ultimo_test_conexion"])
             self.stdout.write(self.style.ERROR(f"  Test FALLÓ: {resultado.message}"))

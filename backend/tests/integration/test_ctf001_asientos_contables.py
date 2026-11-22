@@ -23,6 +23,7 @@ pytestmark = [pytest.mark.django_db, pytest.mark.integration]
 
 def _crear_cuenta(empresa, codigo, nombre, tipo="ACTIVO", naturaleza="DEUDORA"):
     from apps.contabilidad.models import PlanCuentas
+
     return PlanCuentas.objects.create(
         id_empresa=empresa,
         codigo_cuenta=codigo,
@@ -35,6 +36,7 @@ def _crear_cuenta(empresa, codigo, nombre, tipo="ACTIVO", naturaleza="DEUDORA"):
 
 def _crear_mapeo(empresa, tipo_asiento, debe, haber, plantilla=None):
     from apps.contabilidad.models import MapeoContable
+
     return MapeoContable.objects.create(
         id_empresa=empresa,
         tipo_asiento=tipo_asiento,
@@ -51,6 +53,7 @@ def _crear_mapeo(empresa, tipo_asiento, debe, haber, plantilla=None):
 @pytest.fixture
 def cliente_a(db, empresa_a):
     from apps.crm.models import Cliente
+
     return Cliente.objects.create(
         id_empresa=empresa_a,
         razon_social="Cliente Test CTF001",
@@ -62,6 +65,7 @@ def cliente_a(db, empresa_a):
 @pytest.fixture
 def unidad(db, empresa_a):
     from apps.inventario.models import UnidadMedida
+
     return UnidadMedida.objects.create(
         id_empresa=empresa_a,
         nombre="Unidad",
@@ -73,6 +77,7 @@ def unidad(db, empresa_a):
 @pytest.fixture
 def categoria(db, empresa_a):
     from apps.inventario.models import CategoriaProducto
+
     return CategoriaProducto.objects.create(
         id_empresa=empresa_a,
         nombre_categoria="Cat CTF001",
@@ -82,6 +87,7 @@ def categoria(db, empresa_a):
 @pytest.fixture
 def producto_ctf(db, empresa_a, unidad, categoria, moneda_usd):
     from apps.inventario.models import Producto
+
     return Producto.objects.create(
         id_empresa=empresa_a,
         nombre_producto="Producto CTF001",
@@ -94,6 +100,7 @@ def producto_ctf(db, empresa_a, unidad, categoria, moneda_usd):
 @pytest.fixture
 def almacen_ctf(db, empresa_a):
     from apps.almacenes.models import Almacen
+
     return Almacen.objects.create(
         id_empresa=empresa_a,
         nombre_almacen="Almacen CTF001",
@@ -104,6 +111,7 @@ def almacen_ctf(db, empresa_a):
 @pytest.fixture
 def stock_ctf(db, empresa_a, producto_ctf, almacen_ctf, user_a):
     from apps.inventario.services import registrar_movimiento
+
     registrar_movimiento(
         empresa=empresa_a,
         fecha_hora_movimiento=timezone.now(),
@@ -118,6 +126,7 @@ def stock_ctf(db, empresa_a, producto_ctf, almacen_ctf, user_a):
 @pytest.fixture
 def nota_borrador(db, empresa_a, cliente_a, producto_ctf, stock_ctf):
     from apps.ventas.models import DetalleNotaVenta, NotaVenta
+
     nota = NotaVenta.objects.create(
         id_empresa=empresa_a,
         id_cliente=cliente_a,
@@ -139,6 +148,7 @@ def nota_borrador(db, empresa_a, cliente_a, producto_ctf, stock_ctf):
 def nota_entregada(db, empresa_a, cliente_a, producto_ctf, moneda_usd, stock_ctf):
     """NotaVenta ya en estado ENTREGADA — lista para emitir_factura_fiscal."""
     from apps.ventas.models import DetalleNotaVenta, NotaVenta
+
     nota = NotaVenta.objects.create(
         id_empresa=empresa_a,
         id_cliente=cliente_a,
@@ -184,10 +194,7 @@ def mapeo_factura_iva(db, empresa_a):
 
 
 class TestConfirmarNotaVenta:
-
-    def test_confirmar_nota_crea_asiento_nota_venta(
-        self, db, user_a, almacen_ctf, nota_borrador, mapeo_nota_venta
-    ):
+    def test_confirmar_nota_crea_asiento_nota_venta(self, db, user_a, almacen_ctf, nota_borrador, mapeo_nota_venta):
         """
         confirmar_nota_venta() con MapeoContable activo → crea AsientoContable NOTA_VENTA
         con débito a CxC y crédito a Ingresos.
@@ -216,9 +223,7 @@ class TestConfirmarNotaVenta:
         # El asiento registra al usuario que confirmó la venta (provenance).
         assert asiento.id_usuario_registro == user_a
 
-    def test_confirmar_nota_sin_mapeo_no_falla(
-        self, db, user_a, almacen_ctf, nota_borrador
-    ):
+    def test_confirmar_nota_sin_mapeo_no_falla(self, db, user_a, almacen_ctf, nota_borrador):
         """
         confirmar_nota_venta() sin MapeoContable configurado → entrega la nota
         sin error; asiento es None y asiento_error tiene la descripción del fallo.
@@ -235,9 +240,7 @@ class TestConfirmarNotaVenta:
         nota_borrador.refresh_from_db()
         assert nota_borrador.estado == "ENTREGADA"
 
-    def test_confirmar_nota_cambia_estado_a_entregada(
-        self, db, user_a, almacen_ctf, nota_borrador, mapeo_nota_venta
-    ):
+    def test_confirmar_nota_cambia_estado_a_entregada(self, db, user_a, almacen_ctf, nota_borrador, mapeo_nota_venta):
         """La nota pasa de BORRADOR a ENTREGADA al confirmar."""
         from apps.ventas.services import confirmar_nota_venta
 
@@ -251,7 +254,6 @@ class TestConfirmarNotaVenta:
 
 
 class TestEmitirFacturaFiscal:
-
     def test_emitir_factura_crea_asiento_factura_venta(
         self, db, user_a, nota_entregada, moneda_usd, mapeo_factura_venta
     ):
@@ -305,18 +307,14 @@ class TestEmitirFacturaFiscal:
 
         if factura.monto_iva > Decimal("0"):
             # Hay IVA y hay mapeo → debe haberse creado el asiento IVA
-            assert resultado["asiento_iva"] is not None, (
-                "Con mapeo y monto_iva > 0, se esperaba asiento_iva"
-            )
+            assert resultado["asiento_iva"] is not None, "Con mapeo y monto_iva > 0, se esperaba asiento_iva"
             assert resultado["asiento_iva_error"] is None
         else:
             # Sin IVA activo → asiento_iva es None (no hay monto que asentar)
             # El error sería "monto <= 0", no "sin mapeo"
             assert resultado["asiento_iva"] is None
 
-    def test_emitir_factura_sin_mapeo_iva_no_falla(
-        self, db, user_a, nota_entregada, moneda_usd, mapeo_factura_venta
-    ):
+    def test_emitir_factura_sin_mapeo_iva_no_falla(self, db, user_a, nota_entregada, moneda_usd, mapeo_factura_venta):
         """
         emitir_factura_fiscal() sin MapeoContable IVA → factura se emite igual;
         asiento_iva es None y asiento_iva_error contiene la descripción del fallo.
@@ -346,7 +344,6 @@ class TestEmitirFacturaFiscal:
 
 
 class TestGenerarAsientoMontoExplicito:
-
     def test_monto_explicito_sobrescribe_extraccion(self, db, empresa_a, mapeo_nota_venta):
         """
         generar_asiento() con monto explícito usa ese monto en lugar de
@@ -376,6 +373,6 @@ class TestGenerarAsientoMontoExplicito:
         detalles = DetalleAsiento.objects.filter(id_asiento=asiento)
         assert detalles.count() == 2
         total_debe = sum(d.debe for d in detalles)
-        assert total_debe == monto_explicito, (
-            f"El asiento debe reflejar el monto explícito {monto_explicito}, obtuvo {total_debe}"
-        )
+        assert (
+            total_debe == monto_explicito
+        ), f"El asiento debe reflejar el monto explícito {monto_explicito}, obtuvo {total_debe}"

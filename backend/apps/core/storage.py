@@ -30,7 +30,6 @@ import logging
 import mimetypes
 import os
 import uuid
-from io import BytesIO
 from typing import BinaryIO, Optional, Tuple
 
 logger = logging.getLogger(__name__)
@@ -317,8 +316,7 @@ class StorageService:
         if ext not in self.ALLOWED_EXTENSIONS:
             permitidas = ", ".join(sorted(self.ALLOWED_EXTENSIONS))
             raise ValueError(
-                f"El tipo de archivo '{ext or '(sin extensión)'}' no está permitido. "
-                f"Permitidos: {permitidas}."
+                f"El tipo de archivo '{ext or '(sin extensión)'}' no está permitido. " f"Permitidos: {permitidas}."
             )
 
     def _validate_size(self, size_bytes: int, filename: str) -> None:

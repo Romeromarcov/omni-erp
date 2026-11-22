@@ -5,6 +5,7 @@ Expone:
   - PlanViewSet:        Catálogo de planes (lectura pública, escritura solo superusuarios Omni).
   - SuscripcionViewSet: Suscripciones de empresa, con acciones cancelar/suspender.
 """
+
 import datetime
 
 from django.contrib.auth import get_user_model
@@ -70,18 +71,21 @@ class PlanViewSet(BaseModelViewSet):
     def perform_create(self, serializer):
         if not getattr(self.request.user, "es_superusuario_omni", False):
             from rest_framework.exceptions import PermissionDenied
+
             raise PermissionDenied("Solo superusuarios Omni pueden crear planes.")
         serializer.save()
 
     def perform_update(self, serializer):
         if not getattr(self.request.user, "es_superusuario_omni", False):
             from rest_framework.exceptions import PermissionDenied
+
             raise PermissionDenied("Solo superusuarios Omni pueden modificar planes.")
         serializer.save()
 
     def perform_destroy(self, instance):
         if not getattr(self.request.user, "es_superusuario_omni", False):
             from rest_framework.exceptions import PermissionDenied
+
             raise PermissionDenied("Solo superusuarios Omni pueden eliminar planes.")
         instance.activo = False
         instance.save(update_fields=["activo"])
@@ -219,45 +223,50 @@ class SignupView(APIView):
         plan = self._resolver_plan(data.get("plan_nivel"))
         if plan is None:
             return Response(
-                {"detail": "No hay planes disponibles para el registro. "
-                           "Contacte al proveedor."},
+                {"detail": "No hay planes disponibles para el registro. " "Contacte al proveedor."},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
 
+        from apps.core import rls
         from apps.core.models import Empresa
 
         # localdate() (fecha en TIME_ZONE), NO now().date() (UTC con USE_TZ): si no,
         # cerca de medianoche UTC el trial nacería con fecha_inicio=mañana y
         # suscripcion_activa (que usa la fecha local) no lo vería como vigente.
         hoy = timezone.localdate()
-        with transaction.atomic():
-            empresa = Empresa.objects.create(
-                nombre_legal=data["empresa_nombre_legal"],
-                nombre_comercial=data.get("empresa_nombre_comercial") or "",
-                identificador_fiscal=data.get("empresa_identificador_fiscal") or "",
-                email_contacto=data.get("empresa_email") or "",
-            )
-            usuario = User(
-                username=data["username"],
-                email=data["email"],
-                first_name=data.get("first_name") or "",
-                last_name=data.get("last_name") or "",
-                is_active=True,
-                is_staff=False,
-                es_superusuario_omni=False,
-            )
-            usuario.set_password(data["password"])
-            usuario.save()
-            usuario.empresas.add(empresa)
+        # UUID asignado en __init__ permite aplicar rls_tenant_context antes del INSERT
+        # para que los signals post_save (catálogo financiero, suscripción, usuarios_empresas)
+        # operen aislados bajo RLS_ENABLED=True.
+        empresa = Empresa(
+            nombre_legal=data["empresa_nombre_legal"],
+            nombre_comercial=data.get("empresa_nombre_comercial") or "",
+            identificador_fiscal=data.get("empresa_identificador_fiscal") or "",
+            email_contacto=data.get("empresa_email") or "",
+        )
+        with rls.rls_tenant_context([empresa.pk]):
+            with transaction.atomic():
+                empresa.save()
+                usuario = User(
+                    username=data["username"],
+                    email=data["email"],
+                    first_name=data.get("first_name") or "",
+                    last_name=data.get("last_name") or "",
+                    is_active=True,
+                    is_staff=False,
+                    es_superusuario_omni=False,
+                )
+                usuario.set_password(data["password"])
+                usuario.save()
+                usuario.empresas.add(empresa)
 
-            suscripcion = Suscripcion.objects.create(
-                id_empresa=empresa,
-                id_plan=plan,
-                estado="TRIAL",
-                periodo="MENSUAL",
-                fecha_inicio=hoy,
-                fecha_fin=hoy + datetime.timedelta(days=TRIAL_DIAS),
-            )
+                suscripcion = Suscripcion.objects.create(
+                    id_empresa=empresa,
+                    id_plan=plan,
+                    estado="TRIAL",
+                    periodo="MENSUAL",
+                    fecha_inicio=hoy,
+                    fecha_fin=hoy + datetime.timedelta(days=TRIAL_DIAS),
+                )
 
         return Response(
             {

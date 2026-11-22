@@ -3,6 +3,7 @@ Dashboard de cartera.
 Toda la lógica se delega a cuentas_por_cobrar.services.
 CxC no implementa aging ni scoring — solo los consume y cachea.
 """
+
 from datetime import date
 
 from django.core.cache import cache
@@ -32,6 +33,7 @@ class CarteraDashboardView(APIView):
 
             # Calcular intentos sin respuesta desde historial CxC
             from django.db.models import Count
+
             intentos_raw = (
                 GestionCobranza.objects.filter(
                     empresa=empresa,
@@ -48,6 +50,7 @@ class CarteraDashboardView(APIView):
 
         # Tasa del día desde finanzas.TasaCambio
         from apps.finanzas.models import TasaCambio
+
         tasa_hoy = (
             TasaCambio.objects.filter(
                 fecha_tasa=date.today(),

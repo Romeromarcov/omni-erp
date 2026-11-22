@@ -42,18 +42,14 @@ class Command(ImportadorBaseCommand):
         try:
             return datetime.strptime(valor, "%Y-%m-%d").date()
         except ValueError:
-            raise FilaError(
-                f"el campo '{clave}' no es una fecha válida (use YYYY-MM-DD): '{valor}'."
-            )
+            raise FilaError(f"el campo '{clave}' no es una fecha válida (use YYYY-MM-DD): '{valor}'.")
 
     def procesar_fila(self, empresa, fila, numero_linea):
         rif = self.requerido(fila, "rif")
 
         cliente = Cliente.objects.filter(id_empresa=empresa, rif=rif).first()
         if cliente is None:
-            raise FilaError(
-                f"no existe un cliente con rif '{rif}' en la empresa."
-            )
+            raise FilaError(f"no existe un cliente con rif '{rif}' en la empresa.")
 
         monto = self.a_decimal(self.requerido(fila, "monto"), "monto")
         fecha_emision = self._fecha(fila, "fecha_emision")
@@ -61,9 +57,7 @@ class Command(ImportadorBaseCommand):
 
         estado = self.opcional(fila, "estado", "pendiente").lower()
         if estado not in self.ESTADOS_VALIDOS:
-            raise FilaError(
-                f"estado inválido '{estado}'; use uno de {sorted(self.ESTADOS_VALIDOS)}."
-            )
+            raise FilaError(f"estado inválido '{estado}'; use uno de {sorted(self.ESTADOS_VALIDOS)}.")
 
         referencia_externa = self.opcional(fila, "referencia_externa") or None
         descripcion = self.opcional(fila, "descripcion") or None

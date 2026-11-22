@@ -64,8 +64,11 @@ def test_descuento_categoria_exacta_gana_sobre_comodin():
         _d("B", "Global Oil", "Comercial sintéticos", "0.08"),
     ]
     elegido = descuento_vigente(
-        reglas, marca="Global Oil", categoria="Comercial sintéticos",
-        tipo=TipoDescuento.CONTADO, fecha=date(2026, 6, 1),
+        reglas,
+        marca="Global Oil",
+        categoria="Comercial sintéticos",
+        tipo=TipoDescuento.CONTADO,
+        fecha=date(2026, 6, 1),
     )
     assert elegido is not None and elegido.id == "B"
 
@@ -76,8 +79,11 @@ def test_descuento_marca_exacta_gana_sobre_marca_comodin():
         _d("B", "Sinoco", "*", "0.04"),  # especificidad 2 (marca exacta pesa más)
     ]
     elegido = descuento_vigente(
-        reglas, marca="Sinoco", categoria="Lubricantes",
-        tipo=TipoDescuento.CONTADO, fecha=date(2026, 6, 1),
+        reglas,
+        marca="Sinoco",
+        categoria="Lubricantes",
+        tipo=TipoDescuento.CONTADO,
+        fecha=date(2026, 6, 1),
     )
     assert elegido is not None and elegido.id == "B"
 
@@ -90,8 +96,11 @@ def test_descuento_empate_rompe_por_menor_porcentaje_luego_id():
         _d("M", "*", "*", "0.03"),
     ]
     elegido = descuento_vigente(
-        reglas, marca="X", categoria="Y",
-        tipo=TipoDescuento.CONTADO, fecha=date(2026, 6, 1),
+        reglas,
+        marca="X",
+        categoria="Y",
+        tipo=TipoDescuento.CONTADO,
+        fecha=date(2026, 6, 1),
     )
     # Menor porcentaje es 0.03 (A y M); desempata str(id): "A" < "M".
     assert elegido is not None and elegido.id == "A"
@@ -100,7 +109,10 @@ def test_descuento_empate_rompe_por_menor_porcentaje_luego_id():
 def test_descuento_fuera_de_vigencia_no_aplica():
     regla = _d("A", "Sinoco", "*", "0.03", hasta=date(2026, 3, 1))
     elegido = descuento_vigente(
-        [regla], marca="Sinoco", categoria="*", tipo=TipoDescuento.CONTADO,
+        [regla],
+        marca="Sinoco",
+        categoria="*",
+        tipo=TipoDescuento.CONTADO,
         fecha=date(2026, 6, 1),
     )
     assert elegido is None
@@ -109,7 +121,10 @@ def test_descuento_fuera_de_vigencia_no_aplica():
 def test_descuento_antes_de_vigencia_desde_no_aplica():
     regla = _d("A", "Sinoco", "*", "0.03", desde=date(2026, 7, 1))
     elegido = descuento_vigente(
-        [regla], marca="Sinoco", categoria="*", tipo=TipoDescuento.CONTADO,
+        [regla],
+        marca="Sinoco",
+        categoria="*",
+        tipo=TipoDescuento.CONTADO,
         fecha=date(2026, 6, 1),
     )
     assert elegido is None
@@ -118,17 +133,26 @@ def test_descuento_antes_de_vigencia_desde_no_aplica():
 def test_descuento_inactivo_no_aplica():
     regla = _d("A", "Sinoco", "*", "0.03", activo=False)
     elegido = descuento_vigente(
-        [regla], marca="Sinoco", categoria="*", tipo=TipoDescuento.CONTADO,
+        [regla],
+        marca="Sinoco",
+        categoria="*",
+        tipo=TipoDescuento.CONTADO,
         fecha=date(2026, 6, 1),
     )
     assert elegido is None
 
 
 def test_descuento_sin_match_devuelve_none():
-    assert descuento_vigente(
-        [], marca="X", categoria="Y", tipo=TipoDescuento.CONTADO,
-        fecha=date(2026, 6, 1),
-    ) is None
+    assert (
+        descuento_vigente(
+            [],
+            marca="X",
+            categoria="Y",
+            tipo=TipoDescuento.CONTADO,
+            fecha=date(2026, 6, 1),
+        )
+        is None
+    )
 
 
 # --- promocion_primera_compra_vigente ---------------------------------------
@@ -141,7 +165,9 @@ def test_promocion_selecciona_la_mas_reciente():
 
 def test_promocion_sin_vigente_none():
     promo = PromocionPrimeraCompra(
-        id="p1", producto="Liga", vigencia_desde=date(2026, 1, 1),
+        id="p1",
+        producto="Liga",
+        vigencia_desde=date(2026, 1, 1),
         vigencia_hasta=date(2026, 3, 1),
     )
     assert promocion_primera_compra_vigente([promo], fecha=date(2026, 6, 1)) is None
@@ -170,7 +196,9 @@ def test_recurrencia_vigente_selecciona_mas_reciente():
     vieja = _recompra("0.03", desde=date(2026, 1, 1))
     nueva = _recompra("0.04", desde=date(2026, 5, 1))
     elegido = regla_recurrencia_vigente(
-        [vieja, nueva], condicion=Condicion.RECOMPRA, fecha=date(2026, 6, 1),
+        [vieja, nueva],
+        condicion=Condicion.RECOMPRA,
+        fecha=date(2026, 6, 1),
     )
     assert elegido is not None and elegido.valor == Decimal("0.04")
 
@@ -179,7 +207,9 @@ def test_recurrencia_empate_fecha_gana_menor_valor():
     a = _recompra("0.05", desde=date(2026, 5, 1))
     b = _recompra("0.03", desde=date(2026, 5, 1))
     elegido = regla_recurrencia_vigente(
-        [a, b], condicion=Condicion.RECOMPRA, fecha=date(2026, 6, 1),
+        [a, b],
+        condicion=Condicion.RECOMPRA,
+        fecha=date(2026, 6, 1),
     )
     assert elegido is not None and elegido.valor == Decimal("0.03")
 
@@ -187,30 +217,24 @@ def test_recurrencia_empate_fecha_gana_menor_valor():
 def test_recurrencia_filtra_por_condicion():
     recompra = _recompra("0.04", desde=date(2026, 1, 1))
     elegido = regla_recurrencia_vigente(
-        [recompra], condicion=Condicion.PRIMERA_COMPRA, fecha=date(2026, 6, 1),
+        [recompra],
+        condicion=Condicion.PRIMERA_COMPRA,
+        fecha=date(2026, 6, 1),
     )
     assert elegido is None
 
 
 def test_recurrencia_sin_match_none():
-    assert regla_recurrencia_vigente(
-        [], condicion=Condicion.PRIMERA_COMPRA, fecha=date(2026, 6, 1)
-    ) is None
+    assert regla_recurrencia_vigente([], condicion=Condicion.PRIMERA_COMPRA, fecha=date(2026, 6, 1)) is None
 
 
 # --- modelos: __str__ e is_deleted (puro, sin BD) ---------------------------
 def test_str_de_modelos():
     assert "Sinoco" in str(_d("A", "Sinoco", "*", "0.03"))
-    assert "BCV-completo" in str(
-        DescuentoBCVCompleto(porcentaje=Decimal("0.05"), vigencia_desde=date(2026, 1, 1))
-    )
-    assert "Liga" in str(
-        PromocionPrimeraCompra(producto="Liga", vigencia_desde=date(2026, 1, 1))
-    )
+    assert "BCV-completo" in str(DescuentoBCVCompleto(porcentaje=Decimal("0.05"), vigencia_desde=date(2026, 1, 1)))
+    assert "Liga" in str(PromocionPrimeraCompra(producto="Liga", vigencia_desde=date(2026, 1, 1)))
     assert "recompra" in str(_recompra("0.04", desde=date(2026, 1, 1)))
-    assert "Carnaval" in str(
-        Feriado(fecha=date(2026, 2, 16), descripcion="Carnaval")
-    )
+    assert "Carnaval" in str(Feriado(fecha=date(2026, 2, 16), descripcion="Carnaval"))
     assert "ZELLE" in str(MetodoPago(codigo="ZELLE", nombre="Zelle"))
 
 

@@ -79,9 +79,7 @@ class TestRegistryDinamico:
         codigo = "proveedor_clase_mala_test"
         try:
             # Apunta a un modelo (no es BaseConnector) → error claro.
-            inst = _instancia(
-                empresa_a, codigo, "apps.integration_hub.models.ConectorProveedor"
-            )
+            inst = _instancia(empresa_a, codigo, "apps.integration_hub.models.ConectorProveedor")
             with pytest.raises(ConnectorError, match="no es un BaseConnector"):
                 registry.get_connector(inst)
             assert codigo not in registry.list_registered()

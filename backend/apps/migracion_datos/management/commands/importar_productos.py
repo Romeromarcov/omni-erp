@@ -40,9 +40,7 @@ class Command(ImportadorBaseCommand):
         return cat
 
     def _resolver_unidad(self, empresa, abreviatura):
-        unidad = UnidadMedida.objects.filter(
-            id_empresa=empresa, abreviatura=abreviatura
-        ).first()
+        unidad = UnidadMedida.objects.filter(id_empresa=empresa, abreviatura=abreviatura).first()
         if unidad is None:
             unidad = UnidadMedida.objects.create(
                 id_empresa=empresa,
@@ -55,10 +53,7 @@ class Command(ImportadorBaseCommand):
     def _resolver_moneda(self, codigo_iso):
         moneda = Moneda.objects.filter(codigo_iso=codigo_iso).first()
         if moneda is None:
-            raise FilaError(
-                f"no existe una moneda con código ISO '{codigo_iso}'. "
-                f"Créela antes de importar."
-            )
+            raise FilaError(f"no existe una moneda con código ISO '{codigo_iso}'. " f"Créela antes de importar.")
         return moneda
 
     def procesar_fila(self, empresa, fila, numero_linea):
@@ -70,10 +65,7 @@ class Command(ImportadorBaseCommand):
 
         tipo_producto = self.opcional(fila, "tipo_producto", "PRODUCTO_FISICO").upper()
         if tipo_producto not in self.TIPOS_VALIDOS:
-            raise FilaError(
-                f"tipo_producto inválido '{tipo_producto}'; "
-                f"use uno de {sorted(self.TIPOS_VALIDOS)}."
-            )
+            raise FilaError(f"tipo_producto inválido '{tipo_producto}'; " f"use uno de {sorted(self.TIPOS_VALIDOS)}.")
 
         categoria = self._resolver_categoria(empresa, categoria_nombre)
         unidad = self._resolver_unidad(empresa, unidad_abrev)
@@ -87,9 +79,7 @@ class Command(ImportadorBaseCommand):
             "descripcion": self.opcional(fila, "descripcion") or None,
             "tipo_producto": tipo_producto,
             "costo_promedio": self.a_decimal(fila.get("costo_promedio"), "costo_promedio"),
-            "precio_venta_sugerido": self.a_decimal(
-                fila.get("precio_venta_sugerido"), "precio_venta_sugerido"
-            ),
+            "precio_venta_sugerido": self.a_decimal(fila.get("precio_venta_sugerido"), "precio_venta_sugerido"),
         }
 
         producto = Producto.objects.filter(id_empresa=empresa, sku=sku).first()

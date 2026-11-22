@@ -2,73 +2,68 @@
 
 > Registro de deuda técnica **conocida** de baja/media prioridad, sin fecha de vencimiento
 > formal. La deuda **crítica/alta con fecha y dueño** se rastrea como Compromiso Técnico
-> Fechado en [`docs/ctf/`](../ctf/) (R-PROC-6). Este inventario es la referencia histórica
-> y de baja prioridad; al promover un ítem a crítico, se le crea su CTF.
+> Fechado en [`docs/ctf/`](../ctf/) (R-PROC-6). Este inventario es la referencia operativa
+> de deuda estática y de baja prioridad; al promover un ítem a crítico, se le crea su CTF.
 >
-> Última actualización: 2026-06-10 (auditoría integral).
+> Última medición verificada: **2026-11-19** sobre `fix/limpieza-estatica-noqa-print-f401`
+> (base `origin/develop @ 435ad92`, Plan 06 — Tarea 3.4).
 
-## TODOs activos en código
+## Métricas estáticas medidas en código actual (`Plan 06 — Tarea 3.4`)
 
-| # | Ubicación | Descripción | Severidad |
+Medición ejecutada con `git grep -I -n` y `ruff` sobre el árbol limpio (separando código ejecutable, tests, docstrings y documentación):
+
+| Indicador | Alcance medido | Conteo real | Desglose / observación | Seguimiento |
+|---|---|---:|---|---|
+| `ruff F401` (imports sin usar) | `backend/apps/` + `backend/config/` (`.py`) | **0 (bloqueante en CI)** | Limpiadas 120 ocurrencias; `4` imports con side-effect o chequeo de SDK (`apps/core/apps.py`, `apps/eventos/apps.py`, `apps/localizacion/apps.py`, `apps/cxc/agents/cobranza_agent.py`) conservados explícitamente con `# noqa: F401` documentado y `FlujoError` re-exportado vía alias PEP 484 en `apps/ventas/services.py`. Promovido a bloqueante en `.github/workflows/ci.yml` y `.pre-commit-config.yaml`. | Plan 06 — Tarea 3.4 ✅ |
+| `# noqa` | `backend/apps/` + `backend/config/` (`.py`) | **187** *(43 archivos)* | `182` en `apps/` + `5` en `config/` (`0` en tests dentro de `apps/`): `114` `PLC0415`, `31` `BLE001`, `24` `S101`, `10` `E402`, `4` `F401`, `2` `F403`, `1` `ARG002`, `1` `S310` (reducidos desde `203` en `51` archivos al retirar obsoletos/redundantes). Adicional: `79` en `backend/tests/` + `backend/tests_eval/`. | Plan 06 — Tarea 3.4 ✅ |
+| `TODO` / `FIXME` / `HACK` / `XXX` | `backend/apps/` + `backend/config/` + `frontend/src/` + `infra/` | **0** reales | Las `12` coincidencias literales son `9` usos de la palabra española `"TODO"` en comentarios/docstrings (`8` en `backend/apps/` + `1` en `frontend/src/services/inventarioService.ts:149`) y `3` fixtures `'XXX'` en tests FE. En `infra/nginx/nginx.prod.conf:26` se eliminó el `# TODO` redundante (`0` en `infra/`). | Limpio en código e infra ✅ |
+| `eslint-disable` | `frontend/src/` (`.ts`/`.tsx`) | **40** | **38** en código de producción (`17` `security/detect-object-injection`, `15` `react-hooks/exhaustive-deps`, `4` `react-refresh/only-export-components`, `2` `security/detect-unsafe-regex`) + **2** en `frontend/src/__tests__/api.test.ts` (`security/detect-possible-timing-attacks`), todos activos (`eslint --report-unused-disable-directives` limpio) y documentados con razón explícita. | Plan 06 — Tarea 3.4 ✅ |
+| `print(` | `backend/apps/` + `backend/config/` (`.py`) | **0** ejecutables | **0** en código ejecutable (`backend/config/celery.py:34` migrado a `logger.info`). Quedan **4** en docstrings de ejemplo (`agentes/cobranza.py:18`, `agentes/reorden.py:22`, `localizacion_ve/calendario.py:9-10`). | R-CODE-3 / Plan 06 ✅ |
+| `console.log` | `frontend/src/` (`.ts`/`.tsx`) | **0** | **0** en código `.ts`/`.tsx` (`1` solo en ejemplo Markdown de `frontend/src/services/README_PagosService.md:166`). | Limpio (R-CODE-3) |
+| `any` explícito (`: any`, `as any`, `<any>`, `any[]`) | `frontend/src/` (`.ts`/`.tsx`) | **0** | **0** en código `.ts`/`.tsx` (`2` solo en ejemplo Markdown de `frontend/src/services/README_PagosService.md:156,178`). | Limpio (R-CODE-3) |
+| `Response({...str(e\|exc\|err)...})` | `backend/apps/` + `backend/config/` (`:!*test*`) | **0** *(remediado)* | ✅ **Resuelto (Plan 06 — H5 / Tarea 1.1):** cubrió las 44 ocurrencias base en 17 archivos (38 unilínea en 15 archivos + 6 multilínea en `cxc_lubrikca/api/conciliacion_viewsets.py` y `cxc_lubrikca/api/operacion_viewsets.py`, además de la variante multilínea `CapacidadExcedida` en `activaciones/views.py` y `_error(str(exc))` en `manufactura/views.py`) mediante `apps/core/exceptions.py` (`domain_error_response`), junto con las fugas `except Exception` de `core/mcp_server.py`, importación CSV en `ventas/views.py` y `cxc/health/` (`cxc/api/router.py`). Verificado con guardia AST en `tests/unit/test_http_error_sanitization.py`. | Plan 06 — H5 / Tarea 1.1 ✅ |
+
+### Comandos reproducibles
+
+```bash
+cd backend && ruff check apps/ config/ --select E9,F63,F7,F82,F823,F811,F401
+git grep -I -n '# noqa' -- backend/apps backend/config
+git grep -I -n -E '\b(TODO|FIXME|HACK|XXX)\b' -- backend/apps backend/config frontend/src infra
+git grep -I -n 'eslint-disable' -- frontend/src
+git grep -I -n -E '\bprint\s*\(' -- backend/apps backend/config
+git grep -I -n -E 'console\.log|:\s*any\b|as\s+any\b' -- frontend/src
+git grep -I -n -E 'Response\(\{[^}]*str\((e|exc|err)\)' -- backend/apps backend/config ':!*test*'
+```
+
+## Ítems históricos TD-1..TD-3 (ya resueltos)
+
+| # | Ubicación original | Descripción original | Estado verificado (2026-11-17) |
 |---|---|---|---|
-| TD-1 | `frontend/src/pages/Finanzas/Cajas/CajaMovimientosListPage.tsx:69` | Botón "Exportar" sin handler (`TODO: exportar informe`) | Baja |
-| TD-2 | `frontend/src/pages/Finanzas/CuentasBancarias/CuentaBancariaMovimientosListPage.tsx:65` | Botón "Exportar" sin handler (`TODO: exportar informe`) | Baja |
-| TD-3 | `frontend/src/pages/Ventas/FacturasFiscales/FacturaFiscalDetailPage.tsx:280` | Usa `'temp-id'` como `idCliente` en vez del ID real del cliente | Media |
+| TD-1 | `frontend/src/pages/Finanzas/Cajas/CajaMovimientosListPage.tsx:64-84` | Botón "Exportar" sin handler | ✅ **Resuelto** — `exportCSV()` con `downloadCsv(...)` y montos en string crudo (R-CODE-4). |
+| TD-2 | `frontend/src/pages/Finanzas/CuentasBancarias/CuentaBancariaMovimientosListPage.tsx:60-80` | Botón "Exportar" sin handler | ✅ **Resuelto** — `exportCSV()` con `downloadCsv(...)` y montos en string crudo (R-CODE-4). |
+| TD-3 | `frontend/src/pages/Ventas/FacturasFiscales/FacturaFiscalDetailPage.tsx` | Uso de `'temp-id'` como `idCliente` | ✅ **Resuelto** — `'temp-id'` eliminado del código fuente frontend. |
 
-> Backend: **0 TODO/FIXME/XXX reales** en `apps/` (verificado 2026-06-03).
-
-## Bugs reales detectados en auditoría (vía ruff E9/F8)
+## Bugs reales detectados y cerrados en auditorías previas
 
 | # | Ubicación | Bug | Estado |
 |---|---|---|---|
-| BUG-1 | `apps/ventas/views.py` (`crear_transaccion_financiera_pago`) | `Decimal` re-importado localmente (antes en línea 465) lo volvía variable local de toda la función → `UnboundLocalError` en pagos en **divisa** (`moneda_pago != moneda_base`); la función re-lanzaba, así que el pago en divisa **fallaba**. No detectado por falta de test de esa ruta. | ✅ **Corregido** (2026-06-03) — guard ruff F823 bloqueante en CI. *Pendiente:* test conductual de pago en divisa (TEST-5). |
-| BUG-DUP-1 | `apps/finanzas/serializers.py`, `apps/finanzas/views.py` | **Definiciones duplicadas** (corroboradas por mypy `no-redef`): `CajaFisicaSerializer` **3×**, `DatafonoSerializer` **2×**, el ViewSet `PlantillaMaestroCajasVirtualesViewSet` **2×**, + 13 imports redundantes. Python liga al punto de definición, así que registros/usos podían apuntar a definiciones distintas según su posición. | ✅ **Corregido** (2026-06-03). Eliminadas las definiciones muertas (sombreadas) conservando las activas; verificado que todos los `import`/`serializer_class` ligaban a la última (comportamiento preservado). 17 F811 a **cero**; **F811 ahora bloqueante en CI** (impide reintroducir duplicados). Tests de finanzas verdes. |
+| BUG-1 | `apps/ventas/views.py` (`crear_transaccion_financiera_pago`) | `Decimal` re-importado localmente producía `UnboundLocalError` en pagos en divisa. | ✅ **Corregido** (2026-06-03) — guard `ruff F823` bloqueante en CI. |
+| BUG-DUP-1 | `apps/finanzas/serializers.py`, `apps/finanzas/views.py` | Definiciones duplicadas sombreadas (17 `F811`). | ✅ **Corregido** (2026-06-03) — guard `ruff F811` bloqueante en CI. |
+| Backfill Fase 3 | `tests/` (antiguos `BUG` en `test_*`) | ~30 bugs de producto (P0, `OperacionCambioDivisa`, `transferir-entre-cajas`, `AbonoCxPViewSet`, etc.). | ✅ **Cerrados en gran mayoría** vía workstream P0 (PRs #64–#73), CTF-013/015 y Track B (PRs #182–#186); residuales de Hub documentados en [`docs/integracion-hub/ESTADO.md`](../integracion-hub/ESTADO.md) §4.1. |
 
-> Nota mypy (2026-06-03): las 27 alertas de mypy son en su mayoría limitaciones de
-> inferencia (p.ej. `buckets[bucket]["total"] += saldo` en `cuentas_por_cobrar/services.py:147`
-> es **correcto** en runtime; mypy ensancha el dict heterogéneo a `object`). Las únicas
-> accionables son las `no-redef` de BUG-DUP-1. mypy sigue no-bloqueante hasta anotar tipos.
+## Deuda arquitectónica y operativa vigente (ver Plan Maestro §4.3 y Plan 06)
 
-## Deuda arquitectónica conocida (ver Plan Maestro §4.3)
+- **RLS real en entornos (`CTF-012` / Plan 06 Fase 2):** las políticas `FORCE ROW LEVEL SECURITY` cubren el esquema en BD, pero el runtime conecta aún con el rol dueño y `bypass='on'` por defecto hasta crear el rol no-dueño `omni_app` y migrar variables en Railway.
+- **Acoplamiento a Venezuela en el núcleo:** lógica VE dispersa (`apps/fiscal`, IGTF en `apps/ventas`, libros SENIAT); migración gradual (strangler fig) a `apps/localizacion` / `apps/localizacion_ve` (2/6 adapters implementados; faltan 4).
+- **`saas` middleware fail-open:** revisar a fail-closed al activar `SAAS_VERIFICAR_SUSCRIPCION=True`.
+- **Deuda residual de seguridad (Plan 05):** `P1-5` (auditoría inmutable en BD), `P1-6` (barrido IDOR por objeto), `P1-7` (cargar secrets de backup del owner), `P2-2` (agentes síncronos en vistas → Celery), `P2-3` (persistencia dedicada de costos LLM), `P2-4` (cacheo de consultas calientes + N+1), `P2-6` (OpenTelemetry).
+- **Consolidación de `banca_electronica`:** `apps/banca_electronica/models.py` mantiene un scaffold de `CuentaBancariaEmpresa` separado de `finanzas.CuentaBancariaEmpresa` (usado por `tesoreria` y `finanzas`). Se aborda en [`docs/planes/08-conciliacion-pagos-y-paridad-odoo.md`](../planes/08-conciliacion-pagos-y-paridad-odoo.md).
+- **Offline POS frontend (`CTF-008`):** backend atómico `#171` y `salesOutbox`/`useOutboxFlush` existen, falta cerrar el ciclo en `PosPage`.
+- **Tooling, dependencias y CI (Plan 06):** migración a `ruff` (D2), segunda pasada Decimal en formularios/helpers FE (Tarea 4.2); `semgrep` requiere WSL/Docker en Windows nativo. *(Pines de las 4 dependencias, Dependabot semanal, desacople de auditoría CVE a `nightly.yml` y Actions Node 24 cerrados en PR `#289` — Plan 06 Tareas `1.3` y `3.6`.)*
+- **Advisory upstream sin parche no-disruptivo en `frontend/package-lock.json` (`picomatch <= 4.0.7` / `GHSA-fc5q-39xc-vjpf`):** **15 vulnerabilidades `HIGH`** transitivas en el toolchain de desarrollo/build (`vite`, `vitest`, `tinyglobby`, `@rollup/pluginutils`, `fdir`, `vite-plugin-pwa`, `@typescript-eslint/typescript-estree`, etc.; `picomatch` instalado en `4.0.4`, donde `npm audit fix --force` degradaría `vite` a `6.2.7` con *breaking change*). No afecta el runtime de producción del navegador y queda mitigado por el desacople a `nightly.yml` (reporte automático con issue) y bloqueo exclusivo en la rama de release `main` introducido en PR `#289`.
 
-- **Acoplamiento a Venezuela en el núcleo** — lógica VE dispersa (`apps/fiscal`, IGTF en
-  `apps/ventas`, libros SENIAT); migración gradual (strangler fig) a `apps/localizacion`/
-  `apps/localizacion_ve` (§3.7). En curso.
-- **`saas` middleware fail-open** — revisar a fail-closed al activar `SAAS_VERIFICAR_SUSCRIPCION`.
-- **Dos `PROJECT_LOG.md` divergentes** (raíz vs `backend/`) — `backend/PROJECT_LOG.md` es el
-  vigente; archivar el de la raíz.
-- **Service Workers / offline real** (portales) — pendiente.
-- **Prometheus/Grafana** — pendiente (Sentry ya está).
+## Hallazgos históricos de auditorías
 
-## Deuda de tooling (detectada en auditoría cero-dudas)
-
-- **`semgrep` no instala en Windows nativo** — requiere WSL/Docker. Los tests/tooling locales
-  corren dentro del contenedor Docker (Linux). Documentado para futuros colaboradores.
-- **OpenAPI: el proyecto usa `drf-yasg`, no `drf-spectacular`** — el plan cero-dudas menciona
-  `drf-spectacular`; al cablear el job `contract`/`schemathesis` decidir si se migra o se usa
-  `drf-yasg` como fuente del esquema.
-- Varios checks de CI en `continue-on-error` (ruff/mypy/diff-cover/audits) — endurecer por
-  GATE-1 (ver [`docs/audit/ESTADO_PLAN_CERO_DUDAS.md`](../audit/ESTADO_PLAN_CERO_DUDAS.md)).
-
-## Bugs reales destapados por el backfill Fase 3 (2026-06-09)
-
-~30 bugs de producto documentados en los propios tests con comentario `BUG` (sin enmascarar):
-jobs de sync colgados (`SyncResult.procesados`), upserts del hub rotos contra modelos reales,
-`OperacionCambioDivisa` importa modelo inexistente (CTF-013), `finanzas/utils` importa
-`SesionCaja` inexistente, sesiones de caja por API rotas, `rapidfuzz` usado sin estar en
-requirements, tools MCP de inventario/ventas rotas, 500s en analizar-cobranza/reorden, horas
-UTC en asistencia, y más. Fuente: [`docs/audit/ESTADO_PLAN_CERO_DUDAS.md`](../audit/ESTADO_PLAN_CERO_DUDAS.md)
-(§Cierre de Fase 3). **Triage:** los que solapan con el workstream P0 del Plan Maestro §5.2 se
-corrigen ahí; el resto se corrige al tocar cada módulo (cada fix actualiza el test que lo fija).
-
-## Hallazgos BAJA/MEDIA abiertos de auditorías
-
-- **Auditoría integral 2026-06-10** (la vigente): hallazgos CRÍTICO/ALTO van como workstream P0
-  del Plan Maestro §5.2; los BAJO quedan registrados en
-  [`docs/auditorias/AUDITORIA_INTEGRAL_2026-06-10.md`](../auditorias/AUDITORIA_INTEGRAL_2026-06-10.md)
-  (SEC-B1..B4 y bugs BAJO: fechas UTC en aging/tasas, asiento `PAGO_CXC` ausente en abonos directos,
-  PATCH directo de `monto`/`estado` en CxC, `Decimal(monto)` sin validar).
-- Histórico 2026-06-02: 15 BAJA + 12 MEDIA en
-  [`docs/_archive/AUDITORIA_2026-06-02.md`](../_archive/AUDITORIA_2026-06-02.md) (archivada).
-  Los residuales con seguimiento activo (SEC-1 ✅, COOP/CORP ✅, CSP diferido) están en
-  [`docs/audit/ESTADO_PLAN_CERO_DUDAS.md`](../audit/ESTADO_PLAN_CERO_DUDAS.md).
+- **Auditoría integral 2026-06-10:** hallazgos CRÍTICO/ALTO cerrados en workstream P0 (PRs #64–#73); documento archivado en [`docs/auditorias/archivo/AUDITORIA_INTEGRAL_2026-06-10.md`](../auditorias/archivo/AUDITORIA_INTEGRAL_2026-06-10.md).
+- **Auditoría integral 2026-06-21:** hallazgos cerrados en Track B (PRs #182–#186); reporte en [`docs/AUDITORIA_2026-06-21.md`](../AUDITORIA_2026-06-21.md) y snapshots en [`docs/_archive/2026-06-21/`](../_archive/2026-06-21/).
+- **Histórico 2026-06-02:** [`docs/_archive/AUDITORIA_2026-06-02.md`](../_archive/AUDITORIA_2026-06-02.md) (archivada).

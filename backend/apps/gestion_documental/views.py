@@ -1,8 +1,9 @@
-from rest_framework import status, viewsets
+from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 
+from apps.core.exceptions import domain_error_response
 from apps.core.storage import StorageService
 from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
 
@@ -40,10 +41,7 @@ class DocumentoViewSet(BaseModelViewSet):
 
     def get_queryset(self):
         # R-CODE-1: filtrar por empresas visibles. M-BUG-4: excluir soft-deleted.
-        return (
-            Documento.objects.filter(id_empresa__in=_empresas(self.request), activo=True)
-            .order_by("-fecha_subida")
-        )
+        return Documento.objects.filter(id_empresa__in=_empresas(self.request), activo=True).order_by("-fecha_subida")
 
     @action(
         detail=False,
@@ -103,7 +101,7 @@ class DocumentoViewSet(BaseModelViewSet):
                 content_type=archivo.content_type,
             )
         except ValueError as exc:
-            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST)
 
         # Obtener empresa y usuario para el registro
         from apps.core.models import Empresa

@@ -8,7 +8,17 @@ import { globalIgnores } from 'eslint/config'
 
 export default tseslint.config([
   // `src/api/schema.d.ts` es código generado (openapi-typescript); no se lintea.
-  globalIgnores(['dist', 'coverage', 'src/api/schema.d.ts']),
+  // También se excluyen artefactos nativos/E2E ignorados por git (Capacitor, Electron, Playwright).
+  globalIgnores([
+    'dist',
+    'coverage',
+    'android',
+    'ios',
+    'release',
+    'playwright-report',
+    'test-results',
+    'src/api/schema.d.ts',
+  ]),
   // CTF-006: eslint-plugin-security en TODO el código linteado (src, e2e,
   // scripts, electron). Sin `files` aplica globalmente. Las reglas recommended
   // vienen como "warn" y `npm run lint` no usa --max-warnings, así que se
@@ -55,6 +65,16 @@ export default tseslint.config([
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',
+      globals: { ...globals.node },
+    },
+  },
+  // Proceso principal y preload de Electron (CommonJS).
+  {
+    files: ['electron/**/*.cjs'],
+    extends: [js.configs.recommended],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'commonjs',
       globals: { ...globals.node },
     },
   },

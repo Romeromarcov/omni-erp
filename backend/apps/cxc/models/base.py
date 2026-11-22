@@ -2,6 +2,7 @@
 CxcBaseModel — mixin para todos los modelos del módulo CxC.
 Incluye: UUIDv7 PK, soft delete, empresa FK, timestamps.
 """
+
 from apps.core.uuid import uuid7
 from django.db import models
 
@@ -24,6 +25,7 @@ class CxcBaseModel(models.Model):
 
     def soft_delete(self):
         from django.utils import timezone
+
         self.deleted_at = timezone.now()
         self.save(update_fields=["deleted_at"])
 

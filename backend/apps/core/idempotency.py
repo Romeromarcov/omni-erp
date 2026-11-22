@@ -133,11 +133,7 @@ def idempotent(scope: str):
             }
 
             # 1) Camino rápido: la clave ya fue consumida → reproducir (o 422).
-            existente = (
-                ClaveIdempotencia.objects.filter(**filtro)
-                .filter(expira_en__gt=timezone.now())
-                .first()
-            )
+            existente = ClaveIdempotencia.objects.filter(**filtro).filter(expira_en__gt=timezone.now()).first()
             if existente is not None:
                 return _respuesta_desde_registro(existente, payload_hash)
 
@@ -159,16 +155,10 @@ def idempotent(scope: str):
                 except IntegrityError:
                     # Carrera de doble-submit: otra petición idéntica ganó el
                     # INSERT y ya commiteó. Reproducimos su respuesta.
-                    ganadora = (
-                        ClaveIdempotencia.objects.select_for_update()
-                        .filter(**filtro)
-                        .first()
-                    )
+                    ganadora = ClaveIdempotencia.objects.select_for_update().filter(**filtro).first()
                     if ganadora is not None and ganadora.status_respuesta is not None:
                         return _respuesta_desde_registro(ganadora, payload_hash)
-                    logger.warning(
-                        "Carrera de idempotencia sin respuesta visible (scope=%s)", scope
-                    )
+                    logger.warning("Carrera de idempotencia sin respuesta visible (scope=%s)", scope)
                     return Response(
                         {"error": "Operación en curso con la misma Idempotency-Key; reintente."},
                         status=http_status.HTTP_409_CONFLICT,

@@ -9,6 +9,7 @@ Verifica:
 - test_pdf_estado_cuenta_200(): GET /api/cxc/cuentas-por-cobrar/estado-cuenta/{id}/pdf/ devuelve 200
 - test_pdf_factura_ajena_404(): Usuario sin acceso recibe 404
 """
+
 import datetime
 
 import pytest
@@ -19,6 +20,7 @@ from apps.crm.models import Cliente
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def client_a(user_a):
@@ -46,6 +48,7 @@ def cliente_a(db, empresa_a):
 @pytest.fixture
 def factura_a(db, empresa_a, cliente_a, moneda_usd):
     from apps.ventas.models import FacturaFiscal
+
     return FacturaFiscal.objects.create(
         id_empresa=empresa_a,
         id_cliente=cliente_a,
@@ -63,6 +66,7 @@ def factura_a(db, empresa_a, cliente_a, moneda_usd):
 @pytest.fixture
 def cotizacion_a(db, empresa_a, cliente_a, moneda_usd):
     from apps.ventas.models import Cotizacion
+
     return Cotizacion.objects.create(
         id_empresa=empresa_a,
         id_cliente=cliente_a,
@@ -78,6 +82,7 @@ def cotizacion_a(db, empresa_a, cliente_a, moneda_usd):
 @pytest.fixture
 def cxc_a(db, empresa_a, cliente_a):
     from apps.cuentas_por_cobrar.models import CuentaPorCobrar
+
     return CuentaPorCobrar.objects.create(
         empresa=empresa_a,
         cliente=cliente_a,
@@ -90,6 +95,7 @@ def cxc_a(db, empresa_a, cliente_a):
 
 
 # ── Tests Factura Fiscal PDF ──────────────────────────────────────────────────
+
 
 class TestPDFFacturaFiscal:
     def test_pdf_factura_fiscal_200(self, client_a, factura_a):
@@ -126,6 +132,7 @@ class TestPDFFacturaFiscal:
 
 # ── Tests Cotización PDF ──────────────────────────────────────────────────────
 
+
 class TestPDFCotizacion:
     def test_pdf_cotizacion_200(self, client_a, cotizacion_a):
         """GET /api/ventas/cotizaciones/{id}/pdf/ retorna 200."""
@@ -155,38 +162,29 @@ class TestPDFCotizacion:
 
 # ── Tests Estado de Cuenta CxC PDF ───────────────────────────────────────────
 
+
 class TestPDFEstadoCuenta:
     def test_pdf_estado_cuenta_200(self, client_a, cxc_a, cliente_a):
         """GET /api/cxc/cuentas-por-cobrar/estado-cuenta/{cliente_id}/pdf/ retorna 200."""
-        resp = client_a.get(
-            f"/api/cxc/cuentas-por-cobrar/estado-cuenta/{cliente_a.pk}/pdf/"
-        )
+        resp = client_a.get(f"/api/cxc/cuentas-por-cobrar/estado-cuenta/{cliente_a.pk}/pdf/")
         assert resp.status_code == 200
 
     def test_pdf_estado_cuenta_content_type(self, client_a, cxc_a, cliente_a):
         """Content-Type es application/pdf."""
-        resp = client_a.get(
-            f"/api/cxc/cuentas-por-cobrar/estado-cuenta/{cliente_a.pk}/pdf/"
-        )
+        resp = client_a.get(f"/api/cxc/cuentas-por-cobrar/estado-cuenta/{cliente_a.pk}/pdf/")
         assert "application/pdf" in resp["Content-Type"]
 
     def test_pdf_estado_cuenta_bytes_no_vacios(self, client_a, cxc_a, cliente_a):
         """El PDF de estado de cuenta tiene contenido."""
-        resp = client_a.get(
-            f"/api/cxc/cuentas-por-cobrar/estado-cuenta/{cliente_a.pk}/pdf/"
-        )
+        resp = client_a.get(f"/api/cxc/cuentas-por-cobrar/estado-cuenta/{cliente_a.pk}/pdf/")
         assert len(resp.content) > 1024
 
     def test_pdf_estado_cuenta_comienza_con_magic(self, client_a, cxc_a, cliente_a):
         """El PDF comienza con %PDF-."""
-        resp = client_a.get(
-            f"/api/cxc/cuentas-por-cobrar/estado-cuenta/{cliente_a.pk}/pdf/"
-        )
+        resp = client_a.get(f"/api/cxc/cuentas-por-cobrar/estado-cuenta/{cliente_a.pk}/pdf/")
         assert resp.content[:5] == b"%PDF-"
 
     def test_pdf_estado_cuenta_cliente_ajeno_404(self, client_b, cliente_a):
         """Usuario B no puede ver estado de cuenta de cliente de empresa A."""
-        resp = client_b.get(
-            f"/api/cxc/cuentas-por-cobrar/estado-cuenta/{cliente_a.pk}/pdf/"
-        )
+        resp = client_b.get(f"/api/cxc/cuentas-por-cobrar/estado-cuenta/{cliente_a.pk}/pdf/")
         assert resp.status_code == 404

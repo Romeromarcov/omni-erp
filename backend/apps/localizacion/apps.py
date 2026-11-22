@@ -8,4 +8,4 @@ class LocalizacionConfig(AppConfig):
 
     def ready(self):
         # Registrar las localizaciones disponibles al arrancar.
-        from . import registry  # noqa: F401
+        from . import registry  # noqa: F401  # side-effect: registra localizaciones

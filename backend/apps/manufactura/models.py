@@ -23,11 +23,11 @@ ETAPAS_ESTANDAR: list[tuple[str, str]] = [
 class ListaMateriales(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid7, editable=False)  # BUG-NEW-4: R-CODE-5
     empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
-    referencia_externa = models.CharField(max_length=100, blank=True, default='')
+    referencia_externa = models.CharField(max_length=100, blank=True, default="")
     documento_json = models.JSONField(blank=True, default=dict)
     producto_final = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name="listas_materiales")
     nombre = models.CharField(max_length=255)
-    descripcion = models.TextField(blank=True, default='')
+    descripcion = models.TextField(blank=True, default="")
 
     def __str__(self):
         return self.nombre
@@ -36,10 +36,10 @@ class ListaMateriales(models.Model):
 class RutaProduccion(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid7, editable=False)  # BUG-NEW-4: R-CODE-5
     empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
-    referencia_externa = models.CharField(max_length=100, blank=True, default='')
+    referencia_externa = models.CharField(max_length=100, blank=True, default="")
     documento_json = models.JSONField(blank=True, default=dict)
     nombre = models.CharField(max_length=255)
-    descripcion = models.TextField(blank=True, default='')
+    descripcion = models.TextField(blank=True, default="")
 
     def __str__(self):
         return self.nombre
@@ -52,9 +52,9 @@ class OrdenProduccion(models.Model):
     fecha_inicio = models.DateField()
     fecha_fin = models.DateField(blank=True, null=True)
     empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
-    referencia_externa = models.CharField(max_length=100, blank=True, default='')
+    referencia_externa = models.CharField(max_length=100, blank=True, default="")
     documento_json = models.JSONField(blank=True, default=dict)
-    tipo_operacion = models.CharField(max_length=50, blank=True, default='')
+    tipo_operacion = models.CharField(max_length=50, blank=True, default="")
     fecha_cierre_estimada = models.DateField(null=True, blank=True)
     estado = models.CharField(
         max_length=20,
@@ -69,7 +69,7 @@ class OrdenProduccion(models.Model):
     )
     lista_materiales = models.ForeignKey(ListaMateriales, on_delete=models.SET_NULL, null=True, blank=True)
     ruta_produccion = models.ForeignKey(RutaProduccion, on_delete=models.SET_NULL, null=True, blank=True)
-    observaciones = models.TextField(blank=True, default='')
+    observaciones = models.TextField(blank=True, default="")
 
     def __str__(self):
         return f"OP-{self.id} {self.producto} ({self.estado})"
@@ -77,7 +77,7 @@ class OrdenProduccion(models.Model):
 
 class ConsumoMaterial(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid7, editable=False)  # BUG-NEW-4: R-CODE-5
-    referencia_externa = models.CharField(max_length=100, blank=True, default='')
+    referencia_externa = models.CharField(max_length=100, blank=True, default="")
     documento_json = models.JSONField(blank=True, default=dict)
     orden_produccion = models.ForeignKey(OrdenProduccion, on_delete=models.CASCADE, related_name="consumos")
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
@@ -93,7 +93,7 @@ class ConsumoMaterial(models.Model):
 
 class ProduccionTerminada(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid7, editable=False)  # BUG-NEW-4: R-CODE-5
-    referencia_externa = models.CharField(max_length=100, blank=True, default='')
+    referencia_externa = models.CharField(max_length=100, blank=True, default="")
     documento_json = models.JSONField(blank=True, default=dict)
     orden_produccion = models.ForeignKey(
         OrdenProduccion, on_delete=models.CASCADE, related_name="produccion_terminada"
@@ -116,7 +116,7 @@ class ListaMaterialesDetalle(models.Model):
         "inventario.UnidadMedida", on_delete=models.CASCADE, related_name="detalles_lista_materiales"
     )
     es_opcional = models.BooleanField(default=False)
-    observaciones = models.TextField(blank=True, default='')
+    observaciones = models.TextField(blank=True, default="")
 
     class Meta:
         db_table = "manufactura_lista_materiales_detalle"
@@ -132,7 +132,7 @@ class CentroTrabajo(models.Model):
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="centros_trabajo")
     codigo_centro = models.CharField(max_length=50)
     nombre_centro = models.CharField(max_length=100)
-    descripcion = models.TextField(blank=True, default='')
+    descripcion = models.TextField(blank=True, default="")
     tipo_centro = models.CharField(
         max_length=20,
         choices=[
@@ -163,7 +163,7 @@ class OperacionProduccion(models.Model):
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="operaciones_produccion")
     codigo_operacion = models.CharField(max_length=50)
     nombre_operacion = models.CharField(max_length=100)
-    descripcion = models.TextField(blank=True, default='')
+    descripcion = models.TextField(blank=True, default="")
     tiempo_estandar_minutos = models.DecimalField(max_digits=8, decimal_places=2, default=0.00)
     activo = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
@@ -186,7 +186,7 @@ class RutaProduccionDetalle(models.Model):
     numero_secuencia = models.IntegerField()
     tiempo_preparacion_minutos = models.DecimalField(max_digits=8, decimal_places=2, default=0.00)
     tiempo_operacion_minutos = models.DecimalField(max_digits=8, decimal_places=2, default=0.00)
-    observaciones = models.TextField(blank=True, default='')
+    observaciones = models.TextField(blank=True, default="")
 
     class Meta:
         db_table = "manufactura_ruta_produccion_detalle"
@@ -220,7 +220,7 @@ class RegistroOperacion(models.Model):
         ],
         default="INICIADO",
     )
-    observaciones = models.TextField(blank=True, default='')
+    observaciones = models.TextField(blank=True, default="")
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -250,10 +250,12 @@ class EtapaProduccion(SoftDeleteModel):
     nombre = models.CharField(max_length=100)
     orden = models.PositiveIntegerField(help_text="Posición en la secuencia de fabricación (1 = primera).")
     tarifa_destajo = models.DecimalField(
-        max_digits=18, decimal_places=4, default=Decimal("0"),
+        max_digits=18,
+        decimal_places=4,
+        default=Decimal("0"),
         help_text="Pago a destajo por unidad procesada en esta etapa (0 = no aplica).",
     )
-    descripcion = models.TextField(blank=True, default='')
+    descripcion = models.TextField(blank=True, default="")
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -289,16 +291,21 @@ class EtapaOrdenProduccion(models.Model):
     horas_trabajadas = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0"))
     tarifa_hora = models.DecimalField(max_digits=18, decimal_places=4, default=Decimal("0"))
     cantidad_destajo = models.DecimalField(
-        max_digits=18, decimal_places=4, default=Decimal("0"),
+        max_digits=18,
+        decimal_places=4,
+        default=Decimal("0"),
         help_text="Unidades procesadas pagadas a destajo (tarifa_destajo de la etapa).",
     )
     pago_destajo = models.DecimalField(max_digits=18, decimal_places=4, default=Decimal("0"))
     completada_por = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="etapas_of_completadas",
     )
     fecha_completada = models.DateTimeField(null=True, blank=True)
-    observaciones = models.TextField(blank=True, default='')
+    observaciones = models.TextField(blank=True, default="")
 
     class Meta:
         db_table = "manufactura_etapa_orden_produccion"
@@ -327,7 +334,9 @@ class ConfiguracionManufactura(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     empresa = models.OneToOneField("core.Empresa", on_delete=models.CASCADE, related_name="configuracion_manufactura")
     porcentaje_overhead = models.DecimalField(
-        max_digits=7, decimal_places=4, default=Decimal("0"),
+        max_digits=7,
+        decimal_places=4,
+        default=Decimal("0"),
         help_text="Overhead como % sobre (materiales + mano de obra). Ej: 10 = 10%.",
     )
 

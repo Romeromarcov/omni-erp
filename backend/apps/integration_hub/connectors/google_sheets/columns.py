@@ -28,6 +28,7 @@ HOJAS = {
     "pedidos_venta": "Pedidos de Venta",
     "pedidos_compra": "Pedidos de Compra",
     "facturas_venta": "Facturas de Venta",
+    "facturas_compra": "Facturas de Compra",
     "pagos": "Pagos",
     "inventario": "Inventario",
 }
@@ -116,6 +117,22 @@ COLUMNAS: dict[str, list[tuple[str, str]]] = {
         ("estado_pago", "Estado de Pago"),
         ("fecha_modificacion_externo", "Última Modificación"),
     ],
+    "facturas_compra": [
+        ("id_externo", "ID Externo"),
+        ("numero", "Número"),
+        ("referencia", "Referencia"),
+        ("origen_pedido", "Origen"),
+        ("proveedor_nombre", "Proveedor"),
+        ("fecha_factura", "Fecha Factura"),
+        ("fecha_vencimiento", "Vencimiento"),
+        ("subtotal", "Subtotal"),
+        ("impuestos", "Impuestos"),
+        ("total", "Total"),
+        ("saldo_pendiente", "Saldo Pendiente"),
+        ("moneda", "Moneda"),
+        ("estado_pago", "Estado de Pago"),
+        ("fecha_modificacion_externo", "Última Modificación"),
+    ],
     "pagos": [
         ("id_externo", "ID Externo"),
         ("numero", "Número"),
@@ -182,9 +199,7 @@ def _cell(value: Any) -> Any:
     return value
 
 
-def build_rows(
-    tipo_entidad: str, registros: list[dict]
-) -> tuple[list[str], list[list]]:
+def build_rows(tipo_entidad: str, registros: list[dict]) -> tuple[list[str], list[list]]:
     """
     Construye ``(encabezado, filas)`` para una entidad.
 

@@ -78,15 +78,11 @@ def cxc_a(empresa_a):
 def _asientos_pago_cxc(empresa):
     from apps.contabilidad.models import AsientoContable
 
-    return AsientoContable.objects.filter(
-        id_empresa=empresa, nombre_modelo_origen="AbonoCxC"
-    )
+    return AsientoContable.objects.filter(id_empresa=empresa, nombre_modelo_origen="AbonoCxC")
 
 
 class TestAbonoDirectoAsiento:
-    def test_abono_con_contabilidad_y_mapeo_genera_asiento(
-        self, empresa_a, user_a, cxc_a
-    ):
+    def test_abono_con_contabilidad_y_mapeo_genera_asiento(self, empresa_a, user_a, cxc_a):
         """Camino feliz: el abono crea su asiento PAGO_CXC con debe == haber == monto."""
         from apps.contabilidad.models import DetalleAsiento
 
@@ -110,9 +106,7 @@ class TestAbonoDirectoAsiento:
         total_haber = sum(d.haber for d in detalles)
         assert total_debe == total_haber == Decimal("400.00")
 
-    def test_abono_contabilidad_activa_sin_mapeo_revierte_todo(
-        self, empresa_a, user_a, cxc_a
-    ):
+    def test_abono_contabilidad_activa_sin_mapeo_revierte_todo(self, empresa_a, user_a, cxc_a):
         """R-CODE-11: sin mapeo y con contabilidad activa, el abono falla y NADA persiste."""
         empresa_a.contabilidad_activa = True
         empresa_a.save(update_fields=["contabilidad_activa"])

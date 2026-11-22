@@ -30,31 +30,36 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        from apps.core import rls
+
         forzar = options["forzar"]
         creados = 0
         actualizados = 0
 
-        for prov in PROVEEDORES_BASE:
-            codigo = prov["codigo"]
-            defaults = {k: v for k, v in prov.items() if k != "codigo"}
-            existente = ConectorProveedor.objects.filter(codigo=codigo).first()
+        with rls.rls_bypass():
+            for prov in PROVEEDORES_BASE:
+                codigo = prov["codigo"]
+                defaults = {k: v for k, v in prov.items() if k != "codigo"}
+                existente = ConectorProveedor.objects.filter(codigo=codigo).first()
 
-            if existente is None:
-                ConectorProveedor.objects.create(codigo=codigo, **defaults)
-                creados += 1
-                continue
+                if existente is None:
+                    ConectorProveedor.objects.create(codigo=codigo, **defaults)
+                    creados += 1
+                    continue
 
-            if forzar:
-                for campo, valor in defaults.items():
-                    setattr(existente, campo, valor)
-                existente.save(update_fields=list(defaults.keys()))
-                actualizados += 1
-            # Sin --forzar: la fila existe y se respeta tal cual (no pisar al admin).
+                if forzar:
+                    for campo, valor in defaults.items():
+                        setattr(existente, campo, valor)
+                    existente.save(update_fields=list(defaults.keys()))
+                    actualizados += 1
+                # Sin --forzar: la fila existe y se respeta tal cual (no pisar al admin).
+
+            total_catalogo = ConectorProveedor.objects.count()
 
         self.stdout.write(
             self.style.SUCCESS(
                 f"Proveedores de integración: {creados} creados, "
                 f"{actualizados} actualizados, "
-                f"{ConectorProveedor.objects.count()} en catálogo."
+                f"{total_catalogo} en catálogo."
             )
         )

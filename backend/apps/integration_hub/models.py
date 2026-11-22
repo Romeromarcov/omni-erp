@@ -17,24 +17,49 @@ Eventos emitidos:
   - integration_hub.job_sincronizacion.completado
   - integration_hub.job_sincronizacion.fallido
 """
+
 import logging
+import re
+from collections.abc import Mapping
+from typing import Any
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 
+from apps.core.base_models import OmniBaseModel
 from apps.core.fields import EncryptedJSONField
 from apps.core.uuid import uuid7
 
 logger = logging.getLogger(__name__)
 
+_TIPO_EVENTO_OUTBOX_RE = re.compile(r"^[a-z][a-z0-9_.-]{1,79}$")
+
+
+def _validar_sin_nul_recursivo(valor: Any, campo: str) -> None:
+    """Rechaza bytes NUL (``\\x00``) en cadenas o estructuras JSON anidadas."""
+    if isinstance(valor, Mapping):
+        for clave, item in valor.items():
+            if "\x00" in str(clave):
+                raise ValidationError({campo: "El valor contiene caracteres inválidos."})
+            _validar_sin_nul_recursivo(item, campo)
+    elif isinstance(valor, (list, tuple)):
+        for item in valor:
+            _validar_sin_nul_recursivo(item, campo)
+    elif isinstance(valor, str) and "\x00" in valor:
+        raise ValidationError({campo: "El valor contiene caracteres inválidos."})
+
 
 # ── Catálogo de proveedores (seed, sin id_empresa) ───────────────────────────
+
 
 class ConectorProveedor(models.Model):
     """
     Tipo de integración soportada por el sistema (Odoo, SAP, etc.).
     Se puebla con fixtures; no es editable por los tenants.
     """
+
     ESTADO_CHOICES = [
         ("activo", "Activo"),
         ("beta", "Beta"),
@@ -43,7 +68,8 @@ class ConectorProveedor(models.Model):
 
     id_proveedor = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     codigo = models.CharField(
-        max_length=50, unique=True,
+        max_length=50,
+        unique=True,
         help_text="Identificador slug del proveedor: odoo, sap_b1, shopify, etc.",
     )
     nombre = models.CharField(max_length=100)
@@ -90,6 +116,7 @@ class ConectorProveedor(models.Model):
 
 # ── Instancia de conector por empresa ────────────────────────────────────────
 
+
 class ConectorInstancia(models.Model):
     """
     Conexión configurada entre una empresa y un sistema externo.
@@ -98,6 +125,7 @@ class ConectorInstancia(models.Model):
     El campo `configuracion` usa Django's encrypted fields si está disponible,
     de lo contrario se almacena como JSON (debe asegurarse TLS en BD).
     """
+
     ESTADO_CHOICES = [
         ("configurando", "Configurando"),
         ("activo", "Activo"),
@@ -153,7 +181,8 @@ class ConectorInstancia(models.Model):
         help_text="Entidades habilitadas para sync: ['contactos', 'productos', ...]",
     )
     version_detectada = models.CharField(
-        max_length=50, blank=True,
+        max_length=50,
+        blank=True,
         help_text="Versión del sistema externo detectada al hacer test de conexión.",
     )
     activo = models.BooleanField(default=True)
@@ -179,11 +208,13 @@ class ConectorInstancia(models.Model):
 
 # ── Mapa de entidades sincronizadas ──────────────────────────────────────────
 
+
 class EntidadSincronizada(models.Model):
     """
     Registro del mapeo entre un ID externo y un ID en Omni ERP.
     Permite sincronización incremental y detección de conflictos.
     """
+
     TIPO_CHOICES = [
         ("contactos", "Contactos / Socios"),
         ("productos", "Productos"),
@@ -192,6 +223,8 @@ class EntidadSincronizada(models.Model):
         ("facturas_venta", "Facturas de Venta"),
         ("facturas_compra", "Facturas de Compra"),
         ("pagos", "Pagos"),
+        ("gestiones_cobranza", "Gestiones de Cobranza"),
+        ("crm_lead", "Leads CRM"),
         ("inventario", "Movimientos de Inventario"),
         ("empleados", "Empleados"),
     ]
@@ -209,12 +242,15 @@ class EntidadSincronizada(models.Model):
     id_omni = models.CharField(max_length=255, null=True, blank=True)
     # nombre del modelo Django para facilitar lookup
     modelo_omni = models.CharField(
-        max_length=150, blank=True,
+        max_length=150,
+        blank=True,
         help_text="Ej: apps.ventas.models.Cliente",
     )
     ultimo_sync = models.DateTimeField(auto_now=True)
     # checksum del payload externo para detectar cambios sin re-comparar campo a campo
     checksum = models.CharField(max_length=64, blank=True)
+    # Metadatos por dirección (p. ej. hash_datos_push) para evitar ping-pong en sync bidireccional
+    metadatos = models.JSONField(default=dict, blank=True)
     activo = models.BooleanField(default=True)
 
     class Meta:
@@ -232,8 +268,10 @@ class EntidadSincronizada(models.Model):
 
 # ── Job de sincronización ────────────────────────────────────────────────────
 
+
 class JobSincronizacion(models.Model):
     """Representa una ejecución de sincronización (manual o automática)."""
+
     ESTADO_CHOICES = [
         ("pendiente", "Pendiente"),
         ("en_progreso", "En progreso"),
@@ -271,7 +309,8 @@ class JobSincronizacion(models.Model):
     iniciado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
-        null=True, blank=True,
+        null=True,
+        blank=True,
         related_name="jobs_sincronizacion",
         help_text="Null = iniciado por tarea automática (Celery)",
     )
@@ -300,8 +339,10 @@ class JobSincronizacion(models.Model):
 
 # ── Log detallado por registro ───────────────────────────────────────────────
 
+
 class LogDetalleSincronizacion(models.Model):
     """Log por registro individual dentro de un job de sincronización."""
+
     OPERACION_CHOICES = [
         ("crear", "Creado"),
         ("actualizar", "Actualizado"),
@@ -337,3 +378,120 @@ class LogDetalleSincronizacion(models.Model):
 
     def __str__(self):
         return f"{self.operacion}: {self.id_externo} → {self.id_omni}"
+
+
+# ── Cola transaccional Outbox multi-tenant (Omni Connect S7–S9) ──────────────
+
+
+class EventoOutbox(OmniBaseModel):
+    """Cola transaccional Outbox multi-tenant para despacho idempotente hacia conectores externos."""
+
+    class Estado(models.TextChoices):
+        PENDIENTE = "PENDIENTE", "Pendiente"
+        PROCESANDO = "PROCESANDO", "Procesando"
+        ENVIADO = "ENVIADO", "Enviado"
+        FALLIDO = "FALLIDO", "Fallido"
+        DLQ = "DLQ", "Dead Letter Queue"
+
+    id_evento = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey(
+        "core.Empresa",
+        on_delete=models.CASCADE,
+        related_name="eventos_outbox",
+    )
+    tipo_evento = models.CharField(max_length=80)
+    entidad_tipo = models.CharField(max_length=60)
+    entidad_id = models.UUIDField()
+    clave_idempotencia = models.CharField(max_length=120)
+    payload = models.JSONField(default=dict, blank=True)
+    estado = models.CharField(max_length=20, choices=Estado.choices, default=Estado.PENDIENTE)
+    intentos = models.PositiveSmallIntegerField(default=0)
+    max_intentos = models.PositiveSmallIntegerField(default=5)
+    proximo_intento_en = models.DateTimeField(default=timezone.now)
+    procesado_en = models.DateTimeField(null=True, blank=True)
+    ultimo_error = models.TextField(blank=True, default="")
+
+    class Meta:
+        db_table = "integration_hub_evento_outbox"
+        ordering = ["-fecha_creacion"]
+        verbose_name = "Evento Outbox"
+        verbose_name_plural = "Eventos Outbox"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["id_empresa", "clave_idempotencia"],
+                name="uq_integration_hub_outbox_empresa_clave",
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=["id_empresa", "estado", "proximo_intento_en"],
+                name="idx_outbox_emp_est_prox",
+            ),
+            models.Index(
+                fields=["estado", "proximo_intento_en"],
+                name="idx_outbox_est_prox",
+            ),
+            models.Index(
+                fields=["id_empresa", "entidad_tipo", "entidad_id"],
+                name="idx_outbox_emp_entidad",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.tipo_evento} [{self.estado}] ({self.entidad_tipo}:{self.entidad_id})"
+
+    def clean(self) -> None:
+        super().clean()
+        errores: dict[str, str] = {}
+
+        tipo_raw = "" if self.tipo_evento is None else str(self.tipo_evento)
+        if "\x00" in tipo_raw:
+            errores["tipo_evento"] = "tipo_evento contiene caracteres inválidos."
+        else:
+            tipo_limpio = tipo_raw.strip()
+            if not tipo_limpio or not _TIPO_EVENTO_OUTBOX_RE.fullmatch(tipo_limpio):
+                errores["tipo_evento"] = (
+                    "tipo_evento debe tener entre 2 y 80 caracteres (minúsculas, números, '.', '_' o '-')."
+                )
+            else:
+                self.tipo_evento = tipo_limpio
+
+        entidad_raw = "" if self.entidad_tipo is None else str(self.entidad_tipo)
+        if "\x00" in entidad_raw:
+            errores["entidad_tipo"] = "entidad_tipo contiene caracteres inválidos."
+        else:
+            entidad_limpia = entidad_raw.strip()
+            if not entidad_limpia:
+                errores["entidad_tipo"] = "entidad_tipo es obligatorio."
+            else:
+                self.entidad_tipo = entidad_limpia
+
+        clave_raw = "" if self.clave_idempotencia is None else str(self.clave_idempotencia)
+        if "\x00" in clave_raw:
+            errores["clave_idempotencia"] = "clave_idempotencia contiene caracteres inválidos."
+        else:
+            clave_limpia = clave_raw.strip()
+            if not clave_limpia:
+                errores["clave_idempotencia"] = "clave_idempotencia es obligatoria."
+            elif len(clave_limpia) > 120:
+                errores["clave_idempotencia"] = "clave_idempotencia no puede exceder 120 caracteres."
+            else:
+                self.clave_idempotencia = clave_limpia
+
+        error_raw = "" if self.ultimo_error is None else str(self.ultimo_error)
+        if "\x00" in error_raw:
+            errores["ultimo_error"] = "ultimo_error contiene caracteres inválidos."
+
+        if not isinstance(self.payload, dict):
+            errores["payload"] = "payload debe ser un objeto JSON."
+        else:
+            try:
+                _validar_sin_nul_recursivo(self.payload, "payload")
+            except ValidationError:
+                errores["payload"] = "payload contiene caracteres inválidos."
+
+        if self.max_intentos is None or int(self.max_intentos) < 1:
+            errores["max_intentos"] = "max_intentos debe ser mayor o igual a 1."
+
+        if errores:
+            raise ValidationError(errores)

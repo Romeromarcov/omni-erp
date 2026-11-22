@@ -149,9 +149,7 @@ def make_fake_execute(dataset=None):
     def execute(model, method, args, kwargs):
         calls.append((model, method, args, kwargs))
         # write methods nunca deben invocarse (solo lectura).
-        assert method in {"search_read", "read", "search_count"}, (
-            f"método de escritura prohibido: {model}.{method}"
-        )
+        assert method in {"search_read", "read", "search_count"}, f"método de escritura prohibido: {model}.{method}"
         return data.get((model, method), [] if method != "search_count" else 0)
 
     execute.calls = calls  # type: ignore[attr-defined]
@@ -195,9 +193,7 @@ def test_sync_completo_mapea_todo(empresa_a):
 
     # Precios: 2 productos distintos en la lista 5 → 2 filas.
     assert PrecioListaLubrikca.objects.filter(empresa=empresa_a).count() == 2
-    precio = PrecioListaLubrikca.objects.get(
-        empresa=empresa_a, producto="Aceite 20W50", lista="5"
-    )
+    precio = PrecioListaLubrikca.objects.get(empresa=empresa_a, producto="Aceite 20W50", lista="5")
     assert precio.precio == Decimal("5.5")
 
 

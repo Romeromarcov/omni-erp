@@ -20,7 +20,7 @@ sin que la condición de cierre se cumpla, el item bloquea el siguiente hito.
 | CTF-008  | Offline-first real (ADR-001)                     | 2026-10-01 | equipo-frontend        | ABIERTO  |
 | CTF-009  | Drift `es_superusuario_innova` vs `_omni`        | 2026-07-15 | equipo-frontend        | CERRADO  |
 | CTF-010  | Firma de código + CI de empaquetado de apps      | 2026-09-01 | equipo-frontend/devops | ABIERTO  |
-| CTF-011  | Push de cobranza a Odoo (outbound, Plan D D3)    | 2026-09-01 | equipo-integraciones   | ABIERTO  |
+| CTF-011  | Push de cobranza a Odoo (outbound, Plan D D3)    | 2026-09-01 | equipo-integraciones   | CERRADO (2026-11-20) |
 | CTF-012  | Rol de BD dedicado no-dueño (activación de RLS)  | 2026-08-01 | equipo-backend/devops  | EN CURSO |
 | CTF-013  | TEST-5 cambio-divisa y nómina (features bloqueadas) | 2026-08-15 | equipo-backend         | CERRADO  |
 | CTF-014  | Migrar `tests_api/` a estructura por capas `tests/` | 2026-09-30 | equipo-backend         | CERRADO  |

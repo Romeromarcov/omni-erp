@@ -1,18 +1,18 @@
 import React from 'react';
 import { Box, Typography, Card, CardContent, Divider } from '@mui/material';
 import type { Moneda } from './types';
-import { D, toFixedStr } from '../../lib/decimal';
+import { D, toFixedStr, type DecimalInput } from '../../lib/decimal';
 
 interface ResumenPagoProps {
-  monto: number;
-  totalPagadoConNotasBase: number;
-  saldoRestante: number;
-  toleranciaPositiva: number;
+  monto: DecimalInput;
+  totalPagadoConNotasBase: DecimalInput;
+  saldoRestante: DecimalInput;
+  toleranciaPositiva: DecimalInput;
   notasCreditoCount: number;
   monedaBase: Moneda | undefined;
   monedaPais: Moneda | undefined;
-  tasaBCV: number;
-  esDiferenciaAceptable: (d: number) => boolean;
+  tasaBCV: DecimalInput;
+  esDiferenciaAceptable: (d: DecimalInput) => boolean;
 }
 
 /**
@@ -24,7 +24,9 @@ const ResumenPago: React.FC<ResumenPagoProps> = ({
   monto, totalPagadoConNotasBase, saldoRestante, toleranciaPositiva,
   notasCreditoCount, monedaBase, monedaPais, tasaBCV, esDiferenciaAceptable,
 }) => {
-  const colorSaldo = esDiferenciaAceptable(saldoRestante) ? 'success.main' : 'error.main';
+  const saldoDec = D(saldoRestante);
+  const tolDec = D(toleranciaPositiva);
+  const colorSaldo = esDiferenciaAceptable(saldoDec) ? 'success.main' : 'error.main';
 
   return (
     <Card
@@ -45,7 +47,7 @@ const ResumenPago: React.FC<ResumenPagoProps> = ({
               Total Documento
             </Typography>
             <Typography variant="h6" sx={{ fontVariantNumeric: 'tabular-nums', fontWeight: 700, mt: 0.25 }}>
-              {monedaBase?.codigo_iso} {monto.toFixed(2)}
+              {monedaBase?.codigo_iso} {toFixedStr(monto)}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ fontVariantNumeric: 'tabular-nums' }}>
               {monedaPais?.codigo_iso} {toFixedStr(D(monto).times(D(tasaBCV)))}
@@ -58,7 +60,7 @@ const ResumenPago: React.FC<ResumenPagoProps> = ({
               Total Pagos{notasCreditoCount > 0 ? ` + ${notasCreditoCount} NC` : ''}
             </Typography>
             <Typography variant="h6" color={colorSaldo} sx={{ fontVariantNumeric: 'tabular-nums', fontWeight: 700, mt: 0.25 }}>
-              {monedaBase?.codigo_iso} {totalPagadoConNotasBase.toFixed(2)}
+              {monedaBase?.codigo_iso} {toFixedStr(totalPagadoConNotasBase)}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ fontVariantNumeric: 'tabular-nums' }}>
               {monedaPais?.codigo_iso} {toFixedStr(D(totalPagadoConNotasBase).times(D(tasaBCV)))}
@@ -74,24 +76,24 @@ const ResumenPago: React.FC<ResumenPagoProps> = ({
             Diferencia (Saldo)
           </Typography>
           <Typography variant="h6" color={colorSaldo} sx={{ fontVariantNumeric: 'tabular-nums', fontWeight: 700, mt: 0.25 }}>
-            {monedaBase?.codigo_iso} {saldoRestante.toFixed(2)}
+            {monedaBase?.codigo_iso} {toFixedStr(saldoDec)}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ fontVariantNumeric: 'tabular-nums' }}>
-            {monedaPais?.codigo_iso} {toFixedStr(D(saldoRestante).times(D(tasaBCV)))}
+            {monedaPais?.codigo_iso} {toFixedStr(saldoDec.times(D(tasaBCV)))}
           </Typography>
-          {saldoRestante < 0 && esDiferenciaAceptable(saldoRestante) && (
+          {saldoDec.lt(0) && esDiferenciaAceptable(saldoDec) && (
             <Typography variant="caption" color="success.main" sx={{ display: 'block', mt: 0.5 }}>
               Diferencia negativa aceptable
             </Typography>
           )}
-          {saldoRestante > toleranciaPositiva && (
+          {saldoDec.gt(tolDec) && (
             <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>
-              Diferencia positiva excesiva (&gt; {toleranciaPositiva.toFixed(2)})
+              Diferencia positiva excesiva (&gt; {toFixedStr(tolDec)})
             </Typography>
           )}
-          {saldoRestante >= 0 && saldoRestante <= toleranciaPositiva && (
+          {saldoDec.gte(0) && saldoDec.lte(tolDec) && (
             <Typography variant="caption" color="success.main" sx={{ display: 'block', mt: 0.5 }}>
-              Dentro de tolerancia positiva ({'≤'} {toleranciaPositiva.toFixed(2)})
+              Dentro de tolerancia positiva ({'≤'} {toFixedStr(tolDec)})
             </Typography>
           )}
         </Box>

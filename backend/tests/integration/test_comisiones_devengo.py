@@ -70,12 +70,8 @@ def categorias(db, empresa_a):
     from apps.inventario.models import CategoriaProducto
 
     return {
-        "ferreteria": CategoriaProducto.objects.create(
-            id_empresa=empresa_a, nombre_categoria="Ferretería"
-        ),
-        "electricidad": CategoriaProducto.objects.create(
-            id_empresa=empresa_a, nombre_categoria="Electricidad"
-        ),
+        "ferreteria": CategoriaProducto.objects.create(id_empresa=empresa_a, nombre_categoria="Ferretería"),
+        "electricidad": CategoriaProducto.objects.create(id_empresa=empresa_a, nombre_categoria="Electricidad"),
     }
 
 
@@ -83,9 +79,7 @@ def categorias(db, empresa_a):
 def productos(db, empresa_a, moneda_usd, categorias):
     from apps.inventario.models import Producto, UnidadMedida
 
-    unidad = UnidadMedida.objects.create(
-        id_empresa=empresa_a, nombre="Unidad", abreviatura="UN-COM", tipo="CANTIDAD"
-    )
+    unidad = UnidadMedida.objects.create(id_empresa=empresa_a, nombre="Unidad", abreviatura="UN-COM", tipo="CANTIDAD")
     martillo = Producto.objects.create(
         id_empresa=empresa_a,
         nombre_producto="Martillo",
@@ -131,9 +125,7 @@ def vendedor(db, empresa_a):
 @pytest.fixture
 def esquema_5(db, empresa_a, vendedor):
     """Esquema base 5% sin vigencia (siempre aplica)."""
-    return EsquemaComision.objects.create(
-        id_empresa=empresa_a, vendedor=vendedor, porcentaje_base=Decimal("5.0000")
-    )
+    return EsquemaComision.objects.create(id_empresa=empresa_a, vendedor=vendedor, porcentaje_base=Decimal("5.0000"))
 
 
 _SEQ = iter(range(1, 10_000))
@@ -240,13 +232,9 @@ def test_override_por_categoria_aplica_su_porcentaje(
     assert porcentajes[str(productos["cable"].id_producto)] == "5.0000"
 
 
-def test_redondeo_half_up_a_4_decimales(
-    empresa_a, cliente, almacen, productos, stock, user_a, vendedor, esquema_5
-):
+def test_redondeo_half_up_a_4_decimales(empresa_a, cliente, almacen, productos, stock, user_a, vendedor, esquema_5):
     """3.3333 × 10.00 = 33.3330 → 5% = 1.666650 → quantize(0.0001) = 1.6667 (HALF_UP)."""
-    nota = _crear_nota(
-        empresa_a, cliente, vendedor, [(productos["martillo"], Decimal("3.3333"), Decimal("10.00"))]
-    )
+    nota = _crear_nota(empresa_a, cliente, vendedor, [(productos["martillo"], Decimal("3.3333"), Decimal("10.00"))])
 
     comision = entregar_nota_venta(nota, almacen, user_a)["comision"]
 
@@ -254,9 +242,7 @@ def test_redondeo_half_up_a_4_decimales(
 
 
 def test_sin_vendedor_no_devenga(empresa_a, cliente, almacen, productos, stock, user_a, esquema_5):
-    nota = _crear_nota(
-        empresa_a, cliente, None, [(productos["martillo"], Decimal("1"), Decimal("10.00"))]
-    )
+    nota = _crear_nota(empresa_a, cliente, None, [(productos["martillo"], Decimal("1"), Decimal("10.00"))])
 
     resultado = entregar_nota_venta(nota, almacen, user_a)
 
@@ -266,9 +252,7 @@ def test_sin_vendedor_no_devenga(empresa_a, cliente, almacen, productos, stock, 
     assert nota.estado == "ENTREGADA"  # la venta procede igual
 
 
-def test_sin_esquema_vigente_no_devenga(
-    empresa_a, cliente, almacen, productos, stock, user_a, vendedor
-):
+def test_sin_esquema_vigente_no_devenga(empresa_a, cliente, almacen, productos, stock, user_a, vendedor):
     """Esquema con vigencia vencida ayer → no aplica hoy."""
     EsquemaComision.objects.create(
         id_empresa=empresa_a,
@@ -276,9 +260,7 @@ def test_sin_esquema_vigente_no_devenga(
         porcentaje_base=Decimal("5.0000"),
         vigente_hasta=timezone.localdate() - timedelta(days=1),
     )
-    nota = _crear_nota(
-        empresa_a, cliente, vendedor, [(productos["martillo"], Decimal("1"), Decimal("10.00"))]
-    )
+    nota = _crear_nota(empresa_a, cliente, vendedor, [(productos["martillo"], Decimal("1"), Decimal("10.00"))])
 
     resultado = entregar_nota_venta(nota, almacen, user_a)
 
@@ -286,29 +268,19 @@ def test_sin_esquema_vigente_no_devenga(
     assert ComisionVenta.objects.count() == 0
 
 
-def test_esquema_inactivo_no_devenga(
-    empresa_a, cliente, almacen, productos, stock, user_a, vendedor
-):
+def test_esquema_inactivo_no_devenga(empresa_a, cliente, almacen, productos, stock, user_a, vendedor):
     EsquemaComision.objects.create(
         id_empresa=empresa_a, vendedor=vendedor, porcentaje_base=Decimal("5.0000"), activo=False
     )
-    nota = _crear_nota(
-        empresa_a, cliente, vendedor, [(productos["martillo"], Decimal("1"), Decimal("10.00"))]
-    )
+    nota = _crear_nota(empresa_a, cliente, vendedor, [(productos["martillo"], Decimal("1"), Decimal("10.00"))])
 
     assert entregar_nota_venta(nota, almacen, user_a)["comision"] is None
 
 
-def test_esquema_de_otra_empresa_no_aplica(
-    empresa_a, empresa_b, cliente, almacen, productos, stock, user_a, vendedor
-):
+def test_esquema_de_otra_empresa_no_aplica(empresa_a, empresa_b, cliente, almacen, productos, stock, user_a, vendedor):
     """R-CODE-1: un esquema del mismo vendedor en la empresa B no comisiona ventas de A."""
-    EsquemaComision.objects.create(
-        id_empresa=empresa_b, vendedor=vendedor, porcentaje_base=Decimal("50.0000")
-    )
-    nota = _crear_nota(
-        empresa_a, cliente, vendedor, [(productos["martillo"], Decimal("1"), Decimal("10.00"))]
-    )
+    EsquemaComision.objects.create(id_empresa=empresa_b, vendedor=vendedor, porcentaje_base=Decimal("50.0000"))
+    nota = _crear_nota(empresa_a, cliente, vendedor, [(productos["martillo"], Decimal("1"), Decimal("10.00"))])
 
     assert entregar_nota_venta(nota, almacen, user_a)["comision"] is None
 
@@ -329,9 +301,7 @@ def test_gana_el_esquema_con_vigente_desde_mas_reciente(
         porcentaje_base=Decimal("7.0000"),
         vigente_desde=timezone.localdate() - timedelta(days=10),
     )
-    nota = _crear_nota(
-        empresa_a, cliente, vendedor, [(productos["martillo"], Decimal("1"), Decimal("100.00"))]
-    )
+    nota = _crear_nota(empresa_a, cliente, vendedor, [(productos["martillo"], Decimal("1"), Decimal("100.00"))])
 
     comision = entregar_nota_venta(nota, almacen, user_a)["comision"]
 
@@ -339,13 +309,9 @@ def test_gana_el_esquema_con_vigente_desde_mas_reciente(
     assert comision.monto == Decimal("7.0000")
 
 
-def test_devengo_idempotente(
-    empresa_a, cliente, almacen, productos, stock, user_a, vendedor, esquema_5
-):
+def test_devengo_idempotente(empresa_a, cliente, almacen, productos, stock, user_a, vendedor, esquema_5):
     """Una segunda invocación devuelve la MISMA comisión (OneToOne), sin duplicar."""
-    nota = _crear_nota(
-        empresa_a, cliente, vendedor, [(productos["martillo"], Decimal("1"), Decimal("10.00"))]
-    )
+    nota = _crear_nota(empresa_a, cliente, vendedor, [(productos["martillo"], Decimal("1"), Decimal("10.00"))])
     primera = entregar_nota_venta(nota, almacen, user_a)["comision"]
 
     segunda = devengar_comision_venta(nota)
@@ -358,19 +324,13 @@ def test_devengo_idempotente(
 
 
 def _nota_entregada_con_comision(empresa, cliente, almacen, productos, usuario, vendedor):
-    nota = _crear_nota(
-        empresa, cliente, vendedor, [(productos["martillo"], Decimal("2"), Decimal("50.00"))]
-    )
+    nota = _crear_nota(empresa, cliente, vendedor, [(productos["martillo"], Decimal("2"), Decimal("50.00"))])
     comision = entregar_nota_venta(nota, almacen, usuario)["comision"]
     return nota, comision
 
 
-def test_anular_nota_anula_comision(
-    empresa_a, cliente, almacen, productos, stock, user_a, vendedor, esquema_5
-):
-    nota, comision = _nota_entregada_con_comision(
-        empresa_a, cliente, almacen, productos, user_a, vendedor
-    )
+def test_anular_nota_anula_comision(empresa_a, cliente, almacen, productos, stock, user_a, vendedor, esquema_5):
+    nota, comision = _nota_entregada_con_comision(empresa_a, cliente, almacen, productos, user_a, vendedor)
 
     anulada = anular_comision_de_nota_venta(nota)
 
@@ -379,12 +339,8 @@ def test_anular_nota_anula_comision(
     assert comision.estado == "ANULADA"
 
 
-def test_anular_sin_comision_es_noop(
-    empresa_a, cliente, almacen, productos, stock, user_a, esquema_5
-):
-    nota = _crear_nota(
-        empresa_a, cliente, None, [(productos["martillo"], Decimal("1"), Decimal("10.00"))]
-    )
+def test_anular_sin_comision_es_noop(empresa_a, cliente, almacen, productos, stock, user_a, esquema_5):
+    nota = _crear_nota(empresa_a, cliente, None, [(productos["martillo"], Decimal("1"), Decimal("10.00"))])
     entregar_nota_venta(nota, almacen, user_a)
 
     assert anular_comision_de_nota_venta(nota) is None
@@ -393,9 +349,7 @@ def test_anular_sin_comision_es_noop(
 def test_anular_comision_liquidada_falla_controlado(
     empresa_a, cliente, almacen, productos, stock, user_a, vendedor, esquema_5
 ):
-    nota, comision = _nota_entregada_con_comision(
-        empresa_a, cliente, almacen, productos, user_a, vendedor
-    )
+    nota, comision = _nota_entregada_con_comision(empresa_a, cliente, almacen, productos, user_a, vendedor)
     comision.estado = "LIQUIDADA"
     comision.fecha_liquidacion = timezone.localdate()
     comision.save(update_fields=["estado", "fecha_liquidacion"])
@@ -442,12 +396,8 @@ def test_liquidar_comisiones_solo_periodo_y_devengadas(
     empresa_a, cliente, almacen, productos, stock, user_a, vendedor, esquema_5
 ):
     hoy = timezone.localdate()
-    en_rango_1 = _crear_nota(
-        empresa_a, cliente, vendedor, [(productos["martillo"], Decimal("1"), Decimal("100.00"))]
-    )
-    en_rango_2 = _crear_nota(
-        empresa_a, cliente, vendedor, [(productos["cable"], Decimal("2"), Decimal("30.00"))]
-    )
+    en_rango_1 = _crear_nota(empresa_a, cliente, vendedor, [(productos["martillo"], Decimal("1"), Decimal("100.00"))])
+    en_rango_2 = _crear_nota(empresa_a, cliente, vendedor, [(productos["cable"], Decimal("2"), Decimal("30.00"))])
     fuera_de_rango = _crear_nota(
         empresa_a,
         cliente,
@@ -457,9 +407,7 @@ def test_liquidar_comisiones_solo_periodo_y_devengadas(
     )
     for nota in (en_rango_1, en_rango_2, fuera_de_rango):
         entregar_nota_venta(nota, almacen, user_a)
-    anulada = _crear_nota(
-        empresa_a, cliente, vendedor, [(productos["cable"], Decimal("1"), Decimal("10.00"))]
-    )
+    anulada = _crear_nota(empresa_a, cliente, vendedor, [(productos["cable"], Decimal("1"), Decimal("10.00"))])
     entregar_nota_venta(anulada, almacen, user_a)
     anular_comision_de_nota_venta(anulada)
 

@@ -26,6 +26,9 @@ Se crea un ADR cuando se toma una decisión que:
 | 010 | Extensibilidad: escalera de customización L0–L4 y marketplace de plugins | 2026-06-12 | Aceptado |
 | 011 | Servicios hermanos: fábrica de software y fábrica de marketing/contenido | 2026-06-12 | Aceptado |
 | 012 | Modelo transaccional de venta POS offline (unidad atómica idempotente) | 2026-06-19 | Propuesto |
+| 013 | Subproyecto CxC Lubrikca como app dedicada y aislada dentro de Omni | 2026-06-27 | Aceptado |
+| 014 | Omni Connect (tarjetas NFC + CRM ligero) como módulo dentro de Omni | 2026-11-13 | Aceptado |
+| 015 | Omni Tareas — Ejecución operativa y proyectos nativos (reemplazo de Asana) | 2026-11-16 | Aceptado |
 
 ## Cómo se escriben
 

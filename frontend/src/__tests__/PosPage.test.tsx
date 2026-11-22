@@ -6,10 +6,11 @@
  *  - error del backend visible (crear venta y registrar pagos);
  *  - sesión de caja requerida (ofrece abrirla y llama abrir-sesion).
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { act, render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { clearOutbox, listOutboxItems, listPending } from '../lib/salesOutbox';
 
 const navigateMock = vi.fn();
 vi.mock('react-router-dom', async () => {
@@ -45,18 +46,14 @@ vi.mock('../services/productosService', () => ({
   ]),
 }));
 
+const fetchMetodosMock = vi.fn();
 vi.mock('../services/metodosPagoEmpresaActiva', () => ({
-  fetchMetodosPagoEmpresaActivos: vi.fn().mockResolvedValue([
-    { id: 'met-efe', nombre_metodo: 'Efectivo', monedas: [] },
-    { id: 'met-pm', nombre_metodo: 'Pago Móvil', monedas: ['mon-ves'] },
-  ]),
+  fetchMetodosPagoEmpresaActivos: (...a: unknown[]) => fetchMetodosMock(...a),
 }));
 
+const fetchMonedasMock = vi.fn();
 vi.mock('../services/monedasEmpresaActiva', () => ({
-  fetchMonedasEmpresaActivas: vi.fn().mockResolvedValue([
-    { id_moneda: 'mon-ves', nombre: 'Bolívar', codigo_iso: 'VES' },
-    { id_moneda: 'mon-usd', nombre: 'Dólar', codigo_iso: 'USD' },
-  ]),
+  fetchMonedasEmpresaActivas: (...a: unknown[]) => fetchMonedasMock(...a),
 }));
 
 vi.mock('../services/tasaBCV', () => ({
@@ -94,8 +91,8 @@ vi.mock('../services/cajasFisicasService', () => ({
 
 import PosPage from '../pages/Ventas/POS/PosPage';
 
-function renderPos() {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+function renderPos(queryClientArg?: QueryClient) {
+  const queryClient = queryClientArg ?? new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={['/pos']}>
@@ -105,10 +102,20 @@ function renderPos() {
   );
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks();
   localStorage.clear();
   localStorage.setItem('id_empresa', 'emp-1');
+  Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+  await clearOutbox();
+  fetchMetodosMock.mockResolvedValue([
+    { id: 'met-efe', nombre_metodo: 'Efectivo', monedas: [] },
+    { id: 'met-pm', nombre_metodo: 'Pago Móvil', monedas: ['mon-ves'] },
+  ]);
+  fetchMonedasMock.mockResolvedValue([
+    { id_moneda: 'mon-ves', nombre: 'Bolívar', codigo_iso: 'VES' },
+    { id_moneda: 'mon-usd', nombre: 'Dólar', codigo_iso: 'USD' },
+  ]);
   getSesionActivaMock.mockResolvedValue(SESION);
   createNotaMock.mockResolvedValue({
     id_nota_venta: 'nv-1',
@@ -120,6 +127,10 @@ beforeEach(() => {
   createPagoDocumentoMock.mockResolvedValue({});
   getCajasFisicasMock.mockResolvedValue({ results: [{ id_caja_fisica: 'cf-1', nombre: 'Caja Mostrador', sucursal_nombre: 'Principal' }], count: 1 });
   abrirSesionMock.mockResolvedValue({ mensaje: 'ok', sesion: { id_sesion: 'ses-1', estado: 'ABIERTA', fecha_apertura: '', usuario: 'cajero' } });
+});
+
+afterEach(() => {
+  Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
 });
 
 async function agregarHarinaPorScan(veces = 1) {
@@ -195,7 +206,11 @@ describe('PosPage', () => {
     expect(optsNota.headers['Idempotency-Key']).toBeTruthy();
     expect(payload.id_caja).toBe('caja-1');
     expect(payload.id_sucursal).toBe('suc-1');
-    expect((payload.detalles as Array<{ subtotal: number }>)[0].subtotal).toBe(3.3);
+    expect((payload.detalles as Array<Record<string, unknown>>)[0]).toMatchObject({
+      cantidad: '3',
+      precio_unitario: '1.1',
+      subtotal: '3.30',
+    });
 
     expect((await screen.findByTestId('pos-total-cobrar')).textContent).toContain('3.83 VES');
     expect(screen.getByTestId('pos-iva-cobrar').textContent).toContain('0.53');
@@ -225,8 +240,8 @@ describe('PosPage', () => {
     expect(keys[0]).not.toBe(keys[1]);
     expect(llamadas[0][0]).toBe('NOTA_VENTA');
     expect(llamadas[0][1]).toBe('nv-1');
-    expect(llamadas[0][2]).toMatchObject({ monto: 2, id_moneda: 'mon-ves', tasa: 1, id_caja_fisica: 'caja-1' });
-    expect(llamadas[1][2]).toMatchObject({ monto: 0.05, id_moneda: 'mon-usd', tasa: 40 });
+    expect(llamadas[0][2]).toMatchObject({ monto: '2', id_moneda: 'mon-ves', tasa: '1', id_caja_fisica: 'caja-1' });
+    expect(llamadas[1][2]).toMatchObject({ monto: '0.05', id_moneda: 'mon-usd', tasa: '40' });
 
     // Recibo 80mm con total del backend y vuelto.
     const recibo = await screen.findByTestId('pos-recibo');
@@ -306,5 +321,272 @@ describe('PosPage', () => {
     expect(screen.getByText(/Selecciona método, moneda y un monto/)).toBeInTheDocument();
     // Confirmar sigue deshabilitado sin pagos que cubran el total.
     expect(screen.getByTestId('pos-confirmar-cobro')).toBeDisabled();
+  });
+
+  it('encola la venta en outbox al caer la red, muestra recibo provisional POR CONFIRMAR y limpia para la siguiente venta', async () => {
+    localStorage.setItem('pos_cliente_mostrador_emp-1', 'cli-cf');
+    createNotaMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+
+    renderPos();
+    await screen.findByText('Harina PAN');
+    await agregarHarinaPorScan(2); // subtotal 2.20
+
+    fireEvent.click(screen.getByTestId('pos-cobrar'));
+    expect(await screen.findByTestId('pos-pago-modo-offline')).toBeInTheDocument();
+    expect(screen.getByTestId('pos-total-cobrar').textContent).toContain('2.20 VES');
+
+    fireEvent.change(screen.getByTestId('pos-pago-metodo'), { target: { value: 'met-efe' } });
+    fireEvent.change(screen.getByTestId('pos-pago-moneda'), { target: { value: 'mon-ves' } });
+    fireEvent.change(screen.getByTestId('pos-pago-monto'), { target: { value: '2.20' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Agregar pago' }));
+
+    // Al confirmar cobro sigue sin red → POST /sync/push/ventas/ falla con TypeError → encola en outbox.
+    createNotaMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    fireEvent.click(screen.getByTestId('pos-confirmar-cobro'));
+
+    const recibo = await screen.findByTestId('pos-recibo');
+    expect(within(recibo).getByTestId('pos-recibo-provisional').textContent).toContain('POR CONFIRMAR (OFFLINE)');
+    expect(within(recibo).getByTestId('pos-recibo-numero').textContent).toMatch(/Folio provisional N° POS-/);
+
+    const pendientes = await listPending();
+    expect(pendientes).toHaveLength(1);
+    expect(pendientes[0].endpoint).toBe('/sync/push/ventas/');
+    expect(pendientes[0].payload).toMatchObject({
+      client_uuid: pendientes[0].idempotencyKey,
+      id_sucursal: 'suc-1',
+      id_caja: 'caja-1',
+      id_cliente: 'cli-cf',
+    });
+
+    // Nueva venta deja el POS limpio y muestra la cola en la barra superior.
+    fireEvent.click(screen.getByTestId('pos-nueva-venta'));
+    expect(screen.getByTestId('pos-subtotal').textContent).toContain('0.00');
+    expect(screen.getByTestId('pos-cola-offline-btn').textContent).toContain('1 por confirmar / 0 por revisar');
+  });
+
+  it('sin conexión inicial: cobra con cliente cacheado y al reconectar drena y reconcilia folio servidor', async () => {
+    localStorage.setItem('pos_cliente_mostrador_emp-1', 'cli-cf');
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+
+    renderPos();
+    await screen.findByText('Harina PAN');
+    expect(screen.getByTestId('pos-offline-alerta')).toBeInTheDocument();
+
+    await agregarHarinaPorScan(2); // 2.20 VES
+    fireEvent.click(screen.getByTestId('pos-cobrar'));
+    expect(await screen.findByTestId('pos-pago-modo-offline')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByTestId('pos-pago-metodo'), { target: { value: 'met-efe' } });
+    fireEvent.change(screen.getByTestId('pos-pago-moneda'), { target: { value: 'mon-ves' } });
+    fireEvent.change(screen.getByTestId('pos-pago-monto'), { target: { value: '2.20' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Agregar pago' }));
+    fireEvent.click(screen.getByTestId('pos-confirmar-cobro'));
+
+    await screen.findByTestId('pos-recibo-provisional');
+    fireEvent.click(screen.getByTestId('pos-nueva-venta'));
+    expect(await listPending()).toHaveLength(1);
+
+    // Reconecta: useOutboxFlush envía el sobre a /sync/push/ventas/ y reconcilia.
+    createNotaMock.mockResolvedValueOnce({
+      id_nota_venta: 'nv-srv-77',
+      numero_nota: 'POS-SRV-77',
+      estado: 'ENTREGADA',
+      total: '2.2000',
+    });
+    await act(async () => {
+      Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+      window.dispatchEvent(new Event('online'));
+    });
+
+    await waitFor(() => expect(screen.getByTestId('pos-cola-alerta-sync').textContent).toContain('POS-SRV-77'));
+    expect(await listPending()).toHaveLength(0);
+    const items = await listOutboxItems();
+    expect(items[0]).toMatchObject({
+      estado: 'SINCRONIZADA',
+      idNotaVenta: 'nv-srv-77',
+      numeroNota: 'POS-SRV-77',
+    });
+
+    // Abrir el panel muestra el mapeo folio provisional -> número definitivo.
+    fireEvent.click(screen.getByTestId('pos-cola-offline-btn'));
+    const panel = await screen.findByTestId('pos-cola-panel');
+    expect(panel.textContent).toContain('POS-SRV-77');
+    expect(panel.textContent).toContain('nv-srv-77');
+  });
+
+  it('422 REQUIERE_REVISION al reconectar marca la venta visible sin bucle y permite Descartar', async () => {
+    localStorage.setItem('pos_cliente_mostrador_emp-1', 'cli-cf');
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+
+    renderPos();
+    await screen.findByText('Harina PAN');
+    await agregarHarinaPorScan(1);
+    fireEvent.click(screen.getByTestId('pos-cobrar'));
+    await screen.findByTestId('pos-pago-modo-offline');
+
+    fireEvent.change(screen.getByTestId('pos-pago-metodo'), { target: { value: 'met-efe' } });
+    fireEvent.change(screen.getByTestId('pos-pago-moneda'), { target: { value: 'mon-ves' } });
+    fireEvent.change(screen.getByTestId('pos-pago-monto'), { target: { value: '1.10' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Agregar pago' }));
+    fireEvent.click(screen.getByTestId('pos-confirmar-cobro'));
+    await screen.findByTestId('pos-recibo-provisional');
+    fireEvent.click(screen.getByTestId('pos-nueva-venta'));
+
+    const err422 = new Error(
+      JSON.stringify({ error: 'Stock insuficiente en almacén.', codigo: 'REQUIERE_REVISION' }),
+    ) as Error & { status: number };
+    err422.status = 422;
+    createNotaMock.mockRejectedValueOnce(err422);
+
+    await act(async () => {
+      Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+      window.dispatchEvent(new Event('online'));
+    });
+
+    await waitFor(() =>
+      expect(screen.getByTestId('pos-cola-offline-btn').textContent).toContain('0 por confirmar / 1 por revisar'),
+    );
+    expect(screen.getByTestId('pos-cola-alerta-revision')).toBeInTheDocument();
+    expect(createNotaMock).toHaveBeenCalledTimes(1);
+
+    // Abrir panel, verificar motivo y descartar.
+    fireEvent.click(screen.getByTestId('pos-cola-offline-btn'));
+    const items = await listOutboxItems();
+    const key = items[0].idempotencyKey;
+    expect(await screen.findByTestId(`pos-cola-revision-${key}`)).toHaveTextContent('Stock insuficiente en almacén.');
+
+    fireEvent.click(screen.getByTestId(`pos-cola-descartar-${key}`));
+    await waitFor(async () => expect(await listOutboxItems()).toHaveLength(0));
+  });
+
+  it('permite Reintentar una venta en REQUIERE_REVISION y Limpiar historial sincronizado', async () => {
+    localStorage.setItem('pos_cliente_mostrador_emp-1', 'cli-cf');
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+
+    renderPos();
+    await screen.findByText('Harina PAN');
+    await agregarHarinaPorScan(1);
+    fireEvent.click(screen.getByTestId('pos-cobrar'));
+    await screen.findByTestId('pos-pago-modo-offline');
+
+    fireEvent.change(screen.getByTestId('pos-pago-metodo'), { target: { value: 'met-efe' } });
+    fireEvent.change(screen.getByTestId('pos-pago-moneda'), { target: { value: 'mon-ves' } });
+    fireEvent.change(screen.getByTestId('pos-pago-monto'), { target: { value: '1.10' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Agregar pago' }));
+    fireEvent.click(screen.getByTestId('pos-confirmar-cobro'));
+    await screen.findByTestId('pos-recibo-provisional');
+    fireEvent.click(screen.getByTestId('pos-nueva-venta'));
+
+    const err422 = new Error(
+      JSON.stringify({ error: 'Stock insuficiente', codigo: 'REQUIERE_REVISION' }),
+    ) as Error & { status: number };
+    err422.status = 422;
+    createNotaMock.mockRejectedValueOnce(err422).mockResolvedValueOnce({
+      id_nota_venta: 'nv-reintento',
+      numero_nota: 'POS-REINTENTO-1',
+      alerta_stock_negativo: true,
+    });
+
+    await act(async () => {
+      Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+      window.dispatchEvent(new Event('online'));
+    });
+
+    await waitFor(() =>
+      expect(screen.getByTestId('pos-cola-offline-btn').textContent).toContain('0 por confirmar / 1 por revisar'),
+    );
+
+    fireEvent.click(screen.getByTestId('pos-cola-offline-btn'));
+    const items = await listOutboxItems();
+    const key = items[0].idempotencyKey;
+    fireEvent.click(await screen.findByTestId(`pos-cola-reintentar-${key}`));
+
+    await waitFor(() =>
+      expect(screen.getByTestId('pos-cola-alerta-sync').textContent).toContain('stock negativo permitido'),
+    );
+    expect(await screen.findByTestId(`pos-cola-sincronizada-${key}`)).toHaveTextContent('POS-REINTENTO-1');
+
+    fireEvent.click(screen.getByTestId('pos-cola-limpiar-historial'));
+    await waitFor(async () => expect(await listOutboxItems()).toHaveLength(0));
+  });
+
+  it('sin conexión y sin cliente de mostrador cacheado muestra aviso accionable claro', async () => {
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    renderPos();
+    await screen.findByText('Harina PAN');
+    await agregarHarinaPorScan(1);
+
+    fireEvent.click(screen.getByTestId('pos-cobrar'));
+    expect((await screen.findByTestId('pos-error')).textContent).toMatch(/cliente de mostrador en caché local/i);
+    expect(screen.queryByTestId('pos-total-cobrar')).not.toBeInTheDocument();
+  });
+
+  it('usa UUIDs reales de MetodoPagoEmpresaActivaSerializer y MonedaEmpresaActivaSerializer en online y offline y omite almacenes inactivos', async () => {
+    fetchMetodosMock.mockResolvedValue([
+      { id: 'act-met-1', metodo_pago: 'real-met-efe', nombre: 'Efectivo Real', activa: true },
+    ]);
+    fetchMonedasMock.mockResolvedValue([
+      { id: 'act-mon-usd', moneda: 'real-mon-usd', moneda_codigo_iso: 'USD', moneda_nombre: 'Dólar', activa: true, es_pais: false },
+      { id: 'act-mon-ves', moneda: 'real-mon-ves', moneda_codigo_iso: 'VES', moneda_nombre: 'Bolívar', activa: true, es_pais: true },
+    ]);
+
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    qc.setQueryData(['pos', 'almacenes'], [
+      { id_almacen: 'alm-inact', id_empresa: 'emp-1', nombre_almacen: 'Inactivo', activo: false },
+    ]);
+    localStorage.setItem('pos_cliente_mostrador_emp-1', 'cli-cf');
+
+    renderPos(qc);
+    await screen.findByText('Harina PAN');
+    expect(screen.getByTestId('pos-subtotal').textContent).toContain('VES');
+
+    // Cobro online: valida que createPagoDocumento recibe metodo_pago y moneda reales (no los `id` de activación).
+    await agregarHarinaPorScan(1);
+    fireEvent.click(screen.getByTestId('pos-cobrar'));
+    await screen.findByTestId('pos-total-cobrar');
+
+    fireEvent.change(screen.getByTestId('pos-pago-metodo'), { target: { value: 'real-met-efe' } });
+    fireEvent.change(screen.getByTestId('pos-pago-moneda'), { target: { value: 'real-mon-ves' } });
+    fireEvent.change(screen.getByTestId('pos-pago-monto'), { target: { value: '3.83' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Agregar pago' }));
+    fireEvent.click(screen.getByTestId('pos-confirmar-cobro'));
+
+    await waitFor(() => expect(createPagoDocumentoMock).toHaveBeenCalledTimes(1));
+    expect(createPagoDocumentoMock.mock.calls[0][2]).toMatchObject({
+      id_metodo_pago: 'real-met-efe',
+      id_moneda: 'real-mon-ves',
+      tasa: '1',
+    });
+
+    await screen.findByTestId('pos-recibo-numero');
+    fireEvent.click(screen.getByTestId('pos-nueva-venta'));
+
+    // Ahora sin red: encola el sobre con UUIDs reales y SIN enviar id_almacen inactivo.
+    await act(async () => {
+      Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+      window.dispatchEvent(new Event('offline'));
+    });
+
+    await agregarHarinaPorScan(1); // 1.10 VES
+    fireEvent.click(screen.getByTestId('pos-cobrar'));
+    await screen.findByTestId('pos-pago-modo-offline');
+
+    fireEvent.change(screen.getByTestId('pos-pago-metodo'), { target: { value: 'real-met-efe' } });
+    fireEvent.change(screen.getByTestId('pos-pago-moneda'), { target: { value: 'real-mon-ves' } });
+    fireEvent.change(screen.getByTestId('pos-pago-monto'), { target: { value: '1.10' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Agregar pago' }));
+    fireEvent.click(screen.getByTestId('pos-confirmar-cobro'));
+
+    await screen.findByTestId('pos-recibo-provisional');
+    const pendientes = await listPending();
+    expect(pendientes).toHaveLength(1);
+    expect(pendientes[0].payload.id_almacen).toBeUndefined();
+    expect(pendientes[0].payload.pagos).toEqual([
+      expect.objectContaining({
+        id_metodo_pago: 'real-met-efe',
+        id_moneda: 'real-mon-ves',
+        tasa: '1',
+      }),
+    ]);
   });
 });

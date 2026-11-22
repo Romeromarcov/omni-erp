@@ -19,6 +19,8 @@ export interface CuentaPorPagar {
   id_cxp: string;
   id_empresa: string;
   id_proveedor: string;
+  proveedor_nombre?: string;
+  contacto_id?: string | null;
   id_factura_compra: string | null;
   referencia_externa?: string | null;
   tipo_operacion?: string | null;

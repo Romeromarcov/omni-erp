@@ -30,15 +30,11 @@ class DBPriceResolver(PriceResolver):
         else:
             self._precios = {
                 (row.producto, row.lista): row.precio
-                for row in PrecioListaLubrikca.objects.filter(
-                    empresa=empresa, deleted_at__isnull=True
-                )
+                for row in PrecioListaLubrikca.objects.filter(empresa=empresa, deleted_at__isnull=True)
             }
 
     def precio(self, producto: str, lista: str) -> Decimal:
         try:
             return self._precios[(producto, lista)]
         except KeyError as exc:
-            raise KeyError(
-                f"Sin precio para producto={producto!r} en lista={lista!r}"
-            ) from exc
+            raise KeyError(f"Sin precio para producto={producto!r} en lista={lista!r}") from exc

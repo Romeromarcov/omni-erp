@@ -1,5 +1,9 @@
+import uuid
+from contextvars import ContextVar
+
 from rest_framework import filters, permissions, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
@@ -14,6 +18,32 @@ from .serializers import (
     SucursalSerializer,
     UsuariosSerializer,
 )
+
+
+class NulSafeFilterMixin:
+    """Rechaza bytes NUL en query params (``?search=``, ``?ordering=``, etc.) con HTTP 400."""
+
+    def filter_queryset(self, queryset):
+        request = getattr(self, "request", None)
+        if request is not None:
+            for key, values in request.query_params.lists():
+                if "\x00" in str(key):
+                    raise ValidationError({"error": "Parámetro de consulta inválido."})
+                for val in values:
+                    if isinstance(val, str) and "\x00" in val:
+                        raise ValidationError({key: "Parámetro de consulta inválido."})
+        return super().filter_queryset(queryset)
+
+
+def validar_uuid_param(valor: str, campo: str) -> str:
+    """Valida que un query param sea un UUID válido (sin NUL); si no, lanza ValidationError (400)."""
+    if "\x00" in str(valor):
+        raise ValidationError({campo: "Parámetro inválido."})
+    limpio = str(valor).strip()
+    try:
+        return str(uuid.UUID(limpio))
+    except (ValueError, TypeError) as exc:
+        raise ValidationError({campo: f"'{valor}' no es un UUID válido."}) from exc
 
 
 class BaseModelViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
@@ -121,9 +151,7 @@ class SoftDeleteModelMixin:
         """
         # Obtiene el queryset sin filtro de activo (incluye inactivos)
         queryset = self.filter_queryset(
-            self.get_queryset().model.objects.all()
-            if hasattr(self.get_queryset(), "model")
-            else self.get_queryset()
+            self.get_queryset().model.objects.all() if hasattr(self.get_queryset(), "model") else self.get_queryset()
         )
         # Si el ViewSet tiene get_queryset con filtros de empresa, los aplicamos
         # usando el queryset base del modelo pero con los filtros de empresa del ViewSet
@@ -150,7 +178,6 @@ class SoftDeleteModelMixin:
             # No está en activos — buscar en inactivos con los mismos filtros de empresa.
             # Usamos una copia mutable del GET dict para no mutar el QueryDict original
             # (que es inmutable y causaría AttributeError en producción).
-            from django.http import QueryDict  # noqa: PLC0415
 
             original_get = self.request._request.GET
             mutable_get = original_get.copy()  # copy() retorna un QueryDict mutable
@@ -214,28 +241,114 @@ class SoftDeleteModelMixin:
         return Response(serializer.data)
 
 
-# --- Visibilidad recursiva ---
+# --- Cache por ciclo de request + distribuido para get_empresas_visible ---
+_empresas_visible_cache: ContextVar[dict | None] = ContextVar("omni_empresas_visible_cache", default=None)
+
+CACHE_NS_EMPRESA_TREE = "core.empresa_tree"
+CACHE_NS_USER_EMPRESAS = "core.user_empresas"
+
+
+def iniciar_cache_empresas_visible():
+    """Activa la memoización de ``get_empresas_visible`` durante un request."""
+    return _empresas_visible_cache.set({})
+
+
+def limpiar_cache_empresas_visible(token) -> None:
+    """Restaura el estado previo del ``ContextVar`` al finalizar el request."""
+    _empresas_visible_cache.reset(token)
+
+
+def invalidar_cache_empresas_visible(user_pk=None, *, invalidate_tree: bool = False) -> None:
+    """Invalida la memoización activa y la versión distribuida en ``CACHES``."""
+    from .cache_utils import GLOBAL_TENANT_KEY, bump_namespace_version
+
+    l1_cache = _empresas_visible_cache.get()
+    if l1_cache is not None:
+        l1_cache.clear()
+
+    if invalidate_tree or user_pk is None:
+        bump_namespace_version(CACHE_NS_EMPRESA_TREE, GLOBAL_TENANT_KEY)
+    if user_pk is not None:
+        bump_namespace_version(CACHE_NS_USER_EMPRESAS, f"user:{user_pk}")
+
+
+def _puede_usar_cache_distribuida_empresas() -> bool:
+    """Con RLS activo solo usa caché L2 bajo ``rls_bypass`` para evitar entradas parciales."""
+    from django.conf import settings
+
+    if not getattr(settings, "RLS_ENABLED", False):
+        return True
+    from . import rls
+
+    bypass, _ = rls._get_current_context()
+    return bypass == "on"
+
+
+# --- Visibilidad recursiva (BFS por niveles, O(profundidad) queries) ---
+def get_all_subsidiarias_ids(raiz_ids) -> set[uuid.UUID]:
+    """Retorna los UUIDs de todas las subsidiarias descendientes vía BFS por niveles."""
+    visitados: set[uuid.UUID] = set(raiz_ids)
+    frontera: set[uuid.UUID] = set(raiz_ids)
+    subsidiarias: set[uuid.UUID] = set()
+    while frontera:
+        hijas = set(Empresa.objects.filter(empresa_matriz_id__in=frontera).values_list("id_empresa", flat=True))
+        nuevas = hijas - visitados
+        if not nuevas:
+            break
+        subsidiarias.update(nuevas)
+        visitados.update(nuevas)
+        frontera = nuevas
+    return subsidiarias
+
+
 def get_all_subsidiarias(empresa):
-    ids = set()
-
-    def collect(e):
-        for sub in e.subsidiarias.all():
-            if sub.id_empresa not in ids:
-                ids.add(sub.id_empresa)
-                collect(sub)
-
-    collect(empresa)
-    return ids
+    emp_id = getattr(empresa, "id_empresa", None) or getattr(empresa, "pk", empresa)
+    if emp_id is None:
+        return set()
+    return get_all_subsidiarias_ids([emp_id])
 
 
 def get_empresas_visible(user):
     if getattr(user, "es_superusuario_omni", False):
         return Empresa.objects.all()
-    empresas = user.empresas.all()
-    ids = set(empresas.values_list("id_empresa", flat=True))
-    for empresa in empresas:
-        ids.update(get_all_subsidiarias(empresa))
-    return Empresa.objects.filter(id_empresa__in=ids)
+    cap_token = getattr(user, "capability_token", None)
+    if cap_token is not None:
+        return Empresa.objects.filter(id_empresa=cap_token.empresa_id, activo=True)
+    if not getattr(user, "is_authenticated", False) or not hasattr(user, "empresas"):
+        return Empresa.objects.none()
+
+    l1_cache = _empresas_visible_cache.get()
+    user_pk = getattr(user, "pk", None)
+    cache_key = ("user", user_pk) if l1_cache is not None and user_pk is not None else None
+    if cache_key is not None and cache_key in l1_cache:
+        ids_cached = l1_cache[cache_key]
+        return Empresa.objects.filter(id_empresa__in=ids_cached) if ids_cached else Empresa.objects.none()
+
+    def _compute_visible_ids() -> tuple[uuid.UUID, ...]:
+        directas = tuple(user.empresas.values_list("id_empresa", flat=True))
+        if not directas:
+            return ()
+        ids = set(directas)
+        ids.update(get_all_subsidiarias_ids(directas))
+        return tuple(ids)
+
+    if user_pk is not None and _puede_usar_cache_distribuida_empresas():
+        from .cache_utils import DEFAULT_CACHE_TIMEOUT, GLOBAL_TENANT_KEY, get_cached_or_set, get_namespace_version
+
+        tree_version = get_namespace_version(CACHE_NS_EMPRESA_TREE, GLOBAL_TENANT_KEY)
+        ids_tuple = get_cached_or_set(
+            CACHE_NS_USER_EMPRESAS,
+            f"user:{user_pk}",
+            f"visible:tree-{tree_version}",
+            _compute_visible_ids,
+            timeout=DEFAULT_CACHE_TIMEOUT,
+        )
+    else:
+        ids_tuple = _compute_visible_ids()
+
+    if l1_cache is not None and cache_key is not None:
+        l1_cache[cache_key] = ids_tuple
+    return Empresa.objects.filter(id_empresa__in=ids_tuple) if ids_tuple else Empresa.objects.none()
 
 
 def get_empresa_primaria(user):
@@ -478,6 +591,18 @@ class PermisosViewSet(SoftDeleteModelMixin, ActiveFilterMixin, BaseModelViewSet)
         self._assert_superuser()
         super().perform_destroy(instance)
 
+    @action(detail=True, methods=["post"])
+    def activar(self, request, pk=None):
+        """Reactiva un permiso global del sistema (solo superusuario Omni)."""
+        self._assert_superuser()
+        return super().activar(request, pk=pk)
+
+    @action(detail=True, methods=["post"])
+    def desactivar(self, request, pk=None):
+        """Desactiva lógicamente un permiso global del sistema (solo superusuario Omni)."""
+        self._assert_superuser()
+        return super().desactivar(request, pk=pk)
+
 
 # ── ConfiguracionFlujoDocumentosViewSet ───────────────────────────────────────
 
@@ -518,6 +643,7 @@ class ConfiguracionFlujoDocumentosViewSet(ActiveFilterMixin, BaseModelViewSet):
         empresa = get_empresas_visible(self.request.user).first()
         if not empresa:
             from rest_framework.exceptions import PermissionDenied
+
             raise PermissionDenied("El usuario no tiene empresa asignada.")
         serializer.save(id_empresa=empresa)
 
@@ -550,6 +676,7 @@ class ContactoViewSet(ActiveFilterMixin, BaseModelViewSet):
         empresa = get_empresas_visible(self.request.user).first()
         if not empresa:
             from rest_framework.exceptions import PermissionDenied
+
             raise PermissionDenied("El usuario no tiene empresa asignada.")
         serializer.save(id_empresa=empresa)
 

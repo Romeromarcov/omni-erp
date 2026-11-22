@@ -24,6 +24,7 @@ el corte de los datos persistentes: el último ``MovimientoCajaBanco`` de tipo
 ventana (``fecha_movimiento``/``hora_movimiento``). Estos tests crean ese
 movimiento CIERRE previo cuando necesitan un saldo base distinto de cero.
 """
+
 import datetime
 from decimal import Decimal
 
@@ -62,13 +63,12 @@ pytestmark = [pytest.mark.django_db, pytest.mark.integration]
 
 # ── Fixtures locales ──────────────────────────────────────────────────────────
 
+
 @pytest.fixture
 def sucursal_a(empresa_a):
     from apps.core.models import Sucursal
 
-    return Sucursal.objects.create(
-        id_empresa=empresa_a, nombre="Sucursal Centro", codigo_sucursal="SC01"
-    )
+    return Sucursal.objects.create(id_empresa=empresa_a, nombre="Sucursal Centro", codigo_sucursal="SC01")
 
 
 @pytest.fixture
@@ -104,6 +104,7 @@ def metodo_electronico_a(empresa_a):
 
 # ── CajaFisica: propiedades de sesión ─────────────────────────────────────────
 
+
 class TestCajaFisicaPropiedades:
     def test_sin_sesion(self, caja_fisica_a):
         assert caja_fisica_a.sesion_activa is None
@@ -124,9 +125,7 @@ class TestCajaFisicaPropiedades:
 
 class TestSesionCajaFisica:
     def test_abrir_sesion_asigna_empresa_y_saldo_cero(self, caja_fisica_a, user_a):
-        sesion = SesionCajaFisica.abrir_sesion(
-            caja_fisica_a, user_a, ip_address="10.0.0.1", user_agent="pytest"
-        )
+        sesion = SesionCajaFisica.abrir_sesion(caja_fisica_a, user_a, ip_address="10.0.0.1", user_agent="pytest")
         assert sesion.estado == "ABIERTA"
         assert sesion.empresa == caja_fisica_a.empresa
         assert sesion.sucursal is None
@@ -144,9 +143,7 @@ class TestSesionCajaFisica:
         assert primera.notas == "Sesión cerrada automáticamente por nueva apertura"
         assert primera.fecha_cierre is not None
         assert segunda.estado == "ABIERTA"
-        assert SesionCajaFisica.objects.filter(
-            caja_fisica=caja_fisica_a, estado="ABIERTA"
-        ).count() == 1
+        assert SesionCajaFisica.objects.filter(caja_fisica=caja_fisica_a, estado="ABIERTA").count() == 1
 
     def test_cerrar_sesion_con_notas(self, caja_fisica_a, user_a):
         sesion = SesionCajaFisica.abrir_sesion(caja_fisica_a, user_a)
@@ -157,9 +154,7 @@ class TestSesionCajaFisica:
         assert sesion.fecha_cierre is not None
         assert sesion.esta_activa is False
         # duracion con fecha_cierre usa el delta cerrado
-        assert sesion.duracion == pytest.approx(
-            (sesion.fecha_cierre - sesion.fecha_apertura).total_seconds() / 60
-        )
+        assert sesion.duracion == pytest.approx((sesion.fecha_cierre - sesion.fecha_apertura).total_seconds() / 60)
 
     def test_cerrar_sesion_sin_notas_no_pisa_notas(self, caja_fisica_a, user_a):
         sesion = SesionCajaFisica.abrir_sesion(caja_fisica_a, user_a)
@@ -186,6 +181,7 @@ class TestSesionCajaFisica:
 
 
 # ── CajaFisica.realizar_cierre ────────────────────────────────────────────────
+
 
 def _persistir_cierre_previo(caja_fisica, usuario, saldo=Decimal("0.00")):
     """FIX hallazgo P0-8: el corte del cierre anterior es el último
@@ -224,9 +220,7 @@ class TestCajaFisicaRealizarCierre:
         assert cierre.saldo_nuevo == Decimal("0.00")
         assert cierre.id_usuario_registro == user_a
 
-    def test_cierre_con_movimientos_y_descuadre_negativo(
-        self, caja_fisica_a, user_a, empresa_a, moneda_usd
-    ):
+    def test_cierre_con_movimientos_y_descuadre_negativo(self, caja_fisica_a, user_a, empresa_a, moneda_usd):
         caja = caja_fisica_a
         _persistir_cierre_previo(caja, user_a, Decimal("50.00"))
         hoy = timezone.now()
@@ -295,10 +289,13 @@ class TestCajaFisicaRealizarCierre:
 
 # ── Datafono.realizar_cierre ──────────────────────────────────────────────────
 
+
 class TestDatafonoRealizarCierre:
     def test_sin_cuenta_bancaria_value_error(self, empresa_a, sucursal_a):
         datafono = Datafono.objects.create(
-            id_empresa=empresa_a, id_sucursal=sucursal_a, nombre="POS sin cuenta",
+            id_empresa=empresa_a,
+            id_sucursal=sucursal_a,
+            nombre="POS sin cuenta",
             serial="POS-NC",
         )
         with pytest.raises(ValueError) as exc:
@@ -348,9 +345,7 @@ class TestDatafonoRealizarCierre:
         assert gasto.id_metodo_pago == metodo_comision
         assert gasto.tipo_documento_asociado == "GASTO"
 
-    def test_cierre_comision_convierte_a_moneda_base(
-        self, empresa_a, sucursal_a, user_a, moneda_usd
-    ):
+    def test_cierre_comision_convierte_a_moneda_base(self, empresa_a, sucursal_a, user_a, moneda_usd):
         # Deuda FX (models.py:595): la comisión está en la moneda de la cuenta
         # (VES) pero el monto base de la TransaccionFinanciera debe ir en la moneda
         # base de la empresa (USD), convertido con la tasa — no asumir 1:1.
@@ -359,29 +354,40 @@ class TestDatafonoRealizarCierre:
         from apps.finanzas.models import Moneda, TasaCambio
 
         ves = Moneda.objects.create(
-            nombre="Bolívar", codigo_iso="VES", simbolo="Bs",
-            tipo_moneda="fiat", es_generica=True,
+            nombre="Bolívar",
+            codigo_iso="VES",
+            simbolo="Bs",
+            tipo_moneda="fiat",
+            es_generica=True,
         )
         cuenta_ves = CuentaBancariaEmpresa.objects.create(
-            id_empresa=empresa_a, nombre_banco="Banco VES", numero_cuenta="0102-x",
-            tipo_cuenta="CORRIENTE", id_moneda=ves, saldo_actual=Decimal("0.00"),
+            id_empresa=empresa_a,
+            nombre_banco="Banco VES",
+            numero_cuenta="0102-x",
+            tipo_cuenta="CORRIENTE",
+            id_moneda=ves,
+            saldo_actual=Decimal("0.00"),
         )
         datafono = Datafono.objects.create(
-            id_empresa=empresa_a, id_sucursal=sucursal_a, nombre="POS VES",
-            serial="POS-VES", id_cuenta_bancaria_asociada=cuenta_ves,
+            id_empresa=empresa_a,
+            id_sucursal=sucursal_a,
+            nombre="POS VES",
+            serial="POS-VES",
+            id_cuenta_bancaria_asociada=cuenta_ves,
             comision_porcentaje=Decimal("2.00"),
         )
         metodo_comision = MetodoPago.objects.create(
             nombre_metodo="Comisión bancaria", tipo_metodo="OTRO", empresa=empresa_a
         )
         TasaCambio.objects.create(
-            id_empresa=None, id_moneda_origen=ves, id_moneda_destino=moneda_usd,
-            tipo_tasa="OFICIAL_BCV", valor_tasa=Decimal("0.02"),
+            id_empresa=None,
+            id_moneda_origen=ves,
+            id_moneda_destino=moneda_usd,
+            tipo_tasa="OFICIAL_BCV",
+            valor_tasa=Decimal("0.02"),
             fecha_tasa=timezone.now().date(),
         )
-        TransaccionDatafono.objects.create(
-            id_datafono=datafono, monto=Decimal("100.00"), id_usuario_registro=user_a
-        )
+        TransaccionDatafono.objects.create(id_datafono=datafono, monto=Decimal("100.00"), id_usuario_registro=user_a)
 
         datafono.realizar_cierre(usuario=user_a)
 
@@ -393,34 +399,39 @@ class TestDatafonoRealizarCierre:
         assert gasto.monto_base_empresa == Decimal("0.0400")
 
     def test_cierre_sin_metodo_comision_no_crea_gasto(self, datafono_a, user_a):
-        TransaccionDatafono.objects.create(
-            id_datafono=datafono_a, monto=Decimal("200.00"), id_usuario_registro=user_a
-        )
+        TransaccionDatafono.objects.create(id_datafono=datafono_a, monto=Decimal("200.00"), id_usuario_registro=user_a)
         resultado = datafono_a.realizar_cierre(usuario=user_a)
         assert resultado["neto"] == Decimal("196.0000")
         assert TransaccionFinanciera.objects.count() == 0
 
     def test_cierre_fallback_metodo_banco(self, datafono_a, user_a, empresa_a):
-        metodo_banco = MetodoPago.objects.create(
-            nombre_metodo="Gasto Banco", tipo_metodo="OTRO", empresa=empresa_a
-        )
-        TransaccionDatafono.objects.create(
-            id_datafono=datafono_a, monto=Decimal("100.00"), id_usuario_registro=user_a
-        )
+        metodo_banco = MetodoPago.objects.create(nombre_metodo="Gasto Banco", tipo_metodo="OTRO", empresa=empresa_a)
+        TransaccionDatafono.objects.create(id_datafono=datafono_a, monto=Decimal("100.00"), id_usuario_registro=user_a)
         datafono_a.realizar_cierre(usuario=user_a)
         gasto = TransaccionFinanciera.objects.get(tipo_transaccion="EGRESO")
         assert gasto.id_metodo_pago == metodo_banco
         assert gasto.monto_transaccion == Decimal("2.00")
 
     def test_segunda_corrida_solo_toma_posteriores_al_ultimo_cierre(self, datafono_a, user_a):
-        TransaccionDatafono.objects.create(
+        # Tiempos explícitos: con timezone.now() la transacción posterior podía caer en el
+        # mismo tick del reloj que el cierre (resolución ~15 ms en Windows) y quedar fuera
+        # del filtro estricto fecha_hora_transaccion > fecha_ultimo_cierre.
+        # fecha_hora_transaccion es auto_now_add: se fija con update() tras crear.
+        corte = timezone.now() - datetime.timedelta(minutes=5)
+        previa = TransaccionDatafono.objects.create(
             id_datafono=datafono_a, monto=Decimal("100.00"), id_usuario_registro=user_a
         )
-        datafono_a.realizar_cierre(usuario=user_a)
+        TransaccionDatafono.objects.filter(pk=previa.pk).update(
+            fecha_hora_transaccion=corte - datetime.timedelta(seconds=30)
+        )
+        datafono_a.realizar_cierre(usuario=user_a, hasta=corte)
         datafono_a.refresh_from_db()
         # Nueva transacción tras el cierre
-        TransaccionDatafono.objects.create(
+        posterior = TransaccionDatafono.objects.create(
             id_datafono=datafono_a, monto=Decimal("40.00"), id_usuario_registro=user_a
+        )
+        TransaccionDatafono.objects.filter(pk=posterior.pk).update(
+            fecha_hora_transaccion=corte + datetime.timedelta(minutes=1)
         )
         resultado = datafono_a.realizar_cierre(usuario=user_a)
         assert resultado["total"] == Decimal("40.00")
@@ -428,6 +439,7 @@ class TestDatafonoRealizarCierre:
 
 
 # ── SesionDatafono / flujo de pagos con datafono ─────────────────────────────
+
 
 def _abrir_sesion_datafono(datafono, user):
     """Pre-crea la sesión abierta y la devuelve releída de BD.
@@ -477,9 +489,7 @@ class TestSesionDatafono:
         assert sesion.transacciones_datafono.filter(estado="CERRADO_EN_DATAFONO").count() == 2
 
     def test_cerrar_sesion_ya_cerrada_value_error(self, datafono_a, user_a):
-        sesion = SesionDatafono.objects.create(
-            datafono=datafono_a, usuario_apertura=user_a, estado="CERRADA"
-        )
+        sesion = SesionDatafono.objects.create(datafono=datafono_a, usuario_apertura=user_a, estado="CERRADA")
         with pytest.raises(ValueError) as exc:
             sesion.cerrar_sesion()
         assert str(exc.value) == "La sesión ya está cerrada"
@@ -494,9 +504,7 @@ class TestSesionDatafono:
         registrar_pago_tarjeta(datafono_a, Decimal("100.00"), "REF-1", None, user_a)
         deposito = cerrar_sesion_datafono(datafono_a, user_a)
         sesion = deposito.sesion_datafono
-        assert deposito.lote_bancario == (
-            f"POS-001_{sesion.fecha_cierre.strftime('%Y%m%d_%H%M%S')}"
-        )
+        assert deposito.lote_bancario == (f"POS-001_{sesion.fecha_cierre.strftime('%Y%m%d_%H%M%S')}")
         assert deposito.total_bruto == Decimal("200.00")  # 100 acumulado + 100 pendiente
         assert deposito.comision_banco == Decimal("4.0000")
         assert deposito.total_neto == Decimal("196.0000")
@@ -534,9 +542,7 @@ class TestDepositoDatafonoConciliar:
             id_usuario_registro=user,
         )
 
-    def test_conciliar_actualiza_deposito_sesion_y_transacciones(
-        self, deposito, empresa_a, moneda_usd, user_a
-    ):
+    def test_conciliar_actualiza_deposito_sesion_y_transacciones(self, deposito, empresa_a, moneda_usd, user_a):
         movimiento = self._movimiento(empresa_a, moneda_usd, user_a)
         deposito.conciliar(movimiento, user_a)
         deposito.refresh_from_db()
@@ -570,6 +576,7 @@ class TestDepositoDatafonoConciliar:
 
 # ── Señales de sincronización multi-tenant ───────────────────────────────────
 
+
 class TestSincronizacionEmpresaActiva:
     def test_moneda_publica_se_activa_para_todas_las_empresas(self, empresa_a, empresa_b):
         moneda = Moneda.objects.create(
@@ -580,7 +587,10 @@ class TestSincronizacionEmpresaActiva:
 
     def test_moneda_privada_solo_para_su_empresa(self, empresa_a, empresa_b):
         moneda = Moneda.objects.create(
-            nombre="Token A", codigo_iso="TKA", simbolo="T", tipo_moneda="otro",
+            nombre="Token A",
+            codigo_iso="TKA",
+            simbolo="T",
+            tipo_moneda="otro",
             empresa=empresa_a,
         )
         assert MonedaEmpresaActiva.objects.filter(moneda=moneda, empresa=empresa_a).exists()
@@ -594,40 +604,88 @@ class TestSincronizacionEmpresaActiva:
         assert MetodoPagoEmpresaActiva.objects.filter(metodo_pago=metodo, empresa=empresa_b).exists()
 
     def test_metodo_privado_solo_su_empresa(self, empresa_a, empresa_b, metodo_electronico_a):
+        assert MetodoPagoEmpresaActiva.objects.filter(metodo_pago=metodo_electronico_a, empresa=empresa_a).exists()
+        assert not MetodoPagoEmpresaActiva.objects.filter(metodo_pago=metodo_electronico_a, empresa=empresa_b).exists()
+
+    @pytest.mark.tenant
+    def test_empresa_nueva_hereda_globales_pero_no_privados_ajenos(self, empresa_a, metodo_electronico_a):
+        from apps.core.models import Empresa
+
+        moneda_pub = Moneda.objects.create(
+            nombre="Bolívar venezolano",
+            codigo_iso="VES",
+            simbolo="Bs.",
+            tipo_moneda="fiat",
+            es_publica=True,
+        )
+        moneda_gen = Moneda.objects.create(
+            nombre="Euro",
+            codigo_iso="EUR",
+            simbolo="€",
+            tipo_moneda="fiat",
+            es_generica=True,
+        )
+        moneda_inactiva = Moneda.objects.create(
+            nombre="Peso Antiguo",
+            codigo_iso="PSO",
+            simbolo="P",
+            tipo_moneda="fiat",
+            es_publica=True,
+            activo=False,
+        )
+        moneda_privada_a = Moneda.objects.create(
+            nombre="Vale Interno A",
+            codigo_iso="VLA",
+            simbolo="VA",
+            tipo_moneda="otro",
+            empresa=empresa_a,
+        )
+        metodo_pub = MetodoPago.objects.create(
+            nombre_metodo="Transferencia Global",
+            tipo_metodo="ELECTRONICO",
+            es_publico=True,
+        )
+
+        empresa_nueva = Empresa.objects.create(
+            nombre_legal="Empresa Posterior C.A.",
+            identificador_fiscal="J-98765432-1",
+            id_moneda_base=moneda_pub,
+            activo=True,
+        )
+
+        assert MonedaEmpresaActiva.objects.filter(empresa=empresa_nueva, moneda=moneda_pub, activa=True).exists()
+        assert MonedaEmpresaActiva.objects.filter(empresa=empresa_nueva, moneda=moneda_gen, activa=True).exists()
+        assert not MonedaEmpresaActiva.objects.filter(empresa=empresa_nueva, moneda=moneda_inactiva).exists()
+        assert not MonedaEmpresaActiva.objects.filter(empresa=empresa_nueva, moneda=moneda_privada_a).exists()
         assert MetodoPagoEmpresaActiva.objects.filter(
-            metodo_pago=metodo_electronico_a, empresa=empresa_a
+            empresa=empresa_nueva, metodo_pago=metodo_pub, activa=True
         ).exists()
         assert not MetodoPagoEmpresaActiva.objects.filter(
-            metodo_pago=metodo_electronico_a, empresa=empresa_b
+            empresa=empresa_nueva, metodo_pago=metodo_electronico_a
         ).exists()
 
     def test_validar_monedas_metodopago_rechaza_crypto_en_efectivo(self, empresa_a):
-        metodo = MetodoPago.objects.create(
-            nombre_metodo="Efectivo Caja", tipo_metodo="EFECTIVO", empresa=empresa_a
-        )
-        crypto = Moneda.objects.create(
-            nombre="Tether", codigo_iso="USDT", simbolo="₮", tipo_moneda="crypto"
-        )
+        metodo = MetodoPago.objects.create(nombre_metodo="Efectivo Caja", tipo_metodo="EFECTIVO", empresa=empresa_a)
+        crypto = Moneda.objects.create(nombre="Tether", codigo_iso="USDT", simbolo="₮", tipo_moneda="crypto")
         with pytest.raises(ValidationError) as exc:
             validar_monedas_metodopago(metodo, [crypto])
         assert "Solo monedas fiat están permitidas" in str(exc.value)
 
     def test_validar_monedas_metodopago_acepta_fiat(self, empresa_a, moneda_usd):
-        metodo = MetodoPago.objects.create(
-            nombre_metodo="Efectivo OK", tipo_metodo="EFECTIVO", empresa=empresa_a
-        )
+        metodo = MetodoPago.objects.create(nombre_metodo="Efectivo OK", tipo_metodo="EFECTIVO", empresa=empresa_a)
         # No lanza
         validar_monedas_metodopago(metodo, [moneda_usd])
 
 
 # ── PlantillaMaestroCajasVirtuales ───────────────────────────────────────────
 
+
 class TestPlantillaMaestro:
-    def test_post_save_crea_cajas_virtuales_en_cajas_fisicas(
-        self, empresa_a, moneda_usd, caja_fisica_a, user_a
-    ):
+    def test_post_save_crea_cajas_virtuales_en_cajas_fisicas(self, empresa_a, moneda_usd, caja_fisica_a, user_a):
         plantilla = PlantillaMaestroCajasVirtuales.objects.create(
-            empresa=empresa_a, nombre="Plantilla USD", moneda_base=moneda_usd,
+            empresa=empresa_a,
+            nombre="Plantilla USD",
+            moneda_base=moneda_usd,
             creada_por=user_a,
         )
         caja = Caja.objects.get(caja_fisica=caja_fisica_a, plantilla_maestro=plantilla)
@@ -637,16 +695,15 @@ class TestPlantillaMaestro:
         assert caja.tipo_caja == "REGISTRADORA"
         assert caja.activa is True
 
-    def test_post_save_no_duplica_si_ya_existe_misma_configuracion(
-        self, empresa_a, moneda_usd, caja_fisica_a
-    ):
+    def test_post_save_no_duplica_si_ya_existe_misma_configuracion(self, empresa_a, moneda_usd, caja_fisica_a):
         Caja.objects.create(
-            empresa=empresa_a, caja_fisica=caja_fisica_a, nombre="Preexistente",
-            moneda=moneda_usd, activa=True,
+            empresa=empresa_a,
+            caja_fisica=caja_fisica_a,
+            nombre="Preexistente",
+            moneda=moneda_usd,
+            activa=True,
         )
-        PlantillaMaestroCajasVirtuales.objects.create(
-            empresa=empresa_a, nombre="Plantilla 2", moneda_base=moneda_usd
-        )
+        PlantillaMaestroCajasVirtuales.objects.create(empresa=empresa_a, nombre="Plantilla 2", moneda_base=moneda_usd)
         # La caja preexistente (sin métodos) coincide con la plantilla (sin métodos) → no crea otra
         assert Caja.objects.filter(caja_fisica=caja_fisica_a).count() == 1
 
@@ -656,8 +713,10 @@ class TestPlantillaMaestro:
         )
         plantilla.metodos_pago_base.add(metodo_electronico_a)
         auto = CajaVirtualAuto.objects.create(
-            plantilla_maestro=plantilla, moneda=moneda_usd,
-            metodo_pago=metodo_electronico_a, activa=False,
+            plantilla_maestro=plantilla,
+            moneda=moneda_usd,
+            metodo_pago=metodo_electronico_a,
+            activa=False,
         )
         plantilla.nombre = "Plantilla sync v2"
         plantilla.save()  # created=False → sincronizar_cajas_virtuales()
@@ -671,20 +730,22 @@ class TestPlantillaMaestro:
             empresa=empresa_a, nombre="Plantilla x", moneda_base=moneda_usd
         )
         auto = CajaVirtualAuto.objects.create(
-            plantilla_maestro=plantilla, moneda=moneda_usd,
-            metodo_pago=metodo_electronico_a, activa=True,
+            plantilla_maestro=plantilla,
+            moneda=moneda_usd,
+            metodo_pago=metodo_electronico_a,
+            activa=True,
         )
         auto.sincronizar_con_plantilla()  # metodo no está en metodos_pago_base
         auto.refresh_from_db()
         assert auto.activa is False
 
-    def test_crear_cajas_para_empleado_con_rol(
-        self, empresa_a, moneda_usd, metodo_electronico_a, user_a
-    ):
+    def test_crear_cajas_para_empleado_con_rol(self, empresa_a, moneda_usd, metodo_electronico_a, user_a):
         grupo = Group.objects.create(name="cajero")
         user_a.groups.add(grupo)
         plantilla = PlantillaMaestroCajasVirtuales.objects.create(
-            empresa=empresa_a, nombre="Plantilla móvil", moneda_base=moneda_usd,
+            empresa=empresa_a,
+            nombre="Plantilla móvil",
+            moneda_base=moneda_usd,
             aplicar_a_empleados_con_rol="cajero",
         )
         plantilla.metodos_pago_base.add(metodo_electronico_a)
@@ -718,6 +779,7 @@ class TestPlantillaMaestro:
 
 
 # ── Pago ─────────────────────────────────────────────────────────────────────
+
 
 class TestPagoModel:
     def test_pago_ajuste_se_guarda_y_documento_relacionado_none(

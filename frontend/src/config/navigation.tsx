@@ -32,6 +32,9 @@ import FactCheckOutlined from '@mui/icons-material/FactCheckOutlined';
 import FolderOutlined from '@mui/icons-material/FolderOutlined';
 import NotificationsOutlined from '@mui/icons-material/NotificationsOutlined';
 import AutoAwesomeOutlined from '@mui/icons-material/AutoAwesomeOutlined';
+import EventAvailableOutlined from '@mui/icons-material/EventAvailableOutlined';
+import AssignmentTurnedInOutlined from '@mui/icons-material/AssignmentTurnedInOutlined';
+import ContactPageOutlined from '@mui/icons-material/ContactPageOutlined';
 import { isModuleEnabled, isCxcLubrikcaVisible } from './appProfile';
 
 export interface NavItem {
@@ -93,7 +96,20 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
       id: 'crm',
       label: 'Clientes (CRM)',
       icon: <PeopleAltOutlined />,
-      items: [{ label: 'Clientes', path: '/crm/clientes' }],
+      items: [
+        { label: 'Clientes', path: '/crm/clientes' },
+        { label: 'Pipeline Kanban', path: '/crm/pipeline' },
+      ],
+    },
+    {
+      id: 'connect',
+      label: 'Omni Connect',
+      icon: <ContactPageOutlined />,
+      items: [
+        { label: 'Mi perfil digital', path: '/connect/perfil' },
+        { label: 'Tarjetas NFC y QR', path: '/connect/tarjetas' },
+        { label: 'Analíticas', path: '/connect/analiticas' },
+      ],
     },
     {
       id: 'servicio-cliente',
@@ -194,7 +210,10 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
       icon: <MenuBookOutlined />,
       items: [
         { label: 'Plan de Cuentas', path: '/contabilidad/plan-cuentas' },
+        { label: 'Diarios Contables', path: '/contabilidad/diarios' },
         { label: 'Asientos Contables', path: '/contabilidad/asientos' },
+        { label: 'Períodos y Cierre', path: '/contabilidad/periodos' },
+        { label: 'Reportes Financieros', path: '/contabilidad/reportes' },
         { label: 'Mapeos Contables', path: '/contabilidad/mapeos' },
       ],
     },
@@ -350,6 +369,21 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
       label: 'Agentes IA',
       icon: <AutoAwesomeOutlined />,
       path: '/agentes',
+    },
+    {
+      id: 'activaciones',
+      label: 'Activaciones',
+      icon: <EventAvailableOutlined />,
+      items: [
+        { label: 'Eventos y capacidad', path: '/activaciones' },
+        { label: 'Bots de Telegram', path: '/bots' },
+      ],
+    },
+    {
+      id: 'tareas',
+      label: 'Tareas y Proyectos',
+      icon: <AssignmentTurnedInOutlined />,
+      path: '/tareas',
     },
   ];
 

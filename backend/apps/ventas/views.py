@@ -1,7 +1,9 @@
 import logging
-from apps.core.serializer_mixins import TenantFKScopeMixin
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import IntegrityError
+from django.db.models import Prefetch
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -9,6 +11,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.core.idempotency import IdempotentCreateMixin, idempotent
+from apps.core.serializer_mixins import TenantFKScopeMixin
 from apps.core.viewsets import EmpresaInjectMixin, get_empresas_visible
 
 logger = logging.getLogger(__name__)
@@ -17,6 +20,8 @@ logger = logging.getLogger(__name__)
 def _empresas(request):
     """Shortcut: devuelve empresas visibles para el usuario del request."""
     return get_empresas_visible(request.user)
+
+
 from .models import (
     ComisionVenta,
     Cotizacion,
@@ -73,7 +78,12 @@ class PedidoViewSet(TenantFKScopeMixin, EmpresaInjectMixin, viewsets.ModelViewSe
 
         user = self.request.user
         empresas_visibles = get_empresas_visible(user)
-        return Pedido.objects.filter(id_empresa__in=empresas_visibles).order_by("-fecha_pedido", "-fecha_creacion")
+        return (
+            Pedido.objects.filter(id_empresa__in=empresas_visibles)
+            .select_related("id_cliente", "id_vendedor")
+            .prefetch_related(Prefetch("detalles", queryset=DetallePedido.objects.select_related("id_producto")))
+            .order_by("-fecha_pedido", "-fecha_creacion")
+        )
 
     def create(self, request, *args, **kwargs):
         response = super().create(request, *args, **kwargs)
@@ -178,10 +188,13 @@ class NotaVentaViewSet(
     # duplica la nota (opt-in del cliente, PR #86).
     idempotency_scope = "ventas:nota-venta-create"
 
-
     def get_queryset(self):
         # R-CODE-1
-        qs = NotaVenta.objects.filter(id_empresa__in=_empresas(self.request)).order_by("-fecha_creacion")
+        qs = (
+            NotaVenta.objects.filter(id_empresa__in=_empresas(self.request))
+            .select_related("id_cliente")
+            .order_by("-fecha_creacion")
+        )
         # POS devoluciones (1.G): búsqueda de la venta original por número exacto.
         numero = self.request.query_params.get("numero_nota")
         if numero:
@@ -231,9 +244,7 @@ class NotaVentaViewSet(
         metodo = (
             MetodoPago.objects.filter(pk=metodo_id, activo=True)
             .filter(
-                dj_models.Q(empresa=nota.id_empresa)
-                | dj_models.Q(empresa__isnull=True)
-                | dj_models.Q(es_publico=True)
+                dj_models.Q(empresa=nota.id_empresa) | dj_models.Q(empresa__isnull=True) | dj_models.Q(es_publico=True)
             )
             .first()
         )
@@ -483,8 +494,10 @@ class FacturaFiscalViewSet(TenantFKScopeMixin, EmpresaInjectMixin, viewsets.Mode
 
         user = self.request.user
         empresas_visibles = get_empresas_visible(user)
-        return FacturaFiscal.objects.filter(id_empresa__in=empresas_visibles).order_by(
-            "-fecha_emision", "-fecha_creacion"
+        return (
+            FacturaFiscal.objects.filter(id_empresa__in=empresas_visibles)
+            .select_related("id_cliente")
+            .order_by("-fecha_emision", "-fecha_creacion")
         )
 
     @action(detail=True, methods=["get"], url_path="pdf")
@@ -499,14 +512,10 @@ class FacturaFiscalViewSet(TenantFKScopeMixin, EmpresaInjectMixin, viewsets.Mode
         except ImportError:
             # SEC-M4 (R-CODE-8): no filtrar el detalle interno al cliente.
             logger.exception("Generación de PDF de factura no disponible")
-            return Response(
-                {"error": "Generación de PDF no disponible en este servidor."}, status=503
-            )
+            return Response({"error": "Generación de PDF no disponible en este servidor."}, status=503)
 
         response = HttpResponse(pdf_bytes, content_type="application/pdf")
-        response["Content-Disposition"] = (
-            f'attachment; filename="factura_{factura.numero_factura}.pdf"'
-        )
+        response["Content-Disposition"] = f'attachment; filename="factura_{factura.numero_factura}.pdf"'
         return response
 
 
@@ -531,8 +540,10 @@ class NotaCreditoVentaViewSet(TenantFKScopeMixin, EmpresaInjectMixin, viewsets.M
 
         user = self.request.user
         empresas_visibles = get_empresas_visible(user)
-        return NotaCreditoVenta.objects.filter(id_empresa__in=empresas_visibles).order_by(
-            "-fecha_emision", "-fecha_creacion"
+        return (
+            NotaCreditoVenta.objects.filter(id_empresa__in=empresas_visibles)
+            .select_related("id_cliente")
+            .order_by("-fecha_emision", "-fecha_creacion")
         )
 
 
@@ -557,8 +568,10 @@ class DevolucionVentaViewSet(TenantFKScopeMixin, EmpresaInjectMixin, viewsets.Mo
 
         user = self.request.user
         empresas_visibles = get_empresas_visible(user)
-        return DevolucionVenta.objects.filter(id_empresa__in=empresas_visibles).order_by(
-            "-fecha_devolucion", "-fecha_creacion"
+        return (
+            DevolucionVenta.objects.filter(id_empresa__in=empresas_visibles)
+            .select_related("id_cliente")
+            .order_by("-fecha_devolucion", "-fecha_creacion")
         )
 
 
@@ -583,8 +596,10 @@ class CotizacionViewSet(TenantFKScopeMixin, EmpresaInjectMixin, viewsets.ModelVi
 
         user = self.request.user
         empresas_visibles = get_empresas_visible(user)
-        return Cotizacion.objects.filter(id_empresa__in=empresas_visibles).order_by(
-            "-fecha_cotizacion", "-fecha_creacion"
+        return (
+            Cotizacion.objects.filter(id_empresa__in=empresas_visibles)
+            .select_related("id_cliente")
+            .order_by("-fecha_cotizacion", "-fecha_creacion")
         )
 
     def perform_create(self, serializer):
@@ -614,14 +629,10 @@ class CotizacionViewSet(TenantFKScopeMixin, EmpresaInjectMixin, viewsets.ModelVi
         except ImportError:
             # SEC-M4 (R-CODE-8): no filtrar el detalle interno al cliente.
             logger.exception("Generación de PDF de cotización no disponible")
-            return Response(
-                {"error": "Generación de PDF no disponible en este servidor."}, status=503
-            )
+            return Response({"error": "Generación de PDF no disponible en este servidor."}, status=503)
 
         response = HttpResponse(pdf_bytes, content_type="application/pdf")
-        response["Content-Disposition"] = (
-            f'inline; filename="cotizacion_{cotizacion.numero_cotizacion}.pdf"'
-        )
+        response["Content-Disposition"] = f'inline; filename="cotizacion_{cotizacion.numero_cotizacion}.pdf"'
         return response
 
 
@@ -646,8 +657,10 @@ class NotaCreditoFiscalViewSet(TenantFKScopeMixin, EmpresaInjectMixin, viewsets.
 
         user = self.request.user
         empresas_visibles = get_empresas_visible(user)
-        return NotaCreditoFiscal.objects.filter(id_empresa__in=empresas_visibles).order_by(
-            "-fecha_emision", "-fecha_creacion"
+        return (
+            NotaCreditoFiscal.objects.filter(id_empresa__in=empresas_visibles)
+            .select_related("id_cliente")
+            .order_by("-fecha_emision", "-fecha_creacion")
         )
 
 
@@ -658,9 +671,7 @@ class DetalleNotaCreditoFiscalViewSet(TenantFKScopeMixin, viewsets.ModelViewSet)
 
     def get_queryset(self):
         # R-CODE-1 via parent
-        return DetalleNotaCreditoFiscal.objects.filter(
-            id_nota_credito_fiscal__id_empresa__in=_empresas(self.request)
-        )
+        return DetalleNotaCreditoFiscal.objects.filter(id_nota_credito_fiscal__id_empresa__in=_empresas(self.request))
 
 
 class ListaPrecioViewSet(TenantFKScopeMixin, EmpresaInjectMixin, viewsets.ModelViewSet):  # H-API-1
@@ -717,8 +728,20 @@ class ListaPrecioViewSet(TenantFKScopeMixin, EmpresaInjectMixin, viewsets.ModelV
             except Producto.DoesNotExist:
                 errores.append({"fila": idx, "error": f"Producto '{codigo}' no encontrado en esta empresa"})
                 continue
-            except Exception as exc:
-                errores.append({"fila": idx, "error": str(exc)})
+            except (Producto.MultipleObjectsReturned, ValueError):
+                errores.append(
+                    {
+                        "fila": idx,
+                        "error": "El código de producto es inválido o coincide con más de un producto.",
+                    }
+                )
+                continue
+            except Exception:
+                logger.exception(
+                    "Error inesperado al buscar el producto en la fila %s de importación de precios",
+                    idx,
+                )
+                errores.append({"fila": idx, "error": "Error inesperado al buscar el producto."})
                 continue
 
             try:
@@ -742,8 +765,25 @@ class ListaPrecioViewSet(TenantFKScopeMixin, EmpresaInjectMixin, viewsets.ModelV
                     creados += 1
                 else:
                     actualizados += 1
-            except Exception as exc:
-                errores.append({"fila": idx, "error": str(exc)})
+            except (
+                InvalidOperation,
+                ValueError,
+                DjangoValidationError,
+                ValidationError,
+                IntegrityError,
+            ) as exc:
+                msg = (
+                    "Precio o precio mínimo numérico inválido."
+                    if isinstance(exc, InvalidOperation)
+                    else "Datos inválidos o conflicto al registrar el precio."
+                )
+                errores.append({"fila": idx, "error": msg})
+            except Exception:
+                logger.exception(
+                    "Error inesperado al procesar la fila %s de importación de precios",
+                    idx,
+                )
+                errores.append({"fila": idx, "error": "Error inesperado al procesar la fila."})
 
         return Response(
             {
@@ -805,9 +845,9 @@ class EsquemaComisionCategoriaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet)
 
     def get_queryset(self):
         # R-CODE-1 via EsquemaComision → id_empresa
-        return EsquemaComisionCategoria.objects.filter(
-            esquema__id_empresa__in=_empresas(self.request)
-        ).select_related("categoria", "esquema")
+        return EsquemaComisionCategoria.objects.filter(esquema__id_empresa__in=_empresas(self.request)).select_related(
+            "categoria", "esquema"
+        )
 
 
 class ComisionVentaViewSet(viewsets.ReadOnlyModelViewSet):

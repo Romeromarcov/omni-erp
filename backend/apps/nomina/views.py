@@ -1,9 +1,10 @@
-from django.db.models import Count, Sum
+from django.db.models import Sum
 from apps.core.serializer_mixins import TenantFKScopeMixin
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from apps.core.exceptions import domain_error_response
 from apps.core.viewsets import get_empresas_visible
 
 from .models import (
@@ -153,16 +154,14 @@ class ProcesoNominaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
             )
 
         try:
-            proceso, asiento, advertencia = procesar_proceso_nomina(
-                proceso, datos_empleados, usuario=request.user
-            )
+            proceso, asiento, advertencia = procesar_proceso_nomina(proceso, datos_empleados, usuario=request.user)
         except NominaProcesoError as exc:
-            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST)
         except AsientoError as exc:
             # Contabilidad activa sin mapeo NOMINA (u otro error de asiento):
             # el @transaction.atomic del servicio ya revirtió todo el proceso
             # al propagar la excepción — aquí solo se traduce a 422.
-            return Response({"error": str(exc)}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+            return domain_error_response(exc, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
         data = self.get_serializer(proceso).data
         data["asiento_contable"] = str(asiento.id_asiento) if asiento else None
@@ -263,9 +262,7 @@ class DetalleNominaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     def get_queryset(self):
         # R-CODE-1: filtrar via FK chain DetalleNomina → Nomina → ProcesoNomina → empresa
         empresas = _empresas(self.request)
-        return DetalleNomina.objects.filter(
-            id_nomina__id_proceso_nomina__id_empresa__in=empresas
-        )
+        return DetalleNomina.objects.filter(id_nomina__id_proceso_nomina__id_empresa__in=empresas)
 
 
 class ProcesoNominaExtrasalarialViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
@@ -329,9 +326,7 @@ class NominaExtrasalarialViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     def get_queryset(self):
         # R-CODE-1: filtrar via FK chain → ProcesoNominaExtrasalarial → empresa
         empresas = _empresas(self.request)
-        return NominaExtrasalarial.objects.filter(
-            id_proceso_extrasalarial__id_empresa__in=empresas
-        )
+        return NominaExtrasalarial.objects.filter(id_proceso_extrasalarial__id_empresa__in=empresas)
 
     @action(detail=True, methods=["post"])
     def aprobar(self, request, pk=None):

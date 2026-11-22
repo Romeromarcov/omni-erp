@@ -47,6 +47,7 @@ class ExportEngine:
         "pedidos_venta": "pull_pedidos_venta",
         "pedidos_compra": "pull_pedidos_compra",
         "facturas_venta": "pull_facturas_venta",
+        "facturas_compra": "pull_facturas_compra",
         "pagos": "pull_pagos",
         "inventario": "pull_inventario",
     }
@@ -102,14 +103,10 @@ class ExportEngine:
         try:
             origen = ConectorInstancia.objects.get(pk=source_id)
         except ConectorInstancia.DoesNotExist as exc:
-            raise ConnectorError(
-                f"La instancia origen '{source_id}' no existe."
-            ) from exc
+            raise ConnectorError(f"La instancia origen '{source_id}' no existe.") from exc
         # R-CODE-1: aislamiento multi-tenant estricto.
         if origen.id_empresa_id != instancia_destino.id_empresa_id:
-            raise ConnectorError(
-                "La instancia origen pertenece a otra empresa (aislamiento multi-tenant)."
-            )
+            raise ConnectorError("La instancia origen pertenece a otra empresa (aislamiento multi-tenant).")
         return origen
 
     def _ejecutar_entidad(
@@ -136,9 +133,7 @@ class ExportEngine:
 
         metodo = self.SOURCE_PULL.get(tipo)
         if not metodo or not hasattr(origen, metodo):
-            self._fallar(
-                job, f"El conector de origen no sabe leer la entidad '{tipo}'."
-            )
+            self._fallar(job, f"El conector de origen no sabe leer la entidad '{tipo}'.")
             return job
         if not destino.supports(tipo):
             self._fallar(job, f"El destino no soporta exportar la entidad '{tipo}'.")
@@ -148,17 +143,13 @@ class ExportEngine:
         # Los pull_* del origen tienen límites por defecto bajos (200-500);
         # sin un límite generoso, lo que exceda se perdería y el sync
         # incremental nunca lo recuperaría (desde avanza igual).
-        limite = int(
-            instancia_destino.get_config().get("limite_export", self.LIMITE_EXPORT)
-        )
+        limite = int(instancia_destino.get_config().get("limite_export", self.LIMITE_EXPORT))
         try:
             registros = getattr(origen, metodo)(desde=desde, limite=limite)
             # Omni como hub: además de exportar, persistimos la data en los
             # modelos canónicos de Omni (Odoo → Omni → Sheets), salvo que la
             # config lo desactive con persistir_en_omni=False.
-            persistencia = self._persistir_en_omni(
-                instancia_destino, origen_inst, tipo, registros
-            )
+            persistencia = self._persistir_en_omni(instancia_destino, origen_inst, tipo, registros)
             resultado = destino.push_entidades(tipo, registros)
         except Exception as exc:
             self._fallar(job, f"{type(exc).__name__}: {exc}")
@@ -242,12 +233,7 @@ class ExportEngine:
         job.actualizados = resultado.actualizados
         job.omitidos = resultado.omitidos
         job.fallidos = resultado.fallidos
-        job.procesados = (
-            resultado.creados
-            + resultado.actualizados
-            + resultado.omitidos
-            + resultado.fallidos
-        )
+        job.procesados = resultado.creados + resultado.actualizados + resultado.omitidos + resultado.fallidos
         job.resumen_errores = resultado.errores[:50]
         job.save()
 

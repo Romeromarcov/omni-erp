@@ -4,9 +4,10 @@ vi.mock('../services/api', () => ({
   get: vi.fn(),
   post: vi.fn(),
   patch: vi.fn(),
+  fetchBlob: vi.fn(),
 }));
 
-import { get, post, patch } from '../services/api';
+import { get, post, patch, fetchBlob } from '../services/api';
 import {
   contabilidadService,
   type CrearCuentaPayload,
@@ -198,5 +199,134 @@ describe('contabilidadService — mapeos', () => {
     vi.mocked(patch).mockResolvedValue({ id_mapeo: 'm1' });
     await contabilidadService.actualizarMapeo('m1', { activo: false });
     expect(patch).toHaveBeenCalledWith('/contabilidad/mapeos-contables/m1/', { activo: false });
+  });
+});
+
+describe('contabilidadService — diarios, reversión y períodos (Ola B1)', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('revertirAsiento postea al endpoint de reversión', async () => {
+    vi.mocked(post).mockResolvedValueOnce({ id_asiento: 'rev-1' });
+    await contabilidadService.revertirAsiento('a1', { motivo: 'Error' });
+    expect(post).toHaveBeenCalledWith('/contabilidad/asientos-contables/a1/revertir/', {
+      motivo: 'Error',
+    });
+  });
+
+  it('CRUD de diarios contables', async () => {
+    vi.mocked(get).mockResolvedValueOnce({ results: [{ id_diario: 'd1' }] });
+    const lista = await contabilidadService.getDiarios({ tipo: 'VENTAS' });
+    expect(get).toHaveBeenCalledWith('/contabilidad/diarios/?page_size=200&tipo=VENTAS');
+    expect(lista).toHaveLength(1);
+
+    vi.mocked(post).mockResolvedValueOnce({ id_diario: 'd2' });
+    await contabilidadService.crearDiario({
+      id_empresa: 'e1',
+      codigo: 'VTA',
+      nombre: 'Ventas',
+      tipo: 'VENTAS',
+    });
+    expect(post).toHaveBeenCalledWith('/contabilidad/diarios/', {
+      id_empresa: 'e1',
+      codigo: 'VTA',
+      nombre: 'Ventas',
+      tipo: 'VENTAS',
+    });
+
+    vi.mocked(patch).mockResolvedValueOnce({ id_diario: 'd2' });
+    await contabilidadService.actualizarDiario('d2', { nombre: 'Ventas 2' });
+    expect(patch).toHaveBeenCalledWith('/contabilidad/diarios/d2/', { nombre: 'Ventas 2' });
+  });
+
+  it('períodos contables y cierre de ejercicio', async () => {
+    vi.mocked(get).mockResolvedValueOnce([{ id_periodo: 'p1' }]);
+    const periodos = await contabilidadService.getPeriodosContables(2026);
+    expect(get).toHaveBeenCalledWith('/contabilidad/periodos-contables/?page_size=200&anio=2026');
+    expect(periodos).toHaveLength(1);
+
+    vi.mocked(post).mockResolvedValueOnce({ id_periodo: 'p1', estado: 'CERRADO' });
+    await contabilidadService.cerrarPeriodo({ id_empresa: 'e1', anio: 2026, mes: 5 });
+    expect(post).toHaveBeenCalledWith('/contabilidad/periodos-contables/cerrar/', {
+      id_empresa: 'e1',
+      anio: 2026,
+      mes: 5,
+    });
+
+    vi.mocked(post).mockResolvedValueOnce({ id_periodo: 'p1', estado: 'ABIERTO' });
+    await contabilidadService.reabrirPeriodo('p1', 'Ajuste');
+    expect(post).toHaveBeenCalledWith('/contabilidad/periodos-contables/p1/reabrir/', {
+      motivo: 'Ajuste',
+    });
+
+    vi.mocked(post).mockResolvedValueOnce({ anio: 2025, resultado_ejercicio: '100.00' });
+    await contabilidadService.cerrarEjercicio({
+      id_empresa: 'e1',
+      anio: 2025,
+      cuenta_resultado_acumulado: 'cta-pat',
+    });
+    expect(post).toHaveBeenCalledWith('/contabilidad/periodos-contables/cerrar-ejercicio/', {
+      id_empresa: 'e1',
+      anio: 2025,
+      cuenta_resultado_acumulado: 'cta-pat',
+    });
+  });
+});
+
+describe('contabilidadService — reportes canónicos (PR-14 · Ola B2)', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('consulta los 4 reportes con filtros y exporta CSV/PDF via fetchBlob', async () => {
+    vi.mocked(get).mockResolvedValue({ ok: true });
+    await contabilidadService.getBalanceComprobacion({
+      empresa_id: 'e1',
+      fecha_desde: '2026-01-01',
+      fecha_hasta: '2026-03-31',
+      id_diario: 'd1',
+      incluir_equivalentes_usd: true,
+    });
+    expect(get).toHaveBeenCalledWith(
+      '/contabilidad/reportes/balance-comprobacion/?empresa_id=e1&fecha_desde=2026-01-01&fecha_hasta=2026-03-31&id_diario=d1&incluir_equivalentes_usd=true',
+    );
+
+    await contabilidadService.getEstadoResultados({
+      empresa_id: 'e1',
+      fecha_desde: '2026-01-01',
+      fecha_hasta: '2026-03-31',
+    });
+    expect(get).toHaveBeenCalledWith(
+      '/contabilidad/reportes/estado-resultados/?empresa_id=e1&fecha_desde=2026-01-01&fecha_hasta=2026-03-31',
+    );
+
+    await contabilidadService.getBalanceGeneral({ empresa_id: 'e1', fecha_corte: '2026-03-31' });
+    expect(get).toHaveBeenCalledWith(
+      '/contabilidad/reportes/balance-general/?empresa_id=e1&fecha_corte=2026-03-31',
+    );
+
+    await contabilidadService.getLibroMayorAuxiliar({
+      empresa_id: 'e1',
+      id_cuenta_contable: 'cta-1',
+      id_contacto: 'cnt-1',
+      limit: 50,
+    });
+    expect(get).toHaveBeenCalledWith(
+      '/contabilidad/reportes/libro-mayor-auxiliar/?empresa_id=e1&id_cuenta_contable=cta-1&id_contacto=cnt-1&limit=50',
+    );
+
+    const mockBlob = new Blob(['pdf']);
+    vi.mocked(fetchBlob).mockResolvedValueOnce(mockBlob);
+    const resBlob = await contabilidadService.exportarReporteBlob('balance-general', 'pdf', {
+      empresa_id: 'e1',
+      fecha_corte: '2026-03-31',
+    });
+    expect(resBlob).toBe(mockBlob);
+    expect(fetchBlob).toHaveBeenCalledWith(
+      '/contabilidad/reportes/balance-general/?empresa_id=e1&fecha_corte=2026-03-31&formato=pdf',
+      { headers: { Accept: '*/*' } },
+    );
+
+    vi.mocked(get).mockResolvedValueOnce({ results: [{ id_contacto: 'cnt-1' }] });
+    const contactos = await contabilidadService.getContactosSelector();
+    expect(get).toHaveBeenCalledWith('/core/contactos/?page_size=200');
+    expect(contactos).toHaveLength(1);
   });
 });

@@ -2,9 +2,10 @@
  * Offline Nivel 1 — config de retry/backoff del QueryClient y claves de
  * idempotencia para mutaciones de pago.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   queryClient,
+  handlePersistRestoreSuccess,
   isNetworkError,
   mutationRetry,
   retryBackoffDelay,
@@ -75,5 +76,14 @@ describe('idempotencia (PR #86)', () => {
     const b = newIdempotencyKey();
     expect(a).not.toBe(b);
     expect(a).toMatch(/^[0-9a-f-]{36}$/i);
+  });
+});
+
+describe('handlePersistRestoreSuccess (Plan 06 D4)', () => {
+  it('invalida las consultas activas al restaurar el caché desde IndexedDB', async () => {
+    const spy = vi.spyOn(queryClient, 'invalidateQueries').mockResolvedValueOnce();
+    await handlePersistRestoreSuccess();
+    expect(spy).toHaveBeenCalledWith({ refetchType: 'active' });
+    spy.mockRestore();
   });
 });

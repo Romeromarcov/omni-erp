@@ -90,9 +90,7 @@ class TestAuthorize:
         with pytest.raises(GoogleSheetsAuthError):
             GoogleSheetsClient("no-soy-dict")
 
-    def test_error_inesperado_en_authorize_se_envuelve_sin_filtrar_detalle(
-        self, fake_google
-    ):
+    def test_error_inesperado_en_authorize_se_envuelve_sin_filtrar_detalle(self, fake_google):
         # gspread.authorize revienta → AuthError genérico, sin filtrar la clave.
         fake_google.authorize.side_effect = RuntimeError("clave secreta xyz")
         with pytest.raises(GoogleSheetsAuthError) as exc:

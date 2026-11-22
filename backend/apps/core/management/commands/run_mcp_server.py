@@ -10,6 +10,10 @@ El servidor stdio es el modo estándar para MCP: lee requests de stdin
 y escribe responses en stdout. Compatible con Claude Desktop y otros clientes MCP.
 
 El servidor SSE expone un endpoint HTTP para clientes que no soportan stdio.
+
+Nota RLS: este comando arranca el transporte MCP; cada tool valida su
+``CapabilityToken`` mediante un ``rls_bypass()`` acotado y ejecuta sus consultas y
+escrituras dentro de ``mcp_tenant_context`` / ``rls_tenant_context([context["empresa_id"]])``.
 """
 
 import sys
@@ -49,10 +53,7 @@ class Command(BaseCommand):
 
         if not MCP_AVAILABLE or mcp is None:
             self.stderr.write(
-                self.style.ERROR(
-                    "El SDK de MCP no está disponible. "
-                    "Instala el paquete: pip install mcp"
-                )
+                self.style.ERROR("El SDK de MCP no está disponible. " "Instala el paquete: pip install mcp")
             )
             sys.exit(1)
 
@@ -61,8 +62,7 @@ class Command(BaseCommand):
         if transport == "sse":
             self.stdout.write(
                 self.style.SUCCESS(
-                    f"Iniciando Omni MCP Server en modo SSE "
-                    f"→ http://{options['host']}:{options['port']}/sse"
+                    f"Iniciando Omni MCP Server en modo SSE " f"→ http://{options['host']}:{options['port']}/sse"
                 )
             )
             mcp.run(
@@ -71,7 +71,5 @@ class Command(BaseCommand):
                 port=options["port"],
             )
         else:
-            self.stdout.write(
-                self.style.SUCCESS("Iniciando Omni MCP Server en modo stdio...")
-            )
+            self.stdout.write(self.style.SUCCESS("Iniciando Omni MCP Server en modo stdio..."))
             mcp.run(transport="stdio")

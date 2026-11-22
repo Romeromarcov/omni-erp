@@ -18,6 +18,7 @@ Ejemplo de activación de un tenant:
     if cfg.agente_ia_enabled:
         ...
 """
+
 from __future__ import annotations
 
 import logging
@@ -31,18 +32,11 @@ logger = logging.getLogger(__name__)
 
 
 def _get_param(empresa, codigo: str, default: str = "") -> str:
-    """Lee un ParametroSistema para una empresa. Retorna default si no existe."""
-    from apps.configuracion_motor.models import ParametroSistema
+    """Lee un ParametroSistema para una empresa (cacheado). Retorna default si no existe."""
+    from apps.configuracion_motor.services import obtener_parametro
 
-    try:
-        param = ParametroSistema.objects.get(
-            id_empresa=empresa,
-            codigo_parametro=codigo,
-            activo=True,
-        )
-        return param.valor_parametro.strip()
-    except ParametroSistema.DoesNotExist:
-        return default
+    valor = obtener_parametro(codigo, empresa=empresa, default=default)
+    return valor if valor is not None else default
 
 
 def _to_bool(val: str) -> bool:
@@ -56,7 +50,7 @@ class CxcConfig:
     empresa: object  # core.Empresa instance
 
     # Datasource
-    datasource: str = "native"       # "native" | "odoo"
+    datasource: str = "native"  # "native" | "odoo"
     enabled: bool = True
 
     # Agente IA

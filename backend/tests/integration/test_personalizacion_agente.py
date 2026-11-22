@@ -8,6 +8,7 @@ Nota: el BUG de ``c.nombre_paso`` (el campo real es ``paso``) fue corregido;
 ``TestFlujoDocumentos`` ahora fija el análisis real de la configuración en vez
 del fallback "CONFIGURACION_FLUJO".
 """
+
 import sys
 from decimal import Decimal
 from unittest import mock
@@ -65,32 +66,24 @@ class TestSugerirCredito:
         return PersonalizacionCapa2Agent(empresa=empresa_a)
 
     def test_mora_alta_reduce_30pct(self, empresa_a):
-        s = self._agente(empresa_a).sugerir_credito(
-            "ACME", Decimal("1000.00"), cxc_vencidas=4, cxc_pagadas=6
-        )
+        s = self._agente(empresa_a).sugerir_credito("ACME", Decimal("1000.00"), cxc_vencidas=4, cxc_pagadas=6)
         assert s.riesgo == "alto"
         assert s.limite_sugerido == Decimal("700.00")
         assert "40%" in s.razonamiento
 
     def test_buen_historial_aumenta_25pct(self, empresa_a):
-        s = self._agente(empresa_a).sugerir_credito(
-            "ACME", Decimal("1000.00"), cxc_vencidas=0, cxc_pagadas=5
-        )
+        s = self._agente(empresa_a).sugerir_credito("ACME", Decimal("1000.00"), cxc_vencidas=0, cxc_pagadas=5)
         assert s.riesgo == "bajo"
         assert s.limite_sugerido == Decimal("1250.00")
 
     def test_historial_mixto_mantiene_limite(self, empresa_a):
-        s = self._agente(empresa_a).sugerir_credito(
-            "ACME", Decimal("500.00"), cxc_vencidas=1, cxc_pagadas=9
-        )
+        s = self._agente(empresa_a).sugerir_credito("ACME", Decimal("500.00"), cxc_vencidas=1, cxc_pagadas=9)
         assert s.riesgo == "medio"
         assert s.limite_sugerido == Decimal("500.00")
 
     def test_sin_historial_mantiene_limite(self, empresa_a):
         """total=0 → tasa_mora 0 pero cxc_pagadas < 5 → riesgo medio."""
-        s = self._agente(empresa_a).sugerir_credito(
-            "Nuevo", Decimal("100.00"), cxc_vencidas=0, cxc_pagadas=0
-        )
+        s = self._agente(empresa_a).sugerir_credito("Nuevo", Decimal("100.00"), cxc_vencidas=0, cxc_pagadas=0)
         assert s.riesgo == "medio"
         assert s.limite_sugerido == Decimal("100.00")
 
@@ -101,17 +94,20 @@ class TestSugerirCredito:
 @pytest.fixture
 def unidad(db, empresa_a):
     from apps.inventario.models import UnidadMedida
+
     return UnidadMedida.objects.create(id_empresa=empresa_a, nombre="Unidad", abreviatura="UN")
 
 
 @pytest.fixture
 def categoria(db, empresa_a):
     from apps.inventario.models import CategoriaProducto
+
     return CategoriaProducto.objects.create(id_empresa=empresa_a, nombre_categoria="Cat Agente")
 
 
 def _producto(empresa, unidad, categoria, moneda, nombre, costo, precio):
     from apps.inventario.models import Producto
+
     return Producto.objects.create(
         id_empresa=empresa,
         nombre_producto=nombre,
@@ -125,6 +121,7 @@ def _producto(empresa, unidad, categoria, moneda, nombre, costo, precio):
 
 def _cliente(empresa, nombre, rif, limite):
     from apps.crm.models import Cliente
+
     return Cliente.objects.create(
         id_empresa=empresa,
         razon_social=nombre,
@@ -137,6 +134,7 @@ def _cliente(empresa, nombre, rif, limite):
 def _cxc(empresa, cliente, estado, monto="100.00"):
     from datetime import date
     from apps.cuentas_por_cobrar.models import CuentaPorCobrar
+
     return CuentaPorCobrar.objects.create(
         cliente=cliente,
         empresa=empresa,
@@ -158,11 +156,9 @@ class TestAnalizar:
 
     def test_producto_bajo_margen_sugiere_ajuste(self, empresa_a, unidad, categoria, moneda_usd):
         # Margen 5% (< 15%) → sugerencia
-        _producto(empresa_a, unidad, categoria, moneda_usd, "Bajo margen",
-                  Decimal("100.0000"), Decimal("105.0000"))
+        _producto(empresa_a, unidad, categoria, moneda_usd, "Bajo margen", Decimal("100.0000"), Decimal("105.0000"))
         # Margen 50% → sin sugerencia adicional
-        _producto(empresa_a, unidad, categoria, moneda_usd, "Buen margen",
-                  Decimal("100.0000"), Decimal("150.0000"))
+        _producto(empresa_a, unidad, categoria, moneda_usd, "Buen margen", Decimal("100.0000"), Decimal("150.0000"))
 
         res = PersonalizacionCapa2Agent(empresa=empresa_a).analizar()
         assert len(res.listas_precios) == 1
@@ -211,15 +207,9 @@ class TestAnalizar:
         import apps.agentes.personalizacion_agente as mod
 
         empresa = mock.Mock(pk="emp-x")
-        monkeypatch.setattr(
-            mod, "_analizar_flujo_documentos", mock.Mock(side_effect=RuntimeError("f"))
-        )
-        monkeypatch.setattr(
-            mod, "_analizar_listas_precios", mock.Mock(side_effect=RuntimeError("p"))
-        )
-        monkeypatch.setattr(
-            mod, "_analizar_credito_clientes", mock.Mock(side_effect=RuntimeError("c"))
-        )
+        monkeypatch.setattr(mod, "_analizar_flujo_documentos", mock.Mock(side_effect=RuntimeError("f")))
+        monkeypatch.setattr(mod, "_analizar_listas_precios", mock.Mock(side_effect=RuntimeError("p")))
+        monkeypatch.setattr(mod, "_analizar_credito_clientes", mock.Mock(side_effect=RuntimeError("c")))
         res = PersonalizacionCapa2Agent(empresa=empresa).analizar()
         assert len(res.advertencias) == 3
         assert any(a.startswith("Flujo documentos:") for a in res.advertencias)
@@ -232,6 +222,7 @@ class TestAnalizar:
             _analizar_credito_clientes,
             _analizar_listas_precios,
         )
+
         assert _analizar_listas_precios(object()) == []
         assert _analizar_credito_clientes(object()) == []
 

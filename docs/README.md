@@ -13,12 +13,12 @@
 
 ## Planes y auditorías
 
-- [`planes/`](planes/) — Planes de ejecución vivos (piloto distribuidora, offline-first, multiplataforma, panel SaaS, cobranza/Odoo, hardening de seguridad).
+- [`planes/`](planes/) — Planes de ejecución vivos (piloto distribuidora, offline-first, multiplataforma, panel SaaS, cobranza/Odoo, hardening de seguridad, limpieza y estabilización, [Omni Connect](planes/07-omni-connect.md) y [Conciliación N:M y Paridad ERP](planes/08-conciliacion-pagos-y-paridad-odoo.md)).
 - [`PLAN_AUDITORIA_Y_TESTING_CERO_DUDAS.md`](PLAN_AUDITORIA_Y_TESTING_CERO_DUDAS.md) — Plan de calidad "cero dudas"; estado vivo en [`audit/ESTADO_PLAN_CERO_DUDAS.md`](audit/ESTADO_PLAN_CERO_DUDAS.md).
 - [`AUDITORIA_2026-06-21.md`](AUDITORIA_2026-06-21.md) — **Auditoría integral más reciente** (estado real verificado vs declarado, tabla de verdad, próximos features).
 - [`auditorias/`](auditorias/) — Sin auditoría activa en la raíz; las cerradas viven en [`auditorias/archivo/`](auditorias/archivo/).
 - [`audit/`](audit/) — Artefactos del plan cero-dudas: mapas A1 auto-generados (`mapa_superficie`) + estado vivo.
-- [`archive/2026-06-21/`](archive/2026-06-21/) — Snapshots fechados archivados por la auditoría 2026-06-21.
+- [`_archive/2026-06-21/`](_archive/2026-06-21/) — Snapshots fechados archivados por la auditoría 2026-06-21 (unificados desde `docs/archive/`).
 
 ## Backend
 
@@ -48,6 +48,9 @@
 - [ADR-010](decisions/ADR-010-extensibilidad-y-marketplace.md) — Extensibilidad y marketplace.
 - [ADR-011](decisions/ADR-011-servicios-hermanos-fabricas.md) — Servicios hermanos / fábricas.
 - [ADR-012](decisions/ADR-012-modelo-transaccional-venta-pos-offline.md) — Modelo transaccional de venta POS offline.
+- [ADR-013](decisions/ADR-013-cxc-lubrikca-app-dedicada.md) — Subproyecto CxC Lubrikca como app dedicada y aislada (`apps/cxc_lubrikca`).
+- [ADR-014](decisions/ADR-014-omni-connect-nfc-crm-en-omni.md) — Omni Connect (tarjetas NFC + CRM ligero) dentro de Omni.
+- [ADR-015](decisions/ADR-015-omni-tareas-ejecucion-operativa.md) — Omni Tareas (`apps/tareas`) — ejecución operativa y proyectos nativos.
 
 ## Skills (guías de implementación reutilizables)
 

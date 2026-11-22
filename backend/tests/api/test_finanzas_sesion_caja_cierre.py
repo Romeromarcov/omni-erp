@@ -20,6 +20,7 @@ Cubre por API: cierre persiste corte por caja + estado de sesión; segundo
 cierre solo cuenta lo nuevo; atomicidad (caja ajena → rollback completo);
 validaciones de entrada; aislamiento multi-tenant (R-CODE-1 → 404).
 """
+
 import datetime
 from decimal import Decimal
 
@@ -80,8 +81,12 @@ class TestCierreCajaVirtual:
 
     def test_flujo_dos_cierres_y_saldo_reconciliado(self, client_a, caja_virtual_a, user_a, moneda_usd):
         caja = caja_virtual_a
-        _mov(caja_virtual=caja, user=user_a, hora=datetime.time(9, 0), tipo="INGRESO", monto="100.00", moneda=moneda_usd)
-        _mov(caja_virtual=caja, user=user_a, hora=datetime.time(10, 0), tipo="EGRESO", monto="30.00", moneda=moneda_usd)
+        _mov(
+            caja_virtual=caja, user=user_a, hora=datetime.time(9, 0), tipo="INGRESO", monto="100.00", moneda=moneda_usd
+        )
+        _mov(
+            caja_virtual=caja, user=user_a, hora=datetime.time(10, 0), tipo="EGRESO", monto="30.00", moneda=moneda_usd
+        )
 
         resp = client_a.post(
             URL_CIERRE_VIRTUAL.format(caja.id_caja),
@@ -101,8 +106,17 @@ class TestCierreCajaVirtual:
         assert caja.saldo_actual == Decimal("70.00")
 
         # Lo nuevo tras el corte: ingreso 25, transferencia entrada 10, egreso 5
-        _mov(caja_virtual=caja, user=user_a, hora=datetime.time(14, 0), tipo="INGRESO", monto="25.00", moneda=moneda_usd)
-        _mov(caja_virtual=caja, user=user_a, hora=datetime.time(15, 0), tipo="TRANSFERENCIA_ENTRADA", monto="10.00", moneda=moneda_usd)
+        _mov(
+            caja_virtual=caja, user=user_a, hora=datetime.time(14, 0), tipo="INGRESO", monto="25.00", moneda=moneda_usd
+        )
+        _mov(
+            caja_virtual=caja,
+            user=user_a,
+            hora=datetime.time(15, 0),
+            tipo="TRANSFERENCIA_ENTRADA",
+            monto="10.00",
+            moneda=moneda_usd,
+        )
         _mov(caja_virtual=caja, user=user_a, hora=datetime.time(16, 0), tipo="EGRESO", monto="5.00", moneda=moneda_usd)
 
         resp2 = client_a.post(
@@ -123,7 +137,9 @@ class TestCierreCajaVirtual:
 
     def test_descuadre_crea_ajuste_y_reconcilia_saldo(self, client_a, caja_virtual_a, user_a, moneda_usd):
         caja = caja_virtual_a
-        _mov(caja_virtual=caja, user=user_a, hora=datetime.time(9, 0), tipo="INGRESO", monto="100.00", moneda=moneda_usd)
+        _mov(
+            caja_virtual=caja, user=user_a, hora=datetime.time(9, 0), tipo="INGRESO", monto="100.00", moneda=moneda_usd
+        )
 
         resp = client_a.post(
             URL_CIERRE_VIRTUAL.format(caja.id_caja),
@@ -157,7 +173,10 @@ class TestCierreCajaVirtual:
         assert client_a.post(url, {"saldo_real": "no-numero"}, format="json").status_code == 400
         assert client_a.post(url, {"saldo_real": "10.00", "hasta": "fecha-mala"}, format="json").status_code == 400
         # Límite anterior al último cierre
-        assert client_a.post(url, {"saldo_real": "0.00", "hasta": "2026-06-10T12:00:00"}, format="json").status_code == 200
+        assert (
+            client_a.post(url, {"saldo_real": "0.00", "hasta": "2026-06-10T12:00:00"}, format="json").status_code
+            == 200
+        )
         resp = client_a.post(url, {"saldo_real": "0.00", "hasta": "2026-06-10T08:00:00"}, format="json")
         assert resp.status_code == 400
         assert "anterior al último cierre" in resp.data["error"]
@@ -165,9 +184,7 @@ class TestCierreCajaVirtual:
     def test_aislamiento_multi_tenant(self, caja_virtual_a, user_b):
         client_b = APIClient()
         client_b.force_authenticate(user=user_b)
-        resp = client_b.post(
-            URL_CIERRE_VIRTUAL.format(caja_virtual_a.id_caja), {"saldo_real": "0.00"}, format="json"
-        )
+        resp = client_b.post(URL_CIERRE_VIRTUAL.format(caja_virtual_a.id_caja), {"saldo_real": "0.00"}, format="json")
         assert resp.status_code == 404
         assert not caja_virtual_a.movimientos.filter(tipo_movimiento="CIERRE").exists()
 
@@ -184,9 +201,30 @@ class TestSesionCajaFisicaPorCajaFisica:
         assert resp.data["sesion"]["estado"] == "ABIERTA"
         id_sesion = resp.data["sesion"]["id_sesion"]
 
-        _mov(caja_fisica=caja_fisica_a, user=user_a, hora=datetime.time(9, 0), tipo="INGRESO", monto="100.00", moneda=moneda_usd)
-        _mov(caja_fisica=caja_fisica_a, user=user_a, hora=datetime.time(10, 0), tipo="EGRESO", monto="30.00", moneda=moneda_usd)
-        _mov(caja_virtual=caja_virtual_a, user=user_a, hora=datetime.time(11, 0), tipo="INGRESO", monto="50.00", moneda=moneda_usd)
+        _mov(
+            caja_fisica=caja_fisica_a,
+            user=user_a,
+            hora=datetime.time(9, 0),
+            tipo="INGRESO",
+            monto="100.00",
+            moneda=moneda_usd,
+        )
+        _mov(
+            caja_fisica=caja_fisica_a,
+            user=user_a,
+            hora=datetime.time(10, 0),
+            tipo="EGRESO",
+            monto="30.00",
+            moneda=moneda_usd,
+        )
+        _mov(
+            caja_virtual=caja_virtual_a,
+            user=user_a,
+            hora=datetime.time(11, 0),
+            tipo="INGRESO",
+            monto="50.00",
+            moneda=moneda_usd,
+        )
 
         resp = client_a.post(
             URL_CERRAR_SESION.format(caja_fisica_a.id_caja_fisica),
@@ -218,12 +256,17 @@ class TestSesionCajaFisicaPorCajaFisica:
         assert sesion.notas == "cierre de turno"
         assert sesion.fecha_cierre is not None
 
-    def test_segundo_cierre_solo_cuenta_lo_nuevo(
-        self, client_a, caja_fisica_a, user_a, moneda_usd
-    ):
+    def test_segundo_cierre_solo_cuenta_lo_nuevo(self, client_a, caja_fisica_a, user_a, moneda_usd):
         # Primera sesión: ingreso 100 → cierre con 100
         client_a.post(URL_ABRIR_SESION.format(caja_fisica_a.id_caja_fisica), {}, format="json")
-        _mov(caja_fisica=caja_fisica_a, user=user_a, hora=datetime.time(9, 0), tipo="INGRESO", monto="100.00", moneda=moneda_usd)
+        _mov(
+            caja_fisica=caja_fisica_a,
+            user=user_a,
+            hora=datetime.time(9, 0),
+            tipo="INGRESO",
+            monto="100.00",
+            moneda=moneda_usd,
+        )
         resp = client_a.post(
             URL_CERRAR_SESION.format(caja_fisica_a.id_caja_fisica),
             {"saldos_reales": {str(caja_fisica_a.id_caja_fisica): "100.00"}, "hasta": "2026-06-10T12:00:00"},
@@ -233,7 +276,14 @@ class TestSesionCajaFisicaPorCajaFisica:
 
         # Segunda sesión: solo lo nuevo (25) sobre la base del corte (100)
         client_a.post(URL_ABRIR_SESION.format(caja_fisica_a.id_caja_fisica), {}, format="json")
-        _mov(caja_fisica=caja_fisica_a, user=user_a, hora=datetime.time(14, 0), tipo="INGRESO", monto="25.00", moneda=moneda_usd)
+        _mov(
+            caja_fisica=caja_fisica_a,
+            user=user_a,
+            hora=datetime.time(14, 0),
+            tipo="INGRESO",
+            monto="25.00",
+            moneda=moneda_usd,
+        )
         resp2 = client_a.post(
             URL_CERRAR_SESION.format(caja_fisica_a.id_caja_fisica),
             {"saldos_reales": {str(caja_fisica_a.id_caja_fisica): "125.00"}, "hasta": "2026-06-10T18:00:00"},
@@ -251,16 +301,21 @@ class TestSesionCajaFisicaPorCajaFisica:
         assert resp.status_code == 400
         assert "sesión abierta" in resp.data["error"]
 
-    def test_caja_ajena_a_la_sesion_rollback_atomico(
-        self, client_a, caja_fisica_a, user_a, moneda_usd, empresa_a
-    ):
+    def test_caja_ajena_a_la_sesion_rollback_atomico(self, client_a, caja_fisica_a, user_a, moneda_usd, empresa_a):
         """Si una caja de saldos_reales no pertenece a la sesión, NADA se
         persiste (ni el cierre válido previo, ni el estado de la sesión)."""
         otra_caja = Caja.objects.create(
             empresa=empresa_a, nombre="Caja Suelta", moneda=moneda_usd, saldo_actual=Decimal("0.00")
         )
         client_a.post(URL_ABRIR_SESION.format(caja_fisica_a.id_caja_fisica), {}, format="json")
-        _mov(caja_fisica=caja_fisica_a, user=user_a, hora=datetime.time(9, 0), tipo="INGRESO", monto="10.00", moneda=moneda_usd)
+        _mov(
+            caja_fisica=caja_fisica_a,
+            user=user_a,
+            hora=datetime.time(9, 0),
+            tipo="INGRESO",
+            monto="10.00",
+            moneda=moneda_usd,
+        )
         resp = client_a.post(
             URL_CERRAR_SESION.format(caja_fisica_a.id_caja_fisica),
             {
@@ -291,7 +346,9 @@ class TestSesionCajaFisicaPorCajaFisica:
         client_a.post(URL_ABRIR_SESION.format(caja_fisica_a.id_caja_fisica), {}, format="json")
         client_b = APIClient()
         client_b.force_authenticate(user=user_b)
-        assert client_b.post(URL_ABRIR_SESION.format(caja_fisica_a.id_caja_fisica), {}, format="json").status_code == 404
+        assert (
+            client_b.post(URL_ABRIR_SESION.format(caja_fisica_a.id_caja_fisica), {}, format="json").status_code == 404
+        )
         resp = client_b.post(
             URL_CERRAR_SESION.format(caja_fisica_a.id_caja_fisica),
             {"saldos_reales": {str(caja_fisica_a.id_caja_fisica): "0.00"}},
@@ -302,8 +359,14 @@ class TestSesionCajaFisicaPorCajaFisica:
 
     def test_requiere_autenticacion(self, caja_fisica_a):
         client = APIClient()
-        assert client.post(URL_ABRIR_SESION.format(caja_fisica_a.id_caja_fisica), {}, format="json").status_code in (401, 403)
-        assert client.post(URL_CERRAR_SESION.format(caja_fisica_a.id_caja_fisica), {}, format="json").status_code in (401, 403)
+        assert client.post(URL_ABRIR_SESION.format(caja_fisica_a.id_caja_fisica), {}, format="json").status_code in (
+            401,
+            403,
+        )
+        assert client.post(URL_CERRAR_SESION.format(caja_fisica_a.id_caja_fisica), {}, format="json").status_code in (
+            401,
+            403,
+        )
 
 
 class TestSesionCajaFisicaViewSetCerrar:
@@ -313,12 +376,24 @@ class TestSesionCajaFisicaViewSetCerrar:
     def _abrir(self, caja_fisica, user):
         return SesionCajaFisica.abrir_sesion(caja_fisica=caja_fisica, usuario=user)
 
-    def test_cerrar_persiste_cierres_y_estado(
-        self, client_a, caja_fisica_a, caja_virtual_a, user_a, moneda_usd
-    ):
+    def test_cerrar_persiste_cierres_y_estado(self, client_a, caja_fisica_a, caja_virtual_a, user_a, moneda_usd):
         sesion = self._abrir(caja_fisica_a, user_a)
-        _mov(caja_fisica=caja_fisica_a, user=user_a, hora=datetime.time(9, 0), tipo="INGRESO", monto="40.00", moneda=moneda_usd)
-        _mov(caja_virtual=caja_virtual_a, user=user_a, hora=datetime.time(10, 0), tipo="INGRESO", monto="15.00", moneda=moneda_usd)
+        _mov(
+            caja_fisica=caja_fisica_a,
+            user=user_a,
+            hora=datetime.time(9, 0),
+            tipo="INGRESO",
+            monto="40.00",
+            moneda=moneda_usd,
+        )
+        _mov(
+            caja_virtual=caja_virtual_a,
+            user=user_a,
+            hora=datetime.time(10, 0),
+            tipo="INGRESO",
+            monto="15.00",
+            moneda=moneda_usd,
+        )
 
         resp = client_a.post(
             URL_SESION_CERRAR.format(sesion.id_sesion),
@@ -349,9 +424,7 @@ class TestSesionCajaFisicaViewSetCerrar:
 
     def test_saldos_reales_no_dict(self, client_a, caja_fisica_a, user_a):
         sesion = self._abrir(caja_fisica_a, user_a)
-        resp = client_a.post(
-            URL_SESION_CERRAR.format(sesion.id_sesion), {"saldos_reales": ["x"]}, format="json"
-        )
+        resp = client_a.post(URL_SESION_CERRAR.format(sesion.id_sesion), {"saldos_reales": ["x"]}, format="json")
         assert resp.status_code == 400
 
     def test_aislamiento_multi_tenant(self, caja_fisica_a, user_a, user_b):

@@ -24,6 +24,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
+from apps.core.exceptions import domain_error_response
 from apps.core.idempotency import idempotent
 from apps.core.throttling import EscrituraRateThrottle
 from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
@@ -46,9 +47,9 @@ class PagoTerceroViewSet(BaseModelViewSet):
 
     def get_queryset(self):
         # R-CODE-1: solo pagos de empresas visibles del usuario.
-        qs = PagoTercero.objects.filter(
-            id_empresa__in=_empresas(self.request)
-        ).select_related("id_proveedor", "id_moneda", "id_abono_cxp", "id_cxc_reintegro")
+        qs = PagoTercero.objects.filter(id_empresa__in=_empresas(self.request)).select_related(
+            "id_proveedor", "id_moneda", "id_abono_cxp", "id_cxc_reintegro"
+        )
 
         estado = self.request.query_params.get("estado")
         proveedor_id = self.request.query_params.get("proveedor")
@@ -114,10 +115,10 @@ class PagoTerceroViewSet(BaseModelViewSet):
                 descripcion=request.data.get("descripcion", ""),
             )
         except PagoTerceroError as exc:
-            raise ValidationError({"detail": str(exc)}) from exc
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail")
         except AsientoError as exc:
             # R-CODE-11: la transacción ya fue revertida (abono + estado).
-            return Response({"error": str(exc)}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+            return domain_error_response(exc, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
         pago.refresh_from_db()
         cxp.refresh_from_db()
@@ -171,9 +172,9 @@ class PagoTerceroViewSet(BaseModelViewSet):
                 descripcion=request.data.get("descripcion", ""),
             )
         except PagoTerceroError as exc:
-            raise ValidationError({"detail": str(exc)}) from exc
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail")
         except AsientoError as exc:
-            return Response({"error": str(exc)}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+            return domain_error_response(exc, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
         pago.refresh_from_db()
         return self._respuesta(

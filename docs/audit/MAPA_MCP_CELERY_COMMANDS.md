@@ -28,15 +28,21 @@ _Total tools MCP: 17_
 
 | Tarea | Módulo |
 |---|---|
+| `activaciones.sincronizar_google` | apps.activaciones.tasks |
+| `agentes.ejecutar_analisis_agente` | apps.agentes.tasks |
 | `agentes.generar_sugerencias_diarias` | apps.agentes.tasks |
 | `auditoria.registrar_evento` | apps.auditoria.tasks |
+| `bots_ingest.sincronizar_odoo` | apps.bots_ingest.tasks |
 | `config.celery.debug_task` | config.celery |
+| `connect.purgar_toques_antiguos` | apps.connect.tasks |
 | `core.log_evento` | apps.core.tasks |
 | `core.ping` | apps.core.tasks |
 | `cxc_lubrikca.sync` | apps.cxc_lubrikca.tasks |
 | `cxc_lubrikca.sync_todos` | apps.cxc_lubrikca.tasks |
+| `gestion_aprobaciones.escalar_solicitudes_vencidas` | apps.gestion_aprobaciones.tasks |
 | `gestion_documental.eliminar_archivo_s3` | apps.gestion_documental.tasks |
 | `gestion_documental.limpiar_archivos_huerfanos` | apps.gestion_documental.tasks |
+| `integration_hub.despachar_outbox` | apps.integration_hub.tasks |
 | `integration_hub.ejecutar_job_sincronizacion` | apps.integration_hub.tasks |
 | `integration_hub.export_automatico_todos` | apps.integration_hub.tasks |
 | `integration_hub.exportar_instancia` | apps.integration_hub.tasks |
@@ -46,8 +52,10 @@ _Total tools MCP: 17_
 | `integration_hub.sync_cartera_odoo_todos` | apps.integration_hub.tasks |
 | `integration_hub.sync_tasas_ve` | apps.integration_hub.tasks |
 | `notificaciones.enviar_notificacion_email` | apps.notificaciones.tasks |
+| `tareas.ejecutar_ciclo_empresa` | apps.tareas.tasks |
+| `tareas.ejecutar_ciclo_todos` | apps.tareas.tasks |
 
-_Total tareas Celery: 18_
+_Total tareas Celery: 26_
 
 ## Management commands
 
@@ -57,6 +65,7 @@ _Total tareas Celery: 18_
 | `configurar_conector_sheets` | apps.integration_hub |
 | `configurar_rol_rls` | apps.core |
 | `consumir_eventos` | apps.eventos |
+| `crear_usuario_bot` | apps.bots_ingest |
 | `create_initial_data` | apps.core |
 | `exportar_a_sheets` | apps.integration_hub |
 | `importar_clientes` | apps.migracion_datos |
@@ -67,9 +76,10 @@ _Total tareas Celery: 18_
 | `mapa_superficie` | apps.core |
 | `migrar_contactos` | apps.core |
 | `run_mcp_server` | apps.core |
+| `seed_catalogo_monedas` | apps.finanzas |
 | `seed_empresa_inicial` | apps.core |
 | `seed_proveedores_integracion` | apps.integration_hub |
 | `sincronizar_cxc_lubrikca` | apps.cxc_lubrikca |
 | `validar_conector_odoo` | apps.integration_hub |
 
-_Total commands: 18_
+_Total commands: 20_

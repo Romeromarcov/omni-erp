@@ -54,9 +54,9 @@ class SugerenciaCobranza:
     cliente_nombre: str
     monto: Decimal
     dias_vencida: int
-    prioridad: str          # "alta" | "media" | "baja"
-    canal: str              # "whatsapp" | "telefono" | "email" | "visita_presencial"
-    mensaje_whatsapp: str   # Texto listo para copiar en WhatsApp
+    prioridad: str  # "alta" | "media" | "baja"
+    canal: str  # "whatsapp" | "telefono" | "email" | "visita_presencial"
+    mensaje_whatsapp: str  # Texto listo para copiar en WhatsApp
     razonamiento: str
     modelo_llm: str = "fallback-reglas"
     latencia_ms: int = 0
@@ -189,7 +189,6 @@ Responde SOLO con un JSON válido:
         Returns:
             Lista de SugerenciaCobranza ordenada por prioridad desc.
         """
-        from django.utils import timezone as tz
 
         from apps.cuentas_por_cobrar.models import CuentaPorCobrar
 
@@ -221,7 +220,10 @@ Responde SOLO con un JSON válido:
             sugerencias.append(s)
             logger.info(
                 "cobranza | cxc=%s | prioridad=%s | canal=%s | dias=%d",
-                cxc.pk, s.prioridad, s.canal, dias,
+                cxc.pk,
+                s.prioridad,
+                s.canal,
+                dias,
             )
 
         # Sort: alta → media → baja

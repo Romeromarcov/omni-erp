@@ -6,6 +6,7 @@ Verifica que una CuentaPorCobrar pueda existir SIN crm.Cliente (identificada por
 flujo: providers de cartera, aging, pagos y serializador. Mantiene el camino
 clásico (con FK) intacto y cubre el aislamiento multi-tenant.
 """
+
 from datetime import date, timedelta
 from decimal import Decimal
 

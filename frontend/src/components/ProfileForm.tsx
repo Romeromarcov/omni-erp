@@ -4,11 +4,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { profileSchema, type ProfileInput } from '../schemas/auth.schemas';
 
-type ProfileFormValues = ProfileInput;
-
 interface ProfileFormProps {
-  initialValues: ProfileFormValues;
-  onSubmit: (values: ProfileFormValues) => void;
+  initialValues: ProfileInput;
+  onSubmit: (values: ProfileInput) => void;
   loading?: boolean;
   error?: string;
 }
@@ -19,7 +17,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialValues, onSubmit, load
     handleSubmit,
     reset,
     formState: { errors, isDirty },
-  } = useForm<ProfileFormValues>({
+  } = useForm<ProfileInput>({
     resolver: zodResolver(profileSchema),
     mode: 'onBlur',
     defaultValues: initialValues,
@@ -30,7 +28,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialValues, onSubmit, load
     if (!isDirty) {
       reset(initialValues);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intencional: solo rehidratar al cambiar initialValues, sin disparar por isDirty/reset
   }, [initialValues]);
 
   return (

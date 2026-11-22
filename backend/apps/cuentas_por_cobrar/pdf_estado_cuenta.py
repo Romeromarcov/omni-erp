@@ -32,9 +32,7 @@ def generar_pdf_estado_cuenta(empresa, cliente, fecha_corte: date = None) -> byt
         from reportlab.lib.units import cm
         from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
     except ImportError as exc:
-        raise ImportError(
-            "reportlab no está instalado. Instálelo con: pip install reportlab"
-        ) from exc
+        raise ImportError("reportlab no está instalado. Instálelo con: pip install reportlab") from exc
 
     import io
     from decimal import Decimal
@@ -80,13 +78,15 @@ def generar_pdf_estado_cuenta(empresa, cliente, fecha_corte: date = None) -> byt
 
     for cxc in cxc_qs:
         ref = cxc.referencia_externa or str(cxc.pk)[:8]
-        filas.append([
-            ref,
-            str(cxc.fecha_emision),
-            str(cxc.fecha_vencimiento),
-            f"{cxc.monto:,.2f}",
-            cxc.estado.upper(),
-        ])
+        filas.append(
+            [
+                ref,
+                str(cxc.fecha_emision),
+                str(cxc.fecha_vencimiento),
+                f"{cxc.monto:,.2f}",
+                cxc.estado.upper(),
+            ]
+        )
         if cxc.estado in ("pendiente", "parcial"):
             total_pendiente += cxc.monto
             if cxc.fecha_vencimiento < fecha_corte:
@@ -98,16 +98,20 @@ def generar_pdf_estado_cuenta(empresa, cliente, fecha_corte: date = None) -> byt
         filas.append(["—", "—", "—", "Sin documentos", "—"])
 
     t_cxc = Table(filas, colWidths=[3.5 * cm, 3 * cm, 3 * cm, 3.5 * cm, 4 * cm])
-    t_cxc.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.darkgreen),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
-        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, -1), 9),
-        ("GRID", (0, 0), (-1, -1), 0.5, colors.black),
-        ("ALIGN", (3, 0), (3, -1), "RIGHT"),
-        ("ALIGN", (4, 0), (4, -1), "CENTER"),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.lightgrey]),
-    ]))
+    t_cxc.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.darkgreen),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 9),
+                ("GRID", (0, 0), (-1, -1), 0.5, colors.black),
+                ("ALIGN", (3, 0), (3, -1), "RIGHT"),
+                ("ALIGN", (4, 0), (4, -1), "CENTER"),
+                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.lightgrey]),
+            ]
+        )
+    )
     story.append(t_cxc)
     story.append(Spacer(1, 0.5 * cm))
 
@@ -119,13 +123,17 @@ def generar_pdf_estado_cuenta(empresa, cliente, fecha_corte: date = None) -> byt
         ["Total Pagado:", f"{total_pagado:,.2f}"],
     ]
     t_res = Table(resumen, colWidths=[8 * cm, 5 * cm])
-    t_res.setStyle(TableStyle([
-        ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, -1), 11),
-        ("ALIGN", (1, 0), (1, -1), "RIGHT"),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-        ("TEXTCOLOR", (0, 1), (1, 1), colors.red),  # vencido en rojo
-    ]))
+    t_res.setStyle(
+        TableStyle(
+            [
+                ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 11),
+                ("ALIGN", (1, 0), (1, -1), "RIGHT"),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                ("TEXTCOLOR", (0, 1), (1, 1), colors.red),  # vencido en rojo
+            ]
+        )
+    )
     story.append(t_res)
 
     doc.build(story)

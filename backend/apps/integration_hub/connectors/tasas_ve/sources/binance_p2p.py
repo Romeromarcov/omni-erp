@@ -2,6 +2,7 @@
 Binance P2P: 5 BUY + 5 SELL → promedio de 10 precios.
 Persiste como PROMEDIO_MERCADO en finanzas.TasaCambio.
 """
+
 import logging
 from decimal import Decimal
 import httpx
@@ -9,6 +10,7 @@ import httpx
 logger = logging.getLogger(__name__)
 
 BINANCE_P2P_URL = "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search"
+
 
 def _fetch_side(trade_type: str, rows: int = 5) -> list[Decimal]:
     payload = {

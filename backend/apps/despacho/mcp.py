@@ -11,6 +11,8 @@ Herramientas expuestas:
 """
 
 import logging
+from collections.abc import Iterator
+from contextlib import contextmanager
 from typing import Any, Dict, List
 
 logger = logging.getLogger("omni.mcp.despacho")
@@ -18,14 +20,13 @@ logger = logging.getLogger("omni.mcp.despacho")
 _SCOPE = "despacho"
 
 
-def _ctx(capability_token: str, scope: str) -> dict:
-    """Resuelve y valida token + scope. Lanza PermissionError si falla."""
-    from apps.core.mcp_server import _require_scope, _resolve_token  # noqa: PLC0415
+@contextmanager
+def _ctx(capability_token: str, scope: str, *, empresa_id: str | None = None) -> Iterator[dict[str, Any]]:
+    """Resuelve y valida token/scope/tenant abriendo ``rls_tenant_context``."""
+    from apps.core.mcp_server import mcp_tenant_context  # noqa: PLC0415
 
-    context = _resolve_token(capability_token)
-    _require_scope(context, scope)
-    assert context is not None  # noqa: S101
-    return context
+    with mcp_tenant_context(capability_token, scope, empresa_id=empresa_id) as context:
+        yield context
 
 
 def despacho_get_pendientes(
@@ -51,47 +52,40 @@ def despacho_get_pendientes(
     """
     from apps.despacho.models import Despacho  # noqa: PLC0415
 
-    ctx = _ctx(capability_token, f"{_SCOPE}:read")
-    if empresa_id != ctx["empresa_id"]:
-        raise PermissionError("empresa_id no coincide con el tenant del token.")
+    with _ctx(capability_token, f"{_SCOPE}:read", empresa_id=empresa_id) as ctx:
+        estados = [Despacho.ESTADO_PENDIENTE]
+        if incluir_en_ruta:
+            estados.append(Despacho.ESTADO_EN_RUTA)
 
-    estados = [Despacho.ESTADO_PENDIENTE]
-    if incluir_en_ruta:
-        estados.append(Despacho.ESTADO_EN_RUTA)
+        limit = max(1, min(limit, 100))  # clamp: el slice negativo no está soportado
+        despachos = (
+            Despacho.objects.filter(id_empresa=empresa_id, estado_despacho__in=estados)
+            .select_related("id_nota_venta__id_cliente", "id_transportista")
+            .order_by("fecha_despacho")[:limit]
+        )
 
-    limit = max(1, min(limit, 100))  # clamp: el slice negativo no está soportado
-    despachos = (
-        Despacho.objects.filter(id_empresa=empresa_id, estado_despacho__in=estados)
-        .select_related("id_nota_venta__id_cliente", "id_transportista")
-        .order_by("fecha_despacho")[:limit]
-    )
-
-    logger.info(
-        "despacho_get_pendientes | actor=%s | tenant=%s | count=%d",
-        ctx["actor_id"], ctx["tenant_id"], len(despachos),
-    )
-    return [
-        {
-            "id_despacho": str(d.id_despacho),
-            "numero": d.numero_despacho,
-            "estado": d.estado_despacho,
-            "fecha_despacho": d.fecha_despacho.isoformat(),
-            "fecha_entrega_estimada": (
-                d.fecha_entrega_estimada.isoformat() if d.fecha_entrega_estimada else None
-            ),
-            "nota_venta": d.id_nota_venta.numero_nota if d.id_nota_venta else None,
-            "cliente": (
-                d.id_nota_venta.id_cliente.razon_social if d.id_nota_venta else None
-            ),
-            "direccion_entrega": d.direccion_destino,
-            "transportista": (
-                f"{d.id_transportista.nombre} {d.id_transportista.apellido}"
-                if d.id_transportista
-                else None
-            ),
-        }
-        for d in despachos
-    ]
+        logger.info(
+            "despacho_get_pendientes | actor=%s | tenant=%s | count=%d",
+            ctx["actor_id"],
+            ctx["tenant_id"],
+            len(despachos),
+        )
+        return [
+            {
+                "id_despacho": str(d.id_despacho),
+                "numero": d.numero_despacho,
+                "estado": d.estado_despacho,
+                "fecha_despacho": d.fecha_despacho.isoformat(),
+                "fecha_entrega_estimada": (d.fecha_entrega_estimada.isoformat() if d.fecha_entrega_estimada else None),
+                "nota_venta": d.id_nota_venta.numero_nota if d.id_nota_venta else None,
+                "cliente": (d.id_nota_venta.id_cliente.razon_social if d.id_nota_venta else None),
+                "direccion_entrega": d.direccion_destino,
+                "transportista": (
+                    f"{d.id_transportista.nombre} {d.id_transportista.apellido}" if d.id_transportista else None
+                ),
+            }
+            for d in despachos
+        ]
 
 
 # ── Auto-discovery — exportar lista de herramientas ──────────────────────────

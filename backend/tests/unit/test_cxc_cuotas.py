@@ -98,7 +98,11 @@ def test_plazo_menor_que_periodo_da_una_cuota():
 def test_monto_cuota_fijo_ajusta_ultima():
     # total 100, monto_cuota 40, mensual, plazo 90 → 3 cuotas: 40,40, última=20
     cuotas = generar_cuotas(
-        _ACUERDO, date(2026, 1, 1), 90, "mensual", Decimal("100.00"),
+        _ACUERDO,
+        date(2026, 1, 1),
+        90,
+        "mensual",
+        Decimal("100.00"),
         monto_cuota=Decimal("40.00"),
     )
     assert [c["monto"] for c in cuotas] == [Decimal("40.00"), Decimal("40.00"), Decimal("20.00")]
@@ -111,7 +115,11 @@ def test_monto_cuota_fijo_ajusta_ultima():
 def test_porcentaje_abono():
     # total 1000, 25% → 250 por cuota, plazo 120 mensual → 4 cuotas de 250
     cuotas = generar_cuotas(
-        _ACUERDO, date(2026, 1, 1), 120, "mensual", Decimal("1000.00"),
+        _ACUERDO,
+        date(2026, 1, 1),
+        120,
+        "mensual",
+        Decimal("1000.00"),
         porcentaje_abono=Decimal("25"),
     )
     assert len(cuotas) == 4
@@ -127,7 +135,11 @@ def test_no_genera_cuotas_negativas_por_monto_fijo_alto():
     # BUG-M3 (corregido): antes emitía [60, 60] = 120 > total. Ahora cada cuota
     # se capea al restante: [60, 40] y la suma == monto_total.
     cuotas = generar_cuotas(
-        _ACUERDO, date(2026, 1, 1), 90, "mensual", Decimal("100.00"),
+        _ACUERDO,
+        date(2026, 1, 1),
+        90,
+        "mensual",
+        Decimal("100.00"),
         monto_cuota=Decimal("60.00"),
     )
     assert all(c["monto"] > 0 for c in cuotas)

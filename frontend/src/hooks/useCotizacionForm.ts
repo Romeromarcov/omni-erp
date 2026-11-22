@@ -81,7 +81,7 @@ export const useCotizacionForm = (cotizacionId?: string) => {
         : [],
     });
     base.setLoading(false);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intencional: base cambia cada render; solo rehidratar al cargar cotizacionData
   }, [cotizacionData, isLoadingCotizacion]);
 
   // FE-HIGH-5: el número de cotización lo asigna el backend al guardar.

@@ -8,7 +8,8 @@ import type { SelectChangeEvent } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 
 import type { Pago, NotaCredito, ModalPagoProps } from './types';
-import { D, sumDecimals } from '../../lib/decimal';
+import Decimal from 'decimal.js';
+import { D, sumDecimals, toFixedStr, type DecimalInput } from '../../lib/decimal';
 import { useModalPagoData } from './useModalPagoData';
 import CamposDinamicos from './CamposDinamicos';
 import SeccionNotasCredito from './SeccionNotasCredito';
@@ -20,8 +21,8 @@ import { useSnackbar } from '../../contexts/feedbackTypes';
 export type { Pago, NotaCredito } from './types';
 
 const FORM_VACIO: Pago = {
-  id_metodo_pago: '', id_moneda: '', monto: 0, referencia: '',
-  tasa: 1, tipo_tasa: 'OFICIAL_BCV',
+  id_metodo_pago: '', id_moneda: '', monto: '', referencia: '',
+  tasa: '1', tipo_tasa: 'OFICIAL_BCV',
   id_caja_fisica: '', id_caja_virtual: '', id_cuenta_bancaria: '',
   id_datafono: '', banco_destino: '', metodo: '', moneda: '',
 };
@@ -100,53 +101,54 @@ const ModalPago: React.FC<ModalPagoProps> = ({
     setForm(f => ({ ...f, id_cuenta_bancaria: '', id_datafono: '', id_caja_virtual: '' }));
   }, [form.id_metodo_pago, form.metodo, form.id_moneda, form.moneda, cuentasBancarias, datafonos, cajas, metodos]);
 
-  // BUG-M6 / FE-HIGH-7: toda la aritmética monetaria del cobro se hace con
-  // decimal.js (R-CODE-4) para evitar errores de punto flotante; solo se
-  // convierte a `number` en el borde de la interfaz (Pago.monto_base, props).
+  // BUG-M6 / FE-HIGH-7 / R-CODE-4: toda la aritmética monetaria del cobro
+  // permanece en Decimal y se serializa como string decimal exacto (sin `.toNumber()`).
   const conversiones = useMemo(
-    () => (montoVal: number, tasa: number, monedaId: string) => {
-      if (!monedaBase || !monedaPais) return { base: 0, pais: 0 };
+    () => (montoVal: DecimalInput, tasa: DecimalInput, monedaId: string): { base: string; pais: string } => {
+      if (!monedaBase || !monedaPais) return { base: '0', pais: '0' };
       const m = D(montoVal);
       const t = D(tasa);
-      if (monedaId === monedaBase.codigo_iso) return { base: m.toNumber(), pais: m.times(t).toNumber() };
+      if (monedaId === monedaBase.codigo_iso) return { base: m.toString(), pais: m.times(t).toString() };
       if (monedaId === monedaPais.codigo_iso) {
-        return { base: t.isZero() ? 0 : m.dividedBy(t).toNumber(), pais: m.toNumber() };
+        return { base: t.isZero() ? '0' : m.dividedBy(t).toString(), pais: m.toString() };
       }
       const base = t.isZero() ? D(0) : m.dividedBy(t);
-      return { base: base.toNumber(), pais: base.times(D(tasaBCV)).toNumber() };
+      return { base: base.toString(), pais: base.times(D(tasaBCV)).toString() };
     },
     [monedaBase, monedaPais, tasaBCV]
   );
 
-  const totalPagadoBase = useMemo(
-    () => sumDecimals(pagos.map(p => p.monto_base ?? 0)).toNumber(),
+  const totalPagadoBase = useMemo<Decimal>(
+    () => sumDecimals(pagos.map(p => p.monto_base ?? 0)),
     [pagos]
   );
-  const totalNotasCreditoBase = useMemo(
+  const totalNotasCreditoBase = useMemo<Decimal>(
     () => sumDecimals(notasCreditoSeleccionadas.map(nota => {
       const tasaNota = nota.id_moneda === monedaBase?.id_moneda ? D(1)
         : nota.id_moneda === monedaPais?.id_moneda ? (D(tasaBCV).isZero() ? D(0) : D(1).dividedBy(D(tasaBCV)))
         : D(tasaBCV);
       return D(nota.monto_disponible).times(tasaNota);
-    })).toNumber(),
+    })),
     [notasCreditoSeleccionadas, monedaBase, monedaPais, tasaBCV]
   );
 
-  const totalPagadoConNotasBase = D(totalPagadoBase).plus(D(totalNotasCreditoBase)).toNumber();
-  const saldoRestanteConNotasBase = D(monto).minus(D(totalPagadoConNotasBase)).toNumber();
+  const totalPagadoConNotasBase = totalPagadoBase.plus(totalNotasCreditoBase);
+  const saldoRestanteConNotasBase = D(monto).minus(totalPagadoConNotasBase);
 
-  const calcularVueltoDisponible = () => {
-    const v = D(totalPagadoConNotasBase).minus(D(monto));
-    return v.isNegative() ? 0 : v.toNumber();
+  const calcularVueltoDisponible = (): Decimal => {
+    const v = totalPagadoConNotasBase.minus(D(monto));
+    return v.isNegative() ? D(0) : v;
   };
-  const esDiferenciaAceptable = (diferencia: number) =>
-    diferencia > 0 ? diferencia <= toleranciaPositiva : permitirNegativas;
+  const esDiferenciaAceptable = (diferencia: DecimalInput) => {
+    const d = D(diferencia);
+    return d.gt(0) ? d.lte(D(toleranciaPositiva)) : permitirNegativas;
+  };
 
   const handleFormChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | SelectChangeEvent<string>
   ) => {
     const { name, value } = e.target;
-    if (name === 'tasa') { setForm(f => ({ ...f, tasa: Number(value), tipo_tasa: 'MANUAL' })); return; }
+    if (name === 'tasa') { setForm(f => ({ ...f, tasa: value, tipo_tasa: 'MANUAL' })); return; }
     if (name === 'id_moneda') {
       const monedaSel = monedas.find(m => m.id_moneda === value);
       setForm(f => ({ ...f, id_moneda: value, moneda: monedaSel?.codigo_iso ?? value }));
@@ -157,11 +159,11 @@ const ModalPago: React.FC<ModalPagoProps> = ({
       setForm(f => ({ ...f, id_metodo_pago: value, metodo: metodoSel?.nombre_metodo ?? value }));
       return;
     }
-    setForm(f => ({ ...f, [name]: name === 'monto' ? Number(value) : value }));
+    setForm(f => ({ ...f, [name]: value }));
   };
 
   const handleAddPago = () => {
-    if (!form.id_metodo_pago || !form.id_moneda || !form.monto || form.monto <= 0) {
+    if (!form.id_metodo_pago || !form.id_moneda || !form.monto || D(form.monto).lte(0)) {
       snackbar.warning('Por favor, complete todos los campos obligatorios del pago.');
       return;
     }
@@ -188,15 +190,15 @@ const ModalPago: React.FC<ModalPagoProps> = ({
   const handleRemovePago = (idx: number) => setPagos(prev => prev.filter((_, i) => i !== idx));
 
   const handleConfigurarVuelto = () => {
-    const vueltoDisponible = calcularVueltoDisponible();
-    if (vueltoDisponible <= 0) return;
+    const vueltoDisp = calcularVueltoDisponible();
+    if (vueltoDisp.lte(0)) return;
     setMostrarVueltos(true);
     const monedaVuelto = monedaPais?.codigo_iso ?? 'VES';
-    const tasaVuelto = monedaVuelto === monedaBase?.codigo_iso ? 1 : tasaBCV;
+    const tasaVuelto = monedaVuelto === monedaBase?.codigo_iso ? '1' : tasaBCV;
     setVuelto({
       id_metodo_pago: 'efectivo',
       id_moneda: monedaVuelto,
-      monto: D(tasaVuelto).isZero() ? 0 : D(vueltoDisponible).dividedBy(D(tasaVuelto)).toNumber(),
+      monto: D(tasaVuelto).isZero() ? '0' : vueltoDisp.dividedBy(D(tasaVuelto)).toString(),
       tasa: tasaVuelto,
       referencia: 'Vuelto automático',
       observaciones: 'Vuelto generado automáticamente por pago excedente',
@@ -326,7 +328,7 @@ const ModalPago: React.FC<ModalPagoProps> = ({
               fullWidth
               variant="contained"
               onClick={handleAddPago}
-              disabled={!form.id_metodo_pago || !form.id_moneda || !form.monto || form.monto <= 0}
+              disabled={!form.id_metodo_pago || !form.id_moneda || !form.monto || D(form.monto).lte(0)}
             >
               Agregar
             </Button>
@@ -362,7 +364,7 @@ const ModalPago: React.FC<ModalPagoProps> = ({
             >
               <ListItemText
                 primary={`${metodos.find(m => m.id_metodo_pago === p.id_metodo_pago)?.nombre_metodo} – ${p.referencia}`}
-                secondary={`Monto: ${monedas.find(m => m.codigo_iso === p.moneda)?.codigo_iso} ${p.monto.toFixed(2)} | Base: ${monedaBase?.codigo_iso} ${p.monto_base?.toFixed(2)} | País: ${monedaPais?.codigo_iso} ${p.monto_pais?.toFixed(2)}`}
+                secondary={`Monto: ${monedas.find(m => m.codigo_iso === p.moneda)?.codigo_iso} ${toFixedStr(p.monto)} | Base: ${monedaBase?.codigo_iso} ${toFixedStr(p.monto_base ?? 0)} | País: ${monedaPais?.codigo_iso} ${toFixedStr(p.monto_pais ?? 0)}`}
                 slotProps={{ primary: { sx: { fontWeight: 600, fontSize: 14 } }, secondary: { sx: { fontVariantNumeric: 'tabular-nums', fontSize: 12 } } }}
               />
             </ListItem>
@@ -383,7 +385,7 @@ const ModalPago: React.FC<ModalPagoProps> = ({
             variant="contained"
             onClick={() => {
               if (!esDiferenciaAceptable(saldoRestanteConNotasBase)) {
-                snackbar.warning(`El total de pagos tiene una diferencia que excede la tolerancia configurada (${toleranciaPositiva.toFixed(2)}). No se pueden confirmar los pagos.`);
+                snackbar.warning(`El total de pagos tiene una diferencia que excede la tolerancia configurada (${toFixedStr(toleranciaPositiva)}). No se pueden confirmar los pagos.`);
                 return;
               }
               onConfirm(pagos, vuelto ? [vuelto] : undefined, notasCreditoSeleccionadas);

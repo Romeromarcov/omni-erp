@@ -34,9 +34,7 @@ class _VigenciaValidationMixin:
         if hasta is None and self.instance is not None and "vigencia_hasta" not in attrs:
             hasta = self.instance.vigencia_hasta
         if desde is not None and hasta is not None and hasta < desde:
-            raise serializers.ValidationError(
-                {"vigencia_hasta": "Debe ser mayor o igual a vigencia_desde."}
-            )
+            raise serializers.ValidationError({"vigencia_hasta": "Debe ser mayor o igual a vigencia_desde."})
         return attrs
 
 

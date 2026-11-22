@@ -63,20 +63,56 @@ CASOS_DORADOS = [
     {"descripcion": "Licencia Adobe Creative Cloud", "monto": Decimal("55.00"), "categoria": "tecnologia_software"},
     {"descripcion": "Servidor VPS DigitalOcean", "monto": Decimal("40.00"), "categoria": "tecnologia_software"},
     {"descripcion": "Dominio y hosting web", "monto": Decimal("25.00"), "categoria": "tecnologia_software"},
-    {"descripcion": "Antivirus corporativo renovación", "monto": Decimal("120.00"), "categoria": "tecnologia_software"},
+    {
+        "descripcion": "Antivirus corporativo renovación",
+        "monto": Decimal("120.00"),
+        "categoria": "tecnologia_software",
+    },
     # servicios_profesionales (4 casos)
-    {"descripcion": "Honorarios consultoría legal", "monto": Decimal("500.00"), "categoria": "servicios_profesionales"},
-    {"descripcion": "Contabilidad externa mensual", "monto": Decimal("300.00"), "categoria": "servicios_profesionales"},
+    {
+        "descripcion": "Honorarios consultoría legal",
+        "monto": Decimal("500.00"),
+        "categoria": "servicios_profesionales",
+    },
+    {
+        "descripcion": "Contabilidad externa mensual",
+        "monto": Decimal("300.00"),
+        "categoria": "servicios_profesionales",
+    },
     {"descripcion": "Diseño gráfico logo empresa", "monto": Decimal("250.00"), "categoria": "servicios_profesionales"},
-    {"descripcion": "Auditoría de sistemas externa", "monto": Decimal("800.00"), "categoria": "servicios_profesionales"},
+    {
+        "descripcion": "Auditoría de sistemas externa",
+        "monto": Decimal("800.00"),
+        "categoria": "servicios_profesionales",
+    },
     # marketing_publicidad (3 casos)
-    {"descripcion": "Anuncio en Instagram y Facebook", "monto": Decimal("200.00"), "categoria": "marketing_publicidad"},
-    {"descripcion": "Impresión de folletos promocionales", "monto": Decimal("90.00"), "categoria": "marketing_publicidad"},
+    {
+        "descripcion": "Anuncio en Instagram y Facebook",
+        "monto": Decimal("200.00"),
+        "categoria": "marketing_publicidad",
+    },
+    {
+        "descripcion": "Impresión de folletos promocionales",
+        "monto": Decimal("90.00"),
+        "categoria": "marketing_publicidad",
+    },
     {"descripcion": "Patrocinio evento gremial", "monto": Decimal("400.00"), "categoria": "marketing_publicidad"},
     # mantenimiento_reparacion (3 casos)
-    {"descripcion": "Reparación aire acondicionado oficina", "monto": Decimal("180.00"), "categoria": "mantenimiento_reparacion"},
-    {"descripcion": "Mantenimiento preventivo flota", "monto": Decimal("350.00"), "categoria": "mantenimiento_reparacion"},
-    {"descripcion": "Cambio de cerraduras edificio", "monto": Decimal("120.00"), "categoria": "mantenimiento_reparacion"},
+    {
+        "descripcion": "Reparación aire acondicionado oficina",
+        "monto": Decimal("180.00"),
+        "categoria": "mantenimiento_reparacion",
+    },
+    {
+        "descripcion": "Mantenimiento preventivo flota",
+        "monto": Decimal("350.00"),
+        "categoria": "mantenimiento_reparacion",
+    },
+    {
+        "descripcion": "Cambio de cerraduras edificio",
+        "monto": Decimal("120.00"),
+        "categoria": "mantenimiento_reparacion",
+    },
     # servicios_publicos (3 casos)
     {"descripcion": "Factura eléctrica mes de octubre", "monto": Decimal("55.00"), "categoria": "servicios_publicos"},
     {"descripcion": "Agua potable y cloacas", "monto": Decimal("20.00"), "categoria": "servicios_publicos"},
@@ -85,10 +121,22 @@ CASOS_DORADOS = [
     {"descripcion": "Plan corporativo móvil 5 líneas", "monto": Decimal("120.00"), "categoria": "comunicaciones"},
     {"descripcion": "Internet fibra óptica sede principal", "monto": Decimal("80.00"), "categoria": "comunicaciones"},
     # capacitacion_formacion (2 casos)
-    {"descripcion": "Curso online certificación PMP", "monto": Decimal("350.00"), "categoria": "capacitacion_formacion"},
-    {"descripcion": "Taller liderazgo para gerentes", "monto": Decimal("600.00"), "categoria": "capacitacion_formacion"},
+    {
+        "descripcion": "Curso online certificación PMP",
+        "monto": Decimal("350.00"),
+        "categoria": "capacitacion_formacion",
+    },
+    {
+        "descripcion": "Taller liderazgo para gerentes",
+        "monto": Decimal("600.00"),
+        "categoria": "capacitacion_formacion",
+    },
     # impuestos_tasas (2 casos)
-    {"descripcion": "Impuesto municipal actividades económicas", "monto": Decimal("200.00"), "categoria": "impuestos_tasas"},
+    {
+        "descripcion": "Impuesto municipal actividades económicas",
+        "monto": Decimal("200.00"),
+        "categoria": "impuestos_tasas",
+    },
     {"descripcion": "Timbres fiscales contratos", "monto": Decimal("45.00"), "categoria": "impuestos_tasas"},
 ]
 

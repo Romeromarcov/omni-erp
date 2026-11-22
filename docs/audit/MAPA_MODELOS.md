@@ -2,12 +2,25 @@
 
 | App | Modelo | Tenant-aware | PK UUID | unique_together |
 |---|---|---|---|---|
+| activaciones | CalendarioActivacion | ✅ | ✅ | — |
+| activaciones | EventoActivacion | ✅ | ✅ | — |
+| activaciones | RecursoActivacion | ✅ | ✅ | — |
+| activaciones | UsoRecursoEvento | ✅ | ✅ | — |
 | agentes | ConfigAgente | ✅ | ✅ | id_empresa+agente |
+| agentes | ConsumoLLM | ✅ | ✅ | — |
+| agentes | EjecucionAgente | ✅ | ✅ | — |
 | agentes | PrediccionAgente | ✅ | ✅ | — |
 | almacenes | Almacen | ✅ | ✅ | id_empresa+codigo_almacen |
+| almacenes | StockUbicacion | ✅ | ✅ | — |
 | almacenes | UbicacionAlmacen | ✅ | ✅ | id_almacen+codigo_ubicacion |
 | auditoria | LogAuditoria | ✅ | ✅ | — |
-| banca_electronica | CuentaBancariaEmpresa | ✅ | — | — |
+| banca_electronica | DetalleLotePagoBancario | — | ✅ | — |
+| banca_electronica | LotePagoBancario | ✅ | ✅ | — |
+| bots_ingest | BotBitacora | ✅ | ✅ | — |
+| bots_ingest | BotLatidoDiario | ✅ | ✅ | — |
+| bots_ingest | BotRegistro | ✅ | ✅ | — |
+| bots_ingest | BotUsuario | ✅ | ✅ | — |
+| bots_ingest | IngestaBot | ✅ | ✅ | — |
 | compras | DetalleFacturaCompra | — | ✅ | — |
 | compras | DetalleOfertaProveedor | — | ✅ | — |
 | compras | DetalleOrdenCompra | — | ✅ | — |
@@ -23,9 +36,14 @@
 | configuracion_motor | CatalogoValor | — | ✅ | — |
 | configuracion_motor | ParametroSistema | ✅ | ✅ | id_empresa+codigo_parametro |
 | configuracion_motor | TipoDocumento | — | ✅ | — |
+| connect | Perfil | ✅ | ✅ | — |
+| connect | Tarjeta | ✅ | ✅ | — |
+| connect | Toque | ✅ | ✅ | — |
 | contabilidad | AsientoContable | ✅ | ✅ | id_empresa+numero_asiento |
 | contabilidad | DetalleAsiento | — | ✅ | — |
+| contabilidad | DiarioContable | ✅ | ✅ | id_empresa+codigo |
 | contabilidad | MapeoContable | ✅ | ✅ | id_empresa+tipo_asiento |
+| contabilidad | PeriodoContable | ✅ | ✅ | id_empresa+anio+mes |
 | contabilidad | PlanCuentas | ✅ | ✅ | id_empresa+codigo_cuenta |
 | control_asistencia | AsignacionHorario | — | ✅ | — |
 | control_asistencia | HorarioTrabajo | ✅ | ✅ | — |
@@ -49,9 +67,13 @@
 | costos | AnalisisVariacionCosto | ✅ | ✅ | — |
 | costos | CostoEstandarProducto | ✅ | ✅ | — |
 | costos | CostoProduccion | ✅ | ✅ | — |
+| crm | Actividad | ✅ | ✅ | — |
 | crm | Cliente | ✅ | ✅ | id_empresa+rif |
 | crm | ContactoCliente | ✅ | ✅ | — |
 | crm | DireccionCliente | ✅ | ✅ | — |
+| crm | Etapa | ✅ | ✅ | — |
+| crm | Lead | ✅ | ✅ | — |
+| crm | Pipeline | ✅ | ✅ | — |
 | cuentas_por_cobrar | AbonoCxC | — | — | — |
 | cuentas_por_cobrar | CuentaPorCobrar | ✅ | — | — |
 | cuentas_por_pagar | AbonoCxP | — | ✅ | — |
@@ -79,6 +101,7 @@
 | cxc_lubrikca | Vinculacion | ✅ | ✅ | — |
 | despacho | Despacho | ✅ | ✅ | id_empresa+numero_despacho |
 | despacho | DetalleDespacho | — | ✅ | — |
+| finanzas | AsignacionPago | ✅ | ✅ | — |
 | finanzas | Caja | ✅ | ✅ | — |
 | finanzas | CajaFisica | ✅ | ✅ | — |
 | finanzas | CajaFisicaUsuario | — | ✅ | usuario+caja_fisica |
@@ -100,6 +123,7 @@
 | finanzas | SesionCajaFisica | ✅ | ✅ | — |
 | finanzas | SesionDatafono | — | ✅ | — |
 | finanzas | TasaCambio | ✅ | ✅ | — |
+| finanzas | TipoTasaCambio | ✅ | ✅ | — |
 | finanzas | TransaccionDatafono | — | ✅ | — |
 | finanzas | TransaccionFinanciera | ✅ | ✅ | — |
 | fiscal | ConfiguracionFiscalEmpresa | ✅ | ✅ | — |
@@ -134,17 +158,21 @@
 | integration_hub | ConectorInstancia | ✅ | ✅ | id_empresa+nombre |
 | integration_hub | ConectorProveedor | — | ✅ | — |
 | integration_hub | EntidadSincronizada | — | ✅ | id_instancia+tipo_entidad+id_externo |
+| integration_hub | EventoOutbox | ✅ | ✅ | — |
 | integration_hub | JobSincronizacion | — | ✅ | — |
 | integration_hub | LogDetalleSincronizacion | — | ✅ | — |
 | inventario | CategoriaProducto | ✅ | ✅ | — |
 | inventario | ConversionUnidadMedida | ✅ | ✅ | id_producto+id_unidad_origen+id_unidad_destino |
 | inventario | DetalleRequisicion | — | ✅ | id_requisicion+id_producto |
+| inventario | LoteProducto | ✅ | ✅ | — |
 | inventario | MovimientoInventario | ✅ | ✅ | — |
+| inventario | MovimientoLote | — | ✅ | — |
 | inventario | OperacionInventario | ✅ | ✅ | id_empresa+numero |
 | inventario | OperacionInventarioLinea | — | ✅ | — |
 | inventario | OperacionInventarioPaso | — | ✅ | id_operacion+secuencia |
 | inventario | PasoOperacion | ✅ | ✅ | id_almacen+tipo_operacion+secuencia; id_almacen+tipo_operacion+nombre_paso |
 | inventario | Producto | ✅ | ✅ | id_empresa+sku |
+| inventario | ReglaReabastecimiento | ✅ | ✅ | — |
 | inventario | RequisicionInterna | ✅ | ✅ | id_empresa+numero_requisicion |
 | inventario | StockActual | ✅ | ✅ | id_producto+id_variante+id_almacen |
 | inventario | StockConsignacionCliente | ✅ | ✅ | — |
@@ -199,10 +227,25 @@
 | servicio_cliente | FeedbackCliente | ✅ | ✅ | — |
 | servicio_cliente | InteraccionTicket | — | ✅ | — |
 | servicio_cliente | TicketSoporte | ✅ | ✅ | id_empresa+numero_ticket |
+| tareas | AreaOperativa | ✅ | ✅ | — |
+| tareas | ComentarioTarea | ✅ | ✅ | — |
+| tareas | ConfiguracionSeguimientoTareas | ✅ | ✅ | — |
+| tareas | DependenciaTarea | ✅ | ✅ | — |
+| tareas | MiembroAreaOperativa | ✅ | ✅ | — |
+| tareas | MinutaReunion | ✅ | ✅ | — |
+| tareas | PlantillaTareaRecurrente | ✅ | ✅ | — |
+| tareas | Proyecto | ✅ | ✅ | — |
+| tareas | RegistroAlertaTarea | ✅ | ✅ | — |
+| tareas | SeccionProyecto | ✅ | ✅ | — |
+| tareas | Tarea | ✅ | ✅ | — |
 | tesoreria | ConciliacionBancaria | ✅ | ✅ | — |
+| tesoreria | ConfiguracionConciliacionCuenta | ✅ | ✅ | — |
+| tesoreria | DecisionPreconciliacionBancaria | ✅ | ✅ | — |
+| tesoreria | ExtractoBancarioArchivo | ✅ | ✅ | — |
 | tesoreria | MovimientoBancario | ✅ | ✅ | — |
 | tesoreria | MovimientoInternoFondo | — | — | — |
 | tesoreria | OperacionCambioDivisa | ✅ | — | empresa+numero_operacion |
+| tesoreria | PropuestaConciliacionBancaria | ✅ | ✅ | — |
 | ventas | ComisionVenta | ✅ | ✅ | — |
 | ventas | Cotizacion | ✅ | ✅ | id_empresa+numero_cotizacion |
 | ventas | DetalleCotizacion | — | ✅ | — |
@@ -223,4 +266,4 @@
 | ventas | NotaVenta | ✅ | ✅ | id_empresa+numero_nota |
 | ventas | Pedido | ✅ | ✅ | id_empresa+numero_pedido |
 
-_Total modelos: 220_
+_Total modelos: 263_

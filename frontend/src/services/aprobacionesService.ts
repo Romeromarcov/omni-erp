@@ -74,24 +74,32 @@ export interface TipoAprobacionPayload {
 export interface FlujoAprobacion {
   id_flujo_aprobacion: string;
   id_tipo_aprobacion: string;
+  id_departamento?: string | null;
   orden_etapa: number;
   nombre_etapa: string;
   rol_aprobador?: string | null;
   id_usuario_aprobador?: string | null;
   monto_minimo?: string | null;
   monto_maximo?: string | null;
+  sla_horas?: number | null;
+  escalar_a_rol?: string | null;
+  escalar_a_usuario?: string | null;
   activo?: boolean;
 }
 
 /** Whitelist explícita de campos editables (CTF-005, defensa CWE-915). */
 export interface FlujoAprobacionPayload {
   id_tipo_aprobacion: string;
+  id_departamento?: string | null;
   orden_etapa: number;
   nombre_etapa: string;
   rol_aprobador: string | null;
   id_usuario_aprobador: string | null;
   monto_minimo: string | null;
   monto_maximo: string | null;
+  sla_horas?: number | null;
+  escalar_a_rol?: string | null;
+  escalar_a_usuario?: string | null;
   activo: boolean;
 }
 
@@ -100,6 +108,7 @@ export interface FlujoAprobacionPayload {
 export interface SolicitudAprobacion {
   id_solicitud_aprobacion: string;
   id_tipo_aprobacion: string;
+  id_departamento?: string | null;
   id_entidad_origen: string;
   nombre_modelo_origen: string;
   id_usuario_solicitante: string;
@@ -108,6 +117,10 @@ export interface SolicitudAprobacion {
   comentarios_solicitante?: string | null;
   fecha_ultima_actualizacion?: string;
   etapa_actual_flujo?: string | null;
+  monto?: string | null;
+  fecha_inicio_etapa?: string;
+  escalada?: boolean;
+  fecha_escalacion?: string | null;
 }
 
 /** Whitelist explícita de campos editables (CTF-005, defensa CWE-915). */
@@ -247,6 +260,16 @@ export const solicitudesAprobacionService = {
     patch<SolicitudAprobacion>(`${BASE}/solicitudes-aprobacion/${id}/`, {
       estado_solicitud: estado,
     }),
+
+  /** Registra una decisión (aprobar/rechazar) sobre la etapa actual de la solicitud. */
+  decidir: async (
+    id: string,
+    payload: { aprobado: boolean; comentarios?: string },
+  ): Promise<SolicitudAprobacion> =>
+    post<SolicitudAprobacion>(
+      `${BASE}/solicitudes-aprobacion/${id}/decidir/`,
+      payload as unknown as Record<string, unknown>,
+    ),
 
   remove: async (id: string): Promise<void> => {
     await del<void>(`${BASE}/solicitudes-aprobacion/${id}/`);

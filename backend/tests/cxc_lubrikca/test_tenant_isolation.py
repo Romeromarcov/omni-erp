@@ -24,9 +24,7 @@ def test_listado_no_filtra_filas_de_otra_empresa(client_a, empresa_b):
     )
     r = client_a.get(f"{BASE}/descuentos-marca-categoria/")
     assert r.status_code == 200
-    assert r.data["results"] == [] or all(
-        row["marca"] != "Ajena" for row in r.data["results"]
-    )
+    assert r.data["results"] == [] or all(row["marca"] != "Ajena" for row in r.data["results"])
 
 
 def test_retrieve_de_otra_empresa_da_404(client_a, empresa_b):

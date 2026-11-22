@@ -101,12 +101,8 @@ def test_construir_engine_inputs_incluye_bcv_promo_feriado(empresa_a):
     DescuentoBCVCompleto.objects.create(
         empresa=empresa_a, porcentaje=Decimal("0.15"), vigencia_desde=_date(2026, 1, 1)
     )
-    PromocionPrimeraCompra.objects.create(
-        empresa=empresa_a, producto="LIGA", vigencia_desde=_date(2026, 1, 1)
-    )
-    Feriado.objects.create(
-        empresa=empresa_a, fecha=_date(2026, 6, 24), descripcion="Carabobo"
-    )
+    PromocionPrimeraCompra.objects.create(empresa=empresa_a, producto="LIGA", vigencia_desde=_date(2026, 1, 1))
+    Feriado.objects.create(empresa=empresa_a, fecha=_date(2026, 6, 24), descripcion="Carabobo")
 
     inp = construir_engine_inputs(pedido, fecha_calculo=date(2026, 6, 8))
 
@@ -135,8 +131,11 @@ def test_str_de_los_modelos_operacion(empresa_a):
 
     h.crear_precio(empresa_a, lista=pedido.lista_precios, precio="100")
     vinc = registrar_vinculacion(
-        pedido=pedido, pago=pago, monto_aplicado=Decimal("50"),
-        hora_pago_confirmada=pago.fecha_pago, usuario=None,
+        pedido=pedido,
+        pago=pago,
+        monto_aplicado=Decimal("50"),
+        hora_pago_confirmada=pago.fecha_pago,
+        usuario=None,
     )
     bandeja = pedido.bandeja
 

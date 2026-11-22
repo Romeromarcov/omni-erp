@@ -40,6 +40,27 @@ export const inventarioMaestrosKeys = {
   consignacionProveedorAll: () => ['inventario-maestros', 'consignacion-proveedor'] as const,
   consignacionProveedor: (proveedor?: string | null, estado?: string | null) =>
     ['inventario-maestros', 'consignacion-proveedor', 'list', proveedor ?? null, estado ?? null] as const,
+  reglasAll: () => ['inventario-maestros', 'reglas'] as const,
+  reglas: (almacen?: string | null, producto?: string | null) =>
+    ['inventario-maestros', 'reglas', 'list', almacen ?? null, producto ?? null] as const,
+  evaluacionReabastecimiento: (almacen?: string | null) =>
+    ['inventario-maestros', 'reglas', 'evaluacion', almacen ?? null] as const,
+  lotesAll: () => ['inventario-maestros', 'lotes'] as const,
+  lotes: (filtros?: {
+    almacen?: string | null;
+    producto?: string | null;
+    por_vencer_dias?: number | null;
+    solo_con_stock?: boolean | null;
+  }) =>
+    [
+      'inventario-maestros',
+      'lotes',
+      'list',
+      filtros?.almacen ?? null,
+      filtros?.producto ?? null,
+      filtros?.por_vencer_dias ?? null,
+      filtros?.solo_con_stock ?? null,
+    ] as const,
 };
 
 export const notasVentaKeys = {
@@ -62,6 +83,9 @@ export const pedidosKeys = {
 
 export const almacenesKeys = {
   all: () => ['almacenes'] as const,
+  stockUbicacionesAll: () => ['almacenes', 'stock-ubicaciones'] as const,
+  stockUbicaciones: (almacen?: string | null, ubicacion?: string | null, producto?: string | null) =>
+    ['almacenes', 'stock-ubicaciones', 'list', almacen ?? null, ubicacion ?? null, producto ?? null] as const,
 };
 
 export const productosKeys = {
@@ -142,6 +166,31 @@ export const crmKeys = {
     ['crm', 'clientes', 'credito-disponible', clienteId] as const,
   historialVentas: (clienteId: string) =>
     ['crm', 'clientes', 'historial-ventas', clienteId] as const,
+  pipelinesAll: (empresaId?: string | null) => ['crm', 'pipelines', empresaId ?? null] as const,
+  etapas: (empresaId?: string | null, pipelineId?: string | null) =>
+    ['crm', 'etapas', empresaId ?? null, pipelineId ?? null] as const,
+  leadsAll: (empresaId?: string | null) => ['crm', 'leads', empresaId ?? null] as const,
+  leads: (
+    empresaId?: string | null,
+    filtros?: {
+      pipeline?: string | null;
+      etapa?: string | null;
+      fuente?: string | null;
+      search?: string | null;
+    },
+  ) =>
+    [
+      'crm',
+      'leads',
+      empresaId ?? null,
+      'list',
+      filtros?.pipeline ?? null,
+      filtros?.etapa ?? null,
+      filtros?.fuente ?? null,
+      filtros?.search ?? null,
+    ] as const,
+  actividades: (empresaId?: string | null, leadId?: string | null) =>
+    ['crm', 'actividades', empresaId ?? null, leadId ?? null] as const,
 };
 
 // ── Gestión documental (carpetas, documentos, vínculos, permisos) ─────────────
@@ -231,6 +280,18 @@ export const finanzasKeys = {
   },
   metodosPagoEmpresaActivas: (empresaId?: string | null) =>
     ['finanzas', 'metodos-pago-empresa-activas', empresaId ?? null] as const,
+  conciliacionContactoAll: () => ['finanzas', 'conciliacion-contacto'] as const,
+  conciliacionContacto: (
+    contactoId: string,
+    tipoOperacion?: 'INGRESO' | 'EGRESO' | '' | null,
+  ) =>
+    [
+      'finanzas',
+      'conciliacion-contacto',
+      contactoId,
+      tipoOperacion || null,
+    ] as const,
+  asignacionesPagoAll: () => ['finanzas', 'asignaciones-pago'] as const,
 };
 
 // ── Compras (workstream F) ────────────────────────────────────────────────────
@@ -260,6 +321,8 @@ export const aprovisionamientoKeys = {
     ['aprovisionamiento', 'solicitudes', 'list', estado ?? null] as const,
   detallesSolicitud: (solicitudId: string) =>
     ['aprovisionamiento', 'solicitudes', 'detalles', solicitudId] as const,
+  compararOfertas: (solicitudId: string) =>
+    ['aprovisionamiento', 'solicitudes', 'comparar', solicitudId] as const,
   ofertasAll: () => ['aprovisionamiento', 'ofertas'] as const,
   ofertas: (solicitud?: string | null, estado?: string | null) =>
     ['aprovisionamiento', 'ofertas', 'list', solicitud ?? null, estado ?? null] as const,
@@ -411,6 +474,10 @@ export const costosKeys = {
 // invalidar la familia completa tras crear cuentas, asientos o mapeos.
 export const contabilidadKeys = {
   planCuentas: () => ['contabilidad', 'plan-cuentas'] as const,
+  diariosAll: () => ['contabilidad', 'diarios'] as const,
+  diarios: (tipo?: string | null) => ['contabilidad', 'diarios', 'list', tipo ?? null] as const,
+  periodosAll: () => ['contabilidad', 'periodos'] as const,
+  periodos: (anio?: number | null) => ['contabilidad', 'periodos', 'list', anio ?? null] as const,
   asientosAll: () => ['contabilidad', 'asientos'] as const,
   asientos: (page?: number, filtros?: { estado?: string; fechaDesde?: string; fechaHasta?: string }) =>
     [
@@ -426,6 +493,75 @@ export const contabilidadKeys = {
   detallesAsiento: (asientoId: string) => ['contabilidad', 'asientos', 'detalles', asientoId] as const,
   mapeosAll: () => ['contabilidad', 'mapeos'] as const,
   tiposAsiento: () => ['contabilidad', 'tipos-asiento'] as const,
+  reportesAll: () => ['contabilidad', 'reportes'] as const,
+  balanceComprobacion: (filtros: {
+    empresaId: string;
+    fechaDesde?: string;
+    fechaHasta?: string;
+    idDiario?: string;
+    incluirUsd?: boolean;
+  }) =>
+    [
+      'contabilidad',
+      'reportes',
+      'balance-comprobacion',
+      filtros.empresaId,
+      filtros.fechaDesde ?? '',
+      filtros.fechaHasta ?? '',
+      filtros.idDiario ?? '',
+      Boolean(filtros.incluirUsd),
+    ] as const,
+  estadoResultados: (filtros: {
+    empresaId: string;
+    fechaDesde?: string;
+    fechaHasta?: string;
+    incluirUsd?: boolean;
+  }) =>
+    [
+      'contabilidad',
+      'reportes',
+      'estado-resultados',
+      filtros.empresaId,
+      filtros.fechaDesde ?? '',
+      filtros.fechaHasta ?? '',
+      Boolean(filtros.incluirUsd),
+    ] as const,
+  balanceGeneral: (filtros: {
+    empresaId: string;
+    fechaCorte?: string;
+    incluirUsd?: boolean;
+  }) =>
+    [
+      'contabilidad',
+      'reportes',
+      'balance-general',
+      filtros.empresaId,
+      filtros.fechaCorte ?? '',
+      Boolean(filtros.incluirUsd),
+    ] as const,
+  libroMayorAuxiliar: (filtros: {
+    empresaId: string;
+    idCuenta?: string;
+    idContacto?: string;
+    idDiario?: string;
+    fechaDesde?: string;
+    fechaHasta?: string;
+    incluirUsd?: boolean;
+  }) =>
+    [
+      'contabilidad',
+      'reportes',
+      'libro-mayor-auxiliar',
+      filtros.empresaId,
+      filtros.idCuenta ?? '',
+      filtros.idContacto ?? '',
+      filtros.idDiario ?? '',
+      filtros.fechaDesde ?? '',
+      filtros.fechaHasta ?? '',
+      Boolean(filtros.incluirUsd),
+    ] as const,
+  contactosSelector: (empresaId?: string | null) =>
+    ['contabilidad', 'reportes', 'contactos', empresaId ?? null] as const,
 };
 
 // ── Tesorería (workstream F) ──────────────────────────────────────────────────
@@ -510,14 +646,24 @@ export const aprobacionesKeys = {
     ['aprobaciones', 'solicitudes', 'registros', solicitudId] as const,
 };
 
-// ── Banca Electrónica (cuentas bancarias de la empresa) ───────────────────────
-// Prefijo compartido `['banca-electronica', 'cuentas']` para que invalidar la
-// familia refresque la lista y el detalle a la vez tras crear/editar/eliminar.
+// ── Banca Electrónica (cuentas bancarias y lotes de pago VE) ──────────────────
+// Prefijos compartidos por familia para invalidar listas y detalles a la vez.
 export const bancaElectronicaKeys = {
   cuentasAll: () => ['banca-electronica', 'cuentas'] as const,
   cuentas: (empresaId?: string | null) =>
     ['banca-electronica', 'cuentas', 'list', empresaId ?? null] as const,
   cuenta: (id: string) => ['banca-electronica', 'cuentas', 'detail', id] as const,
+  lotesAll: () => ['banca-electronica', 'lotes'] as const,
+  lotes: (empresaId?: string | null, tipoLote?: string | null, estado?: string | null) =>
+    [
+      'banca-electronica',
+      'lotes',
+      'list',
+      empresaId ?? null,
+      tipoLote ?? null,
+      estado ?? null,
+    ] as const,
+  lote: (id: string) => ['banca-electronica', 'lotes', 'detail', id] as const,
 };
 
 // ── Migración de Datos (plantillas globales + procesos + errores) ─────────────
@@ -571,9 +717,71 @@ export const agentesKeys = {
   predicciones: (agente?: string | null, resultado?: string | null) =>
     ['agentes', 'predicciones', 'list', agente ?? null, resultado ?? null] as const,
   prediccionesAll: () => ['agentes', 'predicciones'] as const,
+  ejecuciones: (agente?: string | null, estado?: string | null) =>
+    ['agentes', 'ejecuciones', 'list', agente ?? null, estado ?? null] as const,
+  ejecucionesAll: () => ['agentes', 'ejecuciones'] as const,
+  ejecucion: (id: string) => ['agentes', 'ejecuciones', 'detail', id] as const,
   sugerenciasActivas: (limite?: number | null) =>
     ['agentes', 'sugerencias-activas', limite ?? null] as const,
   metricasClasificador: () => ['agentes', 'metricas-clasificador'] as const,
+  consumoLlmAll: () => ['agentes', 'consumo-llm'] as const,
+  consumoLlm: (filtros?: {
+    modelo?: string | null;
+    uso?: string | null;
+    fecha_desde?: string | null;
+    fecha_hasta?: string | null;
+  }) =>
+    [
+      'agentes',
+      'consumo-llm',
+      'list',
+      filtros?.modelo ?? null,
+      filtros?.uso ?? null,
+      filtros?.fecha_desde ?? null,
+      filtros?.fecha_hasta ?? null,
+    ] as const,
+  consumoLlmResumen: (filtros?: {
+    modelo?: string | null;
+    uso?: string | null;
+    fecha_desde?: string | null;
+    fecha_hasta?: string | null;
+  }) =>
+    [
+      'agentes',
+      'consumo-llm',
+      'resumen',
+      filtros?.modelo ?? null,
+      filtros?.uso ?? null,
+      filtros?.fecha_desde ?? null,
+      filtros?.fecha_hasta ?? null,
+    ] as const,
+};
+
+// ── Activaciones (eventos en puntos de venta) ────────────────────────────────
+export const activacionesKeys = {
+  all: () => ['activaciones'] as const,
+  calendarios: () => ['activaciones', 'calendarios'] as const,
+  recursos: () => ['activaciones', 'recursos'] as const,
+  eventos: (estado?: string | null, desde?: string | null, hasta?: string | null) =>
+    ['activaciones', 'eventos', estado ?? null, desde ?? null, hasta ?? null] as const,
+  eventosAll: () => ['activaciones', 'eventos'] as const,
+  disponibilidad: (calendario?: string | null, inicio?: string | null, fin?: string | null) =>
+    ['activaciones', 'disponibilidad', calendario ?? null, inicio ?? null, fin ?? null] as const,
+};
+
+// ── Bots de Telegram (ingestas, plano de control, usuarios y bitácora) ───────
+export const botsKeys = {
+  all: () => ['bots'] as const,
+  ingestas: (estado?: string | null, kind?: string | null) =>
+    ['bots', 'ingestas', estado ?? null, kind ?? null] as const,
+  ingestasAll: () => ['bots', 'ingestas'] as const,
+  usuarios: () => ['bots', 'usuarios'] as const,
+  flota: () => ['bots', 'flota'] as const,
+  botDetalle: (codigo: string) => ['bots', 'flota', codigo] as const,
+  destinos: () => ['bots', 'destinos'] as const,
+  bitacoraAll: () => ['bots', 'bitacora'] as const,
+  bitacora: (entidad?: string | null, limite?: number | null) =>
+    ['bots', 'bitacora', entidad ?? null, limite ?? null] as const,
 };
 
 // ── Gaps menores (entidades con backend operativo, pantalla nueva) ────────────
@@ -621,4 +829,89 @@ export const cxcLubrikcaKeys = {
 export const notificacionesKeys = {
   all: () => ['notificaciones'] as const,
   mis: (soloNoLeidas: boolean) => ['notificaciones', 'mis', soloNoLeidas] as const,
+};
+
+// ── Tareas y Proyectos Operativos (Fase B — reemplazo nativo de Asana) ────────
+// Todas las keys incluyen `empresaId` en el segundo segmento para aislar el
+// caché persistido entre tenants (R-CODE-1) y permitir invalidación jerárquica.
+export interface FiltroTareasKey {
+  proyecto?: string | null;
+  estado?: string | null;
+  prioridad?: string | null;
+  area?: string | null;
+  asignado_a?: string | null;
+  vencidas?: boolean | null;
+  search?: string | null;
+}
+
+export const tareasKeys = {
+  all: () => ['tareas'] as const,
+  porEmpresa: (empresaId?: string | null) => ['tareas', empresaId ?? null] as const,
+  areas: (empresaId?: string | null) => ['tareas', empresaId ?? null, 'areas'] as const,
+  proyectos: (empresaId?: string | null, archivado?: boolean | null) =>
+    ['tareas', empresaId ?? null, 'proyectos', archivado ?? null] as const,
+  miTablero: (empresaId?: string | null) => ['tareas', empresaId ?? null, 'mi-tablero'] as const,
+  secciones: (empresaId?: string | null, proyectoId?: string | null) =>
+    ['tareas', empresaId ?? null, 'secciones', proyectoId ?? null] as const,
+  itemsAll: (empresaId?: string | null) => ['tareas', empresaId ?? null, 'items'] as const,
+  items: (empresaId?: string | null, filtros?: FiltroTareasKey) =>
+    [
+      'tareas',
+      empresaId ?? null,
+      'items',
+      'list',
+      filtros?.proyecto ?? null,
+      filtros?.estado ?? null,
+      filtros?.prioridad ?? null,
+      filtros?.area ?? null,
+      filtros?.asignado_a ?? null,
+      filtros?.vencidas ?? null,
+      filtros?.search ?? null,
+    ] as const,
+  item: (empresaId: string | null | undefined, id: string) =>
+    ['tareas', empresaId ?? null, 'items', 'detail', id] as const,
+  comentarios: (empresaId: string | null | undefined, tareaId: string) =>
+    ['tareas', empresaId ?? null, 'items', 'comentarios', tareaId] as const,
+  dependencias: (empresaId: string | null | undefined, tareaId: string) =>
+    ['tareas', empresaId ?? null, 'items', 'dependencias', tareaId] as const,
+  recurrentes: (empresaId?: string | null) =>
+    ['tareas', empresaId ?? null, 'recurrentes'] as const,
+  minutas: (empresaId?: string | null) => ['tareas', empresaId ?? null, 'minutas'] as const,
+  configuracion: (empresaId?: string | null) =>
+    ['tareas', empresaId ?? null, 'configuracion'] as const,
+  resumen: (empresaId?: string | null, fecha?: string | null) =>
+    ['tareas', empresaId ?? null, 'resumen', fecha ?? null] as const,
+  alertas: (empresaId?: string | null) => ['tareas', empresaId ?? null, 'alertas'] as const,
+};
+
+export const connectKeys = {
+  all: ['connect'] as const,
+  publicProfile: (slug: string, uid?: string | null) =>
+    ['connect', 'public', slug, uid ?? null] as const,
+  miPerfil: (empresaId?: string | null) =>
+    ['connect', empresaId ?? null, 'mi-perfil'] as const,
+  perfiles: (empresaId?: string | null) =>
+    ['connect', empresaId ?? null, 'perfiles'] as const,
+  analiticas: (
+    empresaId?: string | null,
+    filtros?: {
+      dias?: number;
+      desde?: string | null;
+      hasta?: string | null;
+      perfilId?: string | null;
+    },
+  ) =>
+    [
+      'connect',
+      empresaId ?? null,
+      'analiticas',
+      filtros?.dias ?? 30,
+      filtros?.desde ?? null,
+      filtros?.hasta ?? null,
+      filtros?.perfilId ?? null,
+    ] as const,
+  tarjetasAll: (empresaId?: string | null) =>
+    ['connect', empresaId ?? null, 'tarjetas'] as const,
+  tarjetas: (empresaId?: string | null, estado?: string | null, incluirInactivos?: boolean) =>
+    ['connect', empresaId ?? null, 'tarjetas', 'list', estado ?? null, Boolean(incluirInactivos)] as const,
 };

@@ -27,7 +27,7 @@ from django.utils import timezone
 logger = logging.getLogger(__name__)
 
 from apps.contabilidad.services import AsientoError, MapeoContableNoEncontrado, generar_asiento
-from apps.core.services import FlujoError, verificar_paso_flujo  # noqa: F401 — re-exported for callers
+from apps.core.services import FlujoError as FlujoError, verificar_paso_flujo  # re-export explícito para callers
 from apps.inventario.services import (
     MovimientoInvalidoError,
     ReservaInsuficienteError,
@@ -64,14 +64,14 @@ def obtener_precio(producto, empresa, contacto=None, fecha: date | None = None) 
     hoy = fecha or timezone.localdate()
 
     def _precio_en_lista(lista_precio):
-        qs = DetallePrecio.objects.filter(
-            id_lista=lista_precio,
-            id_producto=producto,
-            activo=True,
-        ).filter(
-            models.Q(vigente_desde__isnull=True) | models.Q(vigente_desde__lte=hoy)
-        ).filter(
-            models.Q(vigente_hasta__isnull=True) | models.Q(vigente_hasta__gte=hoy)
+        qs = (
+            DetallePrecio.objects.filter(
+                id_lista=lista_precio,
+                id_producto=producto,
+                activo=True,
+            )
+            .filter(models.Q(vigente_desde__isnull=True) | models.Q(vigente_desde__lte=hoy))
+            .filter(models.Q(vigente_hasta__isnull=True) | models.Q(vigente_hasta__gte=hoy))
         )
         dp = qs.first()
         return dp.precio if dp else None
@@ -127,9 +127,7 @@ def confirmar_pedido(pedido, almacen, usuario, generar_cxc: bool = None) -> dict
         {"reservas": [StockActual, ...], "cxc": CuentaPorCobrar | None}
     """
     if pedido.estado not in ("PENDIENTE", "ENVIADO"):
-        raise VentaError(
-            f"Solo se confirman pedidos PENDIENTE o ENVIADO. Estado actual: {pedido.estado}"
-        )
+        raise VentaError(f"Solo se confirman pedidos PENDIENTE o ENVIADO. Estado actual: {pedido.estado}")
 
     # M6: verificar que la COTIZACION previa fue completada si está configurada como obligatoria.
     cotizacion_cumplida = hasattr(pedido, "id_cotizacion_id") and pedido.id_cotizacion_id is not None
@@ -140,13 +138,9 @@ def confirmar_pedido(pedido, almacen, usuario, generar_cxc: bool = None) -> dict
         raise VentaError("El pedido no tiene líneas de detalle.")
 
     # T10: un producto solo-compra (es_vendible=False) no puede venderse.
-    no_vendibles = [
-        d.id_producto.nombre_producto for d in detalles if not d.id_producto.es_vendible
-    ]
+    no_vendibles = [d.id_producto.nombre_producto for d in detalles if not d.id_producto.es_vendible]
     if no_vendibles:
-        raise VentaError(
-            "Productos solo-compra que no se pueden vender: " + ", ".join(no_vendibles) + "."
-        )
+        raise VentaError("Productos solo-compra que no se pueden vender: " + ", ".join(no_vendibles) + ".")
 
     reservas = []
     for detalle in detalles:
@@ -181,7 +175,8 @@ def confirmar_pedido(pedido, almacen, usuario, generar_cxc: bool = None) -> dict
             # pero NO se traga en silencio: M-BUG-3.
             logger.warning(
                 "confirmar_pedido: no se registró movimiento de auditoría para pedido %s: %s",
-                pedido.id_pedido, exc,
+                pedido.id_pedido,
+                exc,
             )
 
     pedido.estado = "APROBADO"
@@ -229,6 +224,7 @@ def confirmar_pedido(pedido, almacen, usuario, generar_cxc: bool = None) -> dict
     # Notificación in-app al vendedor que confirmó el pedido
     try:
         from apps.notificaciones.services import emitir_notificacion
+
         emitir_notificacion(
             "PEDIDO_CONFIRMADO",
             pedido.id_empresa,
@@ -273,9 +269,7 @@ def convertir_pedido_a_nota_venta(pedido, usuario=None):
     if pedido.convertido_a_nota_venta:
         raise VentaError("El pedido ya fue convertido a nota de venta.")
     if pedido.estado != "APROBADO":
-        raise VentaError(
-            f"Solo se convierten pedidos APROBADOS. Estado actual: {pedido.estado}"
-        )
+        raise VentaError(f"Solo se convierten pedidos APROBADOS. Estado actual: {pedido.estado}")
 
     detalles = list(pedido.detalles.select_related("id_producto"))
     if not detalles:
@@ -332,11 +326,7 @@ def _buscar_cxc_flujo_venta(nota_venta, pedido=None, para_actualizar: bool = Fal
     if pedido is not None:
         filtros |= models.Q(documento_json__id_pedido=str(pedido.id_pedido))
 
-    qs = (
-        CuentaPorCobrar.objects.filter(empresa=nota_venta.id_empresa)
-        .filter(filtros)
-        .order_by("pk")
-    )
+    qs = CuentaPorCobrar.objects.filter(empresa=nota_venta.id_empresa).filter(filtros).order_by("pk")
     if para_actualizar:
         qs = qs.select_for_update()
     return qs.first()
@@ -346,7 +336,7 @@ def _buscar_cxc_flujo_venta(nota_venta, pedido=None, para_actualizar: bool = Fal
 
 
 @transaction.atomic
-def entregar_nota_venta(nota_venta, almacen, usuario) -> dict:
+def entregar_nota_venta(nota_venta, almacen, usuario, *, permitir_stock_negativo: bool = False) -> dict:
     """
     Despacha la NotaVenta: mueve stock físico, libera reservas, genera CxC si
     el flujo aún no tiene una.
@@ -368,9 +358,7 @@ def entregar_nota_venta(nota_venta, almacen, usuario) -> dict:
         (cxc es la del flujo: la preexistente del pedido o la recién creada)
     """
     if nota_venta.estado != "BORRADOR":
-        raise VentaError(
-            f"Solo se entregan notas en estado BORRADOR. Estado actual: {nota_venta.estado}"
-        )
+        raise VentaError(f"Solo se entregan notas en estado BORRADOR. Estado actual: {nota_venta.estado}")
 
     # M6: verificar que el PEDIDO previo fue completado si está configurado como obligatorio.
     pedido = getattr(nota_venta, "id_pedido_origen", None)
@@ -378,9 +366,7 @@ def entregar_nota_venta(nota_venta, almacen, usuario) -> dict:
     verificar_paso_flujo(nota_venta.id_empresa, "VENTAS", "PEDIDO", pedido_cumplido)
 
     if pedido and pedido.estado != "APROBADO":
-        raise VentaError(
-            f"El pedido origen debe estar APROBADO para poder entregar. Estado: {pedido.estado}"
-        )
+        raise VentaError(f"El pedido origen debe estar APROBADO para poder entregar. Estado: {pedido.estado}")
 
     detalles = list(nota_venta.detalles.select_related("id_producto"))
     if not detalles:
@@ -419,6 +405,7 @@ def entregar_nota_venta(nota_venta, almacen, usuario) -> dict:
                 nombre_modelo_origen="NotaVenta",
                 usuario=usuario,
                 observaciones=f"Entrega nota {nota_venta.numero_nota}",
+                permitir_negativo=permitir_stock_negativo,
             )
         except (StockInsuficienteError, MovimientoInvalidoError) as exc:
             raise VentaError(str(exc)) from exc
@@ -468,7 +455,7 @@ def entregar_nota_venta(nota_venta, almacen, usuario) -> dict:
 
 
 @transaction.atomic
-def confirmar_nota_venta(nota_venta, almacen, usuario) -> dict:
+def confirmar_nota_venta(nota_venta, almacen, usuario, *, permitir_stock_negativo: bool = False) -> dict:
     """
     Entrega la NotaVenta y genera el asiento contable NOTA_VENTA (R-CODE-11 — CTF-001).
 
@@ -484,11 +471,18 @@ def confirmar_nota_venta(nota_venta, almacen, usuario) -> dict:
         nota_venta: instancia NotaVenta en estado BORRADOR
         almacen:    almacén de despacho
         usuario:    usuario que ejecuta la acción
+        permitir_stock_negativo: si True, permite despachar dejando StockActual < 0
+            (solo flujos opt-in autorizados por tenant, p. ej. POS offline).
 
     Returns:
         {"movimientos": [...], "cxc": ..., "asiento": AsientoContable | None, "asiento_error": str | None}
     """
-    resultado = entregar_nota_venta(nota_venta, almacen, usuario)
+    resultado = entregar_nota_venta(
+        nota_venta,
+        almacen,
+        usuario,
+        permitir_stock_negativo=permitir_stock_negativo,
+    )
 
     asiento = None
     asiento_error = None
@@ -507,9 +501,7 @@ def confirmar_nota_venta(nota_venta, almacen, usuario) -> dict:
         # error duro (la @transaction.atomic revierte). Para empresas sin
         # contabilidad (bodega informal, R-PROD-3) la operación procede sin asiento.
         if getattr(nota_venta.id_empresa, "contabilidad_activa", False):
-            raise VentaError(
-                f"Configure el Mapeo Contable antes de confirmar (contabilidad activa): {exc}"
-            ) from exc
+            raise VentaError(f"Configure el Mapeo Contable antes de confirmar (contabilidad activa): {exc}") from exc
         asiento_error = str(exc)
 
     resultado["asiento"] = asiento
@@ -521,7 +513,9 @@ def confirmar_nota_venta(nota_venta, almacen, usuario) -> dict:
 
 
 @transaction.atomic
-def emitir_factura_fiscal(nota_venta, numero_control: str = None, numero_factura: str = None, moneda=None, usuario=None) -> dict:
+def emitir_factura_fiscal(
+    nota_venta, numero_control: str = None, numero_factura: str = None, moneda=None, usuario=None
+) -> dict:
     """
     Crea la FacturaFiscal desde la NotaVenta y genera el asiento contable (R-CODE-11).
 
@@ -550,9 +544,7 @@ def emitir_factura_fiscal(nota_venta, numero_control: str = None, numero_factura
     from apps.ventas.models import FacturaFiscal
 
     if nota_venta.estado != "ENTREGADA":
-        raise VentaError(
-            f"Solo se facturan notas en estado ENTREGADA. Estado actual: {nota_venta.estado}"
-        )
+        raise VentaError(f"Solo se facturan notas en estado ENTREGADA. Estado actual: {nota_venta.estado}")
 
     empresa = nota_venta.id_empresa
 
@@ -625,8 +617,7 @@ def emitir_factura_fiscal(nota_venta, numero_control: str = None, numero_factura
         except (MapeoContableNoEncontrado, AsientoError) as exc:
             if iva_obligatorio:
                 raise VentaError(
-                    "Configure el Mapeo Contable de IVA antes de emitir facturas "
-                    f"como contribuyente: {exc}"
+                    "Configure el Mapeo Contable de IVA antes de emitir facturas " f"como contribuyente: {exc}"
                 ) from exc
             asiento_iva_error = str(exc)
 
@@ -793,7 +784,7 @@ def registrar_devolucion_pos(
         movimientos, sesion_caja, asiento/asiento_error, asiento_iva/asiento_iva_error.
     """
     from apps.finanzas.models import Pago, SesionCajaFisica
-    from apps.finanzas.services import registrar_efectos_pago
+    from apps.finanzas.services import TasaCambioError, registrar_efectos_pago
     from apps.fiscal.services import siguiente_numero
     from apps.ventas.models import (
         DetalleDevolucionVenta,
@@ -849,10 +840,7 @@ def registrar_devolucion_pos(
         raise VentaError("Se requiere una sesión de caja ABIERTA para registrar la devolución.")
 
     # ── Validar líneas contra la venta original ──────────────────────────────
-    detalles_venta = {
-        str(d.id_detalle_nota_venta): d
-        for d in nota_venta.detalles.select_related("id_producto")
-    }
+    detalles_venta = {str(d.id_detalle_nota_venta): d for d in nota_venta.detalles.select_related("id_producto")}
     if not detalles_venta:
         raise VentaError("La venta no tiene líneas de detalle.")
     if not lineas:
@@ -878,17 +866,13 @@ def registrar_devolucion_pos(
     # No devolver más de lo vendido: acumulado por producto contra la venta.
     vendido_por_producto: dict = {}
     for d in detalles_venta.values():
-        vendido_por_producto[d.id_producto_id] = (
-            vendido_por_producto.get(d.id_producto_id, Decimal("0")) + d.cantidad
-        )
+        vendido_por_producto[d.id_producto_id] = vendido_por_producto.get(d.id_producto_id, Decimal("0")) + d.cantidad
     devuelto_por_producto = _cantidades_devueltas_por_producto(nota_venta)
     for pid, cantidad_nueva in solicitado_por_producto.items():
         vendido = vendido_por_producto.get(pid, Decimal("0"))
         ya_devuelto = devuelto_por_producto.get(pid, Decimal("0"))
         if ya_devuelto + cantidad_nueva > vendido:
-            producto = next(
-                d.id_producto for d in detalles_venta.values() if d.id_producto_id == pid
-            )
+            producto = next(d.id_producto for d in detalles_venta.values() if d.id_producto_id == pid)
             raise VentaError(
                 f"No se puede devolver más de lo vendido para '{producto.nombre_producto}': "
                 f"vendido {vendido}, ya devuelto {ya_devuelto}, solicitado {cantidad_nueva}."
@@ -906,9 +890,7 @@ def registrar_devolucion_pos(
         # el impuesto realmente cobrado en la factura original.
         iva_linea = Decimal("0")
         if factura is not None and factura.base_imponible and factura.base_imponible > 0:
-            iva_linea = (subtotal * factura.monto_iva / factura.base_imponible).quantize(
-                CENT, rounding=ROUND_HALF_UP
-            )
+            iva_linea = (subtotal * factura.monto_iva / factura.base_imponible).quantize(CENT, rounding=ROUND_HALF_UP)
         lineas_calculadas.append((detalle, cantidad, subtotal, iva_linea))
         base_devuelta += subtotal
         iva_devuelto += iva_linea
@@ -962,9 +944,7 @@ def registrar_devolucion_pos(
                 documento_origen_id=devolucion.id_devolucion,
                 nombre_modelo_origen="DevolucionVenta",
                 usuario=usuario,
-                observaciones=(
-                    f"Devolución {devolucion.numero_devolucion} de venta {nota_venta.numero_nota}"
-                ),
+                observaciones=(f"Devolución {devolucion.numero_devolucion} de venta {nota_venta.numero_nota}"),
             )
         except (StockInsuficienteError, MovimientoInvalidoError) as exc:
             raise VentaError(str(exc)) from exc
@@ -990,9 +970,7 @@ def registrar_devolucion_pos(
             tasa_cambio=factura.tasa_cambio,
             motivo="DEVOLUCION",
             estado="EMITIDA",
-            observaciones=(
-                f"Devolución {devolucion.numero_devolucion} de factura {factura.numero_factura}"
-            ),
+            observaciones=(f"Devolución {devolucion.numero_devolucion} de factura {factura.numero_factura}"),
         )
         DetalleNotaCreditoFiscal.objects.bulk_create(
             [
@@ -1018,9 +996,7 @@ def registrar_devolucion_pos(
             monto_total=total_devuelto,
             id_moneda=moneda,
             estado="APLICADA",
-            observaciones=(
-                f"Devolución {devolucion.numero_devolucion} de venta {nota_venta.numero_nota}"
-            ),
+            observaciones=(f"Devolución {devolucion.numero_devolucion} de venta {nota_venta.numero_nota}"),
         )
         DetalleNotaCreditoVenta.objects.bulk_create(
             [
@@ -1058,7 +1034,10 @@ def registrar_devolucion_pos(
         id_caja_fisica=sesion.caja_fisica,
         id_usuario_registro=usuario,
     )
-    registrar_efectos_pago(pago)
+    try:
+        registrar_efectos_pago(pago)
+    except TasaCambioError as exc:
+        raise VentaError(str(exc)) from exc
 
     # ── 4. Asiento contable de reverso (R-CODE-11, misma transacción) ────────
     from apps.contabilidad.services import generar_asiento_o_fallar
@@ -1101,6 +1080,8 @@ def registrar_devolucion_pos(
         "asiento_iva": asiento_iva,
         "asiento_iva_error": asiento_iva_error,
     }
+
+
 # ── Comisiones de vendedores (1.G) ────────────────────────────────────────────
 
 #: Cuantización de montos de comisión: 4 decimales (convención monetaria del
@@ -1165,9 +1146,7 @@ def devengar_comision_venta(nota_venta):
         )
         return None
 
-    overrides = {
-        o.categoria_id: o.porcentaje for o in esquema.overrides_categoria.all()
-    }
+    overrides = {o.categoria_id: o.porcentaje for o in esquema.overrides_categoria.all()}
 
     base = Decimal("0")
     monto = Decimal("0")
@@ -1175,9 +1154,7 @@ def devengar_comision_venta(nota_venta):
     for linea in nota_venta.detalles.select_related("id_producto"):
         porcentaje = overrides.get(linea.id_producto.id_categoria_id, esquema.porcentaje_base)
         subtotal = linea.subtotal
-        monto_linea = (subtotal * porcentaje / _CIEN).quantize(
-            _CUATRO_DECIMALES, rounding=ROUND_HALF_UP
-        )
+        monto_linea = (subtotal * porcentaje / _CIEN).quantize(_CUATRO_DECIMALES, rounding=ROUND_HALF_UP)
         base += subtotal
         monto += monto_linea
         detalle.append(
@@ -1216,9 +1193,7 @@ def anular_comision_de_nota_venta(nota_venta):
     """
     from apps.ventas.models import ComisionVenta
 
-    comision = (
-        ComisionVenta.objects.select_for_update().filter(nota_venta=nota_venta).first()
-    )
+    comision = ComisionVenta.objects.select_for_update().filter(nota_venta=nota_venta).first()
     if comision is None or comision.estado == "ANULADA":
         return comision
     if comision.estado == "LIQUIDADA":
@@ -1250,8 +1225,7 @@ def liquidar_comisiones(empresas, vendedor, desde: date, hasta: date, usuario):
         raise VentaError("El rango de fechas es inválido: 'desde' es posterior a 'hasta'.")
 
     pendientes = list(
-        ComisionVenta.objects.select_for_update()
-        .filter(
+        ComisionVenta.objects.select_for_update().filter(
             id_empresa__in=empresas,
             vendedor=vendedor,
             estado="DEVENGADA",
@@ -1266,7 +1240,5 @@ def liquidar_comisiones(empresas, vendedor, desde: date, hasta: date, usuario):
         comision.fecha_liquidacion = hoy
         comision.liquidada_por = usuario
         total += comision.monto
-    ComisionVenta.objects.bulk_update(
-        pendientes, ["estado", "fecha_liquidacion", "liquidada_por"]
-    )
+    ComisionVenta.objects.bulk_update(pendientes, ["estado", "fecha_liquidacion", "liquidada_por"])
     return {"liquidadas": len(pendientes), "monto_total": total}

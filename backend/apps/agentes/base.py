@@ -23,7 +23,6 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import date
 from decimal import Decimal
 from typing import Any
 
@@ -84,9 +83,7 @@ class OmniAgente:
 
     def __init__(self) -> None:
         if not self.AGENTE_ID:
-            raise ValueError(
-                f"{self.__class__.__name__} debe definir AGENTE_ID."
-            )
+            raise ValueError(f"{self.__class__.__name__} debe definir AGENTE_ID.")
 
     # ── Interfaz pública ───────────────────────────────────────────────────────
 
@@ -135,7 +132,7 @@ class OmniAgente:
             try:
                 resultado_accion = self._ejecutar(prediccion)
                 ejecutado = resultado_accion.ejecutado
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 logger.exception(
                     "OmniAgente[%s] | empresa=%s | ERROR en _ejecutar: %s",
                     self.AGENTE_ID,
@@ -176,18 +173,18 @@ class OmniAgente:
                 "descripcion": resultado_accion.descripcion,
                 "datos": resultado_accion.datos,
                 "error": resultado_accion.error,
-            } if resultado_accion else None,
+            }
+            if resultado_accion
+            else None,
         }
 
     # ── Hooks para subclases ───────────────────────────────────────────────────
 
-    def _analizar(self, contexto: dict[str, Any]) -> Prediccion:  # noqa: ARG002
+    def _analizar(self, contexto: dict[str, Any]) -> Prediccion:
         """Debe ser implementado por la subclase. Retorna una Prediccion."""
-        raise NotImplementedError(
-            f"{self.__class__.__name__} debe implementar _analizar()."
-        )
+        raise NotImplementedError(f"{self.__class__.__name__} debe implementar _analizar().")
 
-    def _ejecutar(self, prediccion: Prediccion) -> ResultadoAccion:  # noqa: ARG002
+    def _ejecutar(self, prediccion: Prediccion) -> ResultadoAccion:  # noqa: ARG002  # hook opcional de subclase
         """
         Opcional en subclases. Solo se llama en nivel AUTONOMO.
         Default: no hace nada.
@@ -211,7 +208,7 @@ class OmniAgente:
                 "max_acciones_por_dia": cfg.max_acciones_por_dia,
                 "config_extra": cfg.config_extra,
             }
-        except Exception:  # noqa: BLE001
+        except Exception:  # noqa: BLE001  # sin config → modo conservador por defecto
             # Sin configuración → modo más conservador por defecto
             return {
                 "nivel_autonomia": "SOMBRA",
@@ -247,7 +244,7 @@ class OmniAgente:
                 alternativas=prediccion.alternativas,
             )
             return obj.pk
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:  # noqa: BLE001  # persistencia best-effort no debe tumbar al agente
             logger.warning(
                 "OmniAgente[%s] | _persistir falló: %s",
                 self.AGENTE_ID,

@@ -1,7 +1,6 @@
-from datetime import datetime, timedelta
 from apps.core.serializer_mixins import TenantFKScopeMixin
 
-from django.db.models import Count, Q, Sum
+from django.db.models import Sum
 from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -74,9 +73,7 @@ class AsignacionHorarioViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
 
     def get_queryset(self):
         # R-CODE-1: filtrado via empresa del empleado y via HorarioTrabajo → id_empresa
-        return AsignacionHorario.objects.filter(
-            id_horario__id_empresa__in=_empresas(self.request)
-        )
+        return AsignacionHorario.objects.filter(id_horario__id_empresa__in=_empresas(self.request))
 
     @action(detail=False, methods=["get"])
     def activas(self, request):
@@ -132,9 +129,7 @@ class RegistroAsistenciaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
 
     def get_queryset(self):
         # R-CODE-1 — filtrado via empleado__empresa
-        return RegistroAsistencia.objects.filter(
-            id_empleado__empresa__in=_empresas(self.request)
-        )
+        return RegistroAsistencia.objects.filter(id_empleado__empresa__in=_empresas(self.request))
 
     @action(detail=False, methods=["post"])
     def marcar_asistencia(self, request):
@@ -213,9 +208,7 @@ class ResumenAsistenciaDiarioViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
 
     def get_queryset(self):
         # R-CODE-1 — filtrado via empleado__empresa
-        return ResumenAsistenciaDiario.objects.filter(
-            id_empleado__empresa__in=_empresas(self.request)
-        )
+        return ResumenAsistenciaDiario.objects.filter(id_empleado__empresa__in=_empresas(self.request))
 
     @action(detail=False, methods=["post"])
     def generar_resumen_diario(self, request):
@@ -226,13 +219,24 @@ class ResumenAsistenciaDiarioViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
         if not fecha:
             fecha = timezone.localdate()
 
-        # Si se especifica empleado, procesar solo ese empleado
+        # Si se especifica empleado, procesar solo ese empleado (validando alcance tenant)
         if empleado_id:
+            from apps.rrhh.models import Empleado
+
+            try:
+                existe_empleado = Empleado.objects.filter(pk=empleado_id, empresa__in=_empresas(request)).exists()
+            except (ValueError, TypeError):
+                existe_empleado = False
+            if not existe_empleado:
+                return Response({"error": "Empleado no encontrado."}, status=status.HTTP_404_NOT_FOUND)
             empleados_ids = [empleado_id]
         else:
-            # Obtener todos los empleados que tienen registros de asistencia en la fecha
+            # Obtener todos los empleados visibles de la empresa que tienen registros de asistencia en la fecha
             empleados_ids = (
-                RegistroAsistencia.objects.filter(fecha_hora_marcado__date=fecha)
+                RegistroAsistencia.objects.filter(
+                    fecha_hora_marcado__date=fecha,
+                    id_empleado__empresa__in=_empresas(request),
+                )
                 .values_list("id_empleado_id", flat=True)
                 .distinct()
             )
@@ -241,9 +245,7 @@ class ResumenAsistenciaDiarioViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
 
         for emp_id in empleados_ids:
             # Verificar si ya existe resumen para esta fecha y empleado
-            resumen_existente = ResumenAsistenciaDiario.objects.filter(
-                id_empleado_id=emp_id, fecha=fecha
-            ).first()
+            resumen_existente = ResumenAsistenciaDiario.objects.filter(id_empleado_id=emp_id, fecha=fecha).first()
 
             if resumen_existente:
                 continue
@@ -335,9 +337,7 @@ class ResumenAsistenciaDiarioViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
         if not empleado_id:
             return Response({"error": "Debe especificar el ID del empleado"}, status=status.HTTP_400_BAD_REQUEST)
 
-        resumenes = self.get_queryset().filter(
-            id_empleado_id=empleado_id, fecha__year=año, fecha__month=mes
-        )
+        resumenes = self.get_queryset().filter(id_empleado_id=empleado_id, fecha__year=año, fecha__month=mes)
 
         # Calcular estadísticas
         total_dias = resumenes.count()

@@ -10,6 +10,7 @@ django-celery-beat (misma convención que el resto del ERP); ver
 ``docs/cxc-lubrikca/CHECKLIST_GO_LIVE.md``. La tarea es solo lectura de Odoo y
 nunca toca las tablas de trabajo humano (Vinculacion/Bandeja/Conciliacion).
 """
+
 from __future__ import annotations
 
 import logging
@@ -23,12 +24,16 @@ logger = logging.getLogger(__name__)
 def sync_cxc_lubrikca_todos():
     """Fan-out periódico: encola la sync de cada tenant Mode-A (datasource=odoo)."""
     from apps.configuracion_motor.models import ParametroSistema
+    from apps.core import rls
 
-    params = ParametroSistema.objects.filter(
-        codigo_parametro="cxc.datasource",
-        activo=True,
-        id_empresa__isnull=False,
-    )
+    with rls.rls_bypass():
+        params = list(
+            ParametroSistema.objects.filter(
+                codigo_parametro="cxc.datasource",
+                activo=True,
+                id_empresa__isnull=False,
+            )
+        )
     disparados = 0
     for p in params:
         if (p.valor_parametro or "").strip().lower() == "odoo":
@@ -47,13 +52,15 @@ def sync_cxc_lubrikca(empresa_id: str):
     y se devuelve como dict — nunca tumba el worker ni reintenta a ciegas.
     """
     try:
+        from apps.core import rls
         from apps.core.models import Empresa
         from apps.cxc_lubrikca.services.sync import sincronizar_empresa
 
-        empresa = Empresa.objects.get(pk=empresa_id)
-        conteos = sincronizar_empresa(empresa)
+        with rls.rls_tenant_context([empresa_id]):
+            empresa = Empresa.objects.get(pk=empresa_id)
+            conteos = sincronizar_empresa(empresa)
         logger.info("cxc_lubrikca.sync: empresa=%s conteos=%s", empresa_id, conteos)
         return {"empresa_id": empresa_id, **conteos}
-    except Exception as exc:  # noqa: BLE001 — el worker no debe morir por un tenant
+    except Exception as exc:  # el worker no debe morir por un tenant
         logger.exception("cxc_lubrikca.sync error empresa=%s: %s", empresa_id, exc)
         return {"empresa_id": empresa_id, "error": str(exc)}

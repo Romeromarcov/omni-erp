@@ -24,6 +24,6 @@ class AbonoCxPViewSet(BaseModelViewSet):
 
     def get_queryset(self):
         empresas = get_empresas_visible(self.request.user)
-        return AbonoCxP.objects.filter(
-            cuenta_por_pagar__id_empresa__in=empresas
-        ).select_related("cuenta_por_pagar", "usuario")
+        return AbonoCxP.objects.filter(cuenta_por_pagar__id_empresa__in=empresas).select_related(
+            "cuenta_por_pagar", "usuario"
+        )

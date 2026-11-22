@@ -24,6 +24,7 @@ pytestmark = pytest.mark.integration
 @pytest.fixture
 def moneda_ves(db):
     from apps.finanzas.models import Moneda
+
     return Moneda.objects.create(
         nombre="Bolívar Digital",
         codigo_iso="VES",
@@ -36,6 +37,7 @@ def moneda_ves(db):
 @pytest.fixture
 def moneda_eur(db):
     from apps.finanzas.models import Moneda
+
     return Moneda.objects.create(
         nombre="Euro",
         codigo_iso="EUR",
@@ -48,6 +50,7 @@ def moneda_eur(db):
 @pytest.fixture
 def cliente_m8(db, empresa_a):
     from apps.crm.models import Cliente
+
     return Cliente.objects.create(
         id_empresa=empresa_a,
         razon_social="Cliente M8 Test C.A.",
@@ -364,6 +367,7 @@ class TestEmitirFacturaFiscalAutoNumber:
 class TestLibrosSENIAT:
     def _crear_factura(self, empresa, cliente, moneda, numero_ctrl, numero_fac, fecha):
         from apps.ventas.models import FacturaFiscal
+
         return FacturaFiscal.objects.create(
             id_empresa=empresa,
             id_cliente=cliente,

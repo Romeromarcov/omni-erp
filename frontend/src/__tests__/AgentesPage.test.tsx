@@ -48,8 +48,65 @@ const metricas = {
   latencia_promedio_ms: 12,
 };
 
+const ejecucionBase = {
+  id_ejecucion: 'ej-1',
+  agente: 'cobranza_estratega',
+  estado: 'pendiente' as const,
+  celery_task_id: 'celery-1',
+  parametros: {},
+  resultado: {},
+  mensaje_error: '',
+  iniciado_por: 'u1',
+  fecha_creacion: '2026-11-21T00:00:00Z',
+  fecha_inicio: null,
+  fecha_fin: null,
+  id_empresa: 'e1',
+};
+
+const resumenConsumoDefault = {
+  llamadas: 3,
+  tokens_entrada_total: 1500,
+  tokens_salida_total: 600,
+  costo_total_usd: '0.013500',
+  latencia_promedio_ms: 245,
+  por_modelo: [
+    {
+      modelo: 'modelo-sonnet-test',
+      llamadas: 2,
+      tokens_entrada_total: 1000,
+      tokens_salida_total: 400,
+      costo_total_usd: '0.009000',
+    },
+    {
+      modelo: 'modelo-haiku-test',
+      llamadas: 1,
+      tokens_entrada_total: 500,
+      tokens_salida_total: 200,
+      costo_total_usd: '0.004500',
+    },
+  ],
+  por_uso: [
+    {
+      uso: 'chat',
+      llamadas: 2,
+      tokens_entrada_total: 1000,
+      tokens_salida_total: 400,
+      costo_total_usd: '0.009000',
+    },
+    {
+      uso: 'agente',
+      llamadas: 1,
+      tokens_entrada_total: 500,
+      tokens_salida_total: 200,
+      costo_total_usd: '0.004500',
+    },
+  ],
+};
+
 function setupGet(predicciones = [prediccionPendiente, prediccionAceptada]) {
   vi.mocked(get).mockImplementation((url: string) => {
+    if (url.startsWith('/agentes/consumo-llm/resumen'))
+      return Promise.resolve(resumenConsumoDefault);
     if (url.startsWith('/agentes/predicciones/metricas-clasificador'))
       return Promise.resolve(metricas);
     if (url.startsWith('/agentes/predicciones')) return Promise.resolve(predicciones);
@@ -57,12 +114,12 @@ function setupGet(predicciones = [prediccionPendiente, prediccionAceptada]) {
   });
 }
 
-function renderPage() {
+function renderPage(pollIntervalMs = 5) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
       <MemoryRouter>
-        <AgentesPage />
+        <AgentesPage pollIntervalMs={pollIntervalMs} />
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -137,15 +194,82 @@ describe('AgentesPage', () => {
     );
   });
 
-  it('dispara el análisis de cobranza', async () => {
-    vi.mocked(post).mockResolvedValue({ sugerencias: [], total: 0 });
-    renderPage();
+  it('dispara análisis de cobranza (202), hace polling y muestra el resultado completado', async () => {
+    vi.mocked(post).mockResolvedValue({ ...ejecucionBase, estado: 'pendiente' });
+    let pollCount = 0;
+    vi.mocked(get).mockImplementation((url: string) => {
+      if (url === '/agentes/ejecuciones/ej-1/') {
+        pollCount += 1;
+        if (pollCount === 1) {
+          return Promise.resolve({ ...ejecucionBase, estado: 'ejecutando' });
+        }
+        return Promise.resolve({
+          ...ejecucionBase,
+          estado: 'completado',
+          resultado: { sugerencias: [], total: 0 },
+        });
+      }
+      if (url.startsWith('/agentes/predicciones/metricas-clasificador'))
+        return Promise.resolve(metricas);
+      if (url.startsWith('/agentes/predicciones'))
+        return Promise.resolve([prediccionPendiente, prediccionAceptada]);
+      return Promise.resolve([]);
+    });
+
+    renderPage(5);
     await screen.findByText('oficina');
     fireEvent.click(screen.getByRole('button', { name: 'Analizar cobranza' }));
+
     await waitFor(() =>
       expect(post).toHaveBeenCalledWith('/agentes/predicciones/analizar-cobranza/', {}),
     );
     expect(await screen.findByText(/Análisis de cobranza/)).toBeInTheDocument();
+    expect(screen.getByText('Completado')).toBeInTheDocument();
+    expect(get).toHaveBeenCalledWith('/agentes/ejecuciones/ej-1/', {
+      signal: expect.any(AbortSignal),
+    });
+  });
+
+  it('muestra error limpio cuando la ejecución termina en estado fallido', async () => {
+    vi.mocked(post).mockResolvedValue({ ...ejecucionBase, estado: 'pendiente' });
+    vi.mocked(get).mockImplementation((url: string) => {
+      if (url === '/agentes/ejecuciones/ej-1/') {
+        return Promise.resolve({
+          ...ejecucionBase,
+          estado: 'fallido',
+          mensaje_error: 'No se pudo completar el análisis del agente.',
+        });
+      }
+      if (url.startsWith('/agentes/predicciones/metricas-clasificador'))
+        return Promise.resolve(metricas);
+      if (url.startsWith('/agentes/predicciones'))
+        return Promise.resolve([prediccionPendiente, prediccionAceptada]);
+      return Promise.resolve([]);
+    });
+
+    renderPage(5);
+    await screen.findByText('oficina');
+    fireEvent.click(screen.getByRole('button', { name: 'Analizar cobranza' }));
+
+    expect(
+      await screen.findByText('No se pudo completar el análisis del agente.'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Fallido')).toBeInTheDocument();
+  });
+
+  it('cancela el polling limpiamente al desmontar sin llamadas posteriores', async () => {
+    vi.mocked(post).mockResolvedValue({ ...ejecucionBase, estado: 'pendiente' });
+    const { unmount } = renderPage(500);
+    await screen.findByText('oficina');
+    fireEvent.click(screen.getByRole('button', { name: 'Analizar cobranza' }));
+
+    await waitFor(() =>
+      expect(post).toHaveBeenCalledWith('/agentes/predicciones/analizar-cobranza/', {}),
+    );
+    unmount();
+
+    await new Promise((r) => setTimeout(r, 40));
+    expect(get).not.toHaveBeenCalledWith('/agentes/ejecuciones/ej-1/');
   });
 
   it('valida el ID del gasto antes de clasificar', async () => {
@@ -156,8 +280,13 @@ describe('AgentesPage', () => {
     expect(post).not.toHaveBeenCalled();
   });
 
-  it('clasifica un gasto enviando el payload', async () => {
-    vi.mocked(post).mockResolvedValue({ categoria: 'oficina', aplicado: false });
+  it('clasifica un gasto enviando el payload y espera ejecución completada', async () => {
+    vi.mocked(post).mockResolvedValue({
+      ...ejecucionBase,
+      agente: 'clasificador_gastos',
+      estado: 'completado',
+      resultado: { categoria: 'oficina', aplicado: false },
+    });
     renderPage();
     await screen.findByText('oficina');
     fireEvent.change(screen.getByLabelText('ID del gasto'), { target: { value: 'g1' } });
@@ -168,9 +297,10 @@ describe('AgentesPage', () => {
         aplicar: false,
       }),
     );
+    expect(await screen.findByText(/Clasificación de gasto/)).toBeInTheDocument();
   });
 
-  it('muestra un error cuando el análisis de reorden falla', async () => {
+  it('muestra un error cuando el análisis de reorden falla al encolar', async () => {
     vi.mocked(post).mockRejectedValue(new Error('{"detail":"falló"}'));
     renderPage();
     await screen.findByText('oficina');
@@ -178,11 +308,77 @@ describe('AgentesPage', () => {
     expect(await screen.findByText(/falló/)).toBeInTheDocument();
   });
 
-  it('muestra el estado vacío cuando no hay predicciones', async () => {
-    setupGet([]);
+  it('muestra el estado vacío cuando no hay predicciones y tolera precision null', async () => {
+    vi.mocked(get).mockImplementation((url: string) => {
+      if (url.startsWith('/agentes/predicciones/metricas-clasificador')) {
+        return Promise.resolve({
+          total: 0,
+          precision: null,
+          confianza_promedio: null,
+        });
+      }
+      if (url.startsWith('/agentes/predicciones')) return Promise.resolve([]);
+      return Promise.resolve([]);
+    });
     renderPage();
     expect(
       await screen.findByText('Sin predicciones registradas todavía.'),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('muestra la tarjeta de Consumo LLM con totales Decimal USD y desglose por uso y modelo', async () => {
+    renderPage();
+    const seccion = await screen.findByTestId('consumo-llm-section');
+    expect(within(seccion).getByText('Consumo LLM (Tokens y Costo USD)')).toBeInTheDocument();
+    expect(await within(seccion).findByText('$0.013500 USD')).toBeInTheDocument();
+    expect(within(seccion).getByText('1,500')).toBeInTheDocument();
+    expect(within(seccion).getByText('600')).toBeInTheDocument();
+    expect(within(seccion).getByText('245 ms')).toBeInTheDocument();
+    expect(within(seccion).getByText(/Asistente Chat: 2/)).toBeInTheDocument();
+    expect(within(seccion).getByText(/modelo-sonnet-test: 2/)).toBeInTheDocument();
+  });
+
+  it('muestra estado vacío cuando no hay consumo LLM registrado', async () => {
+    vi.mocked(get).mockImplementation((url: string) => {
+      if (url.startsWith('/agentes/consumo-llm/resumen')) {
+        return Promise.resolve({
+          llamadas: 0,
+          tokens_entrada_total: 0,
+          tokens_salida_total: 0,
+          costo_total_usd: '0.000000',
+          latencia_promedio_ms: 0,
+          por_modelo: [],
+          por_uso: [],
+        });
+      }
+      if (url.startsWith('/agentes/predicciones/metricas-clasificador'))
+        return Promise.resolve(metricas);
+      if (url.startsWith('/agentes/predicciones'))
+        return Promise.resolve([prediccionPendiente]);
+      return Promise.resolve([]);
+    });
+
+    renderPage();
+    expect(await screen.findByText('Sin consumo LLM registrado todavía.')).toBeInTheDocument();
+  });
+
+  it('muestra mensaje limpio si falla la carga de consumo LLM sin romper la página', async () => {
+    vi.mocked(get).mockImplementation((url: string) => {
+      if (url.startsWith('/agentes/consumo-llm/resumen')) {
+        return Promise.reject(new Error('500'));
+      }
+      if (url.startsWith('/agentes/predicciones/metricas-clasificador'))
+        return Promise.resolve(metricas);
+      if (url.startsWith('/agentes/predicciones'))
+        return Promise.resolve([prediccionPendiente]);
+      return Promise.resolve([]);
+    });
+
+    renderPage();
+    expect(await screen.findByText('oficina')).toBeInTheDocument();
+    expect(
+      await screen.findByText('No se pudo cargar el resumen de consumo LLM.'),
     ).toBeInTheDocument();
   });
 });

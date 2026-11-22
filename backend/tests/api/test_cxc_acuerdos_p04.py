@@ -15,6 +15,7 @@ BUG-M3 — generar_cuotas / AcuerdoPagoCreateSerializer:
 (El doble pago concurrente se cubre en
 tests/integration/test_cxc_acuerdos_concurrencia.py.)
 """
+
 import datetime
 from decimal import Decimal
 
@@ -40,9 +41,7 @@ def client_a(user_a):
 
 @pytest.fixture
 def metodo_a(empresa_a, moneda_usd):
-    metodo = MetodoPago.objects.create(
-        nombre_metodo="Transferencia A", tipo_metodo="ELECTRONICO", empresa=empresa_a
-    )
+    metodo = MetodoPago.objects.create(nombre_metodo="Transferencia A", tipo_metodo="ELECTRONICO", empresa=empresa_a)
     metodo.monedas.add(moneda_usd)
     return metodo
 
@@ -50,8 +49,11 @@ def metodo_a(empresa_a, moneda_usd):
 @pytest.fixture
 def moneda_ves(db):
     return Moneda.objects.create(
-        nombre="Bolívar", codigo_iso="VES", simbolo="Bs",
-        tipo_moneda="fiat", es_generica=True,
+        nombre="Bolívar",
+        codigo_iso="VES",
+        simbolo="Bs",
+        tipo_moneda="fiat",
+        es_generica=True,
     )
 
 
@@ -92,6 +94,7 @@ def _pagar(client, acuerdo, cuota, monto, moneda, metodo):
 
 # ── BUG-A2: acumulación de pagos parciales ────────────────────────────────────
 
+
 class TestPagosParcialesAcumulan:
     def test_dos_parciales_se_suman(self, client_a, acuerdo_a, moneda_usd, metodo_a):
         cuota = acuerdo_a.cuotas.get()
@@ -108,9 +111,7 @@ class TestPagosParcialesAcumulan:
         assert cuota.monto_pagado == Decimal("70.0000")
         assert cuota.estado == "parcial"
 
-    def test_parciales_completan_la_cuota_y_el_acuerdo(
-        self, client_a, acuerdo_a, moneda_usd, metodo_a
-    ):
+    def test_parciales_completan_la_cuota_y_el_acuerdo(self, client_a, acuerdo_a, moneda_usd, metodo_a):
         cuota = acuerdo_a.cuotas.get()
         _pagar(client_a, acuerdo_a, cuota, "60.0000", moneda_usd, metodo_a)
         resp = _pagar(client_a, acuerdo_a, cuota, "40.0000", moneda_usd, metodo_a)
@@ -123,9 +124,7 @@ class TestPagosParcialesAcumulan:
         # Cada pago parcial genera su propio finanzas.Pago.
         assert Pago.objects.count() == 2
 
-    def test_cuota_completada_no_acepta_mas_pagos(
-        self, client_a, acuerdo_a, moneda_usd, metodo_a
-    ):
+    def test_cuota_completada_no_acepta_mas_pagos(self, client_a, acuerdo_a, moneda_usd, metodo_a):
         cuota = acuerdo_a.cuotas.get()
         _pagar(client_a, acuerdo_a, cuota, "60.0000", moneda_usd, metodo_a)
         _pagar(client_a, acuerdo_a, cuota, "40.0000", moneda_usd, metodo_a)
@@ -135,6 +134,7 @@ class TestPagosParcialesAcumulan:
 
 
 # ── BUG-A2: min_value en monto ────────────────────────────────────────────────
+
 
 class TestMontoMinimo:
     @pytest.mark.parametrize("monto", ["0", "0.0000", "-1", "-100.5"])
@@ -151,14 +151,16 @@ class TestMontoMinimo:
 
 # ── BUG-A2: conversión de moneda pago → moneda del acuerdo ────────────────────
 
+
 class TestConversionMoneda:
-    def test_100_ves_no_saldan_cuota_de_100_usd(
-        self, client_a, acuerdo_a, moneda_usd, moneda_ves, metodo_a
-    ):
+    def test_100_ves_no_saldan_cuota_de_100_usd(self, client_a, acuerdo_a, moneda_usd, moneda_ves, metodo_a):
         """Con tasa VES→USD = 0.0274: 100 VES aplican 2.74 USD, NO 100 USD."""
         TasaCambio.objects.create(
-            id_empresa=None, id_moneda_origen=moneda_ves, id_moneda_destino=moneda_usd,
-            tipo_tasa="OFICIAL_BCV", valor_tasa=Decimal("0.02740000"),
+            id_empresa=None,
+            id_moneda_origen=moneda_ves,
+            id_moneda_destino=moneda_usd,
+            tipo_tasa="OFICIAL_BCV",
+            valor_tasa=Decimal("0.02740000"),
             fecha_tasa=timezone.localdate(),
         )
         cuota = acuerdo_a.cuotas.get()
@@ -173,12 +175,13 @@ class TestConversionMoneda:
         assert pago.monto == Decimal("100.0000")
         assert pago.id_moneda == moneda_ves
 
-    def test_pagos_en_dos_monedas_acumulan_convertidos(
-        self, client_a, acuerdo_a, moneda_usd, moneda_ves, metodo_a
-    ):
+    def test_pagos_en_dos_monedas_acumulan_convertidos(self, client_a, acuerdo_a, moneda_usd, moneda_ves, metodo_a):
         TasaCambio.objects.create(
-            id_empresa=None, id_moneda_origen=moneda_ves, id_moneda_destino=moneda_usd,
-            tipo_tasa="OFICIAL_BCV", valor_tasa=Decimal("0.02500000"),
+            id_empresa=None,
+            id_moneda_origen=moneda_ves,
+            id_moneda_destino=moneda_usd,
+            tipo_tasa="OFICIAL_BCV",
+            valor_tasa=Decimal("0.02500000"),
             fecha_tasa=timezone.localdate(),
         )
         cuota = acuerdo_a.cuotas.get()
@@ -189,9 +192,7 @@ class TestConversionMoneda:
         assert cuota.monto_pagado == Decimal("100.0000")
         assert cuota.estado == "pagado"
 
-    def test_moneda_distinta_sin_tasa_rechaza_400(
-        self, client_a, acuerdo_a, moneda_ves, metodo_a
-    ):
+    def test_moneda_distinta_sin_tasa_rechaza_400(self, client_a, acuerdo_a, moneda_ves, metodo_a):
         """Sin tasa VES→USD el pago se rechaza: jamás tasa implícita 1:1."""
         cuota = acuerdo_a.cuotas.get()
         resp = _pagar(client_a, acuerdo_a, cuota, "100.0000", moneda_ves, metodo_a)
@@ -205,14 +206,17 @@ class TestConversionMoneda:
 
 # ── BUG-M3: generar_cuotas capeado al total ───────────────────────────────────
 
+
 class TestCuotasNoExcedenTotal:
     def test_monto_cuota_fijo_capea_cuotas_intermedias(self, client_a):
         """total=100, cuota fija=80, 3 períodos → [80, 20], nunca 240."""
         resp = client_a.post(
             URL,
             _payload_acuerdo(
-                monto_total="100.0000", periodicidad="semanal",
-                plazo_total_dias=21, monto_cuota="80.0000",
+                monto_total="100.0000",
+                periodicidad="semanal",
+                plazo_total_dias=21,
+                monto_cuota="80.0000",
             ),
             format="json",
         )
@@ -227,8 +231,10 @@ class TestCuotasNoExcedenTotal:
         resp = client_a.post(
             URL,
             _payload_acuerdo(
-                monto_total="100.0000", periodicidad="semanal",
-                plazo_total_dias=21, porcentaje_abono="60.00",
+                monto_total="100.0000",
+                periodicidad="semanal",
+                plazo_total_dias=21,
+                porcentaje_abono="60.00",
             ),
             format="json",
         )
@@ -265,6 +271,7 @@ class TestCuotasNoExcedenTotal:
 
 # ── BUG-M3: validaciones del serializer de creación ──────────────────────────
 
+
 class TestValidacionesCrearAcuerdo:
     @pytest.mark.parametrize("monto_total", ["0", "-100"])
     def test_monto_total_no_positivo_400(self, client_a, monto_total):
@@ -279,9 +286,7 @@ class TestValidacionesCrearAcuerdo:
         assert AcuerdoPago.objects.count() == 0
 
     def test_monto_cuota_mayor_al_total_400(self, client_a):
-        resp = client_a.post(
-            URL, _payload_acuerdo(monto_total="100", monto_cuota="150"), format="json"
-        )
+        resp = client_a.post(URL, _payload_acuerdo(monto_total="100", monto_cuota="150"), format="json")
         assert resp.status_code == 400, resp.content
         assert AcuerdoPago.objects.count() == 0
 
@@ -302,6 +307,7 @@ class TestValidacionesCrearAcuerdo:
 
 
 # ── BUG-M3: aislamiento multi-tenant de los FK cxc / gestion ─────────────────
+
 
 class TestAislamientoFK:
     def _cxc_de(self, empresa):

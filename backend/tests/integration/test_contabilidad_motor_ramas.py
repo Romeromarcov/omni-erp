@@ -4,6 +4,7 @@ Cubre las validaciones y caminos de borde del motor contable (código de dinero
 crítico): tipo inválido, monto ≤ 0, extracción de empresa/monto, mapeo faltante,
 y auto-aprobación según empresa.contabilidad_auto_aprobar.
 """
+
 import uuid
 from decimal import Decimal
 
@@ -20,6 +21,7 @@ pytestmark = [pytest.mark.django_db, pytest.mark.integration]
 
 class _Doc:
     """Documento mínimo (pk + atributos opcionales) para el motor de asientos."""
+
     def __init__(self, **kw):
         self.pk = uuid.uuid4()
         for k, v in kw.items():
@@ -28,19 +30,27 @@ class _Doc:
 
 def _cuenta(empresa, codigo, nombre):
     from apps.contabilidad.models import PlanCuentas
+
     return PlanCuentas.objects.create(
-        id_empresa=empresa, codigo_cuenta=codigo, nombre_cuenta=nombre,
-        tipo_cuenta="ACTIVO", naturaleza="DEUDORA", nivel=1,
+        id_empresa=empresa,
+        codigo_cuenta=codigo,
+        nombre_cuenta=nombre,
+        tipo_cuenta="ACTIVO",
+        naturaleza="DEUDORA",
+        nivel=1,
     )
 
 
 def _mapeo(empresa, tipo):
     from apps.contabilidad.models import MapeoContable
+
     return MapeoContable.objects.create(
-        id_empresa=empresa, tipo_asiento=tipo,
+        id_empresa=empresa,
+        tipo_asiento=tipo,
         cuenta_debe=_cuenta(empresa, "1.1", "Caja"),
         cuenta_haber=_cuenta(empresa, "4.1", "Ventas"),
-        descripcion_plantilla="Asiento {tipo} {numero}", activo=True,
+        descripcion_plantilla="Asiento {tipo} {numero}",
+        activo=True,
     )
 
 
@@ -80,6 +90,7 @@ def test_monto_inferido_del_documento(empresa_a):
     detalles = list(asiento.detalleasiento_set.all()) if hasattr(asiento, "detalleasiento_set") else None
     # El asiento se creó con el monto inferido (validamos vía total debe).
     from apps.contabilidad.models import DetalleAsiento
+
     debe = DetalleAsiento.objects.filter(id_asiento=asiento, debe__gt=0).first()
     assert debe.debe == Decimal("123.45")
 

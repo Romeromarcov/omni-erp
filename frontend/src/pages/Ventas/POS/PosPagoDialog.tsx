@@ -4,17 +4,23 @@
  * idempotencia generada una sola vez (PR #86/#89): un doble toque en
  * "Confirmar cobro" no puede duplicar pagos.
  */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle,
   Divider, IconButton, List, ListItem, ListItemText, Stack, TextField, Typography,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import Decimal from 'decimal.js';
-import { toFixedStr } from '../../../lib/decimal';
+import { D, toFixedStr } from '../../../lib/decimal';
 import { newIdempotencyKey } from '../../../lib/idempotency';
 import type { MetodoPagoEmpresaActiva } from '../../../services/metodosPagoEmpresaActiva';
 import type { MonedaEmpresaActiva } from '../../../services/monedasEmpresaActiva';
+import {
+  codigoIsoMonedaReal,
+  idMetodoPagoReal,
+  idMonedaReal,
+  nombreMetodoPagoReal,
+} from './posCatalog';
 import { restantePorPagar, totalPagado, vuelto, type PosPago } from './posTotals';
 
 interface Props {
@@ -30,6 +36,8 @@ interface Props {
   tasaBcv: string;
   /** true mientras se registran los pagos en el backend. */
   procesando: boolean;
+  /** true cuando se opera sin conexión (total provisional, sin IVA calculado). */
+  modoOffline?: boolean;
   error: string | null;
   onConfirm: (pagos: PosPago[], vueltoCalculado: string) => void;
   onClose: () => void;
@@ -37,7 +45,7 @@ interface Props {
 
 export default function PosPagoDialog({
   open, total, montoImpuesto, codigoIsoDocumento, metodos, monedas, tasaBcv,
-  procesando, error, onConfirm, onClose,
+  procesando, modoOffline = false, error, onConfirm, onClose,
 }: Props) {
   const [pagos, setPagos] = useState<PosPago[]>([]);
   const [idMetodo, setIdMetodo] = useState('');
@@ -46,12 +54,21 @@ export default function PosPagoDialog({
   const [referencia, setReferencia] = useState('');
   const [errorForm, setErrorForm] = useState('');
 
-  const metodoSel = metodos.find((m) => m.id === idMetodo);
+  useEffect(() => {
+    if (!open) {
+      setPagos([]);
+      setErrorForm('');
+      setMonto('');
+      setReferencia('');
+    }
+  }, [open]);
+
+  const metodoSel = metodos.find((m) => idMetodoPagoReal(m) === idMetodo);
   // Si el método restringe monedas, solo se ofrecen esas.
   const monedasDelMetodo = useMemo(
     () =>
       metodoSel && Array.isArray(metodoSel.monedas) && metodoSel.monedas.length > 0
-        ? monedas.filter((mo) => metodoSel.monedas.includes(mo.id_moneda))
+        ? monedas.filter((mo) => metodoSel.monedas.includes(idMonedaReal(mo)))
         : monedas,
     [metodoSel, monedas],
   );
@@ -62,23 +79,24 @@ export default function PosPagoDialog({
   const cubierto = restante.isZero() && pagos.length > 0;
 
   const agregarPago = () => {
-    const moneda = monedas.find((mo) => mo.id_moneda === idMoneda);
-    const metodo = metodos.find((m) => m.id === idMetodo);
-    if (!metodo || !moneda || !monto || Number(monto) <= 0) {
+    const moneda = monedas.find((mo) => idMonedaReal(mo) === idMoneda);
+    const metodo = metodos.find((m) => idMetodoPagoReal(m) === idMetodo);
+    if (!metodo || !moneda || !monto || D(monto).lessThanOrEqualTo(0)) {
       setErrorForm('Selecciona método, moneda y un monto mayor que cero.');
       return;
     }
+    const codigoMoneda = codigoIsoMonedaReal(moneda);
     setErrorForm('');
     setPagos((prev) => [
       ...prev,
       {
         idempotencyKey: newIdempotencyKey(),
-        id_metodo_pago: metodo.id,
-        nombre_metodo: metodo.nombre_metodo,
-        id_moneda: moneda.id_moneda,
-        codigo_iso: moneda.codigo_iso,
+        id_metodo_pago: idMetodoPagoReal(metodo),
+        nombre_metodo: nombreMetodoPagoReal(metodo),
+        id_moneda: idMonedaReal(moneda),
+        codigo_iso: codigoMoneda,
         monto,
-        tasa: moneda.codigo_iso === codigoIsoDocumento ? '1' : tasaBcv,
+        tasa: codigoMoneda.toUpperCase() === codigoIsoDocumento.toUpperCase() ? '1' : tasaBcv,
         referencia: referencia || undefined,
       },
     ]);
@@ -107,9 +125,16 @@ export default function PosPagoDialog({
               Total: {toFixedStr(total)} {codigoIsoDocumento}
             </Typography>
             <Typography variant="body2" color="text.secondary" data-testid="pos-iva-cobrar">
-              IVA incluido: {toFixedStr(montoImpuesto)} {codigoIsoDocumento}
+              {modoOffline
+                ? `IVA provisional: ${toFixedStr(montoImpuesto)} ${codigoIsoDocumento} (se calcula al sincronizar)`
+                : `IVA incluido: ${toFixedStr(montoImpuesto)} ${codigoIsoDocumento}`}
             </Typography>
           </Box>
+          {modoOffline && (
+            <Alert severity="info" data-testid="pos-pago-modo-offline">
+              Modo sin conexión: el total mostrado es provisional. La venta se encolará y el servidor calculará el IVA definitivo al sincronizar.
+            </Alert>
+          )}
           <Divider />
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
             <TextField
@@ -122,9 +147,14 @@ export default function PosPagoDialog({
               }}
             >
               <option value="" />
-              {metodos.map((m) => (
-                <option key={m.id} value={m.id}>{m.nombre_metodo}</option>
-              ))}
+              {metodos.map((m) => {
+                const mId = idMetodoPagoReal(m);
+                return (
+                  <option key={m.id || mId} value={mId}>
+                    {nombreMetodoPagoReal(m)}
+                  </option>
+                );
+              })}
             </TextField>
             <TextField
               select fullWidth size="small" label="Moneda" value={idMoneda}
@@ -136,9 +166,14 @@ export default function PosPagoDialog({
               }}
             >
               <option value="" />
-              {monedasDelMetodo.map((mo) => (
-                <option key={mo.id_moneda} value={mo.id_moneda}>{mo.codigo_iso}</option>
-              ))}
+              {monedasDelMetodo.map((mo) => {
+                const moId = idMonedaReal(mo);
+                return (
+                  <option key={mo.id || moId} value={moId}>
+                    {codigoIsoMonedaReal(mo)}
+                  </option>
+                );
+              })}
             </TextField>
           </Stack>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>

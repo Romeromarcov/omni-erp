@@ -79,16 +79,26 @@ describe('estimarMrr', () => {
   const planes = [
     plan({ id_plan: 'p1', precio_mensual: '30.00', precio_anual: '300.00' }),
     plan({ id_plan: 'p2', precio_mensual: '50.00', precio_anual: '600.00' }),
+    plan({ id_plan: 'p3', precio_mensual: '0.10', precio_anual: '1.20' }),
+    plan({ id_plan: 'p4', precio_mensual: '0.20', precio_anual: '2.40' }),
   ];
 
   it('suma el precio mensual de suscripciones mensuales vigentes', () => {
     const subs = [sus({ id_plan: 'p1', periodo: 'MENSUAL', estado: 'ACTIVA' })];
-    expect(estimarMrr(subs, planes)).toBeCloseTo(30);
+    expect(estimarMrr(subs, planes)).toBe('30.00');
   });
 
   it('mensualiza el precio anual dividiendo entre 12', () => {
     const subs = [sus({ id_plan: 'p2', periodo: 'ANUAL', estado: 'ACTIVA' })];
-    expect(estimarMrr(subs, planes)).toBeCloseTo(600 / 12);
+    expect(estimarMrr(subs, planes)).toBe('50.00');
+  });
+
+  it('suma precios decimales sin error de coma flotante (0.10 + 0.20 === "0.30")', () => {
+    const subs = [
+      sus({ id_suscripcion: 's1', id_plan: 'p3', periodo: 'MENSUAL', estado: 'ACTIVA' }),
+      sus({ id_suscripcion: 's2', id_plan: 'p4', periodo: 'MENSUAL', estado: 'TRIAL' }),
+    ];
+    expect(estimarMrr(subs, planes)).toBe('0.30');
   });
 
   it('cuenta TRIAL como vigente pero ignora CANCELADA/SUSPENDIDA/VENCIDA', () => {
@@ -98,12 +108,12 @@ describe('estimarMrr', () => {
       sus({ id_suscripcion: 'c', id_plan: 'p1', estado: 'SUSPENDIDA' }),
       sus({ id_suscripcion: 'd', id_plan: 'p1', estado: 'VENCIDA' }),
     ];
-    expect(estimarMrr(subs, planes)).toBeCloseTo(30);
+    expect(estimarMrr(subs, planes)).toBe('30.00');
   });
 
   it('ignora suscripciones cuyo plan no existe en el catálogo', () => {
     const subs = [sus({ id_plan: 'desconocido', estado: 'ACTIVA' })];
-    expect(estimarMrr(subs, planes)).toBe(0);
+    expect(estimarMrr(subs, planes)).toBe('0.00');
   });
 });
 

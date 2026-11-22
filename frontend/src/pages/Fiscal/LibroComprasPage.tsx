@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { D, sumDecimals } from '../../lib/decimal';
+import { formatoDecimal, sumDecimals, type DecimalInput } from '../../lib/decimal';
 import {
   Alert,
   Box,
@@ -62,11 +62,11 @@ const LibroComprasPage: React.FC = () => {
     }
   }
 
-  const totalBase = sumDecimals(entries.map((e) => D(e.base_imponible))).toNumber();
-  const totalIva = sumDecimals(entries.map((e) => D(e.iva))).toNumber();
-  const totalTotal = sumDecimals(entries.map((e) => D(e.total))).toNumber();
+  const totalBase = sumDecimals(entries.map((e) => e.base_imponible));
+  const totalIva = sumDecimals(entries.map((e) => e.iva));
+  const totalTotal = sumDecimals(entries.map((e) => e.total));
 
-  const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fmt = (v: DecimalInput) => formatoDecimal(v, 2, 2);
 
   return (
     <PageContainer>
@@ -146,9 +146,9 @@ const LibroComprasPage: React.FC = () => {
                     <TableCell>{e.fecha}</TableCell>
                     <TableCell align="right">{e.nro_ctrl}</TableCell>
                     <TableCell align="right">{e.nro_fac}</TableCell>
-                    <TableCell align="right">{fmt(parseFloat(e.base_imponible || '0'))}</TableCell>
-                    <TableCell align="right">{fmt(parseFloat(e.iva || '0'))}</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 600 }}>{fmt(parseFloat(e.total || '0'))}</TableCell>
+                    <TableCell align="right">{fmt(e.base_imponible || '0')}</TableCell>
+                    <TableCell align="right">{fmt(e.iva || '0')}</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 600 }}>{fmt(e.total || '0')}</TableCell>
                   </TableRow>
                 ))}
                 <TableRow sx={{ '& td': { fontWeight: 700 } }}>

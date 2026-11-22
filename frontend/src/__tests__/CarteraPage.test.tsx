@@ -14,6 +14,11 @@ vi.mock('../services/cxcLubrikcaService', () => ({
 import { cxcLubrikcaService } from '../services/cxcLubrikcaService';
 import CarteraPage from '../pages/CxcLubrikca/CarteraPage';
 
+/** Fecha ISO (YYYY-MM-DD) de hace `n` días, para no depender del día en que corre el test. */
+function haceDias(n: number): string {
+  return new Date(Date.now() - n * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
 const resumen = {
   por_resultado: { verde: 0, amarillo: 0, rojo: 0 },
   total_conciliados: 0,
@@ -48,14 +53,14 @@ const conDevolucion = {
   tiene_devolucion: true,
 };
 
-// No facturado con entrega vieja → cartera atascada (entrega en 2026-01-01).
+// No facturado con entrega vieja → cartera atascada (entrega hace > 30 días).
 const atascado = {
   ...base,
   id: 'p2',
   so_id: 'SO-ATASCADA-1',
   cliente_nombre: 'Cliente Atascado',
   monto_total: '350.00',
-  fecha_entrega: '2026-01-01',
+  fecha_entrega: haceDias(120),
   facturada: false,
   estado_entrega: 'entregada',
   tiene_devolucion: false,
@@ -68,7 +73,9 @@ const reciente = {
   so_id: 'SO-RECIENTE',
   cliente_nombre: 'Cliente Reciente',
   monto_total: '100.00',
-  fecha_entrega: '2026-06-27',
+  // Relativa a hoy: con una fecha fija el pedido "reciente" pasa a tener > 30 días
+  // y la página lo clasifica como atascado (DIAS_ATASCADA = 30).
+  fecha_entrega: haceDias(5),
   facturada: false,
   estado_entrega: 'entregada',
   tiene_devolucion: false,

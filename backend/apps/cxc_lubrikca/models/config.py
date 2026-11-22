@@ -56,9 +56,7 @@ class DescuentoMarcaCategoria(CxcLubrikcaBaseModel):
 
     marca = models.CharField(max_length=100, default="*")
     categoria = models.CharField(max_length=100, default="*")
-    tipo_descuento = models.CharField(
-        max_length=20, choices=TipoDescuento.choices, default=TipoDescuento.CONTADO
-    )
+    tipo_descuento = models.CharField(max_length=20, choices=TipoDescuento.choices, default=TipoDescuento.CONTADO)
     porcentaje = models.DecimalField(max_digits=9, decimal_places=6)
     vigencia_desde = models.DateField()
     vigencia_hasta = models.DateField(null=True, blank=True)
@@ -139,9 +137,7 @@ class Feriado(CxcLubrikcaBaseModel):
 
     fecha = models.DateField()
     descripcion = models.CharField(max_length=200)
-    tipo = models.CharField(
-        max_length=20, choices=TipoFeriado.choices, default=TipoFeriado.NACIONAL
-    )
+    tipo = models.CharField(max_length=20, choices=TipoFeriado.choices, default=TipoFeriado.NACIONAL)
     activo = models.BooleanField(default=True)
 
     class Meta:

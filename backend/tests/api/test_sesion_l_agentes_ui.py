@@ -16,6 +16,7 @@ Verifica:
 - test_responder_ajena_404(): Usuario B no puede responder predicción de empresa A
 - test_generar_sugerencias_tarea_celery(): La tarea Celery corre sin excepciones (eager mode)
 """
+
 import datetime
 
 import pytest
@@ -25,6 +26,7 @@ from apps.agentes.models import PrediccionAgente
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def client_a(user_a):
@@ -93,6 +95,7 @@ def _url_responder(pk):
 
 # ── Sugerencias Activas ───────────────────────────────────────────────────────
 
+
 class TestSugerenciasActivas:
     def test_sugerencias_activas_200(self, client_a, prediccion_pendiente):
         resp = client_a.get(URL_SUGERENCIAS)
@@ -144,6 +147,7 @@ class TestSugerenciasActivas:
 
 
 # ── Responder ─────────────────────────────────────────────────────────────────
+
 
 class TestResponder:
     def test_responder_aceptar(self, client_a, prediccion_pendiente):
@@ -221,10 +225,12 @@ class TestResponder:
 
 # ── Tarea Celery ──────────────────────────────────────────────────────────────
 
+
 class TestGenerarSugerenciasDiarias:
     def test_tarea_celery_ejecuta_sin_excepcion(self, db, empresa_a):
         """La tarea generar_sugerencias_diarias corre en modo eager sin lanzar excepción."""
         from apps.agentes.tasks import generar_sugerencias_diarias
+
         # En modo CELERY_TASK_ALWAYS_EAGER (configurado en conftest), se ejecuta sync
         result = generar_sugerencias_diarias.delay()
         assert result is not None
@@ -236,6 +242,7 @@ class TestGenerarSugerenciasDiarias:
     def test_tarea_celery_idempotente(self, db, empresa_a):
         """Ejecutar dos veces no lanza excepciones."""
         from apps.agentes.tasks import generar_sugerencias_diarias
+
         r1 = generar_sugerencias_diarias.delay().get()
         r2 = generar_sugerencias_diarias.delay().get()
         assert r1["empresas"] == r2["empresas"]

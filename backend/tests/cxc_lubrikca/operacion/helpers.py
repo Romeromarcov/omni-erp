@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 from django.utils import timezone
@@ -23,13 +23,17 @@ from apps.finanzas.models import TasaCambio
 
 
 def crear_pedido(empresa, **kwargs):
+    # Fechas relativas a hoy: con fechas fijas, el pedido "reciente" por defecto
+    # termina contando como cartera atascada (entrega > DIAS_CARTERA_ATASCADA) al
+    # pasar el tiempo y los tests de resumen_cartera dejan de ser deterministas.
+    hoy = timezone.now().date()
     defaults = dict(
         so_id="SO1",
         cliente_externo_id="C1",
         cliente_nombre="Cliente 1",
         vendedor_email="rep@lubrikca.com",
-        fecha=date(2026, 6, 1),
-        fecha_entrega=date(2026, 6, 5),
+        fecha=hoy - timedelta(days=10),
+        fecha_entrega=hoy - timedelta(days=5),
         monto_total=Decimal("100"),
         lista_precios=LISTA_BCV_DEFAULT,
         es_primera_compra=False,
@@ -48,15 +52,11 @@ def crear_linea(empresa, pedido, **kwargs):
         precio_unitario=Decimal("100"),
     )
     defaults.update(kwargs)
-    return LineaPedidoLubrikca.objects.create(
-        empresa=empresa, pedido=pedido, **defaults
-    )
+    return LineaPedidoLubrikca.objects.create(empresa=empresa, pedido=pedido, **defaults)
 
 
 def crear_precio(empresa, producto="P1", lista=LISTA_USD_DEFAULT, precio="100"):
-    return PrecioListaLubrikca.objects.create(
-        empresa=empresa, producto=producto, lista=lista, precio=Decimal(precio)
-    )
+    return PrecioListaLubrikca.objects.create(empresa=empresa, producto=producto, lista=lista, precio=Decimal(precio))
 
 
 def crear_pago(empresa, **kwargs):
@@ -81,9 +81,7 @@ def crear_bandeja(empresa, pedido, total_motor="100", **kwargs):
         total_motor=Decimal(total_motor),
     )
     defaults.update(kwargs)
-    return BandejaFacturacion.objects.create(
-        empresa=empresa, pedido=pedido, **defaults
-    )
+    return BandejaFacturacion.objects.create(empresa=empresa, pedido=pedido, **defaults)
 
 
 def crear_metodo(empresa, codigo="ZELLE", moneda="USD", tipo_tasa="N_A", es_contado=True):
@@ -119,12 +117,8 @@ def crear_recompra(empresa, valor="0.03"):
 
 def cargar_tasas(empresa, fecha=date(2026, 6, 5), bcv="36.0", binance="40.0"):
     """Carga las tasas USD→VES (BCV global y Binance específica) para la fecha."""
-    usd, _ = FinMoneda.objects.get_or_create(
-        codigo_iso="USD", defaults={"nombre": "Dólar", "simbolo": "$"}
-    )
-    ves, _ = FinMoneda.objects.get_or_create(
-        codigo_iso="VES", defaults={"nombre": "Bolívar", "simbolo": "Bs"}
-    )
+    usd, _ = FinMoneda.objects.get_or_create(codigo_iso="USD", defaults={"nombre": "Dólar", "simbolo": "$"})
+    ves, _ = FinMoneda.objects.get_or_create(codigo_iso="VES", defaults={"nombre": "Bolívar", "simbolo": "Bs"})
     TasaCambio.objects.create(
         id_empresa=None,
         id_moneda_origen=usd,

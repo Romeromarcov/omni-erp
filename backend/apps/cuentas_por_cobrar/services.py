@@ -99,16 +99,13 @@ def registrar_abono(cxc, monto: Decimal, usuario, descripcion: str = "") -> "Abo
                 cxc.pk,
             )
             raise AbonoError(
-                "No se pudo generar el asiento contable obligatorio. "
-                "Configure el Mapeo Contable de la empresa."
+                "No se pudo generar el asiento contable obligatorio. " "Configure el Mapeo Contable de la empresa."
             ) from exc
 
     # Emitir evento
     from apps.core.events import CobranzaEvents, publish
 
-    event_type = (
-        CobranzaEvents.PAGO_TOTAL if nuevo_saldo == 0 else CobranzaEvents.PAGO_PARCIAL
-    )
+    event_type = CobranzaEvents.PAGO_TOTAL if nuevo_saldo == 0 else CobranzaEvents.PAGO_PARCIAL
     publish(
         event_type=event_type,
         tenant_id=str(cxc.empresa_id) if hasattr(cxc, "empresa_id") else "unknown",

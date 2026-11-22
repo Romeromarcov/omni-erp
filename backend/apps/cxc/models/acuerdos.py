@@ -4,6 +4,7 @@ Modelos de Acuerdos de Pago.
 AcuerdoPago: acuerdo de pago en cuotas con un cliente.
 CuotaAcuerdo: cuota individual del acuerdo, linkeable a finanzas.Pago.
 """
+
 from apps.core.uuid import uuid7
 from django.db import models
 
@@ -58,8 +59,11 @@ class AcuerdoPago(CxcBaseModel):
     # Monto de cuota (uno de los dos, no ambos)
     monto_cuota = models.DecimalField(max_digits=18, decimal_places=4, null=True, blank=True)
     porcentaje_abono = models.DecimalField(
-        max_digits=5, decimal_places=2, null=True, blank=True,
-        help_text="Porcentaje del total a pagar por cuota (0-100)"
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Porcentaje del total a pagar por cuota (0-100)",
     )
 
     # Estado

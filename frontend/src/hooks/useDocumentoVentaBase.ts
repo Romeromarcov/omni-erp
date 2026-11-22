@@ -96,7 +96,8 @@ export const useDocumentoVentaBase = <TForm extends FieldValues>({
 }: UseDocumentoVentaBaseOptions<TForm>) => {
   // ── react-hook-form ──────────────────────────────────────────────────────────
   const formMethods = useForm<TForm>({
-    resolver: zodResolver(schema) as unknown as Resolver<TForm>,
+    // zod 4: el esquema genérico (ZodTypeAny) no infiere FieldValues; el resolver se tipa a mano.
+    resolver: zodResolver(schema as never) as unknown as Resolver<TForm>,
     mode: 'onBlur',
     defaultValues,
   });
@@ -198,12 +199,12 @@ export const useDocumentoVentaBase = <TForm extends FieldValues>({
   useEffect(() => {
     const cajaPred = cajasUsuario.find(c => c.es_predeterminada);
     if (cajaPred?.caja?.id_caja && onCajaPredet) onCajaPredet(cajaPred.caja.id_caja);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intencional: onCajaPredet es callback inline del caller; solo aplicar al cargar cajasUsuario
   }, [cajasUsuario]);
 
   useEffect(() => {
     if (sesionActiva && onSesionCargada) onSesionCargada(sesionActiva);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intencional: onSesionCargada es callback inline del caller; solo aplicar al cargar sesionActiva
   }, [sesionActiva]);
 
   useEffect(() => {
@@ -214,7 +215,7 @@ export const useDocumentoVentaBase = <TForm extends FieldValues>({
         : String(vendedores[0]?.id ?? '');
       onVendedorPredet(preferred);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intencional: onVendedorPredet es callback inline del caller; solo aplicar al cambiar vendedores/sesionActiva
   }, [vendedores, sesionActiva]);
 
   // ── Staging de línea de producto (FormularioProducto) ─────────────────────────

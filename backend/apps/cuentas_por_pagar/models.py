@@ -92,18 +92,14 @@ class DiferenciaCambiaria(models.Model):
 
     id_diferencia = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
-    id_abono_cxp = models.ForeignKey(
-        "AbonoCxP", on_delete=models.CASCADE, related_name="diferencias_cambiarias"
-    )
+    id_abono_cxp = models.ForeignKey("AbonoCxP", on_delete=models.CASCADE, related_name="diferencias_cambiarias")
     # Monto en la moneda extranjera del abono al que se aplica la diferencia.
     monto_moneda = models.DecimalField(max_digits=18, decimal_places=4)
     tasa_original = models.DecimalField(max_digits=18, decimal_places=8)
     tasa_pago = models.DecimalField(max_digits=18, decimal_places=8)
     # Diferencia en moneda base (positiva). El signo lo da ``tipo``.
     monto_diferencia = models.DecimalField(max_digits=18, decimal_places=4)
-    tipo = models.CharField(
-        max_length=10, choices=[("GANANCIA", "Ganancia"), ("PERDIDA", "Pérdida")]
-    )
+    tipo = models.CharField(max_length=10, choices=[("GANANCIA", "Ganancia"), ("PERDIDA", "Pérdida")])
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:

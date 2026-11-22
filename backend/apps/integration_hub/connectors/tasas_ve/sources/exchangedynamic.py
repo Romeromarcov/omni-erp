@@ -3,11 +3,13 @@ Fuente 2: api.exchangedynamic.com
 GET https://api.exchangedynamic.com/v1/rates?base=USD&target=VES
 Retorna Decimal o None.
 """
+
 import logging
 from decimal import Decimal
 import httpx
 
 logger = logging.getLogger(__name__)
+
 
 def fetch_tasa_bcv() -> Decimal | None:
     try:

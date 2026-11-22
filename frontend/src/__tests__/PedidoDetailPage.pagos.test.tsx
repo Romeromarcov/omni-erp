@@ -70,11 +70,11 @@ vi.mock('../components/Pedidos/ResumenTotales', () => ({
 }));
 
 interface PagoStub {
-  monto: number; id_metodo_pago: string; id_moneda: string; tasa: number; referencia?: string;
+  monto: string; id_metodo_pago: string; id_moneda: string; tasa: string; referencia?: string;
 }
 interface NotaStub { id_nota_credito: string; monto_disponible: number }
-const PAGO: PagoStub = { monto: 25.5, id_metodo_pago: 'mp-1', id_moneda: 'mon-1', tasa: 1, referencia: 'REF-9' };
-const VUELTO: PagoStub = { monto: 1.5, id_metodo_pago: 'mp-1', id_moneda: 'mon-1', tasa: 1 };
+const PAGO: PagoStub = { monto: '25.5', id_metodo_pago: 'mp-1', id_moneda: 'mon-1', tasa: '1', referencia: 'REF-9' };
+const VUELTO: PagoStub = { monto: '1.5', id_metodo_pago: 'mp-1', id_moneda: 'mon-1', tasa: '1' };
 const NOTA: NotaStub = { id_nota_credito: 'nc-1', monto_disponible: 4 };
 
 vi.mock('../components/Pedidos/ModalPago', () => ({
@@ -190,7 +190,7 @@ describe('PedidoDetailPage — líneas y pagos', () => {
       expect(createPagoDocumentoMock).toHaveBeenCalledWith(
         'PEDIDO',
         'ped-001',
-        expect.objectContaining({ monto: 25.5, id_metodo_pago: 'mp-1', referencia: 'REF-9' }),
+        expect.objectContaining({ monto: '25.5', id_metodo_pago: 'mp-1', referencia: 'REF-9' }),
       );
       expect(procesarVueltosMock).toHaveBeenCalledWith([VUELTO]);
     });
@@ -218,5 +218,26 @@ describe('PedidoDetailPage — líneas y pagos', () => {
     await waitFor(() => {
       expect(screen.queryByRole('dialog')).toBeNull();
     });
+  });
+
+  it('muestra spinner mientras pagos está cargando antes de mostrar el mensaje vacío', async () => {
+    let resolverPagos!: (value: unknown[]) => void;
+    getPagosPedidoMock.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolverPagos = resolve;
+        }),
+    );
+
+    renderPage();
+    await screen.findByText(/Pedido P-0001/);
+
+    expect(screen.getByText('Pagos')).toBeInTheDocument();
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    expect(screen.queryByText('No hay pagos registrados para este pedido.')).not.toBeInTheDocument();
+
+    resolverPagos([]);
+    expect(await screen.findByText('No hay pagos registrados para este pedido.')).toBeInTheDocument();
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
   });
 });

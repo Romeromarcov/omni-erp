@@ -3,6 +3,7 @@ from django.contrib import admin
 from django.utils import timezone
 
 from .models import (
+    AsignacionPago,
     Caja,
     CajaFisica,
     CajaFisicaUsuario,
@@ -173,7 +174,6 @@ class MovimientoCajaBancoAdmin(admin.ModelAdmin):
     actions = ["crear_ajuste"]
 
     def crear_ajuste(self, request, queryset):
-
         from apps.core.models import Empresa, Usuarios
         from apps.finanzas.ajustes import crear_ajuste_caja_banco
         from apps.finanzas.models import Caja, CuentaBancariaEmpresa, Moneda
@@ -369,7 +369,7 @@ class PagoAdmin(admin.ModelAdmin):
     fieldsets = (
         (
             "Información Básica",
-            {"fields": ("id_pago", "id_empresa", "tipo_operacion", "tipo_documento", "id_documento")},
+            {"fields": ("id_pago", "id_empresa", "id_contacto", "tipo_operacion", "tipo_documento", "id_documento")},
         ),
         ("Detalles del Pago", {"fields": ("fecha_pago", "monto", "id_moneda", "tasa", "id_metodo_pago")}),
         (
@@ -404,6 +404,26 @@ class PagoAdmin(admin.ModelAdmin):
         ),
         ("Auditoría", {"fields": ("fecha_creacion", "fecha_actualizacion"), "classes": ("collapse",)}),
     )
+
+
+@admin.register(AsignacionPago)
+class AsignacionPagoAdmin(admin.ModelAdmin):
+    list_display = (
+        "id_asignacion",
+        "id_empresa",
+        "id_contacto",
+        "id_pago",
+        "tipo_documento",
+        "id_documento",
+        "monto_asignado_pago",
+        "monto_asignado_documento",
+        "estado",
+        "fecha_aplicacion",
+    )
+    list_filter = ("estado", "tipo_documento", "activo", "id_empresa")
+    search_fields = ("id_asignacion", "id_documento", "referencia_externa", "id_contacto__nombre")
+    readonly_fields = ("id_asignacion", "id_documento", "fecha_creacion", "fecha_actualizacion")
+    date_hierarchy = "fecha_aplicacion"
 
 
 # ── Pagos de terceros (Zelle) — Capa B §6.6 ──────────────────────────────────

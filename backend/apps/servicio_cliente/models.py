@@ -1,7 +1,5 @@
-import uuid
 from apps.core.uuid import uuid7
 
-from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 

@@ -40,54 +40,134 @@ class ResultadoClasificacion:
     alternativas: list[dict] = field(default_factory=list)
     modelo_llm: str = "fallback"
     latencia_ms: int = 0
+    prediccion_id: Optional[str] = None
 
 
 # ── Reglas de fallback (sin LLM) ─────────────────────────────────────────────
 
 _KEYWORDS: dict[str, list[str]] = {
     "alimentacion": [
-        "almuerzo", "cena", "desayuno", "comida", "café", "restaurant",
-        "catering", "snack", "pizza", "lunch", "refrigerio",
+        "almuerzo",
+        "cena",
+        "desayuno",
+        "comida",
+        "café",
+        "restaurant",
+        "catering",
+        "snack",
+        "pizza",
+        "lunch",
+        "refrigerio",
     ],
     "transporte": [
-        "taxi", "uber", "avión", "pasaje", "gasolina", "peaje", "metro",
-        "autobús", "vuelo", "parking", "estacionamiento", "vehículo", "alquiler auto",
+        "taxi",
+        "uber",
+        "avión",
+        "pasaje",
+        "gasolina",
+        "peaje",
+        "metro",
+        "autobús",
+        "vuelo",
+        "parking",
+        "estacionamiento",
+        "vehículo",
+        "alquiler auto",
     ],
     "alojamiento": [
-        "hotel", "airbnb", "hospedaje", "posada", "habitación", "noche",
+        "hotel",
+        "airbnb",
+        "hospedaje",
+        "posada",
+        "habitación",
+        "noche",
     ],
     "materiales_oficina": [
-        "papel", "tóner", "toner", "boli", "marcador", "archivador",
-        "carpeta", "impresora", "cartucho",
+        "papel",
+        "tóner",
+        "toner",
+        "boli",
+        "marcador",
+        "archivador",
+        "carpeta",
+        "impresora",
+        "cartucho",
     ],
     "tecnologia_software": [
-        "suscripción", "licencia", "software", "servidor", "cloud",
-        "dominio", "hosting", "saas", "app", "antivirus",
+        "suscripción",
+        "licencia",
+        "software",
+        "servidor",
+        "cloud",
+        "dominio",
+        "hosting",
+        "saas",
+        "app",
+        "antivirus",
     ],
     "servicios_profesionales": [
-        "consultoría", "honorario", "asesor", "abogado", "contador",
-        "auditoría", "diseño", "freelance",
+        "consultoría",
+        "honorario",
+        "asesor",
+        "abogado",
+        "contador",
+        "auditoría",
+        "diseño",
+        "freelance",
     ],
     "marketing_publicidad": [
-        "anuncio", "publicidad", "folleto", "marketing", "campaña",
-        "patrocinio", "banner", "instagram", "facebook",
+        "anuncio",
+        "publicidad",
+        "folleto",
+        "marketing",
+        "campaña",
+        "patrocinio",
+        "banner",
+        "instagram",
+        "facebook",
     ],
     "mantenimiento_reparacion": [
-        "reparación", "mantenimiento", "cerrajero", "plomero",
-        "electricista", "ac", "aire acondicionado",
+        "reparación",
+        "mantenimiento",
+        "cerrajero",
+        "plomero",
+        "electricista",
+        "ac",
+        "aire acondicionado",
     ],
     "servicios_publicos": [
-        "electricidad", "eléctrica", "agua", "gas", "luz", "cloacas",
+        "electricidad",
+        "eléctrica",
+        "agua",
+        "gas",
+        "luz",
+        "cloacas",
     ],
     "comunicaciones": [
-        "internet", "fibra", "móvil", "celular", "telefonía", "plan",
+        "internet",
+        "fibra",
+        "móvil",
+        "celular",
+        "telefonía",
+        "plan",
     ],
     "capacitacion_formacion": [
-        "curso", "capacitación", "taller", "seminario", "certificación",
-        "formación", "entrenamiento",
+        "curso",
+        "capacitación",
+        "taller",
+        "seminario",
+        "certificación",
+        "formación",
+        "entrenamiento",
     ],
     "impuestos_tasas": [
-        "impuesto", "tasa", "timbre", "municipal", "seniat", "iva", "igtf",
+        "impuesto",
+        "tasa",
+        "timbre",
+        "municipal",
+        "seniat",
+        "iva",
+        "igtf",
     ],
 }
 
@@ -177,7 +257,7 @@ Responde SOLO con un JSON válido con esta estructura exacta:
         resultado.latencia_ms = int((time.perf_counter() - t0) * 1000)
 
         if persistir:
-            self._persistir(descripcion, monto, resultado)
+            resultado.prediccion_id = self._persistir(descripcion, monto, resultado)
 
         logger.info(
             "clasificar_gasto | empresa=%s | categoria=%s | confianza=%.2f | modelo=%s | ms=%d",
@@ -246,11 +326,11 @@ Responde SOLO con un JSON válido con esta estructura exacta:
         descripcion: str,
         monto: Optional[Decimal],
         resultado: ResultadoClasificacion,
-    ) -> None:
+    ) -> Optional[str]:
         try:
             from .models import PrediccionAgente
 
-            PrediccionAgente.objects.create(
+            prediccion = PrediccionAgente.objects.create(
                 id_empresa=self.empresa,
                 agente=self.AGENTE_ID,
                 input_texto=descripcion,
@@ -262,8 +342,10 @@ Responde SOLO con un JSON válido con esta estructura exacta:
                 modelo_llm=resultado.modelo_llm,
                 latencia_ms=resultado.latencia_ms,
             )
+            return str(prediccion.pk)
         except Exception as exc:
             logger.error("Error persistiendo prediccion: %s", exc)
+            return None
 
     # ── Métricas ──────────────────────────────────────────────────────────────
 
@@ -288,7 +370,9 @@ Responde SOLO con un JSON válido con esta estructura exacta:
         stats = qs.aggregate(
             confianza_promedio=Avg("confianza"),
             latencia_promedio=Avg("latencia_ms"),
-            total_evaluadas=Count("pk", filter=~__import__("django.db.models", fromlist=["Q"]).Q(resultado_humano="pendiente")),
+            total_evaluadas=Count(
+                "pk", filter=~__import__("django.db.models", fromlist=["Q"]).Q(resultado_humano="pendiente")
+            ),
         )
 
         return {

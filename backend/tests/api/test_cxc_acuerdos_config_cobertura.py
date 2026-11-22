@@ -15,6 +15,7 @@ Cubre por la API real (`/api/cobranza/acuerdos/`):
 Y para CxcConfig (config.py): defaults seguros, lectura desde ParametroSistema,
 _to_bool, fallback de max_plazo_dias y to_dict().
 """
+
 import datetime
 from decimal import Decimal
 
@@ -47,9 +48,7 @@ def client_b(user_b):
 
 @pytest.fixture
 def metodo_a(empresa_a, moneda_usd):
-    metodo = MetodoPago.objects.create(
-        nombre_metodo="Transferencia A", tipo_metodo="ELECTRONICO", empresa=empresa_a
-    )
+    metodo = MetodoPago.objects.create(nombre_metodo="Transferencia A", tipo_metodo="ELECTRONICO", empresa=empresa_a)
     metodo.monedas.add(moneda_usd)
     return metodo
 
@@ -76,6 +75,7 @@ def acuerdo_a(client_a):
 
 
 # ── perform_create ────────────────────────────────────────────────────────────
+
 
 class TestCrearAcuerdo:
     def test_crea_acuerdo_con_cuotas_semanales(self, client_a, empresa_a):
@@ -125,6 +125,7 @@ class TestCrearAcuerdo:
 
 
 # ── registrar-pago ────────────────────────────────────────────────────────────
+
 
 class TestRegistrarPago:
     def _pagar(self, client, acuerdo, cuota_id, monto, moneda, metodo, **extra):
@@ -181,7 +182,12 @@ class TestRegistrarPago:
     def test_pago_total_marca_cuota_pagada(self, client_a, acuerdo_a, moneda_usd, metodo_a):
         cuota = acuerdo_a.cuotas.order_by("numero_cuota").first()
         resp = self._pagar(
-            client_a, acuerdo_a, cuota.id, "100.0000", moneda_usd, metodo_a,
+            client_a,
+            acuerdo_a,
+            cuota.id,
+            "100.0000",
+            moneda_usd,
+            metodo_a,
             referencia="REF-CXC-1",
         )
         assert resp.status_code == 200, resp.content
@@ -231,8 +237,11 @@ class TestRegistrarPago:
         conservador) sin bloquear el pago. (BUG-A2: si la moneda difiere de la del
         acuerdo y no hay tasa, el pago se RECHAZA — ver test_cxc_acuerdos_p04.)"""
         ves = Moneda.objects.create(
-            nombre="Bolívar", codigo_iso="VES", simbolo="Bs",
-            tipo_moneda="fiat", es_generica=True,
+            nombre="Bolívar",
+            codigo_iso="VES",
+            simbolo="Bs",
+            tipo_moneda="fiat",
+            es_generica=True,
         )
         resp = client_a.post(URL, _payload_acuerdo(moneda_codigo="VES"), format="json")
         assert resp.status_code == 201, resp.content
@@ -248,12 +257,18 @@ class TestRegistrarPago:
         from apps.finanzas.models import TasaCambio
 
         ves = Moneda.objects.create(
-            nombre="Bolívar", codigo_iso="VES", simbolo="Bs",
-            tipo_moneda="fiat", es_generica=True,
+            nombre="Bolívar",
+            codigo_iso="VES",
+            simbolo="Bs",
+            tipo_moneda="fiat",
+            es_generica=True,
         )
         TasaCambio.objects.create(
-            id_empresa=None, id_moneda_origen=ves, id_moneda_destino=moneda_usd,
-            tipo_tasa="OFICIAL_BCV", valor_tasa=Decimal("0.02740000"),
+            id_empresa=None,
+            id_moneda_origen=ves,
+            id_moneda_destino=moneda_usd,
+            tipo_tasa="OFICIAL_BCV",
+            valor_tasa=Decimal("0.02740000"),
             fecha_tasa=timezone.localdate(),
         )
         cuota = acuerdo_a.cuotas.first()
@@ -262,9 +277,7 @@ class TestRegistrarPago:
         pago = Pago.objects.get()
         assert pago.tasa == Decimal("0.0274")
 
-    def test_asiento_obligatorio_falla_422_y_rollback(
-        self, client_a, empresa_a, acuerdo_a, moneda_usd, metodo_a
-    ):
+    def test_asiento_obligatorio_falla_422_y_rollback(self, client_a, empresa_a, acuerdo_a, moneda_usd, metodo_a):
         """R-CODE-11 / M-BUG-10: con contabilidad activa y sin MapeoContable,
         el pago NO debe persistir (rollback total) y responde 422."""
         empresa_a.contabilidad_activa = True
@@ -281,6 +294,7 @@ class TestRegistrarPago:
 
 
 # ── vencimientos-proximos ─────────────────────────────────────────────────────
+
 
 class TestVencimientosProximos:
     def test_filtra_por_dias(self, client_a):
@@ -314,6 +328,7 @@ class TestVencimientosProximos:
 
 
 # ── CxcConfig (apps/cxc/config.py) ────────────────────────────────────────────
+
 
 def _param(empresa, codigo, valor, activo=True):
     from apps.configuracion_motor.models import ParametroSistema
@@ -374,10 +389,21 @@ class TestCxcConfig:
         _param(empresa_a, "cxc.x", "  valor  ")
         assert _get_param(empresa_a, "cxc.x") == "valor"
 
-    @pytest.mark.parametrize("val,esperado", [
-        ("true", True), ("1", True), ("yes", True), ("si", True), ("sí", True),
-        ("TRUE", True), ("false", False), ("0", False), ("", False), ("nope", False),
-    ])
+    @pytest.mark.parametrize(
+        "val,esperado",
+        [
+            ("true", True),
+            ("1", True),
+            ("yes", True),
+            ("si", True),
+            ("sí", True),
+            ("TRUE", True),
+            ("false", False),
+            ("0", False),
+            ("", False),
+            ("nope", False),
+        ],
+    )
     def test_to_bool(self, val, esperado):
         assert _to_bool(val) is esperado
 

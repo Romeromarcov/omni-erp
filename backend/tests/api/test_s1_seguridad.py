@@ -116,9 +116,7 @@ class TestP11ThrottleEscritura:
 class TestP13Axes:
     def test_configuracion_axes_activa(self, settings):
         assert "axes" in settings.INSTALLED_APPS
-        assert settings.AUTHENTICATION_BACKENDS[0] == (
-            "axes.backends.AxesStandaloneBackend"
-        )
+        assert settings.AUTHENTICATION_BACKENDS[0] == ("axes.backends.AxesStandaloneBackend")
         assert "axes.middleware.AxesMiddleware" in settings.MIDDLEWARE
         assert settings.AXES_FAILURE_LIMIT >= 3
         # Lockout por la COMBINACIÓN usuario+IP (lista anidada = AND)

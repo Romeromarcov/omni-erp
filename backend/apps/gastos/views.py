@@ -2,6 +2,7 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from apps.core.exceptions import domain_error_response
 from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
 
 from .models import CategoriaGasto, DetalleGasto, Gasto, ReembolsoGasto
@@ -61,7 +62,7 @@ class GastoViewSet(BaseModelViewSet):  # BUG-03: era viewsets.ModelViewSet
         try:
             aprobar_gasto(gasto, usuario=request.user)
         except GastoError as exc:
-            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST)
         gasto.refresh_from_db()
         serializer = self.get_serializer(gasto)
         return Response(serializer.data)
@@ -74,7 +75,7 @@ class GastoViewSet(BaseModelViewSet):  # BUG-03: era viewsets.ModelViewSet
         try:
             rechazar_gasto(gasto, usuario=request.user, motivo=motivo)
         except GastoError as exc:
-            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST)
         gasto.refresh_from_db()
         serializer = self.get_serializer(gasto)
         return Response(serializer.data)
@@ -83,9 +84,11 @@ class GastoViewSet(BaseModelViewSet):  # BUG-03: era viewsets.ModelViewSet
     def resumen_por_categoria(self, request):
         """Obtiene resumen de gastos por categoría"""
         # R-CODE-1: siempre parte de get_queryset() que ya filtra por empresa propia
-        gastos = self.get_queryset().filter(
-            estado_gasto__in=["APROBADO", "REEMBOLSADO", "CONTABILIZADO"]
-        ).select_related("id_categoria_gasto")
+        gastos = (
+            self.get_queryset()
+            .filter(estado_gasto__in=["APROBADO", "REEMBOLSADO", "CONTABILIZADO"])
+            .select_related("id_categoria_gasto")
+        )
 
         empresa_id = request.query_params.get("empresa_id")
 

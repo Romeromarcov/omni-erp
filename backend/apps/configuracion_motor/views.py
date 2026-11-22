@@ -31,9 +31,9 @@ class ParametroSistemaViewSet(SuperuserWriteMixin, BaseModelViewSet):
 
     def get_queryset(self):
         # Filas de empresas visibles + globales (id_empresa=None).
-        return ParametroSistema.objects.filter(id_empresa__in=_empresas(self.request)) | ParametroSistema.objects.filter(
-            id_empresa__isnull=True
-        )
+        return ParametroSistema.objects.filter(
+            id_empresa__in=_empresas(self.request)
+        ) | ParametroSistema.objects.filter(id_empresa__isnull=True)
 
     def _es_fila_global(self, instance_or_data) -> bool:
         # Solo es "global" (gate superusuario) si no hay empresa asociada.

@@ -22,9 +22,10 @@ formalmente vía el porcentaje ARC (estimación anual). Aquí se ofrece un cálc
 **progresivo por tramos en UT, simplificado y parametrizable** como base; la
 fórmula ARC oficial se conecta sustituyendo `calcular_islr` o pasando tramos.
 """
+
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from decimal import Decimal, ROUND_HALF_UP
 
 CENTAVO = Decimal("0.01")
@@ -42,9 +43,10 @@ def _d(valor) -> Decimal:
 @dataclass(frozen=True)
 class TramoISLR:
     """Tramo progresivo de ISLR expresado en Unidades Tributarias (UT) anuales."""
+
     desde_ut: Decimal
     hasta_ut: Decimal | None  # None = sin tope superior
-    tasa: Decimal             # ej. Decimal("0.06") = 6%
+    tasa: Decimal  # ej. Decimal("0.06") = 6%
     sustraendo_ut: Decimal = Decimal("0")
 
 
@@ -64,6 +66,7 @@ TRAMOS_ISLR_DEFAULT: tuple[TramoISLR, ...] = (
 @dataclass(frozen=True)
 class ParametrosLOTTT:
     """Parámetros legales/económicos (con defaults venezolanos vigentes)."""
+
     # ── Deducciones del trabajador ──
     sso_empleado: Decimal = Decimal("0.04")
     faov_empleado: Decimal = Decimal("0.01")
@@ -74,19 +77,19 @@ class ParametrosLOTTT:
     inces_patronal: Decimal = Decimal("0.02")
     rpe_patronal: Decimal = Decimal("0.02")
     # ── Recargos ──
-    recargo_hora_extra_diurna: Decimal = Decimal("0.50")    # +50%
+    recargo_hora_extra_diurna: Decimal = Decimal("0.50")  # +50%
     recargo_hora_extra_nocturna: Decimal = Decimal("1.00")  # +100%
-    recargo_bono_nocturno: Decimal = Decimal("0.30")        # +30% sobre hora nocturna
+    recargo_bono_nocturno: Decimal = Decimal("0.30")  # +30% sobre hora nocturna
     # ── Jornada / base ──
     dias_mes: int = 30
     horas_jornada_mensual: Decimal = Decimal("180")  # 30 días * 6 h (jornada legal diurna)
     # ── Provisiones (días por año) ──
-    dias_utilidades_anuales: int = 30           # mínimo legal 15, máx 120
-    dias_vacaciones_anuales: int = 15           # base 15 + 1/año (tope 15+15)
+    dias_utilidades_anuales: int = 30  # mínimo legal 15, máx 120
+    dias_vacaciones_anuales: int = 15  # base 15 + 1/año (tope 15+15)
     dias_bono_vacacional_anuales: int = 15
     dias_adicionales_vacaciones_por_anio: int = 1
     tope_dias_adicionales_vacaciones: int = 15
-    dias_prestaciones_trimestre: int = 15       # garantía LOTTT art. 142(a)
+    dias_prestaciones_trimestre: int = 15  # garantía LOTTT art. 142(a)
     dias_prestaciones_adicionales_anuales: int = 2  # art. 142(b), tras el 1er año
     # ── ISLR ──
     valor_ut: Decimal = Decimal("9.00")  # Bs por UT (configurable por decreto)
@@ -97,6 +100,7 @@ class ParametrosLOTTT:
 @dataclass(frozen=True)
 class EntradaNomina:
     """Datos de un trabajador para un período de nómina."""
+
     salario_mensual: Decimal
     dias_trabajados: int = 30
     horas_extra_diurnas: Decimal = Decimal("0")
@@ -190,13 +194,13 @@ def calcular_nomina(entrada: EntradaNomina, params: ParametrosLOTTT | None = Non
     # ── Devengados salariales ──
     salario_periodo = q(sal_dia * Decimal(entrada.dias_trabajados))
     monto_he_diurna = q(_d(entrada.horas_extra_diurnas) * val_hora * (Decimal("1") + p.recargo_hora_extra_diurna))
-    monto_he_nocturna = q(_d(entrada.horas_extra_nocturnas) * val_hora * (Decimal("1") + p.recargo_hora_extra_nocturna))
+    monto_he_nocturna = q(
+        _d(entrada.horas_extra_nocturnas) * val_hora * (Decimal("1") + p.recargo_hora_extra_nocturna)
+    )
     monto_bono_nocturno = q(_d(entrada.horas_nocturnas) * val_hora * p.recargo_bono_nocturno)
     otras_asig = q(entrada.otras_asignaciones)
 
-    total_dev_salarial = q(
-        salario_periodo + monto_he_diurna + monto_he_nocturna + monto_bono_nocturno + otras_asig
-    )
+    total_dev_salarial = q(salario_periodo + monto_he_diurna + monto_he_nocturna + monto_bono_nocturno + otras_asig)
 
     # ── Deducciones (sobre el devengado salarial) ──
     sso = q(total_dev_salarial * p.sso_empleado)

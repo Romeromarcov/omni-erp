@@ -1,4 +1,4 @@
-/* eslint-disable react-refresh/only-export-components */
+/* eslint-disable react-refresh/only-export-components -- Módulo de rutas exporta coreRoutes() junto a guards internos (solo dev HMR) */
 import { lazy } from 'react';
 import { Route, Navigate } from 'react-router-dom';
 import { getSessionUser, getSessionRoles } from '../services/session';

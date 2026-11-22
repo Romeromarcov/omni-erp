@@ -26,6 +26,7 @@ Bugs lote 4 — finanzas (hallazgos de las revisiones de los PRs #103/#106/#107)
 Dinero siempre Decimal (R-CODE-4); aislamiento multi-tenant en cada endpoint
 tocado (R-CODE-1).
 """
+
 from decimal import Decimal
 from unittest import mock
 
@@ -70,9 +71,7 @@ def sesion_abierta_a(caja_fisica_a, user_a):
 
 @pytest.fixture
 def metodo_a(empresa_a, moneda_usd):
-    metodo = MetodoPago.objects.create(
-        nombre_metodo="Efectivo Lote4", tipo_metodo="EFECTIVO", empresa=empresa_a
-    )
+    metodo = MetodoPago.objects.create(nombre_metodo="Efectivo Lote4", tipo_metodo="EFECTIVO", empresa=empresa_a)
     metodo.monedas.add(moneda_usd)
     return metodo
 
@@ -118,15 +117,11 @@ class TestCrearCajaVirtualEnSesion:
         sesion_abierta_a.cerrar_sesion()
         sesion_abierta_a.refresh_from_db()
         with pytest.raises(ValueError, match="sesión cerrada"):
-            sesion_abierta_a.crear_caja_virtual(
-                nombre="X", monedas_ids=[str(moneda_usd.id_moneda)]
-            )
+            sesion_abierta_a.crear_caja_virtual(nombre="X", monedas_ids=[str(moneda_usd.id_moneda)])
 
     def test_sin_nombre_valueerror(self, sesion_abierta_a, moneda_usd):
         with pytest.raises(ValueError, match="nombre"):
-            sesion_abierta_a.crear_caja_virtual(
-                nombre="   ", monedas_ids=[str(moneda_usd.id_moneda)]
-            )
+            sesion_abierta_a.crear_caja_virtual(nombre="   ", monedas_ids=[str(moneda_usd.id_moneda)])
 
     def test_monedas_distinto_de_una_valueerror(self, sesion_abierta_a, moneda_usd):
         with pytest.raises(ValueError, match="exactamente una moneda"):
@@ -140,12 +135,8 @@ class TestCrearCajaVirtualEnSesion:
         with pytest.raises(ValueError, match="Moneda no encontrada o no disponible"):
             sesion_abierta_a.crear_caja_virtual(nombre="X", monedas_ids=[str(moneda_b.id_moneda)])
 
-    def test_metodo_de_otro_tenant_o_inactivo_mensaje_neutro(
-        self, sesion_abierta_a, moneda_usd, empresa_b, metodo_a
-    ):
-        metodo_b = MetodoPago.objects.create(
-            nombre_metodo="Zelle B", tipo_metodo="ELECTRONICO", empresa=empresa_b
-        )
+    def test_metodo_de_otro_tenant_o_inactivo_mensaje_neutro(self, sesion_abierta_a, moneda_usd, empresa_b, metodo_a):
+        metodo_b = MetodoPago.objects.create(nombre_metodo="Zelle B", tipo_metodo="ELECTRONICO", empresa=empresa_b)
         with pytest.raises(ValueError, match="Método de pago no encontrado o no disponible"):
             sesion_abierta_a.crear_caja_virtual(
                 nombre="X",
@@ -161,9 +152,7 @@ class TestCrearCajaVirtualEnSesion:
                 metodos_pago_ids=[str(metodo_a.id_metodo_pago)],
             )
 
-    def test_caja_virtual_auto_delegacion_real(
-        self, sesion_abierta_a, empresa_a, moneda_usd, metodo_a, user_a
-    ):
+    def test_caja_virtual_auto_delegacion_real(self, sesion_abierta_a, empresa_a, moneda_usd, metodo_a, user_a):
         """CajaVirtualAuto.crear_caja_virtual_en_sesion (el otro call site del
         AttributeError latente) funciona contra la sesión REAL."""
         from apps.finanzas.models import CajaVirtualAuto, PlantillaMaestroCajasVirtuales
@@ -204,9 +193,7 @@ class TestCajaUsuarioCrearCajaVirtualEndpoint:
         caja = _caja_virtual(empresa_a, moneda_usd, caja_fisica_a, "Asignada A")
         return CajaUsuario.objects.create(usuario=user_a, caja=caja)
 
-    def test_feliz_200_crea_caja(
-        self, asignacion_a, sesion_abierta_a, user_a, moneda_usd, metodo_a
-    ):
+    def test_feliz_200_crea_caja(self, asignacion_a, sesion_abierta_a, user_a, moneda_usd, metodo_a):
         resp = self._post(
             user_a,
             asignacion_a.pk,
@@ -232,9 +219,7 @@ class TestCajaUsuarioCrearCajaVirtualEndpoint:
         moneda_b = Moneda.objects.create(
             nombre="Privada B", codigo_iso="PRB", simbolo="₱", tipo_moneda="fiat", empresa=empresa_b
         )
-        resp = self._post(
-            user_a, asignacion_a.pk, {"nombre": "X", "monedas": [str(moneda_b.id_moneda)]}
-        )
+        resp = self._post(user_a, asignacion_a.pk, {"nombre": "X", "monedas": [str(moneda_b.id_moneda)]})
         assert resp.status_code == 400
         assert resp.data == {"error": "Moneda no encontrada o no disponible para la empresa."}
         assert not Caja.objects.filter(nombre="X").exists()
@@ -280,9 +265,7 @@ class TestPatchSesionNoCambiaEstado:
 
     def test_patch_sesion_ajena_404(self, client_b, sesion_abierta_a):
         """R-CODE-1: la sesión de la empresa A no existe para B."""
-        resp = client_b.patch(
-            f"{URL_SESIONES}{sesion_abierta_a.id_sesion}/", {"notas": "x"}, format="json"
-        )
+        resp = client_b.patch(f"{URL_SESIONES}{sesion_abierta_a.id_sesion}/", {"notas": "x"}, format="json")
         assert resp.status_code == 404
 
 
@@ -296,9 +279,7 @@ def _simular_ventana_de_carrera():
     abierta existente — exactamente lo que pasa cuando dos transacciones
     concurrentes leen antes de que la otra commitee. El INSERT posterior
     golpea la constraint parcial REAL ``unique_sesion_abierta_por_caja``."""
-    return mock.patch.object(
-        SesionCajaFisica.objects, "filter", return_value=SesionCajaFisica.objects.none()
-    )
+    return mock.patch.object(SesionCajaFisica.objects, "filter", return_value=SesionCajaFisica.objects.none())
 
 
 class TestCarreraDobleApertura:
@@ -320,9 +301,7 @@ class TestCarreraDobleApertura:
         assert resp.status_code == 400, resp.data
         assert MSG_CARRERA in resp.data["error"]
 
-    def test_servicio_traduce_solo_la_constraint_de_apertura(
-        self, caja_fisica_a, user_a, sesion_abierta_a
-    ):
+    def test_servicio_traduce_solo_la_constraint_de_apertura(self, caja_fisica_a, user_a, sesion_abierta_a):
         with _simular_ventana_de_carrera():
             with pytest.raises(ValueError, match=MSG_CARRERA):
                 SesionCajaFisica.abrir_sesion(caja_fisica_a, user_a)
@@ -374,9 +353,7 @@ class TestTransferirMontoCeroYCajasInactivas:
         caja.save(update_fields=["activa"])
         resp = self._post(client_a, sesion_abierta_a, origen, destino, "10.00")
         assert resp.status_code == 400
-        assert resp.json() == {
-            "error": "No se puede transferir desde o hacia una caja virtual desactivada."
-        }
+        assert resp.json() == {"error": "No se puede transferir desde o hacia una caja virtual desactivada."}
         origen.refresh_from_db()
         destino.refresh_from_db()
         assert origen.saldo_actual == Decimal("100.00")

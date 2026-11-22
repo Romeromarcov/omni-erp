@@ -1,24 +1,38 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import {
   Alert,
+  Box,
   Button,
+  Checkbox,
+  Chip,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   Divider,
   Drawer,
+  FormControlLabel,
+  FormGroup,
   IconButton,
   MenuItem,
+  Paper,
   Stack,
   Tab,
   Tabs,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
   TextField,
   Typography,
 } from '@mui/material';
 import AddOutlined from '@mui/icons-material/AddOutlined';
 import CloseOutlined from '@mui/icons-material/CloseOutlined';
+import CompareArrowsOutlined from '@mui/icons-material/CompareArrowsOutlined';
 import { PageContainer, PageHeader, DataTable, StatusChip } from '../../components/ui';
 import type { Column } from '../../components/ui';
 import {
@@ -41,13 +55,21 @@ import {
   type DetalleOferta,
   type DetalleOfertaPayload,
 } from '../../services/aprovisionamientoService';
+import {
+  comprasService,
+  type AdjudicarOfertaPayload,
+  type AdjudicarOfertaResponse,
+} from '../../services/comprasService';
+import { almacenesService } from '../../services/almacenesService';
 import { productoInventarioService, type Producto } from '../../services/inventarioService';
 import { proveedoresService, type Proveedor } from '../../services/proveedoresService';
 import { fetchDepartamentos } from '../../services/departamentos';
-import { aprovisionamientoKeys } from '../../lib/queryKeys';
+import { aprovisionamientoKeys, almacenesKeys, comprasKeys } from '../../lib/queryKeys';
+import { D, formatoDecimal } from '../../lib/decimal';
 import { getEmpresaId } from '../../utils/empresa';
 import { getSessionUsuarioId } from '../../services/session';
 import { mensajeDeError } from '../../utils/api';
+import { parseDecimalSeguro } from '../../schemas/decimal.schemas';
 
 const PRIORIDAD_OPCIONES = ['BAJA', 'MEDIA', 'ALTA', 'URGENTE'];
 const ESTADO_REQ_OPCIONES = ['BORRADOR', 'PENDIENTE', 'APROBADA', 'RECHAZADA', 'PROCESADA', 'ANULADA'];
@@ -117,13 +139,22 @@ const REQ_VACIO: RequisicionForm = {
 };
 
 const RequisicionesTab: React.FC = () => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [estado, setEstado] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editando, setEditando] = useState<RequisicionCompra | null>(null);
   const [form, setForm] = useState<RequisicionForm>(REQ_VACIO);
   const [errorMsg, setErrorMsg] = useState('');
+  const [infoMsg, setInfoMsg] = useState('');
   const [detalle, setDetalle] = useState<RequisicionCompra | null>(null);
+  const [seleccionadas, setSeleccionadas] = useState<string[]>([]);
+  const [rfqDialogOpen, setRfqDialogOpen] = useState(false);
+  const [rfqProveedores, setRfqProveedores] = useState<string[]>([]);
+  const [rfqFechaVenc, setRfqFechaVenc] = useState(hoy());
+  const [rfqNumero, setRfqNumero] = useState('');
+  const [rfqObs, setRfqObs] = useState('');
+  const [rfqError, setRfqError] = useState('');
 
   const { data: requisiciones = [], isLoading } = useQuery({
     queryKey: aprovisionamientoKeys.requisiciones(estado || null),
@@ -133,6 +164,12 @@ const RequisicionesTab: React.FC = () => {
   const { data: departamentos = [] } = useQuery({
     queryKey: ['core', 'departamentos'],
     queryFn: fetchDepartamentos,
+  });
+
+  const { data: proveedores = [] } = useQuery({
+    queryKey: ['compras', 'proveedores'],
+    queryFn: () => proveedoresService.getAll(),
+    enabled: rfqDialogOpen,
   });
 
   const invalidate = () =>
@@ -179,6 +216,78 @@ const RequisicionesTab: React.FC = () => {
     onError: (e: unknown) => setErrorMsg(mensajeDeError(e, 'No se pudo eliminar la requisición.')),
   });
 
+  const enviarAprobacion = useMutation({
+    mutationFn: (r: RequisicionCompra) => comprasService.enviarAprobacionRequisicion(r.id_requisicion),
+    onSuccess: (res) => {
+      setInfoMsg(
+        t('compras.aprovisionamiento.enviadaAprobacionOk', {
+          numero: res.numero_requisicion,
+          estado: res.estado,
+        }),
+      );
+      setErrorMsg('');
+      invalidate();
+    },
+    onError: (e: unknown) => setErrorMsg(mensajeDeError(e, 'No se pudo enviar a aprobación.')),
+  });
+
+  const confirmarAprobacion = useMutation({
+    mutationFn: (r: RequisicionCompra) => comprasService.confirmarAprobacionRequisicion(r.id_requisicion),
+    onSuccess: (res) => {
+      setInfoMsg(t('compras.aprovisionamiento.confirmadaAprobacionOk', { numero: res.numero_requisicion }));
+      setErrorMsg('');
+      invalidate();
+    },
+    onError: (e: unknown) => setErrorMsg(mensajeDeError(e, 'No se pudo confirmar la aprobación.')),
+  });
+
+  const generarRfq = useMutation({
+    mutationFn: () =>
+      comprasService.crearRfqDesdeRequisiciones({
+        requisicion_ids: seleccionadas,
+        proveedores_ids: rfqProveedores,
+        fecha_vencimiento: rfqFechaVenc,
+        ...(rfqNumero.trim() ? { numero_solicitud: rfqNumero.trim() } : {}),
+        ...(rfqObs.trim() ? { observaciones: rfqObs.trim() } : {}),
+      }),
+    onSuccess: (rfq) => {
+      setRfqDialogOpen(false);
+      setSeleccionadas([]);
+      setRfqProveedores([]);
+      setRfqNumero('');
+      setRfqObs('');
+      setRfqError('');
+      setInfoMsg(t('compras.aprovisionamiento.rfqGeneradaOk', { numero: rfq.numero_solicitud }));
+      queryClient.invalidateQueries({ queryKey: aprovisionamientoKeys.solicitudesAll() });
+      invalidate();
+    },
+    onError: (e: unknown) => setRfqError(mensajeDeError(e, 'No se pudo generar la RFQ.')),
+  });
+
+  const toggleSeleccion = (id: string) => {
+    setSeleccionadas((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
+
+  const toggleProveedorRfq = (id: string) => {
+    setRfqProveedores((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
+
+  const abrirGenerarRfq = () => {
+    setRfqError('');
+    setRfqFechaVenc(hoy());
+    setRfqNumero('');
+    setRfqObs('');
+    setRfqDialogOpen(true);
+  };
+
+  const handleGenerarRfq = () => {
+    if (rfqProveedores.length === 0 || !rfqFechaVenc) {
+      setRfqError(t('compras.aprovisionamiento.errorProveedoresRequeridos'));
+      return;
+    }
+    generarRfq.mutate();
+  };
+
   const handleGuardar = () => {
     if (!form.numero_requisicion.trim() || !form.justificacion.trim()) {
       setErrorMsg('Complete el número de requisición y la justificación.');
@@ -205,6 +314,19 @@ const RequisicionesTab: React.FC = () => {
   };
 
   const columns: Column<RequisicionCompra>[] = [
+    {
+      key: 'select',
+      header: '',
+      render: (r) => (
+        <Checkbox
+          size="small"
+          disabled={r.estado !== 'APROBADA'}
+          checked={seleccionadas.includes(r.id_requisicion)}
+          onChange={() => toggleSeleccion(r.id_requisicion)}
+          inputProps={{ 'aria-label': `Seleccionar ${r.numero_requisicion}` }}
+        />
+      ),
+    },
     { key: 'numero', header: 'Número', render: (r) => r.numero_requisicion },
     { key: 'fecha', header: 'Fecha', render: (r) => r.fecha_requisicion },
     { key: 'prioridad', header: 'Prioridad', render: (r) => r.prioridad },
@@ -213,7 +335,28 @@ const RequisicionesTab: React.FC = () => {
       key: 'acciones',
       header: 'Acciones',
       render: (r) => (
-        <Stack direction="row" spacing={1}>
+        <Stack direction="row" spacing={1} flexWrap="wrap">
+          {r.estado === 'BORRADOR' && (
+            <Button
+              size="small"
+              variant="outlined"
+              disabled={enviarAprobacion.isPending}
+              onClick={() => enviarAprobacion.mutate(r)}
+            >
+              {t('compras.aprovisionamiento.enviarAprobacion')}
+            </Button>
+          )}
+          {r.estado === 'PENDIENTE' && (
+            <Button
+              size="small"
+              variant="outlined"
+              color="success"
+              disabled={confirmarAprobacion.isPending}
+              onClick={() => confirmarAprobacion.mutate(r)}
+            >
+              {t('compras.aprovisionamiento.confirmarAprobacion')}
+            </Button>
+          )}
           <Button size="small" onClick={() => setDetalle(r)}>
             Líneas
           </Button>
@@ -230,7 +373,7 @@ const RequisicionesTab: React.FC = () => {
 
   return (
     <Stack spacing={2}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center">
+      <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1}>
         <TextField
           select
           label="Estado"
@@ -246,10 +389,25 @@ const RequisicionesTab: React.FC = () => {
             </MenuItem>
           ))}
         </TextField>
-        <Button variant="contained" startIcon={<AddOutlined />} onClick={abrirCrear}>
-          Nueva requisición
-        </Button>
+        <Stack direction="row" spacing={1}>
+          <Button
+            variant="outlined"
+            disabled={seleccionadas.length === 0}
+            onClick={abrirGenerarRfq}
+          >
+            {t('compras.aprovisionamiento.generarRfq')}
+          </Button>
+          <Button variant="contained" startIcon={<AddOutlined />} onClick={abrirCrear}>
+            Nueva requisición
+          </Button>
+        </Stack>
       </Stack>
+
+      {infoMsg && (
+        <Alert severity="success" onClose={() => setInfoMsg('')}>
+          {infoMsg}
+        </Alert>
+      )}
 
       {errorMsg && (
         <Alert severity="error" onClose={() => setErrorMsg('')}>
@@ -359,6 +517,67 @@ const RequisicionesTab: React.FC = () => {
           <Button onClick={() => setDialogOpen(false)}>Cancelar</Button>
           <Button variant="contained" onClick={handleGuardar} disabled={guardar.isPending}>
             Guardar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={rfqDialogOpen} onClose={() => setRfqDialogOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle>{t('compras.aprovisionamiento.generarRfqTitulo')}</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            {rfqError && (
+              <Alert severity="error" onClose={() => setRfqError('')}>
+                {rfqError}
+              </Alert>
+            )}
+            <TextField
+              label={t('compras.aprovisionamiento.numeroSolicitudOpcional')}
+              value={rfqNumero}
+              onChange={(e) => setRfqNumero(e.target.value)}
+              fullWidth
+            />
+            <TextField
+              label={t('compras.aprovisionamiento.fechaVencimiento')}
+              type="date"
+              value={rfqFechaVenc}
+              onChange={(e) => setRfqFechaVenc(e.target.value)}
+              required
+              fullWidth
+              slotProps={{ inputLabel: { shrink: true } }}
+            />
+            <Box>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                {t('compras.aprovisionamiento.proveedoresInvitados')}
+              </Typography>
+              <FormGroup>
+                {proveedores.map((p: Proveedor) => (
+                  <FormControlLabel
+                    key={p.id_proveedor}
+                    control={
+                      <Checkbox
+                        checked={rfqProveedores.includes(p.id_proveedor)}
+                        onChange={() => toggleProveedorRfq(p.id_proveedor)}
+                      />
+                    }
+                    label={p.razon_social}
+                  />
+                ))}
+              </FormGroup>
+            </Box>
+            <TextField
+              label={t('compras.aprovisionamiento.observaciones')}
+              value={rfqObs}
+              onChange={(e) => setRfqObs(e.target.value)}
+              multiline
+              minRows={2}
+              fullWidth
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRfqDialogOpen(false)}>Cancelar</Button>
+          <Button variant="contained" onClick={handleGenerarRfq} disabled={generarRfq.isPending}>
+            {t('compras.aprovisionamiento.generarRfq')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -567,7 +786,7 @@ const DetalleRequisicionDrawer: React.FC<{ requisicion: RequisicionCompra; onClo
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Solicitudes de Cotización (RFQ)
+// Solicitudes de Cotización (RFQ) + Comparativo Lado a Lado
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface SolicitudForm {
@@ -587,13 +806,16 @@ const SOL_VACIO: SolicitudForm = {
 };
 
 const SolicitudesTab: React.FC = () => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [estado, setEstado] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editando, setEditando] = useState<SolicitudCotizacion | null>(null);
   const [form, setForm] = useState<SolicitudForm>(SOL_VACIO);
   const [errorMsg, setErrorMsg] = useState('');
+  const [infoMsg, setInfoMsg] = useState('');
   const [detalle, setDetalle] = useState<SolicitudCotizacion | null>(null);
+  const [compararRfq, setCompararRfq] = useState<SolicitudCotizacion | null>(null);
 
   const { data: solicitudes = [], isLoading } = useQuery({
     queryKey: aprovisionamientoKeys.solicitudes(estado || null),
@@ -670,7 +892,15 @@ const SolicitudesTab: React.FC = () => {
       key: 'acciones',
       header: 'Acciones',
       render: (s) => (
-        <Stack direction="row" spacing={1}>
+        <Stack direction="row" spacing={1} flexWrap="wrap">
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<CompareArrowsOutlined />}
+            onClick={() => setCompararRfq(s)}
+          >
+            {t('compras.aprovisionamiento.compararOfertas')}
+          </Button>
           <Button size="small" onClick={() => setDetalle(s)}>
             Líneas
           </Button>
@@ -707,6 +937,12 @@ const SolicitudesTab: React.FC = () => {
           Nueva solicitud
         </Button>
       </Stack>
+
+      {infoMsg && (
+        <Alert severity="success" onClose={() => setInfoMsg('')}>
+          {infoMsg}
+        </Alert>
+      )}
 
       {errorMsg && (
         <Alert severity="error" onClose={() => setErrorMsg('')}>
@@ -782,6 +1018,17 @@ const SolicitudesTab: React.FC = () => {
         </DialogActions>
       </Dialog>
 
+      {compararRfq && (
+        <CompararOfertasDialog
+          solicitud={compararRfq}
+          onClose={() => setCompararRfq(null)}
+          onAdjudicada={(res) => {
+            setCompararRfq(null);
+            setInfoMsg(t('compras.aprovisionamiento.adjudicacionOk', { numero: res.numero_orden }));
+          }}
+        />
+      )}
+
       <Drawer
         anchor="right"
         open={Boolean(detalle)}
@@ -791,6 +1038,260 @@ const SolicitudesTab: React.FC = () => {
         {detalle && <DetalleSolicitudDrawer solicitud={detalle} onClose={() => setDetalle(null)} />}
       </Drawer>
     </Stack>
+  );
+};
+
+const CompararOfertasDialog: React.FC<{
+  solicitud: SolicitudCotizacion;
+  onClose: () => void;
+  onAdjudicada: (res: AdjudicarOfertaResponse) => void;
+}> = ({ solicitud, onClose, onAdjudicada }) => {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const rfqId = solicitud.id_solicitud_cotizacion;
+
+  const [almacenId, setAlmacenId] = useState('');
+  const [rechazarCompetidoras, setRechazarCompetidoras] = useState(true);
+  const [usarParcial, setUsarParcial] = useState(false);
+  const [cantidadesParciales, setCantidadesParciales] = useState<Record<string, string>>({});
+  const [error, setError] = useState('');
+
+  const { data: comparativo, isLoading } = useQuery({
+    queryKey: aprovisionamientoKeys.compararOfertas(rfqId),
+    queryFn: () => comprasService.compararOfertasRfq(rfqId),
+  });
+
+  const { data: almacenes = [] } = useQuery({
+    queryKey: almacenesKeys.all(),
+    queryFn: () => almacenesService.getAll(),
+  });
+
+  const adjudicar = useMutation({
+    mutationFn: ({ ofertaId, payload }: { ofertaId: string; payload: AdjudicarOfertaPayload }) =>
+      comprasService.adjudicarOferta(ofertaId, payload),
+    onSuccess: (res) => {
+      void queryClient.invalidateQueries({ queryKey: aprovisionamientoKeys.all() });
+      void queryClient.invalidateQueries({ queryKey: comprasKeys.ordenesAll() });
+      onAdjudicada(res);
+    },
+    onError: (e: unknown) => setError(mensajeDeError(e, 'No se pudo adjudicar la oferta.')),
+  });
+
+  const handleAdjudicar = (ofertaId: string) => {
+    setError('');
+    if (!almacenId) {
+      setError(t('compras.aprovisionamiento.errorAlmacenRequerido'));
+      return;
+    }
+
+    let adjudicacionParcial: { id_producto: string; cantidad: string }[] | undefined;
+    if (usarParcial && comparativo) {
+      const items: { id_producto: string; cantidad: string }[] = [];
+      for (const prod of comparativo.productos) {
+        const cot = prod.cotizaciones.find((c) => c.id_oferta === ofertaId);
+        if (!cot || !cot.cantidad) continue;
+        const raw = (cantidadesParciales[prod.id_producto] ?? cot.cantidad).trim();
+        const parsed = parseDecimalSeguro(raw);
+        if (!parsed || parsed.lte(0) || parsed.gt(D(cot.cantidad))) {
+          setError(t('compras.aprovisionamiento.errorCantidadParcial'));
+          return;
+        }
+        items.push({ id_producto: prod.id_producto, cantidad: parsed.toFixed(4) });
+      }
+      if (items.length === 0) {
+        setError(t('compras.aprovisionamiento.errorCantidadParcial'));
+        return;
+      }
+      adjudicacionParcial = items;
+    }
+
+    adjudicar.mutate({
+      ofertaId,
+      payload: {
+        id_almacen_destino: almacenId,
+        rechazar_competidoras: rechazarCompetidoras,
+        ...(adjudicacionParcial ? { adjudicacion_parcial: adjudicacionParcial } : {}),
+      },
+    });
+  };
+
+  return (
+    <Dialog open onClose={onClose} fullWidth maxWidth="lg">
+      <DialogTitle>
+        {t('compras.aprovisionamiento.comparativoTitulo', { numero: solicitud.numero_solicitud })}
+      </DialogTitle>
+      <DialogContent>
+        <Stack spacing={2} sx={{ mt: 1 }}>
+          {error && (
+            <Alert severity="error" onClose={() => setError('')}>
+              {error}
+            </Alert>
+          )}
+
+          {isLoading ? (
+            <Stack alignItems="center" py={4}>
+              <CircularProgress />
+            </Stack>
+          ) : !comparativo || comparativo.ofertas.length === 0 ? (
+            <Alert severity="info">{t('compras.aprovisionamiento.sinOfertasComparar')}</Alert>
+          ) : (
+            <>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ sm: 'center' }}>
+                <TextField
+                  select
+                  label={t('compras.aprovisionamiento.almacenDestino')}
+                  value={almacenId}
+                  onChange={(e) => setAlmacenId(e.target.value)}
+                  size="small"
+                  sx={{ minWidth: 260 }}
+                >
+                  {almacenes.map((a) => (
+                    <MenuItem key={a.id_almacen} value={a.id_almacen}>
+                      {a.nombre_almacen}
+                    </MenuItem>
+                  ))}
+                </TextField>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={rechazarCompetidoras}
+                      onChange={(e) => setRechazarCompetidoras(e.target.checked)}
+                    />
+                  }
+                  label={t('compras.aprovisionamiento.rechazarCompetidoras')}
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox checked={usarParcial} onChange={(e) => setUsarParcial(e.target.checked)} />
+                  }
+                  label={t('compras.aprovisionamiento.adjudicacionParcial')}
+                />
+              </Stack>
+
+              <Paper variant="outlined" sx={{ overflowX: 'auto' }}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>{t('compras.aprovisionamiento.producto')}</TableCell>
+                      <TableCell align="right">{t('compras.aprovisionamiento.cantidadSolicitada')}</TableCell>
+                      {comparativo.ofertas.map((o) => (
+                        <TableCell key={o.id_oferta} align="right">
+                          <Stack alignItems="flex-end" spacing={0.5}>
+                            <Typography variant="subtitle2">{o.proveedor_nombre}</Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {o.numero_oferta}
+                            </Typography>
+                            <Stack direction="row" spacing={0.5} alignItems="center">
+                              <StatusChip value={o.estado} label={o.estado} />
+                              {o.es_mejor_total && (
+                                <Chip
+                                  label={t('compras.aprovisionamiento.mejorTotal')}
+                                  color="success"
+                                  size="small"
+                                />
+                              )}
+                            </Stack>
+                          </Stack>
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {comparativo.productos.map((prod) => (
+                      <TableRow key={prod.id_producto}>
+                        <TableCell>
+                          <Typography variant="body2" fontWeight={500}>
+                            {prod.producto_nombre}
+                          </Typography>
+                          {prod.sku && (
+                            <Typography variant="caption" color="text.secondary">
+                              {prod.sku}
+                            </Typography>
+                          )}
+                          {usarParcial && (
+                            <TextField
+                              size="small"
+                              label={`Cant. parcial (${prod.producto_nombre})`}
+                              value={cantidadesParciales[prod.id_producto] ?? prod.cantidad_solicitada}
+                              onChange={(e) =>
+                                setCantidadesParciales((prev) => ({
+                                  ...prev,
+                                  [prod.id_producto]: e.target.value,
+                                }))
+                              }
+                              inputMode="decimal"
+                              sx={{ mt: 1, maxWidth: 180 }}
+                            />
+                          )}
+                        </TableCell>
+                        <TableCell align="right">{formatoDecimal(prod.cantidad_solicitada, 2, 4)}</TableCell>
+                        {prod.cotizaciones.map((cot) => (
+                          <TableCell
+                            key={`${prod.id_producto}-${cot.id_oferta}`}
+                            align="right"
+                            sx={cot.es_mejor_precio ? { bgcolor: 'success.50' } : undefined}
+                          >
+                            {cot.precio_unitario !== null ? (
+                              <Stack alignItems="flex-end" spacing={0.5}>
+                                <Typography variant="body2" fontWeight={cot.es_mejor_precio ? 700 : 400}>
+                                  {formatoDecimal(cot.precio_unitario, 2, 4)}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {formatoDecimal(cot.cantidad, 2, 4)} × = {formatoDecimal(cot.subtotal, 2)}
+                                </Typography>
+                                {cot.es_mejor_precio && (
+                                  <Chip
+                                    label={t('compras.aprovisionamiento.mejorPrecio')}
+                                    color="success"
+                                    size="small"
+                                  />
+                                )}
+                              </Stack>
+                            ) : (
+                              '—'
+                            )}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                    <TableRow>
+                      <TableCell colSpan={2}>
+                        <Typography variant="subtitle2">
+                          {t('compras.aprovisionamiento.totalOferta')}
+                        </Typography>
+                      </TableCell>
+                      {comparativo.ofertas.map((o) => (
+                        <TableCell key={`total-${o.id_oferta}`} align="right">
+                          <Stack alignItems="flex-end" spacing={1}>
+                            <Typography variant="subtitle1" fontWeight={700}>
+                              {formatoDecimal(o.monto_total, 2)}
+                            </Typography>
+                            {(o.estado === 'RECIBIDA' || o.estado === 'EVALUADA') && (
+                              <Button
+                                size="small"
+                                variant="contained"
+                                disabled={adjudicar.isPending}
+                                aria-label={`Adjudicar ${o.numero_oferta}`}
+                                onClick={() => handleAdjudicar(o.id_oferta)}
+                              >
+                                {t('compras.aprovisionamiento.adjudicarCorta')}
+                              </Button>
+                            )}
+                          </Stack>
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </Paper>
+            </>
+          )}
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cerrar</Button>
+      </DialogActions>
+    </Dialog>
   );
 };
 
@@ -997,13 +1498,16 @@ const OFE_VACIO: OfertaForm = {
 };
 
 const OfertasTab: React.FC = () => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [solicitudFiltro, setSolicitudFiltro] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editando, setEditando] = useState<OfertaProveedor | null>(null);
   const [form, setForm] = useState<OfertaForm>(OFE_VACIO);
   const [errorMsg, setErrorMsg] = useState('');
+  const [infoMsg, setInfoMsg] = useState('');
   const [detalle, setDetalle] = useState<OfertaProveedor | null>(null);
+  const [adjudicarOfertaObj, setAdjudicarOfertaObj] = useState<OfertaProveedor | null>(null);
 
   const { data: ofertas = [], isLoading } = useQuery({
     queryKey: aprovisionamientoKeys.ofertas(solicitudFiltro || null, null),
@@ -1106,7 +1610,17 @@ const OfertasTab: React.FC = () => {
       key: 'acciones',
       header: 'Acciones',
       render: (o) => (
-        <Stack direction="row" spacing={1}>
+        <Stack direction="row" spacing={1} flexWrap="wrap">
+          {(o.estado === 'RECIBIDA' || o.estado === 'EVALUADA') && (
+            <Button
+              size="small"
+              variant="outlined"
+              color="primary"
+              onClick={() => setAdjudicarOfertaObj(o)}
+            >
+              {t('compras.aprovisionamiento.adjudicarOrden')}
+            </Button>
+          )}
           <Button size="small" onClick={() => setDetalle(o)}>
             Líneas
           </Button>
@@ -1143,6 +1657,12 @@ const OfertasTab: React.FC = () => {
           Nueva oferta
         </Button>
       </Stack>
+
+      {infoMsg && (
+        <Alert severity="success" onClose={() => setInfoMsg('')}>
+          {infoMsg}
+        </Alert>
+      )}
 
       {errorMsg && (
         <Alert severity="error" onClose={() => setErrorMsg('')}>
@@ -1267,6 +1787,17 @@ const OfertasTab: React.FC = () => {
         </DialogActions>
       </Dialog>
 
+      {adjudicarOfertaObj && (
+        <AdjudicarOfertaDialog
+          oferta={adjudicarOfertaObj}
+          onClose={() => setAdjudicarOfertaObj(null)}
+          onAdjudicada={(res) => {
+            setAdjudicarOfertaObj(null);
+            setInfoMsg(t('compras.aprovisionamiento.adjudicacionOk', { numero: res.numero_orden }));
+          }}
+        />
+      )}
+
       <Drawer
         anchor="right"
         open={Boolean(detalle)}
@@ -1276,6 +1807,145 @@ const OfertasTab: React.FC = () => {
         {detalle && <DetalleOfertaDrawer oferta={detalle} onClose={() => setDetalle(null)} />}
       </Drawer>
     </Stack>
+  );
+};
+
+const AdjudicarOfertaDialog: React.FC<{
+  oferta: OfertaProveedor;
+  onClose: () => void;
+  onAdjudicada: (res: AdjudicarOfertaResponse) => void;
+}> = ({ oferta, onClose, onAdjudicada }) => {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const [almacenId, setAlmacenId] = useState('');
+  const [rechazarCompetidoras, setRechazarCompetidoras] = useState(true);
+  const [usarParcial, setUsarParcial] = useState(false);
+  const [cantidades, setCantidades] = useState<Record<string, string>>({});
+  const [error, setError] = useState('');
+
+  const { data: almacenes = [] } = useQuery({
+    queryKey: almacenesKeys.all(),
+    queryFn: () => almacenesService.getAll(),
+  });
+
+  const { data: detalles = [] } = useQuery({
+    queryKey: aprovisionamientoKeys.detallesOferta(oferta.id_oferta),
+    queryFn: () => detallesOfertaService.getAll({ oferta: oferta.id_oferta }),
+  });
+
+  const { data: productos = [] } = useProductos();
+
+  const adjudicar = useMutation({
+    mutationFn: (payload: AdjudicarOfertaPayload) =>
+      comprasService.adjudicarOferta(oferta.id_oferta, payload),
+    onSuccess: (res) => {
+      void queryClient.invalidateQueries({ queryKey: aprovisionamientoKeys.all() });
+      void queryClient.invalidateQueries({ queryKey: comprasKeys.ordenesAll() });
+      onAdjudicada(res);
+    },
+    onError: (e: unknown) => setError(mensajeDeError(e, 'No se pudo adjudicar la oferta.')),
+  });
+
+  const handleConfirmar = () => {
+    setError('');
+    if (!almacenId) {
+      setError(t('compras.aprovisionamiento.errorAlmacenRequerido'));
+      return;
+    }
+
+    let parcial: { id_producto: string; cantidad: string }[] | undefined;
+    if (usarParcial) {
+      const items: { id_producto: string; cantidad: string }[] = [];
+      for (const det of detalles) {
+        const raw = (cantidades[det.id_producto] ?? det.cantidad).trim();
+        const parsed = parseDecimalSeguro(raw);
+        if (!parsed || parsed.lte(0) || parsed.gt(D(det.cantidad))) {
+          setError(t('compras.aprovisionamiento.errorCantidadParcial'));
+          return;
+        }
+        items.push({ id_producto: det.id_producto, cantidad: parsed.toFixed(4) });
+      }
+      if (items.length === 0) {
+        setError(t('compras.aprovisionamiento.errorCantidadParcial'));
+        return;
+      }
+      parcial = items;
+    }
+
+    adjudicar.mutate({
+      id_almacen_destino: almacenId,
+      rechazar_competidoras: rechazarCompetidoras,
+      ...(parcial ? { adjudicacion_parcial: parcial } : {}),
+    });
+  };
+
+  return (
+    <Dialog open onClose={onClose} fullWidth maxWidth="sm">
+      <DialogTitle>
+        {t('compras.aprovisionamiento.adjudicarTitulo', { numero: oferta.numero_oferta })}
+      </DialogTitle>
+      <DialogContent>
+        <Stack spacing={2} sx={{ mt: 1 }}>
+          {error && (
+            <Alert severity="error" onClose={() => setError('')}>
+              {error}
+            </Alert>
+          )}
+          <TextField
+            select
+            label={t('compras.aprovisionamiento.almacenDestino')}
+            value={almacenId}
+            onChange={(e) => setAlmacenId(e.target.value)}
+            required
+            fullWidth
+          >
+            {almacenes.map((a) => (
+              <MenuItem key={a.id_almacen} value={a.id_almacen}>
+                {a.nombre_almacen}
+              </MenuItem>
+            ))}
+          </TextField>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={rechazarCompetidoras}
+                onChange={(e) => setRechazarCompetidoras(e.target.checked)}
+              />
+            }
+            label={t('compras.aprovisionamiento.rechazarCompetidoras')}
+          />
+          {detalles.length > 0 && (
+            <FormControlLabel
+              control={<Checkbox checked={usarParcial} onChange={(e) => setUsarParcial(e.target.checked)} />}
+              label={t('compras.aprovisionamiento.adjudicacionParcial')}
+            />
+          )}
+          {usarParcial &&
+            detalles.map((det) => (
+              <TextField
+                key={det.id_detalle_oferta}
+                size="small"
+                label={`Cantidad (${nombreProducto(productos, det.id_producto)})`}
+                value={cantidades[det.id_producto] ?? det.cantidad}
+                onChange={(e) =>
+                  setCantidades((prev) => ({
+                    ...prev,
+                    [det.id_producto]: e.target.value,
+                  }))
+                }
+                inputMode="decimal"
+                fullWidth
+              />
+            ))}
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancelar</Button>
+        <Button variant="contained" onClick={handleConfirmar} disabled={adjudicar.isPending}>
+          {t('compras.aprovisionamiento.confirmarAdjudicacion')}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 };
 
@@ -1318,12 +1988,12 @@ const DetalleOfertaDrawer: React.FC<{ oferta: OfertaProveedor; onClose: () => vo
     setError('');
   };
 
-  // Subtotal = cantidad × precio_unitario (montos como string, R-CODE-4).
+  // Subtotal = cantidad × precio_unitario (aritmética Decimal exacta, R-CODE-4).
   const calcularSubtotal = (cantidad: string, precio: string): string => {
-    const c = Number(cantidad);
-    const p = Number(precio);
-    if (!Number.isFinite(c) || !Number.isFinite(p)) return '0';
-    return (c * p).toFixed(4);
+    const c = parseDecimalSeguro(cantidad);
+    const p = parseDecimalSeguro(precio);
+    if (!c || !p) return '0';
+    return c.times(p).toFixed(4);
   };
 
   const guardar = useMutation({

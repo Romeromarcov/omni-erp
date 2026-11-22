@@ -16,7 +16,7 @@ import type { Producto } from '../../../services/productosService';
 import { Alert, Box, Button, Card, Checkbox, FormControlLabel, IconButton, MenuItem, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
-import { D, sumDecimals } from '../../../lib/decimal';
+import { D, formatoMoneda, sumDecimals } from '../../../lib/decimal';
 import { PageContainer, PageHeader, SectionTitle } from '../../../components/ui';
 
 const defaultValues: DevolucionVentaInput = {
@@ -85,15 +85,15 @@ const DevolucionVentaFormPage: React.FC = () => {
         observaciones: devolucionData.observaciones || '',
         detalles: (devolucionData.detalles || []).map((d) => ({
           id_producto: d.id_producto || '',
-          cantidad_devuelta: Number(d.cantidad_devuelta ?? 0),
-          precio_unitario: Number(d.precio_unitario ?? 0),
+          cantidad_devuelta: String(d.cantidad_devuelta ?? '0'),
+          precio_unitario: String(d.precio_unitario ?? '0'),
           estado_producto: d.estado_producto || 'BUENO',
           accion_inventario: d.accion_inventario || 'REINTEGRAR',
           observaciones: d.observaciones || '',
         })),
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intencional: solo rehidratar al cargar devolucionData, sin disparar por isDirty/reset
   }, [devolucionData]);
 
   // Total en vivo calculado con decimal.js sobre los detalles observados.
@@ -126,12 +126,12 @@ const DevolucionVentaFormPage: React.FC = () => {
       id_producto: d.id_producto,
       cantidad_devuelta: d.cantidad_devuelta,
       precio_unitario: d.precio_unitario,
-      subtotal: D(d.cantidad_devuelta).times(D(d.precio_unitario)).toNumber(),
+      subtotal: D(d.cantidad_devuelta).times(D(d.precio_unitario)).toFixed(),
       estado_producto: d.estado_producto,
       accion_inventario: d.accion_inventario,
       observaciones: d.observaciones,
     }));
-    const total = sumDecimals(detallesPayload.map((d) => d.subtotal)).toNumber();
+    const total = sumDecimals(detallesPayload.map((d) => d.subtotal)).toFixed();
     const payload: Partial<DevolucionVenta> & { generar_nota_credito: boolean } = {
       id_factura_origen: values.id_factura_origen,
       fecha_devolucion: values.fecha_devolucion,
@@ -293,8 +293,8 @@ const DevolucionVentaFormPage: React.FC = () => {
               onClick={() =>
                 append({
                   id_producto: '',
-                  cantidad_devuelta: 1,
-                  precio_unitario: 0,
+                  cantidad_devuelta: '1',
+                  precio_unitario: '0',
                   estado_producto: 'BUENO',
                   accion_inventario: 'REINTEGRAR',
                   observaciones: '',
@@ -330,7 +330,7 @@ const DevolucionVentaFormPage: React.FC = () => {
                       const linea = detalles?.at(index);
                       // eslint-disable-next-line security/detect-object-injection -- FP: `index` es el índice entero que emite fields.map (array de RHF), no una clave arbitraria
                       const erroresLinea = errors.detalles?.[index];
-                      const subtotal = D(linea?.cantidad_devuelta || 0).times(D(linea?.precio_unitario || 0)).toNumber();
+                      const subtotal = D(linea?.cantidad_devuelta || 0).times(D(linea?.precio_unitario || 0));
                       return (
                         <TableRow key={fieldItem.id}>
                           <TableCell>
@@ -376,7 +376,7 @@ const DevolucionVentaFormPage: React.FC = () => {
                             />
                           </TableCell>
                           <TableCell align="right">
-                            {subtotal.toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
+                            {formatoMoneda(subtotal)}
                           </TableCell>
                           <TableCell>
                             <Controller
@@ -435,7 +435,7 @@ const DevolucionVentaFormPage: React.FC = () => {
           {fields.length > 0 && (
             <Box sx={{ mt: 3, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
               <Box sx={{ textAlign: 'right', fontWeight: 700 }}>
-                Total de la Devolución: {montoTotal.toNumber().toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
+                Total de la Devolución: {formatoMoneda(montoTotal)}
               </Box>
               {generarNotaCredito && (
                 <Box sx={{ mt: 1, textAlign: 'right', color: 'success.main', fontSize: 14 }}>

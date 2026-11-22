@@ -5,7 +5,6 @@ from .views import (
     CajaFisicaUsuarioViewSet,
     CajaFisicaViewSet,
     CajaMetodoPagoOverrideViewSet,
-    CajaUsuarioViewSet,
     CajaViewSet,
     CajaVirtualAutoViewSet,
     CajaVirtualUsuarioViewSet,
@@ -22,16 +21,20 @@ from .views import (
     SesionCajaFisicaViewSet,
     SesionDatafonoViewSet,
     TasaCambioViewSet,
+    TipoTasaCambioViewSet,
     TransaccionDatafonoViewSet,
     TransaccionFinancieraViewSet,
+    EquivalenciasTrimonetariasView,
 )
 from .views_ajustes import AjusteCajaBancoViewSet
+from .views_conciliacion_pagos import AsignacionPagoViewSet, EstadoConciliacionContactoView
 from .views_extra.tasa_oficial_bcv import TasaCambioOficialBCVView
 from .views_libro_caja import LibroMaestroCajaView
 from .views_pagos_terceros import PagoTerceroViewSet
 
 router = DefaultRouter()
 router.register(r"monedas", MonedaViewSet)
+router.register(r"tipos-tasa-cambio", TipoTasaCambioViewSet, basename="tipos-tasa-cambio")
 router.register(r"tasas-cambio", TasaCambioViewSet)
 router.register(r"metodos-pago", MetodoPagoViewSet)
 router.register(r"transacciones-financieras", TransaccionFinancieraViewSet)
@@ -56,6 +59,7 @@ router.register(r"overrides-metodos-pago", CajaMetodoPagoOverrideViewSet)
 router.register(r"sesiones-caja", SesionCajaFisicaViewSet)
 router.register(r"pagos", PagoViewSet)
 router.register(r"pagos-terceros", PagoTerceroViewSet)
+router.register(r"asignaciones-pago", AsignacionPagoViewSet, basename="asignaciones-pago")
 
 # Aliases for frontend compatibility
 router.register(r"cuentas-bancarias", CuentaBancariaEmpresaViewSet, basename="cuentas-bancarias")
@@ -65,6 +69,12 @@ router.register(r"datafonos", DatafonoViewSet, basename="datafonos")
 urlpatterns = [
     path("", include(router.urls)),
     path("tasa-oficial-bcv/", TasaCambioOficialBCVView.as_view(), name="tasa-oficial-bcv"),
+    path("equivalencias-trimonetarias/", EquivalenciasTrimonetariasView.as_view(), name="equivalencias-trimonetarias"),
     # Capa B §6.8: libro maestro de caja (solo lectura, consolidado multimoneda)
     path("libro-maestro-caja/", LibroMaestroCajaView.as_view(), name="libro-maestro-caja"),
+    path(
+        "contactos/<uuid:id_contacto>/estado-conciliacion/",
+        EstadoConciliacionContactoView.as_view(),
+        name="contacto-estado-conciliacion",
+    ),
 ]

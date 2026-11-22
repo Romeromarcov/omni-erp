@@ -11,7 +11,10 @@
 # ──────────────────────────────────────────────────────────────────────────
 FROM ubuntu:24.04
 
-ARG RUNNER_VERSION=2.321.0
+# GitHub rechaza el registro de runners por debajo de una versión mínima (el síntoma es un 404 al
+# ejecutar config.sh, con un enlace al aviso de "minimum version enforcement"). Si el servicio vuelve a
+# caer así, subir esta versión a la última de https://github.com/actions/runner/releases.
+ARG RUNNER_VERSION=2.338.2
 ENV DEBIAN_FRONTEND=noninteractive
 
 # ── Toolchain de Omni (Python 3.11 vía deadsnakes, Node 22, cliente Postgres) ──

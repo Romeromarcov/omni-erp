@@ -12,6 +12,7 @@ Aquí se cubren los cuerpos restantes con datos reales y valores exactos:
   (filtro por almacén), omni_registrar_movimiento_inventario, omni_get_correlativo_fiscal
   y las tools CxC v2 (cartera vencida, aging summary, tasa de cambio, acuerdos vigentes).
 """
+
 import uuid
 from datetime import date, timedelta
 from decimal import Decimal
@@ -32,6 +33,7 @@ def _token(empresa, scopes):
 
 
 # ── Fixtures de dominio mínimas ───────────────────────────────────────────────
+
 
 @pytest.fixture
 def cliente_a(empresa_a):
@@ -63,6 +65,7 @@ def almacen_a(empresa_a):
 
 # ── omni_get_clientes ─────────────────────────────────────────────────────────
 
+
 class TestGetClientes:
     def test_devuelve_valores_exactos(self, empresa_a, cliente_a):
         from apps.core.mcp_server import omni_get_clientes
@@ -81,12 +84,8 @@ class TestGetClientes:
         from apps.core.mcp_server import omni_get_clientes
         from apps.crm.models import Cliente
 
-        Cliente.objects.create(
-            id_empresa=empresa_a, razon_social="Otro Cliente", rif="J-22222222-2"
-        )
-        res = omni_get_clientes(
-            _token(empresa_a, ["crm:read"]), str(empresa_a.id_empresa), buscar="J-11111111"
-        )
+        Cliente.objects.create(id_empresa=empresa_a, razon_social="Otro Cliente", rif="J-22222222-2")
+        res = omni_get_clientes(_token(empresa_a, ["crm:read"]), str(empresa_a.id_empresa), buscar="J-11111111")
         assert [c["razon_social"] for c in res] == ["Distribuidora Orinoco C.A."]
 
     def test_empresa_id_de_otro_tenant_lanza(self, empresa_a, empresa_b):
@@ -105,13 +104,12 @@ class TestGetClientes:
 
 # ── omni_buscar_cliente ───────────────────────────────────────────────────────
 
+
 class TestBuscarCliente:
     def test_busca_por_email_y_devuelve_campos(self, empresa_a, cliente_a):
         from apps.core.mcp_server import omni_buscar_cliente
 
-        res = omni_buscar_cliente(
-            _token(empresa_a, ["crm:read"]), str(empresa_a.id_empresa), "orinoco.com"
-        )
+        res = omni_buscar_cliente(_token(empresa_a, ["crm:read"]), str(empresa_a.id_empresa), "orinoco.com")
         assert len(res) == 1
         assert res[0] == {
             "id_cliente": str(cliente_a.id_cliente),
@@ -126,21 +124,18 @@ class TestBuscarCliente:
     def test_sin_coincidencias_lista_vacia(self, empresa_a, cliente_a):
         from apps.core.mcp_server import omni_buscar_cliente
 
-        res = omni_buscar_cliente(
-            _token(empresa_a, ["crm:read"]), str(empresa_a.id_empresa), "no-existe-xyz"
-        )
+        res = omni_buscar_cliente(_token(empresa_a, ["crm:read"]), str(empresa_a.id_empresa), "no-existe-xyz")
         assert res == []
 
     def test_tenant_mismatch_lanza(self, empresa_a, empresa_b):
         from apps.core.mcp_server import omni_buscar_cliente
 
         with pytest.raises(PermissionError):
-            omni_buscar_cliente(
-                _token(empresa_a, ["crm:read"]), str(empresa_b.id_empresa), "x"
-            )
+            omni_buscar_cliente(_token(empresa_a, ["crm:read"]), str(empresa_b.id_empresa), "x")
 
 
 # ── omni_buscar_contacto ──────────────────────────────────────────────────────
+
 
 class TestBuscarContacto:
     @pytest.fixture
@@ -161,16 +156,17 @@ class TestBuscarContacto:
     def test_query_y_valores_exactos(self, empresa_a, contacto_a):
         from apps.core.mcp_server import omni_buscar_contacto
 
-        res = omni_buscar_contacto(
-            _token(empresa_a, ["contactos:read"]), str(empresa_a.id_empresa), query="Andina"
-        )
+        res = omni_buscar_contacto(_token(empresa_a, ["contactos:read"]), str(empresa_a.id_empresa), query="Andina")
         assert len(res) == 1
         c = res[0]
         assert c["id_contacto"] == str(contacto_a.id_contacto)
         assert c["rif"] == "J-33333333-3"
         assert c["email"] == "info@andina.com"
         assert c["roles"] == {
-            "cliente": True, "proveedor": False, "empleado": False, "usuario": False,
+            "cliente": True,
+            "proveedor": False,
+            "empleado": False,
+            "usuario": False,
         }
         assert c["tipo_credito"] == "CREDITO"
         assert c["limite_credito"] == "1500.00"
@@ -179,29 +175,24 @@ class TestBuscarContacto:
     def test_filtro_rol_proveedor_excluye_cliente(self, empresa_a, contacto_a):
         from apps.core.mcp_server import omni_buscar_contacto
 
-        res = omni_buscar_contacto(
-            _token(empresa_a, ["contactos:read"]), str(empresa_a.id_empresa), rol="proveedor"
-        )
+        res = omni_buscar_contacto(_token(empresa_a, ["contactos:read"]), str(empresa_a.id_empresa), rol="proveedor")
         assert res == []
 
     def test_filtro_rol_cliente_incluye(self, empresa_a, contacto_a):
         from apps.core.mcp_server import omni_buscar_contacto
 
-        res = omni_buscar_contacto(
-            _token(empresa_a, ["contactos:read"]), str(empresa_a.id_empresa), rol="cliente"
-        )
+        res = omni_buscar_contacto(_token(empresa_a, ["contactos:read"]), str(empresa_a.id_empresa), rol="cliente")
         assert [c["id_contacto"] for c in res] == [str(contacto_a.id_contacto)]
 
     def test_tenant_mismatch_lanza(self, empresa_a, empresa_b):
         from apps.core.mcp_server import omni_buscar_contacto
 
         with pytest.raises(PermissionError):
-            omni_buscar_contacto(
-                _token(empresa_a, ["contactos:read"]), str(empresa_b.id_empresa)
-            )
+            omni_buscar_contacto(_token(empresa_a, ["contactos:read"]), str(empresa_b.id_empresa))
 
 
 # ── omni_get_stock_producto (filtro por almacén) ─────────────────────────────
+
 
 class TestGetStockProducto:
     def test_filtra_por_almacen(self, empresa_a, producto_a, almacen_a):
@@ -211,11 +202,15 @@ class TestGetStockProducto:
 
         almacen_2 = AlmacenFactory(id_empresa=empresa_a, nombre_almacen="Secundario")
         StockActual.objects.create(
-            id_empresa=empresa_a, id_producto=producto_a, id_almacen=almacen_a,
+            id_empresa=empresa_a,
+            id_producto=producto_a,
+            id_almacen=almacen_a,
             cantidad_disponible=Decimal("100"),
         )
         StockActual.objects.create(
-            id_empresa=empresa_a, id_producto=producto_a, id_almacen=almacen_2,
+            id_empresa=empresa_a,
+            id_producto=producto_a,
+            id_almacen=almacen_2,
             cantidad_disponible=Decimal("7.5"),
         )
 
@@ -246,6 +241,7 @@ class TestGetStockProducto:
 
 # ── omni_get_ventas_resumen (filtros de fecha) ───────────────────────────────
 
+
 class TestVentasResumen:
     @pytest.fixture
     def pedido_aprobado(self, empresa_a, cliente_a, producto_a):
@@ -259,8 +255,10 @@ class TestVentasResumen:
             estado="APROBADO",
         )
         DetallePedido.objects.create(
-            id_pedido=pedido, id_producto=producto_a,
-            cantidad=Decimal("2"), precio_unitario=Decimal("50.00"),
+            id_pedido=pedido,
+            id_producto=producto_a,
+            cantidad=Decimal("2"),
+            precio_unitario=Decimal("50.00"),
             subtotal=Decimal("100.00"),
         )
         return pedido
@@ -293,6 +291,7 @@ class TestVentasResumen:
 
 # ── omni_crear_pedido ─────────────────────────────────────────────────────────
 
+
 class TestCrearPedido:
     def test_crea_pedido_con_detalle_exacto(self, empresa_a, cliente_a, producto_a):
         from apps.core.mcp_server import omni_crear_pedido
@@ -302,11 +301,13 @@ class TestCrearPedido:
             _token(empresa_a, ["ventas:write"]),
             str(empresa_a.id_empresa),
             str(cliente_a.id_cliente),
-            productos=[{
-                "id_producto": str(producto_a.id_producto),
-                "cantidad": 2,
-                "precio_unitario": "10.50",
-            }],
+            productos=[
+                {
+                    "id_producto": str(producto_a.id_producto),
+                    "cantidad": 2,
+                    "precio_unitario": "10.50",
+                }
+            ],
         )
         assert "error" not in res
         assert res["estado"] == "PENDIENTE"
@@ -340,11 +341,13 @@ class TestCrearPedido:
             _token(empresa_a, ["ventas:write"]),
             str(empresa_a.id_empresa),
             str(cliente_a.id_cliente),
-            productos=[{
-                "id_producto": str(producto_a.id_producto),
-                "cantidad": "no-es-numero",
-                "precio_unitario": "5.00",
-            }],
+            productos=[
+                {
+                    "id_producto": str(producto_a.id_producto),
+                    "cantidad": "no-es-numero",
+                    "precio_unitario": "5.00",
+                }
+            ],
         )
         assert "error" in res
         # atómico: no debe quedar pedido huérfano
@@ -364,18 +367,25 @@ class TestCrearPedido:
 
 # ── omni_get_pedidos ──────────────────────────────────────────────────────────
 
+
 class TestGetPedidos:
     @pytest.fixture
     def pedidos(self, empresa_a, cliente_a):
         from apps.ventas.models import Pedido
 
         p1 = Pedido.objects.create(
-            id_empresa=empresa_a, id_cliente=cliente_a, numero_pedido="P-001",
-            fecha_pedido=date(2026, 3, 1), estado="PENDIENTE",
+            id_empresa=empresa_a,
+            id_cliente=cliente_a,
+            numero_pedido="P-001",
+            fecha_pedido=date(2026, 3, 1),
+            estado="PENDIENTE",
         )
         p2 = Pedido.objects.create(
-            id_empresa=empresa_a, id_cliente=cliente_a, numero_pedido="P-002",
-            fecha_pedido=date(2026, 3, 2), estado="APROBADO",
+            id_empresa=empresa_a,
+            id_cliente=cliente_a,
+            numero_pedido="P-002",
+            fecha_pedido=date(2026, 3, 2),
+            estado="APROBADO",
         )
         return p1, p2
 
@@ -395,9 +405,7 @@ class TestGetPedidos:
     def test_filtro_por_estado(self, empresa_a, pedidos):
         from apps.core.mcp_server import omni_get_pedidos
 
-        res = omni_get_pedidos(
-            _token(empresa_a, ["ventas:read"]), str(empresa_a.id_empresa), estado="APROBADO"
-        )
+        res = omni_get_pedidos(_token(empresa_a, ["ventas:read"]), str(empresa_a.id_empresa), estado="APROBADO")
         assert [p["numero_pedido"] for p in res] == ["P-002"]
 
     def test_tenant_mismatch_lanza(self, empresa_a, empresa_b):
@@ -408,6 +416,7 @@ class TestGetPedidos:
 
 
 # ── omni_registrar_movimiento_inventario ─────────────────────────────────────
+
 
 class TestRegistrarMovimiento:
     def test_tipo_invalido_devuelve_error(self, empresa_a, producto_a):
@@ -452,9 +461,7 @@ class TestRegistrarMovimiento:
         from apps.core import mcp_server
         from apps.inventario.models import MovimientoInventario
 
-        with patch.object(
-            mcp_server, "_resolve_token", return_value=self._ctx_con_actor(empresa_a, user_a)
-        ):
+        with patch.object(mcp_server, "_resolve_token", return_value=self._ctx_con_actor(empresa_a, user_a)):
             res = mcp_server.omni_registrar_movimiento_inventario(
                 str(uuid.uuid4()),
                 str(empresa_a.id_empresa),
@@ -478,9 +485,7 @@ class TestRegistrarMovimiento:
         from apps.core import mcp_server
         from apps.inventario.models import MovimientoInventario
 
-        with patch.object(
-            mcp_server, "_resolve_token", return_value=self._ctx_con_actor(empresa_a, user_a)
-        ):
+        with patch.object(mcp_server, "_resolve_token", return_value=self._ctx_con_actor(empresa_a, user_a)):
             res = mcp_server.omni_registrar_movimiento_inventario(
                 str(uuid.uuid4()),
                 str(empresa_a.id_empresa),
@@ -495,6 +500,7 @@ class TestRegistrarMovimiento:
 
 # ── omni_get_correlativo_fiscal ───────────────────────────────────────────────
 
+
 class TestCorrelativoFiscal:
     def test_devuelve_siguiente_formateado(self, empresa_a):
         from apps.core.mcp_server import omni_get_correlativo_fiscal
@@ -503,9 +509,7 @@ class TestCorrelativoFiscal:
         NumeroCorrelativo.objects.create(
             id_empresa=empresa_a, tipo="FACTURA", prefijo="FAC-", numero_actual=41, digitos=8
         )
-        res = omni_get_correlativo_fiscal(
-            _token(empresa_a, ["fiscal:read"]), str(empresa_a.id_empresa), "FACTURA"
-        )
+        res = omni_get_correlativo_fiscal(_token(empresa_a, ["fiscal:read"]), str(empresa_a.id_empresa), "FACTURA")
         assert res == {
             "tipo_documento": "FACTURA",
             "empresa_id": str(empresa_a.id_empresa),
@@ -518,9 +522,7 @@ class TestCorrelativoFiscal:
     def test_tipo_invalido_devuelve_error(self, empresa_a):
         from apps.core.mcp_server import omni_get_correlativo_fiscal
 
-        res = omni_get_correlativo_fiscal(
-            _token(empresa_a, ["fiscal:read"]), str(empresa_a.id_empresa), "RECIBO"
-        )
+        res = omni_get_correlativo_fiscal(_token(empresa_a, ["fiscal:read"]), str(empresa_a.id_empresa), "RECIBO")
         assert "inválido" in res["error"]
 
     def test_sin_configuracion_devuelve_error(self, empresa_a):
@@ -533,6 +535,7 @@ class TestCorrelativoFiscal:
 
 
 # ── Tools CxC v2 ──────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def cxc_vencida(empresa_a, cliente_a):
@@ -554,9 +557,7 @@ class TestCxcCarteraVencida:
     def test_devuelve_partida_con_score(self, empresa_a, cliente_a, cxc_vencida):
         from apps.core.mcp_server import omni_cxc_get_cartera_vencida
 
-        res = omni_cxc_get_cartera_vencida(
-            _token(empresa_a, ["cxc:read"]), str(empresa_a.id_empresa)
-        )
+        res = omni_cxc_get_cartera_vencida(_token(empresa_a, ["cxc:read"]), str(empresa_a.id_empresa))
         assert len(res) == 1
         p = res[0]
         assert p["cliente_nombre"] == "Distribuidora Orinoco C.A."
@@ -570,18 +571,14 @@ class TestCxcCarteraVencida:
         from apps.core.mcp_server import omni_cxc_get_cartera_vencida
 
         with pytest.raises(PermissionError):
-            omni_cxc_get_cartera_vencida(
-                _token(empresa_a, ["cxc:read"]), str(empresa_b.id_empresa)
-            )
+            omni_cxc_get_cartera_vencida(_token(empresa_a, ["cxc:read"]), str(empresa_b.id_empresa))
 
 
 class TestCxcAgingSummary:
     def test_buckets_y_totales(self, empresa_a, cxc_vencida):
         from apps.core.mcp_server import omni_cxc_get_aging_summary
 
-        res = omni_cxc_get_aging_summary(
-            _token(empresa_a, ["cxc:read"]), str(empresa_a.id_empresa)
-        )
+        res = omni_cxc_get_aging_summary(_token(empresa_a, ["cxc:read"]), str(empresa_a.id_empresa))
         assert res["buckets"]["1_30"]["count"] == 1
         assert Decimal(res["buckets"]["1_30"]["total"]) == Decimal("500.00")
         assert Decimal(res["total_pendiente"]) == Decimal("500.00")
@@ -593,9 +590,7 @@ class TestCxcAgingSummary:
 
         tok = _token(empresa_a, ["cxc:read"])
         primera = omni_cxc_get_aging_summary(tok, str(empresa_a.id_empresa))
-        with patch(
-            "apps.cuentas_por_cobrar.services_aging.calcular_aging"
-        ) as mock_aging:
+        with patch("apps.cuentas_por_cobrar.services_aging.calcular_aging") as mock_aging:
             segunda = omni_cxc_get_aging_summary(tok, str(empresa_a.id_empresa))
         mock_aging.assert_not_called()
         assert segunda == primera
@@ -613,9 +608,7 @@ class TestCxcTasaCambioHoy:
         from apps.core.mcp_server import omni_cxc_get_tasa_cambio_hoy
         from apps.finanzas.models import Moneda, TasaCambio
 
-        ves = Moneda.objects.create(
-            nombre="Bolívar", codigo_iso="VES", simbolo="Bs", tipo_moneda="fiat"
-        )
+        ves = Moneda.objects.create(nombre="Bolívar", codigo_iso="VES", simbolo="Bs", tipo_moneda="fiat")
         TasaCambio.objects.create(
             id_moneda_origen=moneda_usd,
             id_moneda_destino=ves,

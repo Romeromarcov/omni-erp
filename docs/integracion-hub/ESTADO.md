@@ -1,8 +1,8 @@
 # Integration Hub — Estado y avances
 
-> Última actualización: 2026-06-22. Documenta el estado del Integration Hub tras
-> el trabajo de conexión Odoo + visión "Omni como hub" (Fases 1–2 inbound y
-> Fase 3 completadas).
+> Última actualización: 2026-11-20. Documenta el estado del Integration Hub tras
+> completar Fases 1–3, Ola B6 (inbound `facturas_compra` y pagos N:M) y Ola B7 /
+> `CTF-011` (Push Outbound hacia Odoo validado en vivo contra Odoo QA).
 
 ## 1. Visión
 
@@ -90,45 +90,29 @@ Cerradas por el loop autónomo (todas con tests y revisión independiente):
   vía el registry dinámico. **Límite actual:** `pull` de `contactos` y `productos`
   (las demás entidades se añaden ampliando el mapa). CSV y `push` quedan pendientes.
 
-## 4.1 Pendiente (siguiente)
+## 4.1 Estado actualizado post-Ola B6 (Plan 08 §B.4.2 + §B.4.3)
 
-Los siguientes ítems quedaron **deferidos a propósito**: requieren **enriquecer el
-conector** y/o una **decisión de producto**, y no se implementan "a ciegas" (no se
-pueden verificar con mocks sin asumir la forma real de los datos de Odoo).
+### ✅ `facturas_compra` inbound (Ola B6 — COMPLETADO)
 
-### `pagos` — reconciliación parcial / multi-factura  🔴 requiere conector + decisión
+- `compras.FacturaCompra` admite facturas importadas/directas sin `OrdenCompra` (`id_orden_compra` nullable + `id_proveedor` FK con backfill reversible).
+- `OdooConnector.pull_facturas_compra()` trae `account.move` (`move_type='in_invoice'`) + `get_lineas_factura`.
+- `SyncEngine._upsert_factura_compra` auto-crea `proveedores.Proveedor` + `core.Contacto` común, persiste `compras.FacturaCompra` + `DetalleFacturaCompra` (*history-only*, cero asientos) y sincroniza `cuentas_por_pagar.CuentaPorPagar` idempotente por `(id_empresa, numero_factura)` y `referencia_externa`.
 
-Hoy `_upsert_pago` solo importa cobros de cliente reconciliados con **exactamente
-una** factura sincronizada (ver §4). Falta:
+### ✅ `pagos` — reconciliación N:M, anticipos y pagos a proveedor (`outbound`) (Ola B6 — COMPLETADO)
 
-- **Enriquecer el conector**: `_normalizar_pago` trae hoy solo
-  `facturas_externas` = lista de ids de `reconciled_invoice_ids` (account.move),
-  **sin el monto conciliado por documento**. Para repartir un pago entre varias
-  facturas (o un pago parcial) hace falta traer los importes de conciliación por
-  factura (Odoo: `account.partial.reconcile` / el desglose de las
-  `account.move.line` casadas), no solo los ids.
-- **Decisión de producto**: `finanzas.Pago` tiene **un solo** `id_documento`. Un
-  pago que salda N facturas no encaja en un único `Pago`. Opciones a decidir por
-  el owner: (a) crear **N `Pago`** (uno por factura, con el monto conciliado de
-  cada una); (b) introducir un modelo de **asignación pago↔documento**
-  (allocation) 1→N. Hasta esa decisión, importar multi-factura arriesga datos
-  financieros incorrectos, por lo que se **omite con log** (no se adivina el
-  reparto).
+- `OdooXMLRPCClient.get_pagos` descubre campos disponibles de `account.payment` vía `fields_get` (compatible con Odoo 18: `memo`/`payment_reference`/`move_id`/`reconciled_bill_ids`, sin exigir `ref` eliminado en Odoo 18) y `get_reconciliaciones_pagos` resuelve en lote `account.move.line` + `account.partial.reconcile` (cero N+1).
+- `SyncEngine._upsert_pago` persiste `finanzas.Pago` + `finanzas.AsignacionPago` (`generar_asiento=False`, `modo_historico_externo=True`) para:
+  - Cobros `inbound/customer` (`INGRESO`) y pagos `outbound/supplier` (`EGRESO`, vinculados a `CuentaPorPagar` / `FacturaCompra`).
+  - **0 facturas (`ANTICIPO`)**, **1 factura (`FACTURA`/`CXP`/`COMPRA`)** y **N facturas (`CONCILIACION_MULTIPLE`)**, preservando cualquier excedente como saldo a favor en `core.Contacto` e idempotencia por `odoo:pr:{partial_reconcile_id}`.
 
-### `pagos` a proveedor (outbound) → abono de CxP  🔴 bloqueado por `facturas_compra`
+### ✅ Push Outbound hacia Odoo + `gestiones_cobranza` (Fase 3 / Ola B7 / `CTF-011` — COMPLETADO)
 
-Análogo a los cobros de cliente, pero para `payment_type=outbound` /
-`partner_type=supplier`, que saldan facturas de compra. Bloqueado porque:
+- **Opt-in y mínimo privilegio:** bandera `push_habilitado` (default `False`), `push_modo_pago` (`"borrador"` | `"confirmado"`), `diario_pagos_default_id` y par simétrico fail-closed `write_user` / `write_api_key` en `configuracion` (cifrado en reposo, nunca expuesto en API ni logs — `R-CODE-8`).
+- **`OdooConnector`:** `_get_write_client()`, `_get_model_fields()` (Odoo 18 `memo` vs `<18` `payment_reference`/`ref`), `push_pago_cobranza()` idempotente (`[OMNI:{key}]`, `borrador` y `confirmado` con `action_post` + `reconcile()`), `push_gestion_cobranza()` idempotente (`[OMNI-GESTION:{key}]`, `html.escape()` XSS-safe sobre `account.move`/`res.partner`) y `_sanitizar_error_externo()`.
+- **`SyncEngine`:** `PUSH_METHODS` (`pagos`, `gestiones_cobranza`, `contactos`, `productos`), ejecución `outbound` y `bidireccional` con `EntidadSincronizada` + checksum y trazabilidad en `LogDetalleSincronizacion`.
+- **API, MCP y UI:** `POST /api/integration-hub/instancias/{id}/push-cobranza/` + `Idempotency-Key` + `NulSafeFilterMixin`, paridad MCP (`integration_hub/mcp.py` con `MCP_TOOLS`), controles en `EditarConectorModal.tsx` y `ConectorDetallePage.tsx`. Validado con test opt-in en vivo contra Odoo QA (`CTF-011` cerrado).
 
-- **`facturas_compra` aún no se persiste**: el catálogo `EntidadSincronizada`
-  tiene el tipo `facturas_compra`, pero **no hay** `pull` de `in_invoice` con
-  líneas ni `_upsert_factura_compra` → no existe el mapa `id_externo ↔
-  compras.FacturaCompra` para resolver la factura reconciliada. **Prerrequisito**:
-  implementar la persistencia inbound de `facturas_compra` (espejo de
-  `facturas_venta`, PR #187) antes de poder enlazar el pago a la CxP.
-- Una vez exista ese mapa, el pago outbound se modelaría como **abono de CxP**
-  (`registrar_abono_cxp`, ya atómico) — pero igual aplica la decisión de
-  multi-factura de arriba.
+### Pendiente siguiente
 
 ### `pagos` — reembolso POS en divisa sin tasa  🟡 edge de bajo riesgo
 

@@ -65,6 +65,40 @@ class DetallePedidoNestedSerializer(serializers.ModelSerializer):
         ]
 
 
+class PedidoListSerializer(serializers.ListSerializer):
+    """Pre-carga en bloque los usuarios referenciados en ``documento_json['id_usuario']`` (evita N+1)."""
+
+    def to_representation(self, data):
+        import uuid as _uuid
+
+        items = list(data)
+        valid_uids: set[_uuid.UUID] = set()
+        for obj in items:
+            doc_json = getattr(obj, "documento_json", None) or {}
+            raw_uid = doc_json.get("id_usuario") if isinstance(doc_json, dict) else None
+            if raw_uid:
+                try:
+                    valid_uids.add(_uuid.UUID(str(raw_uid)))
+                except (ValueError, TypeError):
+                    pass
+
+        if valid_uids:
+            from django.contrib.auth import get_user_model
+
+            User = get_user_model()
+            usuarios_map = {str(u.id): u for u in User.objects.filter(id__in=valid_uids)}
+        else:
+            usuarios_map = {}
+
+        root = self.root
+        original_ctx = dict(getattr(root, "_context", {}) or {})
+        root._context = {**original_ctx, "_usuarios_por_id": usuarios_map}
+        try:
+            return [self.child.to_representation(item) for item in items]
+        finally:
+            root._context = original_ctx
+
+
 class PedidoSerializer(serializers.ModelSerializer):
     detalles = DetallePedidoNestedSerializer(many=True, required=False)
     # Cliente anidado para mostrar nombre, razon_social, rif, telefono
@@ -97,26 +131,38 @@ class PedidoSerializer(serializers.ModelSerializer):
 
         # Usuario que creó el pedido (de documento_json o de la sesión)
         documento_json = getattr(instance, "documento_json", {}) or {}
-        usuario_id = documento_json.get("id_usuario")
+        usuario_id = documento_json.get("id_usuario") if isinstance(documento_json, dict) else None
         if usuario_id:
-            from django.contrib.auth import get_user_model
+            usuarios_map = self.context.get("_usuarios_por_id")
+            if usuarios_map is not None:
+                usuario = usuarios_map.get(str(usuario_id))
+                if usuario is not None:
+                    rep["id_usuario"] = {
+                        "id": usuario.id,
+                        "username": usuario.username,
+                        "first_name": usuario.first_name,
+                        "last_name": usuario.last_name,
+                    }
+            else:
+                from django.contrib.auth import get_user_model
 
-            User = get_user_model()
-            try:
-                usuario = User.objects.get(id=usuario_id)
-                rep["id_usuario"] = {
-                    "id": usuario.id,
-                    "username": usuario.username,
-                    "first_name": usuario.first_name,
-                    "last_name": usuario.last_name,
-                }
-            except User.DoesNotExist:
-                pass
+                User = get_user_model()
+                try:
+                    usuario = User.objects.get(id=usuario_id)
+                    rep["id_usuario"] = {
+                        "id": usuario.id,
+                        "username": usuario.username,
+                        "first_name": usuario.first_name,
+                        "last_name": usuario.last_name,
+                    }
+                except User.DoesNotExist:
+                    pass
 
         return rep
 
     class Meta:
         model = Pedido
+        list_serializer_class = PedidoListSerializer
         exclude = ("referencia_externa", "documento_json")  # SEC-NEW-3: ocultar campos internos
         # H-API-1: id_empresa nunca lo fija el cliente; lo inyecta el ViewSet.
         read_only_fields = ("numero_pedido", "id_empresa", "id_pedido", "fecha_creacion")
@@ -132,7 +178,6 @@ class PedidoSerializer(serializers.ModelSerializer):
         detalles_data = validated_data.pop("detalles", [])
 
         # Asignación automática del número de pedido
-        from django.db.models import Max
 
         from apps.core.models import Sucursal
         from apps.finanzas.models import Caja, SesionCajaFisica
@@ -185,9 +230,7 @@ class PedidoSerializer(serializers.ModelSerializer):
             # ignora (cae al código genérico), nunca contamina cross-tenant.
             if sucursal_id:
                 try:
-                    sucursal = Sucursal.objects.get(
-                        id_sucursal=sucursal_id, id_empresa=id_empresa
-                    )
+                    sucursal = Sucursal.objects.get(id_sucursal=sucursal_id, id_empresa=id_empresa)
                 except Sucursal.DoesNotExist:
                     sucursal = None
             if caja_id:

@@ -108,9 +108,7 @@ def cliente(db, empresa_a):
 def almacen(db, empresa_a):
     from apps.almacenes.models import Almacen
 
-    return Almacen.objects.create(
-        id_empresa=empresa_a, nombre_almacen="Almacén POS", codigo_almacen="ALM-POS"
-    )
+    return Almacen.objects.create(id_empresa=empresa_a, nombre_almacen="Almacén POS", codigo_almacen="ALM-POS")
 
 
 @pytest.fixture
@@ -134,9 +132,7 @@ def producto(db, empresa_a, moneda_usd):
 
 @pytest.fixture
 def metodo_efectivo_pos(db):
-    return MetodoPago.objects.create(
-        nombre_metodo="Efectivo POS", tipo_metodo="EFECTIVO", es_publico=True
-    )
+    return MetodoPago.objects.create(nombre_metodo="Efectivo POS", tipo_metodo="EFECTIVO", es_publico=True)
 
 
 @pytest.fixture
@@ -269,21 +265,30 @@ class TestDevolucionNoFiscal:
         nota = _venta_entregada(empresa_a, cliente, producto, almacen, user_a)  # vendió 10
 
         registrar_devolucion_pos(
-            nota_venta=nota, lineas=_lineas(nota, "6"), almacen=almacen,
-            usuario=user_a, metodo_pago=metodo_efectivo_pos,
+            nota_venta=nota,
+            lineas=_lineas(nota, "6"),
+            almacen=almacen,
+            usuario=user_a,
+            metodo_pago=metodo_efectivo_pos,
         )
 
         # Segunda devolución que EXCEDE el acumulado (6 + 5 > 10) → rechazada.
         with pytest.raises(VentaError, match="más de lo vendido"):
             registrar_devolucion_pos(
-                nota_venta=nota, lineas=_lineas(nota, "5"), almacen=almacen,
-                usuario=user_a, metodo_pago=metodo_efectivo_pos,
+                nota_venta=nota,
+                lineas=_lineas(nota, "5"),
+                almacen=almacen,
+                usuario=user_a,
+                metodo_pago=metodo_efectivo_pos,
             )
 
         # Hasta el límite exacto (6 + 4 = 10) → permitida.
         registrar_devolucion_pos(
-            nota_venta=nota, lineas=_lineas(nota, "4"), almacen=almacen,
-            usuario=user_a, metodo_pago=metodo_efectivo_pos,
+            nota_venta=nota,
+            lineas=_lineas(nota, "4"),
+            almacen=almacen,
+            usuario=user_a,
+            metodo_pago=metodo_efectivo_pos,
         )
         assert _disponible(producto, almacen) == Decimal("10")
         assert DevolucionVenta.objects.filter(id_nota_venta_origen=nota).count() == 2
@@ -291,8 +296,11 @@ class TestDevolucionNoFiscal:
         # Todo devuelto: una unidad más → rechazada.
         with pytest.raises(VentaError, match="más de lo vendido"):
             registrar_devolucion_pos(
-                nota_venta=nota, lineas=_lineas(nota, "1"), almacen=almacen,
-                usuario=user_a, metodo_pago=metodo_efectivo_pos,
+                nota_venta=nota,
+                lineas=_lineas(nota, "1"),
+                almacen=almacen,
+                usuario=user_a,
+                metodo_pago=metodo_efectivo_pos,
             )
 
     def test_sin_sesion_de_caja_abierta_rechaza(
@@ -304,8 +312,11 @@ class TestDevolucionNoFiscal:
 
         with pytest.raises(VentaError, match="sesión de caja"):
             registrar_devolucion_pos(
-                nota_venta=nota, lineas=_lineas(nota, "1"), almacen=almacen,
-                usuario=user_a, metodo_pago=metodo_efectivo_pos,
+                nota_venta=nota,
+                lineas=_lineas(nota, "1"),
+                almacen=almacen,
+                usuario=user_a,
+                metodo_pago=metodo_efectivo_pos,
             )
 
     def test_venta_no_entregada_rechaza(
@@ -319,13 +330,19 @@ class TestDevolucionNoFiscal:
             estado="BORRADOR",  # nunca salió stock: no hay nada que devolver
         )
         DetalleNotaVenta.objects.create(
-            id_nota_venta=nota, id_producto=producto,
-            cantidad=Decimal("1"), precio_unitario=Decimal("5.00"), subtotal=Decimal("5.00"),
+            id_nota_venta=nota,
+            id_producto=producto,
+            cantidad=Decimal("1"),
+            precio_unitario=Decimal("5.00"),
+            subtotal=Decimal("5.00"),
         )
         with pytest.raises(VentaError, match="ENTREGADAS o FACTURADAS"):
             registrar_devolucion_pos(
-                nota_venta=nota, lineas=_lineas(nota, "1"), almacen=almacen,
-                usuario=user_a, metodo_pago=metodo_efectivo_pos,
+                nota_venta=nota,
+                lineas=_lineas(nota, "1"),
+                almacen=almacen,
+                usuario=user_a,
+                metodo_pago=metodo_efectivo_pos,
             )
 
     def test_linea_ajena_y_cantidades_invalidas_rechazan(
@@ -339,45 +356,66 @@ class TestDevolucionNoFiscal:
         # Línea de OTRA venta.
         with pytest.raises(VentaError, match="no pertenece a esta venta"):
             registrar_devolucion_pos(
-                nota_venta=nota, lineas=_lineas(otra, "1"), almacen=almacen,
-                usuario=user_a, metodo_pago=metodo_efectivo_pos,
+                nota_venta=nota,
+                lineas=_lineas(otra, "1"),
+                almacen=almacen,
+                usuario=user_a,
+                metodo_pago=metodo_efectivo_pos,
             )
         # Cantidad cero / negativa / no numérica.
         for cantidad in ("0", "-3"):
             with pytest.raises(VentaError, match="mayor que cero"):
                 registrar_devolucion_pos(
-                    nota_venta=nota, lineas=_lineas(nota, cantidad), almacen=almacen,
-                    usuario=user_a, metodo_pago=metodo_efectivo_pos,
+                    nota_venta=nota,
+                    lineas=_lineas(nota, cantidad),
+                    almacen=almacen,
+                    usuario=user_a,
+                    metodo_pago=metodo_efectivo_pos,
                 )
         with pytest.raises(VentaError, match="Cantidad inválida"):
             registrar_devolucion_pos(
-                nota_venta=nota, lineas=_lineas(nota, "abc"), almacen=almacen,
-                usuario=user_a, metodo_pago=metodo_efectivo_pos,
+                nota_venta=nota,
+                lineas=_lineas(nota, "abc"),
+                almacen=almacen,
+                usuario=user_a,
+                metodo_pago=metodo_efectivo_pos,
             )
         # Motivo fuera del catálogo.
         with pytest.raises(VentaError, match="Motivo de devolución inválido"):
             registrar_devolucion_pos(
-                nota_venta=nota, lineas=_lineas(nota, "1"), almacen=almacen,
-                usuario=user_a, metodo_pago=metodo_efectivo_pos, motivo="NO_EXISTE",
+                nota_venta=nota,
+                lineas=_lineas(nota, "1"),
+                almacen=almacen,
+                usuario=user_a,
+                metodo_pago=metodo_efectivo_pos,
+                motivo="NO_EXISTE",
             )
 
     def test_almacen_de_otra_empresa_rechaza(
-        self, empresa_a, empresa_b, cliente, producto, almacen, user_a,
-        metodo_efectivo_pos, sesion_abierta,
+        self,
+        empresa_a,
+        empresa_b,
+        cliente,
+        producto,
+        almacen,
+        user_a,
+        metodo_efectivo_pos,
+        sesion_abierta,
     ):
         from apps.almacenes.models import Almacen
 
         _mapeos_venta_y_devolucion(empresa_a)
         _stock_inicial(empresa_a, producto, almacen, 10, user_a)
         nota = _venta_entregada(empresa_a, cliente, producto, almacen, user_a)
-        almacen_b = Almacen.objects.create(
-            id_empresa=empresa_b, nombre_almacen="Almacén B", codigo_almacen="ALM-B"
-        )
+        almacen_b = Almacen.objects.create(id_empresa=empresa_b, nombre_almacen="Almacén B", codigo_almacen="ALM-B")
         # R-CODE-1: el service rechaza el almacén ajeno aunque el caller lo pase.
         with pytest.raises(VentaError, match="almacén no pertenece"):
             registrar_devolucion_pos(
-                nota_venta=nota, lineas=_lineas(nota, "1"), almacen=almacen_b,
-                usuario=user_a, metodo_pago=metodo_efectivo_pos,
+                nota_venta=nota,
+                lineas=_lineas(nota, "1"),
+                almacen=almacen_b,
+                usuario=user_a,
+                metodo_pago=metodo_efectivo_pos,
             )
 
 
@@ -398,20 +436,29 @@ class TestDevolucionFiscal:
         return nota, factura
 
     def test_devolucion_total_emite_nc_fiscal_espejo(
-        self, empresa_a, cliente, producto, almacen, user_a, moneda_usd,
-        metodo_efectivo_pos, sesion_abierta,
+        self,
+        empresa_a,
+        cliente,
+        producto,
+        almacen,
+        user_a,
+        moneda_usd,
+        metodo_efectivo_pos,
+        sesion_abierta,
     ):
         from apps.fiscal.models import NumeroCorrelativo
 
         _mapeos_venta_y_devolucion(empresa_a)
         _stock_inicial(empresa_a, producto, almacen, 10, user_a)
-        nota, factura = self._venta_facturada(
-            empresa_a, cliente, producto, almacen, user_a, moneda_usd
-        )
+        nota, factura = self._venta_facturada(empresa_a, cliente, producto, almacen, user_a, moneda_usd)
 
         resultado = registrar_devolucion_pos(
-            nota_venta=nota, lineas=_lineas(nota, "10"), almacen=almacen,
-            usuario=user_a, metodo_pago=metodo_efectivo_pos, motivo="DEFECTO",
+            nota_venta=nota,
+            lineas=_lineas(nota, "10"),
+            almacen=almacen,
+            usuario=user_a,
+            metodo_pago=metodo_efectivo_pos,
+            motivo="DEFECTO",
         )
 
         # NC fiscal espejo de la factura: base 50.00 + IVA 8.00 = 58.00.
@@ -458,19 +505,27 @@ class TestDevolucionFiscal:
         assert sum(d.haber for d in det_iva) == Decimal("8.00")
 
     def test_devolucion_parcial_fiscal_iva_proporcional(
-        self, empresa_a, cliente, producto, almacen, user_a, moneda_usd,
-        metodo_efectivo_pos, sesion_abierta,
+        self,
+        empresa_a,
+        cliente,
+        producto,
+        almacen,
+        user_a,
+        moneda_usd,
+        metodo_efectivo_pos,
+        sesion_abierta,
     ):
         _mapeos_venta_y_devolucion(empresa_a)
         _stock_inicial(empresa_a, producto, almacen, 10, user_a)
-        nota, factura = self._venta_facturada(
-            empresa_a, cliente, producto, almacen, user_a, moneda_usd
-        )
+        nota, factura = self._venta_facturada(empresa_a, cliente, producto, almacen, user_a, moneda_usd)
 
         # Devuelve 4 de 10: base 20.00; IVA proporcional 20 × (8/50) = 3.20.
         resultado = registrar_devolucion_pos(
-            nota_venta=nota, lineas=_lineas(nota, "4"), almacen=almacen,
-            usuario=user_a, metodo_pago=metodo_efectivo_pos,
+            nota_venta=nota,
+            lineas=_lineas(nota, "4"),
+            almacen=almacen,
+            usuario=user_a,
+            metodo_pago=metodo_efectivo_pos,
         )
         ncf = resultado["nota_credito_fiscal"]
         assert ncf.base_imponible == Decimal("20.0000")
@@ -480,20 +535,28 @@ class TestDevolucionFiscal:
         assert resultado["asiento_iva"] is not None
 
     def test_factura_anulada_rechaza(
-        self, empresa_a, cliente, producto, almacen, user_a, moneda_usd,
-        metodo_efectivo_pos, sesion_abierta,
+        self,
+        empresa_a,
+        cliente,
+        producto,
+        almacen,
+        user_a,
+        moneda_usd,
+        metodo_efectivo_pos,
+        sesion_abierta,
     ):
         _mapeos_venta_y_devolucion(empresa_a)
         _stock_inicial(empresa_a, producto, almacen, 10, user_a)
-        nota, factura = self._venta_facturada(
-            empresa_a, cliente, producto, almacen, user_a, moneda_usd
-        )
+        nota, factura = self._venta_facturada(empresa_a, cliente, producto, almacen, user_a, moneda_usd)
         factura.estado = "ANULADA"
         factura.save(update_fields=["estado"])
         with pytest.raises(VentaError, match="ANULADA"):
             registrar_devolucion_pos(
-                nota_venta=nota, lineas=_lineas(nota, "1"), almacen=almacen,
-                usuario=user_a, metodo_pago=metodo_efectivo_pos,
+                nota_venta=nota,
+                lineas=_lineas(nota, "1"),
+                almacen=almacen,
+                usuario=user_a,
+                metodo_pago=metodo_efectivo_pos,
             )
 
 
@@ -520,8 +583,11 @@ class TestDevolucionAtomicidad:
         stock_antes = _disponible(producto, almacen)
         with pytest.raises(Exception, match="Mapeo Contable"):
             registrar_devolucion_pos(
-                nota_venta=nota, lineas=_lineas(nota, "4"), almacen=almacen,
-                usuario=user_a, metodo_pago=metodo_efectivo_pos,
+                nota_venta=nota,
+                lineas=_lineas(nota, "4"),
+                almacen=almacen,
+                usuario=user_a,
+                metodo_pago=metodo_efectivo_pos,
             )
 
         # NADA persiste: ni stock, ni devolución, ni NC, ni pago, ni transacción.
@@ -530,9 +596,7 @@ class TestDevolucionAtomicidad:
         assert NotaCreditoVenta.objects.filter(id_empresa=empresa_a).count() == 0
         assert NotaCreditoFiscal.objects.filter(id_empresa=empresa_a).count() == 0
         assert Pago.objects.filter(id_empresa=empresa_a, tipo_operacion="EGRESO").count() == 0
-        assert TransaccionFinanciera.objects.filter(
-            id_empresa=empresa_a, tipo_transaccion="EGRESO"
-        ).count() == 0
+        assert TransaccionFinanciera.objects.filter(id_empresa=empresa_a, tipo_transaccion="EGRESO").count() == 0
 
     def test_sin_mapeo_con_contabilidad_inactiva_procede_sin_asiento(
         self, empresa_a, cliente, producto, almacen, user_a, metodo_efectivo_pos, sesion_abierta
@@ -546,12 +610,59 @@ class TestDevolucionAtomicidad:
         nota = _venta_entregada(empresa_a, cliente, producto, almacen, user_a)
 
         resultado = registrar_devolucion_pos(
-            nota_venta=nota, lineas=_lineas(nota, "2"), almacen=almacen,
-            usuario=user_a, metodo_pago=metodo_efectivo_pos,
+            nota_venta=nota,
+            lineas=_lineas(nota, "2"),
+            almacen=almacen,
+            usuario=user_a,
+            metodo_pago=metodo_efectivo_pos,
         )
         assert resultado["asiento"] is None
         assert resultado["asiento_error"]
         assert _disponible(producto, almacen) == Decimal("2")
-        assert AsientoContable.objects.filter(
-            id_empresa=empresa_a, nombre_modelo_origen="DevolucionVenta"
-        ).count() == 0
+        assert (
+            AsientoContable.objects.filter(id_empresa=empresa_a, nombre_modelo_origen="DevolucionVenta").count() == 0
+        )
+
+    def test_tasa_cambio_faltante_en_reembolso_lanza_venta_error_y_revierte_todo(
+        self, empresa_a, cliente, producto, almacen, user_a, moneda_usd, metodo_efectivo_pos, sesion_abierta
+    ):
+        """Si la factura está en moneda distinta a la base sin TasaCambio vigente,
+        TasaCambioError se traduce a VentaError y toda la devolución revierte."""
+        from apps.ventas.models import FacturaFiscal
+        from tests.factories import MonedaFactory
+
+        moneda_ves = MonedaFactory(codigo_iso="VES", nombre="Bolívar", simbolo="Bs")
+        _stock_inicial(empresa_a, producto, almacen, 10, user_a)
+        nota = _venta_entregada(empresa_a, cliente, producto, almacen, user_a)
+        factura = FacturaFiscal.objects.create(
+            id_empresa=empresa_a,
+            id_cliente=cliente,
+            id_nota_venta_origen=nota,
+            numero_control="00-TC-001",
+            numero_factura="FAC-TC-001",
+            fecha_emision=timezone.now().date(),
+            base_imponible=Decimal("50.00"),
+            monto_iva=Decimal("8.00"),
+            monto_total=Decimal("58.00"),
+            id_moneda=moneda_ves,
+            estado="EMITIDA",
+        )
+        nota.id_factura_resultante = factura
+        nota.estado = "FACTURADA"
+        nota.save(update_fields=["id_factura_resultante", "estado"])
+
+        stock_antes = _disponible(producto, almacen)
+        with pytest.raises(VentaError, match="tasa de cambio"):
+            registrar_devolucion_pos(
+                nota_venta=nota,
+                lineas=_lineas(nota, "2"),
+                almacen=almacen,
+                usuario=user_a,
+                metodo_pago=metodo_efectivo_pos,
+            )
+
+        assert _disponible(producto, almacen) == stock_antes
+        assert DevolucionVenta.objects.filter(id_nota_venta_origen=nota).count() == 0
+        assert NotaCreditoFiscal.objects.filter(id_empresa=empresa_a).count() == 0
+        assert Pago.objects.filter(id_empresa=empresa_a, tipo_operacion="EGRESO").count() == 0
+        assert TransaccionFinanciera.objects.filter(id_empresa=empresa_a, tipo_transaccion="EGRESO").count() == 0

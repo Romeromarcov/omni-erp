@@ -29,6 +29,7 @@ User = get_user_model()
 
 # ── Fixtures locales ──────────────────────────────────────────────────────────
 
+
 @pytest.fixture
 def moneda(db):
     return Moneda.objects.get_or_create(
@@ -66,9 +67,7 @@ def usuario_alpha(db, empresa_alpha):
 
 @pytest.fixture
 def usuario_beta(db, empresa_beta):
-    u = User.objects.create_user(
-        username="beta_user", password="BetaPass#123", email="beta@test.com", is_active=True
-    )
+    u = User.objects.create_user(username="beta_user", password="BetaPass#123", email="beta@test.com", is_active=True)
     u.empresas.add(empresa_beta)
     return u
 
@@ -92,6 +91,7 @@ def client_beta(usuario_beta):
 # ─────────────────────────────────────────────────────────────────────────────
 # TEST-02 — Autenticación
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 class TestLoginCredenciales:
     """Login básico con credenciales correctas e incorrectas."""
@@ -312,9 +312,11 @@ class TestCambioPassword:
 # TEST-04 — Aislamiento multi-tenant en gastos/ (BUG-03)
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture
 def categoria_alpha(db, empresa_alpha):
     from apps.gastos.models import CategoriaGasto
+
     return CategoriaGasto.objects.create(
         id_empresa=empresa_alpha,
         nombre_categoria="Viáticos Alpha",
@@ -325,6 +327,7 @@ def categoria_alpha(db, empresa_alpha):
 @pytest.fixture
 def categoria_beta(db, empresa_beta):
     from apps.gastos.models import CategoriaGasto
+
     return CategoriaGasto.objects.create(
         id_empresa=empresa_beta,
         nombre_categoria="Viáticos Beta",
@@ -336,6 +339,7 @@ def categoria_beta(db, empresa_beta):
 def gasto_alpha(db, empresa_alpha, categoria_alpha, moneda):
     from datetime import date
     from apps.gastos.models import Gasto
+
     return Gasto.objects.create(
         id_empresa=empresa_alpha,
         id_categoria_gasto=categoria_alpha,
@@ -351,6 +355,7 @@ def gasto_alpha(db, empresa_alpha, categoria_alpha, moneda):
 def gasto_beta(db, empresa_beta, categoria_beta, moneda):
     from datetime import date
     from apps.gastos.models import Gasto
+
     return Gasto.objects.create(
         id_empresa=empresa_beta,
         id_categoria_gasto=categoria_beta,
@@ -416,12 +421,14 @@ class TestAislamientoReembolsos:
     @pytest.fixture
     def metodo_pago(self, db):
         from apps.finanzas.models import MetodoPago
+
         return MetodoPago.objects.create(nombre_metodo="Efectivo", tipo_metodo="EFECTIVO")
 
     @pytest.fixture
     def reembolso_beta(self, db, empresa_beta, gasto_beta, moneda, metodo_pago):
         from datetime import date
         from apps.gastos.models import ReembolsoGasto
+
         return ReembolsoGasto.objects.create(
             id_empresa=empresa_beta,
             id_gasto=gasto_beta,

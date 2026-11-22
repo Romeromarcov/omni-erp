@@ -151,36 +151,36 @@ class ImportadorBaseCommand(BaseCommand):
         errores = []  # (numero_linea, mensaje)
 
         modo = "ESCRITURA" if confirmar else "DRY-RUN"
-        self.stdout.write(
-            f"Importando {total} {self.nombre_entidad}(s) para empresa "
-            f"'{empresa}' [{modo}]"
-        )
+        self.stdout.write(f"Importando {total} {self.nombre_entidad}(s) para empresa " f"'{empresa}' [{modo}]")
+
+        from apps.core import rls
 
         # La línea 1 del archivo es la cabecera; los datos empiezan en la 2.
-        try:
-            with transaction.atomic():
-                for indice, fila in enumerate(filas):
-                    numero_linea = indice + 2
-                    try:
-                        if confirmar:
-                            resultado = self.procesar_fila(empresa, fila, numero_linea)
-                            if resultado == "actualizado":
-                                actualizados += 1
+        with rls.rls_tenant_context([empresa.pk]):
+            try:
+                with transaction.atomic():
+                    for indice, fila in enumerate(filas):
+                        numero_linea = indice + 2
+                        try:
+                            if confirmar:
+                                resultado = self.procesar_fila(empresa, fila, numero_linea)
+                                if resultado == "actualizado":
+                                    actualizados += 1
+                                else:
+                                    creados += 1
                             else:
-                                creados += 1
-                        else:
-                            self.validar_fila(empresa, fila, numero_linea)
-                        ok += 1
-                    except FilaError as exc:
-                        errores.append((numero_linea, str(exc)))
-                    except Exception as exc:  # noqa: BLE001 - reporte defensivo
-                        errores.append((numero_linea, f"error inesperado: {exc}"))
+                                self.validar_fila(empresa, fila, numero_linea)
+                            ok += 1
+                        except FilaError as exc:
+                            errores.append((numero_linea, str(exc)))
+                        except Exception as exc:  # noqa: BLE001 - reporte defensivo
+                            errores.append((numero_linea, f"error inesperado: {exc}"))
 
-                if errores:
-                    # No se persiste nada si alguna fila falló: todo-o-nada.
-                    raise _Abortar()
-        except _Abortar:
-            pass
+                    if errores:
+                        # No se persiste nada si alguna fila falló: todo-o-nada.
+                        raise _Abortar()
+            except _Abortar:
+                pass
 
         # Reporte
         self.stdout.write("")
@@ -195,22 +195,13 @@ class ImportadorBaseCommand(BaseCommand):
             if errores:
                 self.stdout.write(
                     self.style.WARNING(
-                        "Se detectaron errores: la transacción fue revertida, "
-                        "no se escribió ningún registro."
+                        "Se detectaron errores: la transacción fue revertida, " "no se escribió ningún registro."
                     )
                 )
             else:
-                self.stdout.write(
-                    self.style.SUCCESS(
-                        f"Aplicado: {creados} creado(s), {actualizados} actualizado(s)."
-                    )
-                )
+                self.stdout.write(self.style.SUCCESS(f"Aplicado: {creados} creado(s), {actualizados} actualizado(s)."))
         else:
-            self.stdout.write(
-                self.style.WARNING(
-                    "Dry-run: no se escribió nada. Repita con --confirm para aplicar."
-                )
-            )
+            self.stdout.write(self.style.WARNING("Dry-run: no se escribió nada. Repita con --confirm para aplicar."))
 
     # ── helpers de parseo para subclases ───────────────────────────────────
 

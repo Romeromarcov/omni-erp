@@ -1,7 +1,18 @@
-import uuid
+from decimal import Decimal
+
 from apps.core.uuid import uuid7
 
 from django.db import models
+
+
+AGENTE_CHOICES = [
+    ("clasificador_gastos", "Clasificador de Gastos"),
+    ("cobranza_estratega", "Estratega de Cobranza"),
+    ("reorden_sugeridor", "Sugeridor de Reorden"),
+    ("personalizacion_capa2", "Personalización Capa 2"),
+    ("connect_calificador", "Calificador de Leads Connect"),
+    ("connect_seguimiento", "Seguimiento Comercial Connect"),
+]
 
 
 class NivelAutonomia(models.TextChoices):
@@ -35,12 +46,7 @@ class ConfigAgente(models.Model):
     )
     agente = models.CharField(
         max_length=50,
-        choices=[
-            ("clasificador_gastos", "Clasificador de Gastos"),
-            ("cobranza_estratega", "Estratega de Cobranza"),
-            ("reorden_sugeridor", "Sugeridor de Reorden"),
-            ("personalizacion_capa2", "Personalización Capa 2"),
-        ],
+        choices=AGENTE_CHOICES,
         db_index=True,
     )
     nivel_autonomia = models.CharField(
@@ -77,12 +83,7 @@ class PrediccionAgente(models.Model):
     Nunca modifica datos de negocio; solo observa y predice.
     """
 
-    AGENTE_CHOICES = [
-        ("clasificador_gastos", "Clasificador de Gastos"),
-        ("cobranza_estratega", "Estratega de Cobranza"),
-        ("reorden_sugeridor", "Sugeridor de Reorden"),
-        ("personalizacion_capa2", "Personalización Capa 2"),
-    ]
+    AGENTE_CHOICES = AGENTE_CHOICES
     RESULTADO_CHOICES = [
         ("aceptada", "Aceptada por humano"),
         ("rechazada", "Rechazada por humano"),
@@ -105,9 +106,7 @@ class PrediccionAgente(models.Model):
     alternativas = models.JSONField(default=list, blank=True)
 
     # Evaluación humana
-    resultado_humano = models.CharField(
-        max_length=20, choices=RESULTADO_CHOICES, default="pendiente"
-    )
+    resultado_humano = models.CharField(max_length=20, choices=RESULTADO_CHOICES, default="pendiente")
     categoria_correcta = models.CharField(max_length=100, blank=True)
 
     # Metadatos
@@ -122,5 +121,115 @@ class PrediccionAgente(models.Model):
         ]
         ordering = ["-fecha_prediccion"]
 
+    @property
+    def nombre_modelo_aprobacion(self) -> str:
+        return "agentes.PrediccionAgente"
+
     def __str__(self):
         return f"{self.agente}:{self.categoria_predicha}({self.confianza:.0%})"
+
+
+class EjecucionAgente(models.Model):
+    """
+    Registro de una ejecución asíncrona de un agente IA vía Celery (Plan 05 P2-2).
+
+    Permite encolar análisis fuera del request HTTP (`HTTP 202 Accepted`),
+    consultar su progreso (`pendiente` → `ejecutando` → `completado` | `fallido`)
+    y recuperar el resultado estructurado o un error saneado (R-CODE-8).
+    """
+
+    ESTADO_CHOICES = [
+        ("pendiente", "Pendiente"),
+        ("ejecutando", "Ejecutando"),
+        ("completado", "Completado"),
+        ("fallido", "Fallido"),
+    ]
+
+    id_ejecucion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey(
+        "core.Empresa",
+        on_delete=models.CASCADE,
+        related_name="ejecuciones_agentes",
+        db_index=True,
+    )
+    agente = models.CharField(
+        max_length=50,
+        choices=AGENTE_CHOICES,
+        db_index=True,
+    )
+    estado = models.CharField(
+        max_length=20,
+        choices=ESTADO_CHOICES,
+        default="pendiente",
+        db_index=True,
+    )
+    celery_task_id = models.CharField(max_length=255, blank=True, db_index=True)
+    parametros = models.JSONField(default=dict, blank=True)
+    resultado = models.JSONField(default=dict, blank=True)
+    mensaje_error = models.TextField(blank=True)
+    iniciado_por = models.ForeignKey(
+        "core.Usuarios",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="ejecuciones_agentes",
+    )
+    fecha_creacion = models.DateTimeField(auto_now_add=True, db_index=True)
+    fecha_inicio = models.DateTimeField(null=True, blank=True)
+    fecha_fin = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "agentes_ejecucion_agente"
+        verbose_name = "Ejecución de Agente"
+        verbose_name_plural = "Ejecuciones de Agentes"
+        ordering = ["-fecha_creacion"]
+        indexes = [
+            models.Index(fields=["id_empresa", "-fecha_creacion"]),
+            models.Index(fields=["id_empresa", "agente", "estado"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.agente} [{self.estado}] ({self.id_ejecucion})"
+
+
+class ConsumoLLM(models.Model):
+    """
+    Registro persistente e inmutable del consumo de tokens y costo estimado USD
+    por tenant en llamadas al gateway LLM (Plan 05 P2-3).
+    """
+
+    id_consumo = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey(
+        "core.Empresa",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="consumos_llm",
+        db_index=True,
+    )
+    proveedor = models.CharField(max_length=50, db_index=True)
+    uso = models.CharField(max_length=30, db_index=True)
+    modelo = models.CharField(max_length=100, db_index=True)
+    tokens_entrada = models.PositiveIntegerField(default=0)
+    tokens_salida = models.PositiveIntegerField(default=0)
+    costo_estimado_usd = models.DecimalField(
+        max_digits=14,
+        decimal_places=6,
+        default=Decimal("0.000000"),
+    )
+    latencia_ms = models.PositiveIntegerField(default=0)
+    creado_en = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        db_table = "agentes_consumo_llm"
+        verbose_name = "Consumo LLM"
+        verbose_name_plural = "Consumos LLM"
+        ordering = ["-creado_en"]
+        indexes = [
+            models.Index(fields=["id_empresa", "-creado_en"]),
+            models.Index(fields=["id_empresa", "uso", "modelo"]),
+        ]
+
+    def __str__(self) -> str:
+        emp = self.id_empresa_id or "global"
+        return f"{self.proveedor}/{self.modelo} [{self.uso}] @ {emp} (${self.costo_estimado_usd})"

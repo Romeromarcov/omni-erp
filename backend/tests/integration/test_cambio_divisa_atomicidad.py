@@ -69,16 +69,12 @@ def moneda_ves(db):
 
 @pytest.fixture
 def caja_usd(empresa_a, moneda_usd):
-    return Caja.objects.create(
-        empresa=empresa_a, nombre="Caja USD", moneda=moneda_usd, tipo_caja="REGISTRADORA"
-    )
+    return Caja.objects.create(empresa=empresa_a, nombre="Caja USD", moneda=moneda_usd, tipo_caja="REGISTRADORA")
 
 
 @pytest.fixture
 def caja_ves(empresa_a, moneda_ves):
-    return Caja.objects.create(
-        empresa=empresa_a, nombre="Caja VES", moneda=moneda_ves, tipo_caja="REGISTRADORA"
-    )
+    return Caja.objects.create(empresa=empresa_a, nombre="Caja VES", moneda=moneda_ves, tipo_caja="REGISTRADORA")
 
 
 def _payload(empresa, moneda_usd, moneda_ves, caja_usd, caja_ves, metodo, **extra):
@@ -138,9 +134,7 @@ class TestCambioDivisaAtomico:
         assert operacion.monto_destino == Decimal("3650.0000")
 
         # Doble registro: egreso + comisión + ingreso, con monto_base_empresa correcto
-        egresos = TransaccionFinanciera.objects.filter(tipo_transaccion="EGRESO").order_by(
-            "-monto_transaccion"
-        )
+        egresos = TransaccionFinanciera.objects.filter(tipo_transaccion="EGRESO").order_by("-monto_transaccion")
         ingreso = TransaccionFinanciera.objects.get(tipo_transaccion="INGRESO")
         assert egresos.count() == 2
         principal, comision = egresos

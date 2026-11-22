@@ -40,6 +40,9 @@ export const proveedorIntegracionSchema = z.object({
 });
 
 export type ProveedorIntegracionInput = z.infer<typeof proveedorIntegracionSchema>;
+// zod 4: `orden` es un entero discreto con `z.coerce.number()` (la input HTML emite string),
+// por lo que la entrada (`unknown`) difiere legítimamente de la salida tipada (`number`).
+export type ProveedorIntegracionFormValues = z.input<typeof proveedorIntegracionSchema>;
 
 /** Parte el texto de versiones en una lista limpia (sin vacíos ni espacios). */
 export function parseVersiones(texto: string | undefined): string[] {
@@ -83,3 +86,6 @@ export const planSchema = z.object({
 });
 
 export type PlanInput = z.infer<typeof planSchema>;
+// zod 4: `max_*` son enteros discretos con `z.coerce.number()` (los inputs HTML emiten string),
+// por lo que la entrada (`unknown`) difiere legítimamente de la salida tipada (`number`).
+export type PlanFormValues = z.input<typeof planSchema>;

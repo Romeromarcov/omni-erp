@@ -14,9 +14,9 @@ import { cxcLubrikcaKeys } from '../../lib/queryKeys';
 import { mensajeDeError } from '../../utils/api';
 import { useSnackbar } from '../../contexts/feedbackTypes';
 import { PageContainer, PageHeader, KpiCard } from '../../components/ui';
+import { D, formatoDecimal, type DecimalInput } from '../../lib/decimal';
 
-const money = (v: string | number) =>
-  `$${parseFloat(String(v)).toLocaleString('es-VE', { minimumFractionDigits: 2 })}`;
+const money = (v: DecimalInput) => `$${formatoDecimal(v, 2, 2)}`;
 
 export default function DashboardCxcLubrikcaPage() {
   const queryClient = useQueryClient();
@@ -94,7 +94,7 @@ export default function DashboardCxcLubrikcaPage() {
             label="Diferencia total"
             value={money(data?.diferencia_total ?? '0')}
             tone="error"
-            emphasizeError={parseFloat(data?.diferencia_total ?? '0') !== 0}
+            emphasizeError={!D(data?.diferencia_total ?? '0').isZero()}
           />
         </Box>
       )}

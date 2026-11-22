@@ -23,14 +23,10 @@ CRYPTOGRAPHY_KEY = os.environ.get("CRYPTOGRAPHY_KEY")
 # Si el frontend vive en un dominio/subdominio distinto del backend (p. ej.
 # servicios separados en Railway), poné "None" en el entorno (requiere Secure,
 # que ya se aplica en prod) para que el refresh cross-site funcione.
-REFRESH_TOKEN_COOKIE_SAMESITE = os.environ.get(
-    "REFRESH_TOKEN_COOKIE_SAMESITE", "Strict"
-)
+REFRESH_TOKEN_COOKIE_SAMESITE = os.environ.get("REFRESH_TOKEN_COOKIE_SAMESITE", "Strict")
 
 DEBUG = os.environ.get("DEBUG", "False") == "True"
-ALLOWED_HOSTS = os.environ.get(
-    "DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,testserver"
-).split(",")
+ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,testserver").split(",")
 
 INSTALLED_APPS = [
     "drf_yasg",
@@ -69,9 +65,13 @@ INSTALLED_APPS = [
     "apps.compras",
     "apps.cuentas_por_pagar",
     "apps.crm",
+    "apps.connect",  # Omni Connect: tarjetas NFC + captura de leads (S1)
     "apps.ventas",
     "apps.cuentas_por_cobrar",
     "apps.cxc",
+    "apps.bots_ingest",  # Ingesta de borradores desde los bots de Telegram (pedidos/CRM, cobranza, eventos)
+    "apps.activaciones",  # Eventos de activación en puntos de venta (calendarios, recursos, capacidad)
+    "apps.tareas",  # Ejecución operativa, proyectos Kanban, recurrencia, minutas IA y escalación (ADR-015)
     "apps.cxc_lubrikca",  # Subproyecto CxC Lubrikca (aislado, perfil cobranza) — ADR-013
     "apps.manufactura",
     "apps.rrhh",
@@ -134,9 +134,7 @@ AXES_ENABLED = os.environ.get("AXES_ENABLED", "True") == "True"
 # cubre la fuerza bruta LENTA acumulada contra un usuario. Con 5 ambos umbrales
 # colisionarían (el 5to intento daría lockout en vez del 401 que SEC-07 garantiza).
 AXES_FAILURE_LIMIT = int(os.environ.get("AXES_FAILURE_LIMIT", "10"))
-AXES_COOLOFF_TIME = timedelta(
-    minutes=int(os.environ.get("AXES_COOLOFF_MINUTES", "15"))
-)
+AXES_COOLOFF_TIME = timedelta(minutes=int(os.environ.get("AXES_COOLOFF_MINUTES", "15")))
 AXES_LOCKOUT_PARAMETERS = [["username", "ip_address"]]
 AXES_RESET_ON_SUCCESS = True  # login exitoso limpia el contador de fallos
 # Respuesta JSON 429 genérica al lockout (el default de axes es HTML).
@@ -181,9 +179,7 @@ CONTENT_SECURITY_POLICY = {
 # SaaS — control de acceso por pago (Plan C — Fase C2).
 # Off por defecto (fail-open). Se activa primero en staging para validar el
 # flujo 402 end-to-end antes de producción.
-SAAS_VERIFICAR_SUSCRIPCION = (
-    os.environ.get("SAAS_VERIFICAR_SUSCRIPCION", "False") == "True"
-)
+SAAS_VERIFICAR_SUSCRIPCION = os.environ.get("SAAS_VERIFICAR_SUSCRIPCION", "False") == "True"
 
 # --- Row Level Security (P0-1 plan de hardening) ---
 # Gobierna únicamente si el middleware aplica el enforcement por request. Las
@@ -226,9 +222,7 @@ if _database_url:
     if _u.scheme not in ("postgres", "postgresql"):
         from django.core.exceptions import ImproperlyConfigured
 
-        raise ImproperlyConfigured(
-            f"DATABASE_URL debe ser PostgreSQL (postgres://), recibido: {_u.scheme}://"
-        )
+        raise ImproperlyConfigured(f"DATABASE_URL debe ser PostgreSQL (postgres://), recibido: {_u.scheme}://")
     _db_config = {
         "NAME": (_u.path or "/omni_erp").lstrip("/"),
         "USER": unquote(_u.username or ""),
@@ -343,7 +337,7 @@ CORS_ALLOW_CREDENTIALS = True
 # (build con VITE_API_URL absoluta, E2E con preview→backend, etc.).
 from corsheaders.defaults import default_headers  # noqa: E402
 
-CORS_ALLOW_HEADERS = (*default_headers, "idempotency-key")
+CORS_ALLOW_HEADERS = (*default_headers, "idempotency-key", "x-capability-token", "x-bot-key")
 
 # Django REST Framework settings
 REST_FRAMEWORK = {
@@ -402,8 +396,17 @@ REST_FRAMEWORK = {
         "user": os.environ.get("THROTTLE_RATE_USER", "1000/min"),
         "signup": os.environ.get("THROTTLE_RATE_SIGNUP", "10/hour"),
         "escritura": os.environ.get("THROTTLE_RATE_ESCRITURA", "60/min"),
+        "connect_publico": os.environ.get("THROTTLE_RATE_CONNECT_PUBLICO", "60/min"),
+        "connect_lead": os.environ.get("THROTTLE_RATE_CONNECT_LEAD", "20/min"),
     },
 }
+
+# Secreto opcional para HMAC de IPs en Omni Connect (fallback: SECRET_KEY).
+CONNECT_IP_HASH_SECRET = os.environ.get("CONNECT_IP_HASH_SECRET", "")
+# Retención de toques NFC/QR/enlace en días para purga programada (Plan 07 S10).
+CONNECT_TOQUES_RETENCION_DIAS = int(os.environ.get("CONNECT_TOQUES_RETENCION_DIAS", "365"))
+# URL base pública usada al generar códigos QR de perfiles/tarjetas Connect (Plan 07 S11).
+CONNECT_PUBLIC_BASE_URL = os.environ.get("CONNECT_PUBLIC_BASE_URL", "https://omni.link").rstrip("/")
 
 # drf-yasg — DEFAULT_INFO permite `manage.py generate_swagger` (esquema OpenAPI
 # para el contract testing con schemathesis). USE_COMPAT_RENDERERS=False silencia
@@ -446,6 +449,11 @@ SIMPLE_JWT = {
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+    "filters": {
+        "otel_trace": {
+            "()": "apps.core.telemetry.OTelTraceLogFilter",
+        },
+    },
     "formatters": {
         "verbose": {
             "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
@@ -462,11 +470,13 @@ LOGGING = {
             "class": "logging.FileHandler",
             "filename": BASE_DIR / "logs" / "django.log",
             "formatter": "verbose",
+            "filters": ["otel_trace"],
         },
         "console": {
             "level": "DEBUG",
             "class": "logging.StreamHandler",
             "formatter": "simple",
+            "filters": ["otel_trace"],
         },
     },
     "root": {
@@ -641,6 +651,33 @@ CELERY_BEAT_SCHEDULE = {
         "task": "integration_hub.sync_cartera_odoo_todos",
         "schedule": _crontab(minute="*/30"),
     },
+    # Despacho periódico del Outbox multi-tenant (Omni Connect S8: skip_locked + backoff + DLQ).
+    "hub-despachar-outbox": {
+        "task": "integration_hub.despachar_outbox",
+        "schedule": _crontab(minute="*"),
+        "kwargs": {"limite": 50},
+    },
+    # Ciclo operativo de Tareas (recurrencias + recordatorios/escalación) — 9:00 AM y 3:00 PM VET (ADR-015)
+    "tareas-ciclo-manana": {
+        "task": "tareas.ejecutar_ciclo_todos",
+        "schedule": _crontab(hour=13, minute=0),
+        "kwargs": {"momento": "MANANA"},
+    },
+    "tareas-ciclo-tarde": {
+        "task": "tareas.ejecutar_ciclo_todos",
+        "schedule": _crontab(hour=19, minute=0),
+        "kwargs": {"momento": "TARDE"},
+    },
+    # Escalamiento por SLA en aprobaciones pendientes — Plan 08 §B.2
+    "aprobaciones-escalar-vencidas": {
+        "task": "gestion_aprobaciones.escalar_solicitudes_vencidas",
+        "schedule": _crontab(minute=0),
+    },
+    # Purga periódica de toques antiguos de Omni Connect — Plan 07 S10 (diaria 03:30 UTC)
+    "connect-purgar-toques-antiguos": {
+        "task": "connect.purgar_toques_antiguos",
+        "schedule": _crontab(hour=3, minute=30),
+    },
 }
 
 # ─────────────────────────────────────────────────────────────────
@@ -666,12 +703,7 @@ _IS_PYTEST = "PYTEST_VERSION" in os.environ or "pytest" in sys.modules
 # docker-compose) etiqueta con DJANGO_ENV.
 CACHE_KEY_PREFIX = os.environ.get(
     "CACHE_KEY_PREFIX",
-    "omni:"
-    + (
-        os.environ.get("RAILWAY_ENVIRONMENT")
-        or os.environ.get("DJANGO_ENV")
-        or "dev"
-    ),
+    "omni:" + (os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("DJANGO_ENV") or "dev"),
 )
 
 CACHES = {
@@ -704,22 +736,55 @@ MCP_AGENT_CAPABILITIES: dict = {
     "server_version": "0.1.0",
     "module_paths": [
         "apps.ventas.mcp",
+        "apps.compras.mcp",
+        "apps.gestion_aprobaciones.mcp",
         "apps.inventario.mcp",
         "apps.finanzas.mcp",
+        "apps.contabilidad.mcp",
         "apps.manufactura.mcp",
         "apps.despacho.mcp",
+        "apps.bots_ingest.mcp",
+        "apps.tesoreria.mcp",
+        "apps.banca_electronica.mcp",
+        "apps.integration_hub.mcp",
+        "apps.tareas.mcp",
+        "apps.agentes.mcp",
+        "apps.localizacion.mcp",
+        "apps.connect.mcp",
+        "apps.crm.mcp",
     ],
     "scopes": {
         "core:read": "Lectura de empresas y clientes",
-        "crm:read": "Lectura del CRM (clientes, contactos)",
+        "crm:read": "Lectura del CRM (clientes, contactos, pipelines y leads)",
+        "crm:write": "Creación y gestión de leads, etapas y actividades del CRM",
+        "connect:read": "Lectura de perfil digital Omni Connect",
+        "connect:write": "Creación y actualización de perfil digital Omni Connect",
         "ventas:read": "Lectura de pedidos, cotizaciones, facturas",
         "ventas:write": "Creación y modificación de pedidos",
+        "compras:read": "Consulta de requisiciones, cotizaciones y órdenes de compra",
+        "compras:write": "Creación de requisiciones y adjudicación de ofertas",
+        "aprobaciones:read": "Consulta de solicitudes de aprobación pendientes",
+        "aprobaciones:write": "Registro de decisiones de aprobación",
         "inventario:read": "Consulta de stock y movimientos",
         "inventario:write": "Registro de movimientos de inventario",
         "finanzas:read": "Consulta de pagos, cajas, monedas",
         "finanzas:write": "Registro de pagos y movimientos de caja",
+        "contabilidad:read": "Consulta de reportes contables y estados financieros",
+        "tesoreria:read": "Consulta de extractos y saldos bancarios consolidados",
+        "tesoreria:write": "Importación de extractos y conciliación bancaria",
+        "banca_electronica:read": "Validación bancaria VE y consulta de lotes de pago",
+        "banca_electronica:write": "Generación y transición de lotes de pago bancario VE",
+        "bots:read": "Consulta de salud y bitácora de flota de bots",
+        "bots:write": "Pausa, reanudación y configuración de bots",
+        "integration_hub:read": "Consulta de conectores, estado de sincronizaciones y prueba de conexión",
+        "integration_hub:write": "Disparo de sincronizaciones y push outbound de cobranza",
+        "tareas:read": "Consulta de proyectos, tareas operativas y resumen ejecutivo",
+        "tareas:write": "Creación, transición de tareas y confirmación de minutas",
+        "agentes:read": "Consulta de ejecuciones asíncronas y consumo LLM de agentes IA",
+        "agentes:write": "Disparo asíncrono de análisis de agentes IA",
         "fiscal:read": "Consulta de correlativos fiscales",
         "fiscal:write": "Emisión de documentos fiscales",
+        "localizacion:read": "Consulta de estado y puertos de localización por empresa",
         "manufactura:read": "Consulta de OF, costeo real y MRP",
         "despacho:read": "Consulta de despachos/entregas pendientes",
         "*": "Acceso completo (solo uso interno)",

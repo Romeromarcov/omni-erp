@@ -48,6 +48,7 @@ def _q2(x: Decimal) -> Decimal:
 
 # ── IVA ──────────────────────────────────────────────────────────────────────
 
+
 @settings(max_examples=300)
 @given(subtotal=montos, tipo_iva=st.sampled_from(list(TASAS_IVA)))
 def test_iva_invariantes(subtotal, tipo_iva):
@@ -82,6 +83,7 @@ def test_iva_subtotal_negativo_falla(subtotal):
 
 
 # ── IGTF ─────────────────────────────────────────────────────────────────────
+
 
 @settings(max_examples=300)
 @given(monto=montos, metodo=st.sampled_from(sorted(METODOS_PAGO_IGTF)))

@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { D, sumDecimals } from '../../../lib/decimal';
+import { D, sumDecimals, toFixedStr } from '../../../lib/decimal';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { get } from '../../../services/api';
 import { pagosService } from '../../../services/pagosService';
@@ -135,10 +135,10 @@ const CotizacionDetailPage: React.FC = () => {
   };
 
   const calcularTotalCotizacion = () => {
-    if (!cotizacion?.detalles) return 0;
-    return sumDecimals(
+    if (!cotizacion?.detalles) return '0.00';
+    return toFixedStr(sumDecimals(
       cotizacion.detalles.map((detalle: CotizacionDetalleAPI) => D(detalle.precio_unitario).times(D(detalle.cantidad)))
-    ).toNumber();
+    ));
   };
 
   return (

@@ -3,6 +3,7 @@
  * diferencia exacta (decimal.js), matching automático de movimientos contra
  * pagos (conciliar-auto) y cierre de la sesión.
  */
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -10,17 +11,29 @@ import {
   Alert,
   Button,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  InputLabel,
+  MenuItem,
   Paper,
+  Select,
   Stack,
   Typography,
 } from '@mui/material';
+import AccountBalanceWalletOutlined from '@mui/icons-material/AccountBalanceWalletOutlined';
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined';
 import JoinInnerOutlined from '@mui/icons-material/JoinInnerOutlined';
+import LinkOutlined from '@mui/icons-material/LinkOutlined';
 import LockOutlined from '@mui/icons-material/LockOutlined';
+import ConciliacionContactoDialog from '../../components/Finanzas/ConciliacionContactoDialog';
+import { get } from '../../services/api';
 import { tesoreriaService } from '../../services/tesoreriaService';
 import type { MovimientoBancario } from '../../services/tesoreriaService';
 import { tesoreriaKeys } from '../../lib/queryKeys';
-import { mensajeDeError } from '../../utils/api';
+import { mensajeDeError, toList, type PaginatedResponse } from '../../utils/api';
 import { D, toFixedStr } from '../../lib/decimal';
 import { useSnackbar } from '../../contexts/feedbackTypes';
 import { PageContainer, PageHeader, DataTable, StatusChip, KpiCard } from '../../components/ui';
@@ -32,6 +45,33 @@ export default function ConciliacionDetailPage() {
   const queryClient = useQueryClient();
   const snackbar = useSnackbar();
   const { id = '' } = useParams<{ id: string }>();
+
+  interface ContactoSelectorItem {
+    id_contacto: string;
+    nombre_completo?: string;
+    nombre?: string;
+    rif?: string;
+  }
+
+  const [contactoConciliar, setContactoConciliar] = useState<string | null>(null);
+  const [pagoInicialConciliar, setPagoInicialConciliar] = useState<string | null>(null);
+  const [selectorContactoOpen, setSelectorContactoOpen] = useState(false);
+  const [contactoSeleccionadoModal, setContactoSeleccionadoModal] = useState('');
+
+  const { data: contactosData, isLoading: cargandoContactos } = useQuery({
+    queryKey: ['core', 'contactos', 'conciliacion-selector'],
+    queryFn: () =>
+      get<PaginatedResponse<ContactoSelectorItem> | ContactoSelectorItem[]>(
+        '/core/contactos/?page_size=100',
+      ),
+    enabled: selectorContactoOpen,
+  });
+  const contactosDisponibles = toList<ContactoSelectorItem>(contactosData);
+
+  const abrirConciliacionContacto = (contactoId: string, pagoId?: string | null) => {
+    setContactoConciliar(contactoId);
+    setPagoInicialConciliar(pagoId ?? null);
+  };
 
   const {
     data: conciliacion,
@@ -112,6 +152,24 @@ export default function ConciliacionDetailPage() {
       header: t('tesoreria.movimientos.estado'),
       render: (m) => <StatusChip value={m.estado} />,
     },
+    {
+      key: 'acciones',
+      header: t('common.actions'),
+      align: 'right',
+      render: (m) =>
+        m.pago_contacto_id ? (
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<LinkOutlined />}
+            onClick={() => abrirConciliacionContacto(m.pago_contacto_id!, m.id_pago_conciliado)}
+          >
+            {t('tesoreria.conciliacionDetalle.conciliarPago')}
+          </Button>
+        ) : (
+          '—'
+        ),
+    },
   ];
 
   return (
@@ -124,6 +182,15 @@ export default function ConciliacionDetailPage() {
             <Button startIcon={<ArrowBackOutlined />} onClick={() => navigate('/tesoreria/conciliaciones')}>
               {t('common.back')}
             </Button>
+            {abierta && (
+              <Button
+                variant="outlined"
+                startIcon={<AccountBalanceWalletOutlined />}
+                onClick={() => setSelectorContactoOpen(true)}
+              >
+                {t('tesoreria.conciliacionDetalle.conciliarPorContacto')}
+              </Button>
+            )}
             {abierta && (
               <Button
                 variant="outlined"
@@ -192,6 +259,62 @@ export default function ConciliacionDetailPage() {
         rows={movimientos}
         getRowKey={(m) => m.id}
         emptyMessage={t('tesoreria.movimientos.empty')}
+      />
+
+      <Dialog
+        open={selectorContactoOpen}
+        onClose={() => setSelectorContactoOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>{t('tesoreria.conciliacionDetalle.conciliarPorContacto')}</DialogTitle>
+        <DialogContent dividers>
+          {cargandoContactos ? (
+            <Stack alignItems="center" sx={{ py: 3 }}>
+              <CircularProgress size={28} />
+            </Stack>
+          ) : (
+            <FormControl fullWidth size="small" sx={{ mt: 1 }}>
+              <InputLabel id="tesoreria-selector-contacto-label">Contacto</InputLabel>
+              <Select
+                labelId="tesoreria-selector-contacto-label"
+                label="Contacto"
+                value={contactoSeleccionadoModal}
+                onChange={(e) => setContactoSeleccionadoModal(e.target.value)}
+              >
+                {contactosDisponibles.map((c) => (
+                  <MenuItem key={c.id_contacto} value={c.id_contacto}>
+                    {c.nombre_completo || c.nombre || c.id_contacto}
+                    {c.rif ? ` (${c.rif})` : ''}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSelectorContactoOpen(false)}>{t('common.cancel', { defaultValue: 'Cancelar' })}</Button>
+          <Button
+            variant="contained"
+            disabled={!contactoSeleccionadoModal}
+            onClick={() => {
+              setSelectorContactoOpen(false);
+              abrirConciliacionContacto(contactoSeleccionadoModal);
+            }}
+          >
+            {t('tesoreria.conciliacionDetalle.conciliarPago')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <ConciliacionContactoDialog
+        open={Boolean(contactoConciliar)}
+        contactoId={contactoConciliar}
+        pagoInicialId={pagoInicialConciliar}
+        onClose={() => {
+          setContactoConciliar(null);
+          setPagoInicialConciliar(null);
+        }}
       />
     </PageContainer>
   );

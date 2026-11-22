@@ -12,12 +12,15 @@ Seguridad (R-CODE-8):
   - Las contraseñas/api_keys se enmascaran en mensajes de error.
   - El constructor lanza OdooAuthError si las credenciales son inválidas.
 """
+
 from __future__ import annotations
 
+import html
 import logging
 import re
 import xmlrpc.client  # nosec B411
-from datetime import datetime, date
+from collections.abc import Iterable
+from decimal import Decimal, InvalidOperation
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -29,6 +32,38 @@ from defusedxml.xmlrpc import monkey_patch as _defuse_xmlrpc
 _defuse_xmlrpc()
 
 logger = logging.getLogger(__name__)
+
+_SECRET_KV_RX = re.compile(
+    r"""(?i)(["']?\b(?:api_key|write_api_key|password|passwd|secret|token)\b["']?\s*[:=]\s*)(?:"[^"]*"|'[^']*'|[^\s,;"'\}]+)"""
+)
+_BEARER_RX = re.compile(r"(?i)\b(Bearer)\s+\S+")
+_URL_CREDS_RX = re.compile(r"(https?://)[^/\s@]+@")
+
+
+def sanitizar_error_odoo(exc_or_msg: Any, secrets: Iterable[str] = ()) -> str:
+    """Enmascara credenciales, URLs con auth y trazas técnicas en errores externos Odoo (R-CODE-8)."""
+    msg = str(exc_or_msg or "").strip()
+    if not msg:
+        return "Error de comunicación con Odoo."
+
+    # Enmascarar valores literales de secretos configurados (más largos primero).
+    secret_vals = sorted(
+        {str(s).strip() for s in secrets if s and isinstance(s, str) and str(s).strip()},
+        key=len,
+        reverse=True,
+    )
+    for sec in secret_vals:
+        msg = msg.replace(sec, "***")
+
+    msg = _URL_CREDS_RX.sub(r"\1***@", msg)
+    msg = _SECRET_KV_RX.sub(r"\1***", msg)
+    msg = _BEARER_RX.sub(r"\1 ***", msg)
+
+    if "Traceback (most recent call last):" in msg:
+        primera_linea = msg.split("Traceback (most recent call last):", 1)[0].strip()
+        msg = primera_linea or "Error en operación XML-RPC de Odoo."
+
+    return msg[:500]
 
 
 def normalize_odoo_host(raw: str) -> str:
@@ -86,6 +121,8 @@ class OdooXMLRPCClient:
         ventas = client.call("sale.order", "search_read", [[["state", "=", "sale"]]])
     """
 
+    _CRM_LEAD_MODEL = "crm.lead"
+
     def __init__(
         self,
         host: str,
@@ -93,6 +130,9 @@ class OdooXMLRPCClient:
         user: str,
         api_key: str,
         timeout: int = 30,
+        *,
+        write_user: str | None = None,
+        write_api_key: str | None = None,
     ):
         # Normaliza el host a esquema://dominio, tolerando que el usuario pegue
         # la URL del navegador (p. ej. .../web/login) — ver normalize_odoo_host.
@@ -102,12 +142,22 @@ class OdooXMLRPCClient:
         self._api_key = api_key  # No loguear
         self._timeout = timeout
 
+        self._write_user = str(write_user or "").strip()
+        self._write_api_key = str(write_api_key or "").strip()
+        if bool(self._write_user) != bool(self._write_api_key):
+            raise OdooAuthError(
+                "Configuración de escritura asimétrica: 'write_user' y 'write_api_key' deben configurarse juntos."
+            )
+        self._write_enabled = bool(self._write_user and self._write_api_key)
+        self._write_uid: int | None = None
+
         self._common_url = f"{self._host}/xmlrpc/2/common"
         self._object_url = f"{self._host}/xmlrpc/2/object"
 
         self.uid: int | None = None
         self._version_info: dict = {}
         self._models: xmlrpc.client.ServerProxy | None = None
+        self._fields_cache: dict[str, set[str]] = {}
 
         self._authenticate()
 
@@ -146,9 +196,7 @@ class OdooXMLRPCClient:
             raise
         except Exception as exc:
             # No propagar la excepción original que podría tener la api_key
-            raise OdooAuthError(
-                f"Error de conexión con Odoo en '{self._host}': {type(exc).__name__}"
-            ) from None
+            raise OdooAuthError(f"Error de conexión con Odoo en '{self._host}': {type(exc).__name__}") from None
 
     def call(
         self,
@@ -172,6 +220,8 @@ class OdooXMLRPCClient:
         Raises:
             OdooCallError: si el llamado falla en Odoo
         """
+        if self._models is None:
+            raise OdooCallError("Cliente Odoo no autenticado.")
         try:
             result = self._models.execute_kw(
                 self._db,
@@ -184,17 +234,84 @@ class OdooXMLRPCClient:
             )
             return result
         except xmlrpc.client.Fault as fault:
-            raise OdooCallError(
-                f"Odoo fault en {model}.{method}: {fault.faultCode} — {fault.faultString}"
-            ) from fault
+            detalle = sanitizar_error_odoo(
+                f"Odoo fault en {model}.{method}: {fault.faultCode} — {fault.faultString}",
+                secrets=(self._api_key, getattr(self, "_write_api_key", "")),
+            )
+            raise OdooCallError(detalle) from fault
         except Exception as exc:
-            raise OdooCallError(
-                f"Error en {model}.{method}: {type(exc).__name__}: {exc}"
-            ) from exc
+            detalle = sanitizar_error_odoo(
+                f"Error en {model}.{method}: {type(exc).__name__}: {exc}",
+                secrets=(self._api_key, getattr(self, "_write_api_key", "")),
+            )
+            raise OdooCallError(detalle) from exc
 
     def get_version(self) -> dict:
         """Retorna información de versión detectada al autenticar."""
         return self._version_info
+
+    def _get_model_fields(self, modelo: str) -> set[str]:
+        """Retorna campos disponibles en ``modelo`` (cacheados por instancia)."""
+        cache = getattr(self, "_fields_cache", None)
+        if cache is None:
+            cache = {}
+            self._fields_cache = cache
+        if modelo in cache:
+            return cache[modelo]
+
+        campos: set[str] = set()
+        try:
+            resp = self.call(modelo, "fields_get", [[]], {"attributes": ["string"]})
+            if isinstance(resp, dict):
+                campos = {str(k) for k in resp.keys()}
+        except (OdooCallError, KeyError, AttributeError, TypeError):
+            campos = set()
+        cache[modelo] = campos
+        return campos
+
+    def _campos_disponibles(
+        self,
+        modelo: str,
+        base_fields: list[str],
+        opcionales: tuple[str, ...],
+        fallback: list[str],
+    ) -> list[str]:
+        """Filtra ``base_fields + opcionales`` contra los campos reales de ``modelo``."""
+        campos_modelo = self._get_model_fields(modelo)
+        if not campos_modelo:
+            return list(fallback)
+        if "id" in campos_modelo:
+            return [f for f in (*base_fields, *opcionales) if f in campos_modelo]
+        return [*base_fields, *(f for f in opcionales if f in campos_modelo)]
+
+    @staticmethod
+    def _m2o_id(val: Any) -> int | None:
+        if isinstance(val, (list, tuple)) and val:
+            raw_id = val[0]
+        else:
+            raw_id = val
+        if isinstance(raw_id, bool) or raw_id in (None, "", 0):
+            return None
+        try:
+            parsed = int(raw_id)
+            return parsed if parsed > 0 else None
+        except (TypeError, ValueError):
+            return None
+
+    @staticmethod
+    def _m2o_name(val: Any) -> str:
+        if isinstance(val, (list, tuple)) and len(val) > 1 and val[1]:
+            return str(val[1])
+        return ""
+
+    @staticmethod
+    def _to_decimal(val: Any) -> Decimal:
+        if val in (None, "", False):
+            return Decimal("0")
+        try:
+            return Decimal(str(val))
+        except (InvalidOperation, TypeError, ValueError):
+            return Decimal("0")
 
     # ── Ping / health ─────────────────────────────────────────────────────────
 
@@ -232,28 +349,55 @@ class OdooXMLRPCClient:
         if desde:
             domain.append(["write_date", ">=", desde])
 
-        return self.call("res.partner", "search_read", [domain], {
-            "fields": [
-                "id", "name", "email", "phone", "mobile",
-                "street", "city", "country_id", "state_id",
-                "vat",  # número fiscal
-                "customer_rank", "supplier_rank",
-                "company_type",  # person | company
-                "parent_id",     # empresa padre si es contacto
-                "website", "comment",
-                "write_date", "create_date",
-                "active",
-            ],
-            "limit": limite,
-        })
+        return self.call(
+            "res.partner",
+            "search_read",
+            [domain],
+            {
+                "fields": [
+                    "id",
+                    "name",
+                    "email",
+                    "phone",
+                    "mobile",
+                    "street",
+                    "city",
+                    "country_id",
+                    "state_id",
+                    "vat",  # número fiscal
+                    "customer_rank",
+                    "supplier_rank",
+                    "company_type",  # person | company
+                    "parent_id",  # empresa padre si es contacto
+                    "website",
+                    "comment",
+                    "write_date",
+                    "create_date",
+                    "active",
+                ],
+                "limit": limite,
+            },
+        )
 
     def buscar_socio(self, query: str, limite: int = 15) -> list[dict]:
         """Búsqueda incremental de socios por nombre."""
-        return self.call("res.partner", "search_read",
-                         [[["name", "ilike", query], ["active", "=", True]]],
-                         {"fields": ["id", "name", "email", "phone", "vat",
-                                     "customer_rank", "supplier_rank"],
-                          "limit": limite})
+        return self.call(
+            "res.partner",
+            "search_read",
+            [[["name", "ilike", query], ["active", "=", True]]],
+            {
+                "fields": [
+                    "id",
+                    "name",
+                    "email",
+                    "phone",
+                    "vat",
+                    "customer_rank",
+                    "supplier_rank",
+                ],
+                "limit": limite,
+            },
+        )
 
     # ── Productos ─────────────────────────────────────────────────────────────
 
@@ -262,27 +406,52 @@ class OdooXMLRPCClient:
         domain: list = [["active", "=", True]]
         if desde:
             domain.append(["write_date", ">=", desde])
-        return self.call("product.template", "search_read", [domain], {
-            "fields": [
-                "id", "name", "default_code", "description_sale",
-                "list_price", "standard_price",
-                "categ_id", "uom_id", "uom_po_id",
-                "type",  # consu | service | product
-                "sale_ok", "purchase_ok", "active",
-                "barcode",
-                "weight", "volume",
-                "write_date", "create_date",
-            ],
-            "limit": limite,
-        })
+        return self.call(
+            "product.template",
+            "search_read",
+            [domain],
+            {
+                "fields": [
+                    "id",
+                    "name",
+                    "default_code",
+                    "description_sale",
+                    "list_price",
+                    "standard_price",
+                    "categ_id",
+                    "uom_id",
+                    "uom_po_id",
+                    "type",  # consu | service | product
+                    "sale_ok",
+                    "purchase_ok",
+                    "active",
+                    "barcode",
+                    "weight",
+                    "volume",
+                    "write_date",
+                    "create_date",
+                ],
+                "limit": limite,
+            },
+        )
 
     def get_variantes_producto(self, tmpl_id: int) -> list[dict]:
         """Variantes de un product.template."""
-        return self.call("product.product", "search_read",
-                         [[["product_tmpl_id", "=", tmpl_id], ["active", "=", True]]],
-                         {"fields": ["id", "name", "default_code", "barcode",
-                                     "product_template_attribute_value_ids"],
-                          "limit": 100})
+        return self.call(
+            "product.product",
+            "search_read",
+            [[["product_tmpl_id", "=", tmpl_id], ["active", "=", True]]],
+            {
+                "fields": [
+                    "id",
+                    "name",
+                    "default_code",
+                    "barcode",
+                    "product_template_attribute_value_ids",
+                ],
+                "limit": 100,
+            },
+        )
 
     # ── Ventas ────────────────────────────────────────────────────────────────
 
@@ -297,26 +466,53 @@ class OdooXMLRPCClient:
         domain: list = [["state", "in", states]]
         if desde:
             domain.append(["write_date", ">=", desde])
-        return self.call("sale.order", "search_read", [domain], {
-            "fields": [
-                "id", "name", "partner_id", "user_id",
-                "date_order", "state", "invoice_status",
-                "amount_untaxed", "amount_tax", "amount_total",
-                "currency_id", "pricelist_id", "payment_term_id",
-                "write_date", "create_date",
-            ],
-            "limit": limite,
-            "order": "date_order desc",
-        })
+        return self.call(
+            "sale.order",
+            "search_read",
+            [domain],
+            {
+                "fields": [
+                    "id",
+                    "name",
+                    "partner_id",
+                    "user_id",
+                    "date_order",
+                    "state",
+                    "invoice_status",
+                    "amount_untaxed",
+                    "amount_tax",
+                    "amount_total",
+                    "currency_id",
+                    "pricelist_id",
+                    "payment_term_id",
+                    "write_date",
+                    "create_date",
+                ],
+                "limit": limite,
+                "order": "date_order desc",
+            },
+        )
 
     def get_lineas_pedido_venta(self, order_id: int) -> list[dict]:
         """Líneas de un pedido de venta."""
-        return self.call("sale.order.line", "search_read",
-                         [[["order_id", "=", order_id]]],
-                         {"fields": ["id", "product_id", "product_uom_qty",
-                                     "price_unit", "discount",
-                                     "price_subtotal", "price_tax", "price_total",
-                                     "tax_id"]})
+        return self.call(
+            "sale.order.line",
+            "search_read",
+            [[["order_id", "=", order_id]]],
+            {
+                "fields": [
+                    "id",
+                    "product_id",
+                    "product_uom_qty",
+                    "price_unit",
+                    "discount",
+                    "price_subtotal",
+                    "price_tax",
+                    "price_total",
+                    "tax_id",
+                ]
+            },
+        )
 
     # ── Compras ───────────────────────────────────────────────────────────────
 
@@ -329,26 +525,52 @@ class OdooXMLRPCClient:
         domain: list = [["state", "in", ["purchase", "done"]]]
         if desde:
             domain.append(["write_date", ">=", desde])
-        return self.call("purchase.order", "search_read", [domain], {
-            "fields": [
-                "id", "name", "partner_id", "user_id",
-                "date_order", "date_approve", "state",
-                "invoice_status", "invoice_ids",
-                "amount_untaxed", "amount_tax", "amount_total",
-                "currency_id",
-                "write_date", "create_date",
-            ],
-            "limit": limite,
-            "order": "date_order desc",
-        })
+        return self.call(
+            "purchase.order",
+            "search_read",
+            [domain],
+            {
+                "fields": [
+                    "id",
+                    "name",
+                    "partner_id",
+                    "user_id",
+                    "date_order",
+                    "date_approve",
+                    "state",
+                    "invoice_status",
+                    "invoice_ids",
+                    "amount_untaxed",
+                    "amount_tax",
+                    "amount_total",
+                    "currency_id",
+                    "write_date",
+                    "create_date",
+                ],
+                "limit": limite,
+                "order": "date_order desc",
+            },
+        )
 
     def get_lineas_pedido_compra(self, order_id: int) -> list[dict]:
         """Líneas de una orden de compra."""
-        return self.call("purchase.order.line", "search_read",
-                         [[["order_id", "=", order_id]]],
-                         {"fields": ["id", "product_id", "product_qty",
-                                     "price_unit", "price_subtotal",
-                                     "taxes_id", "qty_invoiced", "qty_received"]})
+        return self.call(
+            "purchase.order.line",
+            "search_read",
+            [[["order_id", "=", order_id]]],
+            {
+                "fields": [
+                    "id",
+                    "product_id",
+                    "product_qty",
+                    "price_unit",
+                    "price_subtotal",
+                    "taxes_id",
+                    "qty_invoiced",
+                    "qty_received",
+                ]
+            },
+        )
 
     # ── Facturas ──────────────────────────────────────────────────────────────
 
@@ -368,18 +590,34 @@ class OdooXMLRPCClient:
         domain: list = [["move_type", "=", tipo], ["state", "=", "posted"]]
         if desde:
             domain.append(["write_date", ">=", desde])
-        return self.call("account.move", "search_read", [domain], {
-            "fields": [
-                "id", "name", "partner_id", "invoice_origin",
-                "invoice_date", "invoice_date_due",
-                "amount_untaxed", "amount_tax", "amount_total", "amount_residual",
-                "currency_id", "payment_state", "state",
-                "move_type", "ref",
-                "write_date", "create_date",
-            ],
-            "limit": limite,
-            "order": "invoice_date desc",
-        })
+        return self.call(
+            "account.move",
+            "search_read",
+            [domain],
+            {
+                "fields": [
+                    "id",
+                    "name",
+                    "partner_id",
+                    "invoice_origin",
+                    "invoice_date",
+                    "invoice_date_due",
+                    "amount_untaxed",
+                    "amount_tax",
+                    "amount_total",
+                    "amount_residual",
+                    "currency_id",
+                    "payment_state",
+                    "state",
+                    "move_type",
+                    "ref",
+                    "write_date",
+                    "create_date",
+                ],
+                "limit": limite,
+                "order": "invoice_date desc",
+            },
+        )
 
     def get_lineas_factura(self, move_id: int) -> list[dict]:
         """
@@ -388,13 +626,29 @@ class OdooXMLRPCClient:
         Filtra a líneas reales de producto: excluye secciones/notas
         (``display_type``) y líneas sin producto (impuesto, término de pago).
         """
-        return self.call("account.move.line", "search_read",
-                         [[["move_id", "=", move_id],
-                           ["display_type", "=", False],
-                           ["product_id", "!=", False]]],
-                         {"fields": ["id", "product_id", "quantity",
-                                     "price_unit", "discount",
-                                     "price_subtotal", "price_total", "tax_ids"]})
+        return self.call(
+            "account.move.line",
+            "search_read",
+            [
+                [
+                    ["move_id", "=", move_id],
+                    ["display_type", "=", False],
+                    ["product_id", "!=", False],
+                ]
+            ],
+            {
+                "fields": [
+                    "id",
+                    "product_id",
+                    "quantity",
+                    "price_unit",
+                    "discount",
+                    "price_subtotal",
+                    "price_total",
+                    "tax_ids",
+                ]
+            },
+        )
 
     # ── Pagos ─────────────────────────────────────────────────────────────────
 
@@ -415,19 +669,237 @@ class OdooXMLRPCClient:
             domain.append(["payment_type", "=", tipo])
         if desde:
             domain.append(["date", ">=", desde])
-        return self.call("account.payment", "search_read", [domain], {
-            "fields": [
-                "id", "name", "partner_id", "payment_type", "partner_type",
-                "amount", "date", "state",
-                "journal_id", "currency_id",
-                "memo", "ref",
-                # Reconciliación: facturas (account.move) saldadas por este pago.
-                "reconciled_invoice_ids",
-                "write_date", "create_date",
-            ],
-            "limit": limite,
-            "order": "date desc",
-        })
+
+        base_fields = [
+            "id",
+            "name",
+            "partner_id",
+            "payment_type",
+            "partner_type",
+            "amount",
+            "date",
+            "state",
+            "journal_id",
+            "currency_id",
+            "reconciled_invoice_ids",
+            "write_date",
+            "create_date",
+        ]
+        fields = self._campos_disponibles(
+            "account.payment",
+            base_fields,
+            ("memo", "payment_reference", "ref", "move_id", "reconciled_bill_ids"),
+            # Fallback estándar compatible con Odoo 18+ (sin 'ref', removido en Odoo 18).
+            [*base_fields, "memo", "payment_reference", "move_id", "reconciled_bill_ids"],
+        )
+
+        return self.call(
+            "account.payment",
+            "search_read",
+            [domain],
+            {
+                "fields": fields,
+                "limit": limite,
+                "order": "date desc",
+            },
+        )
+
+    def get_reconciliaciones_pagos(self, move_ids: list[int]) -> dict[int, list[dict]]:
+        """Lee reconciliaciones parciales en lote para los ``move_id`` de ``account.payment``.
+
+        Ejecuta a lo sumo 4 lecturas XML-RPC en lote (cero N+1):
+          1. ``account.move.line`` (líneas CxC/CxP de los asientos de pago).
+          2. ``account.partial.reconcile`` (montos y monedas conciliadas).
+          3. ``account.move.line`` (líneas contraparte de facturas/notas).
+          4. ``account.move`` (``move_type``, ``name``, ``currency_id`` de contrapartes).
+        """
+        ids_limpios = sorted({int(mid) for mid in move_ids if mid and not isinstance(mid, bool)})
+        if not ids_limpios:
+            return {}
+
+        amls = (
+            self.call(
+                "account.move.line",
+                "search_read",
+                [
+                    [
+                        ["move_id", "in", ids_limpios],
+                        ["account_type", "in", ["asset_receivable", "liability_payable"]],
+                    ]
+                ],
+                {
+                    "fields": [
+                        "id",
+                        "move_id",
+                        "account_type",
+                        "matched_debit_ids",
+                        "matched_credit_ids",
+                        "currency_id",
+                    ]
+                },
+            )
+            or []
+        )
+        if not amls:
+            return {}
+
+        pay_line_by_id: dict[int, dict] = {}
+        pr_ids_set: set[int] = set()
+        for aml in amls:
+            lid = self._m2o_id(aml.get("id"))
+            if lid is None:
+                continue
+            pay_line_by_id[lid] = aml
+            for pid in list(aml.get("matched_debit_ids") or []) + list(aml.get("matched_credit_ids") or []):
+                if isinstance(pid, int) and not isinstance(pid, bool) and pid > 0:
+                    pr_ids_set.add(pid)
+
+        pr_ids = sorted(pr_ids_set)
+        if not pr_ids:
+            return {}
+
+        pr_base = ["id", "debit_move_id", "credit_move_id", "amount"]
+        pr_fields = self._campos_disponibles(
+            "account.partial.reconcile",
+            pr_base,
+            (
+                "debit_amount_currency",
+                "credit_amount_currency",
+                "debit_currency_id",
+                "credit_currency_id",
+            ),
+            # Fail-safe para Odoo < 14 o cuando fields_get falla/devuelve vacío.
+            pr_base,
+        )
+
+        partials = (
+            self.call(
+                "account.partial.reconcile",
+                "read",
+                [pr_ids],
+                {"fields": pr_fields},
+            )
+            or []
+        )
+        if not partials:
+            return {}
+
+        enlaces: list[tuple[dict, int, int, str]] = []
+        counterpart_line_ids_set: set[int] = set()
+        for pr in partials:
+            debit_line_id = self._m2o_id(pr.get("debit_move_id"))
+            credit_line_id = self._m2o_id(pr.get("credit_move_id"))
+            if credit_line_id in pay_line_by_id and debit_line_id is not None and debit_line_id not in pay_line_by_id:
+                enlaces.append((pr, credit_line_id, debit_line_id, "credit"))
+                counterpart_line_ids_set.add(debit_line_id)
+            elif (
+                debit_line_id in pay_line_by_id and credit_line_id is not None and credit_line_id not in pay_line_by_id
+            ):
+                enlaces.append((pr, debit_line_id, credit_line_id, "debit"))
+                counterpart_line_ids_set.add(credit_line_id)
+
+        counterpart_line_ids = sorted(counterpart_line_ids_set)
+        if not counterpart_line_ids:
+            return {}
+
+        counterpart_lines = (
+            self.call(
+                "account.move.line",
+                "read",
+                [counterpart_line_ids],
+                {"fields": ["id", "move_id", "currency_id"]},
+            )
+            or []
+        )
+        counterpart_lines_by_id: dict[int, dict] = {}
+        counterpart_move_ids_set: set[int] = set()
+        for line in counterpart_lines:
+            lid = self._m2o_id(line.get("id"))
+            if lid is None:
+                continue
+            counterpart_lines_by_id[lid] = line
+            mv_id = self._m2o_id(line.get("move_id"))
+            if mv_id is not None:
+                counterpart_move_ids_set.add(mv_id)
+
+        counterpart_move_ids = sorted(counterpart_move_ids_set)
+        if not counterpart_move_ids:
+            return {}
+
+        counterpart_moves = (
+            self.call(
+                "account.move",
+                "read",
+                [counterpart_move_ids],
+                {"fields": ["id", "move_type", "name", "currency_id"]},
+            )
+            or []
+        )
+        counterpart_moves_by_id: dict[int, dict] = {
+            mid: mv for mv in counterpart_moves if (mid := self._m2o_id(mv.get("id"))) is not None
+        }
+
+        resultado: dict[int, list[dict]] = {}
+        vistos: set[tuple[int, int]] = set()
+        tipos_factura = {"out_invoice", "in_invoice", "out_refund", "in_refund"}
+
+        for pr, pay_line_id, cp_line_id, lado_pago in enlaces:
+            pr_id = self._m2o_id(pr.get("id"))
+            pay_aml = pay_line_by_id.get(pay_line_id)
+            cp_aml = counterpart_lines_by_id.get(cp_line_id)
+            if pr_id is None or pay_aml is None or cp_aml is None:
+                continue
+            pay_move_id = self._m2o_id(pay_aml.get("move_id"))
+            cp_move_id = self._m2o_id(cp_aml.get("move_id"))
+            if pay_move_id is None or cp_move_id is None:
+                continue
+            cp_move = counterpart_moves_by_id.get(cp_move_id)
+            if cp_move is None:
+                continue
+            move_type = str(cp_move.get("move_type") or "")
+            if move_type not in tipos_factura:
+                continue
+            clave = (pay_move_id, pr_id)
+            if clave in vistos:
+                continue
+            vistos.add(clave)
+
+            monto_base = self._to_decimal(pr.get("amount"))
+            if lado_pago == "credit":
+                raw_pago = pr.get("credit_amount_currency")
+                raw_doc = pr.get("debit_amount_currency")
+                moneda_pago = self._m2o_name(pr.get("credit_currency_id") or pay_aml.get("currency_id"))
+                moneda_doc = self._m2o_name(
+                    pr.get("debit_currency_id") or cp_aml.get("currency_id") or cp_move.get("currency_id")
+                )
+            else:
+                raw_pago = pr.get("debit_amount_currency")
+                raw_doc = pr.get("credit_amount_currency")
+                moneda_pago = self._m2o_name(pr.get("debit_currency_id") or pay_aml.get("currency_id"))
+                moneda_doc = self._m2o_name(
+                    pr.get("credit_currency_id") or cp_aml.get("currency_id") or cp_move.get("currency_id")
+                )
+
+            monto_pago = self._to_decimal(raw_pago) if raw_pago not in (None, False, "", 0, 0.0) else monto_base
+            monto_doc = self._to_decimal(raw_doc) if raw_doc not in (None, False, "", 0, 0.0) else monto_base
+
+            resultado.setdefault(pay_move_id, []).append(
+                {
+                    "partial_reconcile_id": pr_id,
+                    "move_id_externo": str(cp_move_id),
+                    "move_name": str(cp_move.get("name") or ""),
+                    "move_type": move_type,
+                    "monto_base": monto_base,
+                    "monto_pago": monto_pago,
+                    "monto_documento": monto_doc,
+                    "moneda_pago": moneda_pago,
+                    "moneda_documento": moneda_doc,
+                }
+            )
+
+        for recs in resultado.values():
+            recs.sort(key=lambda item: item["partial_reconcile_id"])
+        return resultado
 
     # ── Inventario ────────────────────────────────────────────────────────────
 
@@ -436,29 +908,50 @@ class OdooXMLRPCClient:
         Stock actual por producto y ubicación (stock.quant).
         Solo ubicaciones internas.
         """
-        return self.call("stock.quant", "search_read",
-                         [[["location_id.usage", "=", "internal"]]],
-                         {"fields": ["id", "product_id", "location_id",
-                                     "quantity", "reserved_quantity",
-                                     "lot_id"],
-                          "limit": limite})
+        return self.call(
+            "stock.quant",
+            "search_read",
+            [[["location_id.usage", "=", "internal"]]],
+            {
+                "fields": [
+                    "id",
+                    "product_id",
+                    "location_id",
+                    "quantity",
+                    "reserved_quantity",
+                    "lot_id",
+                ],
+                "limit": limite,
+            },
+        )
 
     def get_movimientos_stock(self, desde: str | None = None, limite: int = 300) -> list[dict]:
         """Movimientos de stock realizados (stock.move en estado done)."""
         domain: list = [["state", "=", "done"]]
         if desde:
             domain.append(["date", ">=", desde])
-        return self.call("stock.move", "search_read", [domain], {
-            "fields": [
-                "id", "name", "product_id",
-                "product_uom_qty", "quantity_done",
-                "location_id", "location_dest_id",
-                "picking_id", "date", "origin",
-                "state",
-            ],
-            "limit": limite,
-            "order": "date desc",
-        })
+        return self.call(
+            "stock.move",
+            "search_read",
+            [domain],
+            {
+                "fields": [
+                    "id",
+                    "name",
+                    "product_id",
+                    "product_uom_qty",
+                    "quantity_done",
+                    "location_id",
+                    "location_dest_id",
+                    "picking_id",
+                    "date",
+                    "origin",
+                    "state",
+                ],
+                "limit": limite,
+                "order": "date desc",
+            },
+        )
 
     # ── Información del sistema ───────────────────────────────────────────────
 
@@ -467,19 +960,30 @@ class OdooXMLRPCClient:
         domain: list = []
         if tipos:
             domain.append(["type", "in", tipos])
-        return self.call("account.journal", "search_read", [domain],
-                         {"fields": ["id", "name", "type", "currency_id"], "limit": 100})
+        return self.call(
+            "account.journal",
+            "search_read",
+            [domain],
+            {"fields": ["id", "name", "type", "currency_id"], "limit": 100},
+        )
 
     def get_monedas(self) -> list[dict]:
         """Monedas activas."""
-        return self.call("res.currency", "search_read",
-                         [[["active", "=", True]]],
-                         {"fields": ["id", "name", "symbol", "rate"], "limit": 50})
+        return self.call(
+            "res.currency",
+            "search_read",
+            [[["active", "=", True]]],
+            {"fields": ["id", "name", "symbol", "rate"], "limit": 50},
+        )
 
     def get_paises(self) -> list[dict]:
         """Lista de países."""
-        return self.call("res.country", "search_read", [[]],
-                         {"fields": ["id", "name", "code"], "limit": 300})
+        return self.call(
+            "res.country",
+            "search_read",
+            [[]],
+            {"fields": ["id", "name", "code"], "limit": 300},
+        )
 
     # ── Escritura ─────────────────────────────────────────────────────────────
 
@@ -505,3 +1009,138 @@ class OdooXMLRPCClient:
         """Actualiza una plantilla de producto."""
         clean = {k: v for k, v in vals.items() if v is not None}
         return self.call("product.template", "write", [[tmpl_id], clean])
+
+    def crear_pedido_venta(self, vals: dict) -> int:
+        """Crea una ``sale.order`` (queda en borrador/cotización) y retorna su ID."""
+        clean = {k: v for k, v in vals.items() if v is not None}
+        result = self.call("sale.order", "create", [clean])
+        return result[0] if isinstance(result, list) else result
+
+    def crear_pago(self, vals: dict) -> int:
+        """Crea un ``account.payment`` en borrador (sin publicar) y retorna su ID."""
+        clean = {k: v for k, v in vals.items() if v is not None}
+        result = self.call("account.payment", "create", [clean])
+        return result[0] if isinstance(result, list) else result
+
+    # ── Escritura exclusiva de leads Connect (crm.lead — NUNCA res.partner) ───
+
+    def _assert_write_mode(self) -> None:
+        """Exige modo escritura explícito con ``write_user`` y ``write_api_key`` (fail-closed)."""
+        write_user = str(getattr(self, "_write_user", "") or "").strip()
+        write_key = str(getattr(self, "_write_api_key", "") or "").strip()
+        write_enabled = bool(getattr(self, "_write_enabled", False))
+        if not write_enabled or not write_user or not write_key:
+            raise OdooCallError(
+                "Modo escritura deshabilitado en OdooXMLRPCClient: requiere 'write_user' y 'write_api_key'."
+            )
+
+    @classmethod
+    def _preparar_vals_lead_crm(cls, vals: dict[str, Any], *, modelo: str = _CRM_LEAD_MODEL) -> dict[str, Any]:
+        """Valida modelo estrictamente ``crm.lead``, prohíbe ``partner_id`` y escapa HTML en ``description``."""
+        if modelo != cls._CRM_LEAD_MODEL:
+            raise OdooCallError("Operación de leads Connect restringida exclusivamente al modelo 'crm.lead'.")
+        if not isinstance(vals, dict) or not vals:
+            raise OdooCallError("Los valores para 'crm.lead' deben ser un diccionario no vacío.")
+        if "partner_id" in vals:
+            raise OdooCallError("No se permite referenciar 'res.partner' (partner_id) en leads Connect.")
+
+        clean: dict[str, Any] = {}
+        for clave, valor in vals.items():
+            if valor is None:
+                continue
+            if "\x00" in str(clave) or (isinstance(valor, str) and "\x00" in valor):
+                raise OdooCallError("Los valores para 'crm.lead' contienen caracteres inválidos.")
+            if clave == "description" and isinstance(valor, str):
+                clean[clave] = html.escape(valor, quote=True)
+            else:
+                clean[clave] = valor
+
+        if not clean:
+            raise OdooCallError("No hay campos válidos para escribir en 'crm.lead'.")
+        return clean
+
+    def _execute_crm_lead_write(self, method: str, domain: list[Any]) -> Any:
+        """Ejecuta escritura estrictamente sobre ``crm.lead`` usando credenciales de escritura."""
+        self._assert_write_mode()
+        write_user = str(getattr(self, "_write_user", "") or "").strip()
+        write_key = str(getattr(self, "_write_api_key", "") or "").strip()
+        same_creds = write_user == getattr(self, "_user", "") and write_key == getattr(self, "_api_key", "")
+        models_proxy = getattr(self, "_models", None)
+
+        if same_creds or models_proxy is None:
+            return self.call(self._CRM_LEAD_MODEL, method, domain)
+
+        if getattr(self, "_write_uid", None) is None:
+            try:
+                common = xmlrpc.client.ServerProxy(self._common_url, allow_none=True)
+                uid = common.authenticate(self._db, write_user, write_key, {})
+                uid_int = self._m2o_id(uid)
+                if uid_int is None:
+                    raise OdooAuthError(
+                        f"Autenticación de escritura Odoo fallida para '{write_user}' en '{self._host}'."
+                    )
+                self._write_uid = uid_int
+            except OdooAuthError:
+                raise
+            except Exception as exc:
+                raise OdooAuthError(
+                    sanitizar_error_odoo(
+                        f"Error de autenticación de escritura con Odoo en '{self._host}': {type(exc).__name__}",
+                        secrets=(getattr(self, "_api_key", ""), write_key),
+                    )
+                ) from None
+
+        try:
+            return models_proxy.execute_kw(
+                self._db,
+                self._write_uid,
+                write_key,
+                self._CRM_LEAD_MODEL,
+                method,
+                domain,
+                {},
+            )
+        except xmlrpc.client.Fault as fault:
+            detalle = sanitizar_error_odoo(
+                f"Odoo fault en {self._CRM_LEAD_MODEL}.{method}: {fault.faultCode} — {fault.faultString}",
+                secrets=(getattr(self, "_api_key", ""), write_key),
+            )
+            raise OdooCallError(detalle) from fault
+        except Exception as exc:
+            detalle = sanitizar_error_odoo(
+                f"Error en {self._CRM_LEAD_MODEL}.{method}: {type(exc).__name__}: {exc}",
+                secrets=(getattr(self, "_api_key", ""), write_key),
+            )
+            raise OdooCallError(detalle) from exc
+
+    def buscar_lead_crm_por_tag(self, tag: str) -> int | None:
+        """Busca un ``crm.lead`` existente por etiqueta de trazabilidad ``[OMNI-LEAD:<uuid>]``."""
+        tag_limpio = str(tag or "").strip()
+        if not tag_limpio or "\x00" in tag_limpio:
+            return None
+        encontrados = self.call(
+            self._CRM_LEAD_MODEL,
+            "search",
+            [[["description", "ilike", tag_limpio]]],
+            {"limit": 1},
+        )
+        if not encontrados:
+            return None
+        primero = encontrados[0]
+        raw_id = primero["id"] if isinstance(primero, dict) else primero
+        return self._m2o_id(raw_id)
+
+    def crear_lead_crm(self, vals: dict[str, Any]) -> int:
+        """Crea un registro estrictamente en ``crm.lead`` (nunca ``res.partner``) en modo escritura."""
+        clean = self._preparar_vals_lead_crm(vals, modelo=self._CRM_LEAD_MODEL)
+        result = self._execute_crm_lead_write("create", [clean])
+        lead_id = result[0] if isinstance(result, list) else result
+        return int(lead_id)
+
+    def actualizar_lead_crm(self, odoo_lead_id: int, vals: dict[str, Any]) -> bool:
+        """Actualiza un registro existente estrictamente en ``crm.lead`` (nunca ``res.partner``)."""
+        if isinstance(odoo_lead_id, bool) or not isinstance(odoo_lead_id, int) or odoo_lead_id <= 0:
+            raise OdooCallError("odoo_lead_id debe ser un entero positivo.")
+        clean = self._preparar_vals_lead_crm(vals, modelo=self._CRM_LEAD_MODEL)
+        result = self._execute_crm_lead_write("write", [[odoo_lead_id], clean])
+        return bool(result)

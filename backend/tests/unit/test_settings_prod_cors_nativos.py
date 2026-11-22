@@ -68,7 +68,5 @@ def test_origen_null_jamas_permitido(monkeypatch):
 
 
 def test_sin_duplicados_si_ya_estan_en_el_entorno(monkeypatch):
-    sp = _cargar_settings_prod(
-        monkeypatch, CORS_ALLOWED_ORIGINS="https://app.test.com,app://omni"
-    )
+    sp = _cargar_settings_prod(monkeypatch, CORS_ALLOWED_ORIGINS="https://app.test.com,app://omni")
     assert sp.CORS_ALLOWED_ORIGINS.count("app://omni") == 1

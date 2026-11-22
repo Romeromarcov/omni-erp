@@ -45,8 +45,14 @@ logger = logging.getLogger("omni.dsl")
 
 TIPOS_CAMPO_VALIDOS = {"text", "number", "decimal", "date", "datetime", "boolean", "select", "uuid"}
 ENTIDADES_VALIDAS = {
-    "Cliente", "Proveedor", "Producto", "Gasto", "Pedido",
-    "CuentaPorCobrar", "Empleado", "Almacen",
+    "Cliente",
+    "Proveedor",
+    "Producto",
+    "Gasto",
+    "Pedido",
+    "CuentaPorCobrar",
+    "Empleado",
+    "Almacen",
 }
 
 
@@ -87,6 +93,7 @@ def _validar_campos(campos: list[dict]) -> list[str]:
 
 # ── Primitiva 2: entidades ────────────────────────────────────────────────────
 
+
 def _validar_entidades(entidades: list[dict]) -> list[str]:
     errores = []
     nombres_vistos: set[str] = set()
@@ -119,7 +126,9 @@ def _validar_estados(estados: list[dict]) -> list[str]:
     for i, e in enumerate(estados):
         prefijo = f"estados[{i}]"
         if e.get("modelo") not in MODELOS_CON_ESTADO:
-            errores.append(f"{prefijo}: modelo '{e.get('modelo')}' no soporta estados personalizados. Válidos: {sorted(MODELOS_CON_ESTADO)}")
+            errores.append(
+                f"{prefijo}: modelo '{e.get('modelo')}' no soporta estados personalizados. Válidos: {sorted(MODELOS_CON_ESTADO)}"
+            )
         if not e.get("nombre"):
             errores.append(f"{prefijo}: falta 'nombre'")
         if not e.get("etiqueta"):
@@ -148,6 +157,7 @@ def _validar_reglas(reglas: list[dict]) -> list[str]:
 
 
 # ── Primitiva 5: vistas ───────────────────────────────────────────────────────
+
 
 def _validar_vistas(vistas: list[dict]) -> list[str]:
     errores = []
@@ -249,6 +259,7 @@ def validar_config(config: dict[str, Any]) -> list[str]:
 
 # ── Aplicador (runtime completo) ──────────────────────────────────────────────
 
+
 def aplicar_config(config: dict[str, Any], empresa) -> dict[str, Any]:
     """
     Aplica un PersonalizacionConfig a una empresa y persiste la configuración
@@ -277,7 +288,14 @@ def aplicar_config(config: dict[str, Any], empresa) -> dict[str, Any]:
     advertencias: list[str] = []
 
     # ── Construir el resultado de aplicación ──────────────────────────────────
-    resultado: dict[str, Any] = {"campos": {}, "conectores": [], "entidades": {}, "estados": [], "reglas": 0, "vistas": []}
+    resultado: dict[str, Any] = {
+        "campos": {},
+        "conectores": [],
+        "entidades": {},
+        "estados": [],
+        "reglas": 0,
+        "vistas": [],
+    }
 
     # Primitiva: campos
     campos = config.get("campos", [])
@@ -305,7 +323,6 @@ def aplicar_config(config: dict[str, Any], empresa) -> dict[str, Any]:
     # Primitiva: entidades — persiste instancias EAV y registra la definición (CTF-002)
     entidades = config.get("entidades", [])
     if entidades:
-        from .models import EntidadInstancia  # noqa: PLC0415
         for entidad_def in entidades:
             nombre = entidad_def.get("nombre", "")
             resultado.setdefault("entidades", {})[nombre] = {
@@ -318,6 +335,7 @@ def aplicar_config(config: dict[str, Any], empresa) -> dict[str, Any]:
     estados = config.get("estados", [])
     if estados:
         from .models import EstadoPersonalizado  # noqa: PLC0415
+
         for estado_def in estados:
             modelo = estado_def.get("modelo", "")
             nombre = estado_def.get("nombre", "")
@@ -330,8 +348,7 @@ def aplicar_config(config: dict[str, Any], empresa) -> dict[str, Any]:
             )
         aplicadas.append(f"estados:{len(estados)} estados personalizados registrados")
         resultado["estados"] = [
-            {"modelo": e.get("modelo"), "nombre": e.get("nombre"), "etiqueta": e.get("etiqueta")}
-            for e in estados
+            {"modelo": e.get("modelo"), "nombre": e.get("nombre"), "etiqueta": e.get("etiqueta")} for e in estados
         ]
 
     # Primitiva: reglas — se almacenan en config_dict y se ejecutan via ejecutar_reglas() (CTF-002)
@@ -344,6 +361,7 @@ def aplicar_config(config: dict[str, Any], empresa) -> dict[str, Any]:
     vistas = config.get("vistas", [])
     if vistas:
         from .models import VistaPersonalizada  # noqa: PLC0415
+
         for vista_def in vistas:
             entidad = vista_def.get("entidad", "")
             columnas = vista_def.get("columnas", [])
@@ -359,14 +377,16 @@ def aplicar_config(config: dict[str, Any], empresa) -> dict[str, Any]:
     # Primitiva: conectores — extraer para indexado rápido
     conectores = config.get("conectores", [])
     for conector in conectores:
-        resultado["conectores"].append({
-            "nombre": conector["nombre"],
-            "url": conector["url"],
-            "metodo": conector.get("metodo", "POST"),
-            "evento_origen": conector["evento_origen"],
-            "headers": conector.get("headers", {}),
-            "mapeo_campos": conector.get("mapeo_campos", {}),
-        })
+        resultado["conectores"].append(
+            {
+                "nombre": conector["nombre"],
+                "url": conector["url"],
+                "metodo": conector.get("metodo", "POST"),
+                "evento_origen": conector["evento_origen"],
+                "headers": conector.get("headers", {}),
+                "mapeo_campos": conector.get("mapeo_campos", {}),
+            }
+        )
         aplicadas.append(f"conector:{conector['nombre']} → {conector['evento_origen']}")
 
     # ── Calcular siguiente versión ────────────────────────────────────────────
@@ -414,6 +434,7 @@ def aplicar_config(config: dict[str, Any], empresa) -> dict[str, Any]:
 
 # ── Runtime de reglas ─────────────────────────────────────────────────────────
 
+
 def get_config_activa(empresa) -> dict[str, Any]:
     """
     Retorna el config DSL activo para una empresa, o {} si no tiene.
@@ -427,10 +448,14 @@ def get_config_activa(empresa) -> dict[str, Any]:
     from .models import PersonalizacionConfig  # noqa: PLC0415
 
     try:
-        config_obj = PersonalizacionConfig.objects.filter(
-            id_empresa=empresa,
-            activo=True,
-        ).order_by("-version").first()
+        config_obj = (
+            PersonalizacionConfig.objects.filter(
+                id_empresa=empresa,
+                activo=True,
+            )
+            .order_by("-version")
+            .first()
+        )
 
         if config_obj is None:
             return {}
@@ -520,6 +545,7 @@ def ejecutar_reglas(entidad_nombre: str, instancia, empresa) -> list[str]:
 
 
 # ── Disparador de conectores (webhooks) ───────────────────────────────────────
+
 
 def _validar_url_externa(url: str) -> None:
     """Guard SSRF (B310): solo http/https hacia hosts públicos.

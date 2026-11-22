@@ -37,6 +37,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
 from apps.core.models import Empresa, Sucursal, Usuarios
+from apps.finanzas.catalogo_monedas import sembrar_catalogo_monedas
 from apps.finanzas.models import Caja, CajaFisica, Moneda
 
 
@@ -44,18 +45,14 @@ class Command(BaseCommand):
     help = "Crea (idempotente) Empresa + admin + sucursal + caja para arranque de producción."
 
     def add_arguments(self, parser):
-        parser.add_argument(
-            "--nombre-legal", required=True, help="Razón social de la empresa."
-        )
+        parser.add_argument("--nombre-legal", required=True, help="Razón social de la empresa.")
         parser.add_argument(
             "--rif",
             required=True,
             help="Identificador fiscal (RIF). Clave de idempotencia de la empresa.",
         )
         parser.add_argument("--nombre-comercial", default=None)
-        parser.add_argument(
-            "--email", default=None, help="Email de contacto de la empresa."
-        )
+        parser.add_argument("--email", default=None, help="Email de contacto de la empresa.")
         parser.add_argument("--admin-username", required=True)
         parser.add_argument("--admin-email", required=True)
         parser.add_argument(
@@ -100,96 +97,98 @@ class Command(BaseCommand):
             validate_password(password)
         except ValidationError as exc:
             raise CommandError(
-                "La contraseña del admin no cumple AUTH_PASSWORD_VALIDATORS: "
-                + "; ".join(exc.messages)
+                "La contraseña del admin no cumple AUTH_PASSWORD_VALIDATORS: " + "; ".join(exc.messages)
             )
         return password, generada
 
     # ── handle ─────────────────────────────────────────────────────────────
 
-    @transaction.atomic
     def handle(self, *args, **options):
+        from apps.core import rls
+
         # Resolver la contraseña ANTES de tocar la BD: una contraseña inválida
         # debe abortar sin crear nada.
         password, generada = self._resolver_password(options["admin_password"])
 
-        # 1. Moneda base (catálogo global compartido).
-        moneda, _ = Moneda.objects.get_or_create(
-            codigo_iso=options["moneda_base"].upper(),
-            defaults={
-                "nombre": options["moneda_base"].upper(),
-                "simbolo": options["moneda_base"].upper()[:5],
-                "es_publica": True,
-            },
-        )
+        with rls.rls_bypass():
+            with transaction.atomic():
+                # 0. Catálogo base de monedas (USD, VES, EUR, USDT): la sincronización de tasas y otras piezas
+                #    asumen que existen. Idempotente; debe ir antes de la moneda base para que esta ya salga completa.
+                sembrar_catalogo_monedas()
 
-        # 2. Empresa (idempotente por RIF).
-        rif = options["rif"].strip()
-        empresa, creada_empresa = Empresa.objects.get_or_create(
-            identificador_fiscal=rif,
-            defaults={
-                "nombre_legal": options["nombre_legal"],
-                "nombre_comercial": options["nombre_comercial"],
-                "email_contacto": options["email"],
-                "id_moneda_base": moneda,
-                "activo": True,
-            },
-        )
-        if not creada_empresa and empresa.id_moneda_base is None:
-            empresa.id_moneda_base = moneda
-            empresa.save(update_fields=["id_moneda_base"])
+                # 1. Moneda base (catálogo global compartido).
+                moneda, _ = Moneda.objects.get_or_create(
+                    codigo_iso=options["moneda_base"].upper(),
+                    defaults={
+                        "nombre": options["moneda_base"].upper(),
+                        "simbolo": options["moneda_base"].upper()[:5],
+                        "es_publica": True,
+                    },
+                )
 
-        # 3. Sucursal (idempotente por empresa + código).
-        codigo_sucursal = (options["codigo_sucursal"] or self._codigo_desde_rif(rif))[
-            :10
-        ]
-        sucursal, _ = Sucursal.objects.get_or_create(
-            id_empresa=empresa,
-            codigo_sucursal=codigo_sucursal,
-            defaults={"nombre": options["sucursal_nombre"]},
-        )
+                # 2. Empresa (idempotente por RIF).
+                rif = options["rif"].strip()
+                empresa, creada_empresa = Empresa.objects.get_or_create(
+                    identificador_fiscal=rif,
+                    defaults={
+                        "nombre_legal": options["nombre_legal"],
+                        "nombre_comercial": options["nombre_comercial"],
+                        "email_contacto": options["email"],
+                        "id_moneda_base": moneda,
+                        "activo": True,
+                    },
+                )
+                if not creada_empresa and empresa.id_moneda_base is None:
+                    empresa.id_moneda_base = moneda
+                    empresa.save(update_fields=["id_moneda_base"])
 
-        # 4. Caja física + caja virtual (la operación de caja del piloto necesita ambas).
-        caja_fisica, _ = CajaFisica.objects.get_or_create(
-            empresa=empresa,
-            nombre=options["caja_nombre"],
-            defaults={
-                "sucursal": sucursal,
-                "tipo_caja": "REGISTRADORA",
-                "identificador_dispositivo": f"SEED-{rif}-{options['caja_nombre']}"[
-                    :100
-                ],
-            },
-        )
-        caja_virtual, _ = Caja.objects.get_or_create(
-            empresa=empresa,
-            nombre=options["caja_nombre"],
-            caja_fisica=caja_fisica,
-            defaults={
-                "sucursal": sucursal,
-                "tipo_caja": "REGISTRADORA",
-                "moneda": moneda,
-            },
-        )
+                # 3. Sucursal (idempotente por empresa + código).
+                codigo_sucursal = (options["codigo_sucursal"] or self._codigo_desde_rif(rif))[:10]
+                sucursal, _ = Sucursal.objects.get_or_create(
+                    id_empresa=empresa,
+                    codigo_sucursal=codigo_sucursal,
+                    defaults={"nombre": options["sucursal_nombre"]},
+                )
 
-        # 5. Usuario admin.
-        usuario, creado_usuario = Usuarios.objects.get_or_create(
-            username=options["admin_username"],
-            defaults={
-                "email": options["admin_email"],
-                "is_staff": True,
-                "is_active": True,
-                "es_superusuario_omni": options["es_superusuario_omni"],
-            },
-        )
-        if creado_usuario:
-            usuario.set_password(password)
-            usuario.save(update_fields=["password"])
-        usuario.empresas.add(empresa)
-        usuario.sucursales.add(sucursal)
-        if usuario.id_sucursal_predeterminada is None:
-            usuario.id_sucursal_predeterminada = sucursal
-            usuario.save(update_fields=["id_sucursal_predeterminada"])
+                # 4. Caja física + caja virtual (la operación de caja del piloto necesita ambas).
+                caja_fisica, _ = CajaFisica.objects.get_or_create(
+                    empresa=empresa,
+                    nombre=options["caja_nombre"],
+                    defaults={
+                        "sucursal": sucursal,
+                        "tipo_caja": "REGISTRADORA",
+                        "identificador_dispositivo": f"SEED-{rif}-{options['caja_nombre']}"[:100],
+                    },
+                )
+                caja_virtual, _ = Caja.objects.get_or_create(
+                    empresa=empresa,
+                    nombre=options["caja_nombre"],
+                    caja_fisica=caja_fisica,
+                    defaults={
+                        "sucursal": sucursal,
+                        "tipo_caja": "REGISTRADORA",
+                        "moneda": moneda,
+                    },
+                )
+
+                # 5. Usuario admin.
+                usuario, creado_usuario = Usuarios.objects.get_or_create(
+                    username=options["admin_username"],
+                    defaults={
+                        "email": options["admin_email"],
+                        "is_staff": True,
+                        "is_active": True,
+                        "es_superusuario_omni": options["es_superusuario_omni"],
+                    },
+                )
+                if creado_usuario:
+                    usuario.set_password(password)
+                    usuario.save(update_fields=["password"])
+                usuario.empresas.add(empresa)
+                usuario.sucursales.add(sucursal)
+                if usuario.id_sucursal_predeterminada is None:
+                    usuario.id_sucursal_predeterminada = sucursal
+                    usuario.save(update_fields=["id_sucursal_predeterminada"])
 
         # ── Reporte ──────────────────────────────────────────────────────────
         self.stdout.write(
@@ -197,12 +196,8 @@ class Command(BaseCommand):
                 f"Empresa : {empresa.nombre_legal} ({rif}) [{'creada' if creada_empresa else 'existente'}]"
             )
         )
-        self.stdout.write(
-            self.style.SUCCESS(f"Sucursal: {sucursal.nombre} / {codigo_sucursal}")
-        )
-        self.stdout.write(
-            self.style.SUCCESS(f"Caja    : {caja_virtual.nombre} ({moneda.codigo_iso})")
-        )
+        self.stdout.write(self.style.SUCCESS(f"Sucursal: {sucursal.nombre} / {codigo_sucursal}"))
+        self.stdout.write(self.style.SUCCESS(f"Caja    : {caja_virtual.nombre} ({moneda.codigo_iso})"))
         self.stdout.write(
             self.style.SUCCESS(
                 f"Admin   : {usuario.username} [{'creado' if creado_usuario else 'existente'}]"
@@ -217,8 +212,4 @@ class Command(BaseCommand):
                 )
             )
         elif not creado_usuario:
-            self.stdout.write(
-                self.style.WARNING(
-                    "El admin ya existía: su contraseña NO fue modificada."
-                )
-            )
+            self.stdout.write(self.style.WARNING("El admin ya existía: su contraseña NO fue modificada."))

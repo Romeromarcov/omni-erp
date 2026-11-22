@@ -15,9 +15,9 @@ import type { Pedido } from '../../services/cxcLubrikcaService';
 import { cxcLubrikcaKeys } from '../../lib/queryKeys';
 import { PageContainer, PageHeader, DataTable, StatusChip, KpiCard, SectionTitle } from '../../components/ui';
 import type { Column } from '../../components/ui';
+import { formatoDecimal, type DecimalInput } from '../../lib/decimal';
 
-const money = (v: string | number) =>
-  `$${parseFloat(String(v)).toLocaleString('es-VE', { minimumFractionDigits: 2 })}`;
+const money = (v: DecimalInput) => `$${formatoDecimal(v, 2, 2)}`;
 
 // Días de antigüedad de entrega para considerar un pedido no facturado como
 // cartera atascada (espejo del DIAS_CARTERA_ATASCADA del backend).

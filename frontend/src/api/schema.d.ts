@@ -10,6 +10,145 @@
  */
 
 export interface paths {
+    "/activaciones/calendarios/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["activaciones_calendarios_list"];
+        put?: never;
+        post: operations["activaciones_calendarios_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/activaciones/calendarios/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get: operations["activaciones_calendarios_read"];
+        put: operations["activaciones_calendarios_update"];
+        post?: never;
+        delete: operations["activaciones_calendarios_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["activaciones_calendarios_partial_update"];
+        trace?: never;
+    };
+    "/activaciones/calendarios/{id}/disponibilidad/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** @description GET …/calendarios/{id}/disponibilidad/?inicio=ISO&fin=ISO → capacidad y libres por recurso. */
+        get: operations["activaciones_calendarios_disponibilidad"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/activaciones/eventos/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["activaciones_eventos_list"];
+        put?: never;
+        post: operations["activaciones_eventos_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/activaciones/eventos/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get: operations["activaciones_eventos_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/activaciones/eventos/{id}/cancelar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["activaciones_eventos_cancelar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/activaciones/recursos/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["activaciones_recursos_list"];
+        put?: never;
+        post: operations["activaciones_recursos_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/activaciones/recursos/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get: operations["activaciones_recursos_read"];
+        put: operations["activaciones_recursos_update"];
+        post?: never;
+        delete: operations["activaciones_recursos_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["activaciones_recursos_partial_update"];
+        trace?: never;
+    };
     "/agentes/chat/": {
         parameters: {
             query?: never;
@@ -27,6 +166,119 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/agentes/consumo-llm/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Consulta de solo lectura del consumo de tokens y costos LLM por tenant (Plan 05 P2-3).
+         * @description GET /api/agentes/consumo-llm/         — listado histórico paginado
+         *     GET /api/agentes/consumo-llm/{id}/    — detalle de evento
+         *     GET /api/agentes/consumo-llm/resumen/ — resumen agregado (totales + por_modelo + por_uso)
+         */
+        get: operations["agentes_consumo-llm_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agentes/consumo-llm/resumen/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GET /api/agentes/consumo-llm/resumen/
+         * @description Retorna totales agregados (llamadas, tokens in/out, costo_total_usd,
+         *     latencia_promedio_ms) y desglose ``por_modelo`` y ``por_uso``.
+         */
+        get: operations["agentes_consumo-llm_resumen"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agentes/consumo-llm/{id_consumo}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Consumo LLM. */
+                id_consumo: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * Consulta de solo lectura del consumo de tokens y costos LLM por tenant (Plan 05 P2-3).
+         * @description GET /api/agentes/consumo-llm/         — listado histórico paginado
+         *     GET /api/agentes/consumo-llm/{id}/    — detalle de evento
+         *     GET /api/agentes/consumo-llm/resumen/ — resumen agregado (totales + por_modelo + por_uso)
+         */
+        get: operations["agentes_consumo-llm_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agentes/ejecuciones/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Consulta de solo lectura para ejecuciones asíncronas de agentes IA (Plan 05 P2-2).
+         * @description GET /api/agentes/ejecuciones/       — listar (filtros ?agente=, ?estado=, ?search=, ?ordering=)
+         *     GET /api/agentes/ejecuciones/{id}/  — detalle de ejecución, estado y resultado
+         */
+        get: operations["agentes_ejecuciones_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agentes/ejecuciones/{id_ejecucion}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Ejecución de Agente. */
+                id_ejecucion: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * Consulta de solo lectura para ejecuciones asíncronas de agentes IA (Plan 05 P2-2).
+         * @description GET /api/agentes/ejecuciones/       — listar (filtros ?agente=, ?estado=, ?search=, ?ordering=)
+         *     GET /api/agentes/ejecuciones/{id}/  — detalle de ejecución, estado y resultado
+         */
+        get: operations["agentes_ejecuciones_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/agentes/predicciones/": {
         parameters: {
             query?: never;
@@ -35,30 +287,32 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * CRUD de predicciones de agentes IA.
-         * @description GET  /agentes/predicciones/          — listar (filtrable por ?agente=)
-         *     GET  /agentes/predicciones/{pk}/     — detalle
-         *     PATCH /agentes/predicciones/{pk}/   — actualizar resultado_humano / categoria_correcta
-         *     DELETE /agentes/predicciones/{pk}/  — eliminar
+         * CRUD de predicciones de agentes IA y disparo asíncrono de análisis.
+         * @description GET  /agentes/predicciones/                         — listar (filtrable por ?agente=)
+         *     GET  /agentes/predicciones/{pk}/                    — detalle
+         *     PATCH /agentes/predicciones/{pk}/                   — actualizar resultado_humano / categoria_correcta
+         *     DELETE /agentes/predicciones/{pk}/                  — eliminar
          *
          *     Acciones custom:
-         *     POST /agentes/predicciones/analizar-cobranza/     — ejecutar CobranzaEstrategaAgent
-         *     POST /agentes/predicciones/analizar-reorden/      — ejecutar ReordenSugeridorAgent
-         *     POST /agentes/predicciones/analizar-personalizacion/ — ejecutar PersonalizacionCapa2Agent
+         *     POST /agentes/predicciones/analizar-cobranza/       — encola CobranzaEstrategaAgent (202)
+         *     POST /agentes/predicciones/analizar-reorden/        — encola ReordenSugeridorAgent (202)
+         *     POST /agentes/predicciones/analizar-personalizacion/ — encola PersonalizacionCapa2Agent (202)
+         *     POST /agentes/predicciones/clasificar-gasto/        — encola ClasificadorGastos (202)
          */
         get: operations["agentes_predicciones_list"];
         put?: never;
         /**
-         * CRUD de predicciones de agentes IA.
-         * @description GET  /agentes/predicciones/          — listar (filtrable por ?agente=)
-         *     GET  /agentes/predicciones/{pk}/     — detalle
-         *     PATCH /agentes/predicciones/{pk}/   — actualizar resultado_humano / categoria_correcta
-         *     DELETE /agentes/predicciones/{pk}/  — eliminar
+         * CRUD de predicciones de agentes IA y disparo asíncrono de análisis.
+         * @description GET  /agentes/predicciones/                         — listar (filtrable por ?agente=)
+         *     GET  /agentes/predicciones/{pk}/                    — detalle
+         *     PATCH /agentes/predicciones/{pk}/                   — actualizar resultado_humano / categoria_correcta
+         *     DELETE /agentes/predicciones/{pk}/                  — eliminar
          *
          *     Acciones custom:
-         *     POST /agentes/predicciones/analizar-cobranza/     — ejecutar CobranzaEstrategaAgent
-         *     POST /agentes/predicciones/analizar-reorden/      — ejecutar ReordenSugeridorAgent
-         *     POST /agentes/predicciones/analizar-personalizacion/ — ejecutar PersonalizacionCapa2Agent
+         *     POST /agentes/predicciones/analizar-cobranza/       — encola CobranzaEstrategaAgent (202)
+         *     POST /agentes/predicciones/analizar-reorden/        — encola ReordenSugeridorAgent (202)
+         *     POST /agentes/predicciones/analizar-personalizacion/ — encola PersonalizacionCapa2Agent (202)
+         *     POST /agentes/predicciones/clasificar-gasto/        — encola ClasificadorGastos (202)
          */
         post: operations["agentes_predicciones_create"];
         delete?: never;
@@ -78,10 +332,10 @@ export interface paths {
         put?: never;
         /**
          * POST /agentes/predicciones/analizar-cobranza/
-         * @description Ejecuta el CobranzaEstrategaAgent para la empresa del usuario.
-         *     Body (opcional): {"persistir": true}
+         * @description Encola en Celery el ``CobranzaEstrategaAgent`` para la empresa indicada o por defecto.
+         *     Body (opcional): {"empresa_id": "<uuid>", "persistir": true}
          *
-         *     Retorna lista de sugerencias de cobranza para CxC vencidas.
+         *     Retorna HTTP 202 Accepted con el estado de la ``EjecucionAgente``.
          */
         post: operations["agentes_predicciones_analizar_cobranza"];
         delete?: never;
@@ -101,9 +355,9 @@ export interface paths {
         put?: never;
         /**
          * POST /agentes/predicciones/analizar-personalizacion/
-         * @description Ejecuta el PersonalizacionCapa2Agent para la empresa del usuario.
+         * @description Encola en Celery el ``PersonalizacionCapa2Agent`` para la empresa indicada o por defecto.
          *
-         *     Retorna recomendaciones de flujo de documentos, listas de precios y crédito a clientes.
+         *     Retorna HTTP 202 Accepted con el estado de la ``EjecucionAgente``.
          */
         post: operations["agentes_predicciones_analizar_personalizacion"];
         delete?: never;
@@ -123,12 +377,32 @@ export interface paths {
         put?: never;
         /**
          * POST /agentes/predicciones/analizar-reorden/
-         * @description Ejecuta el ReordenSugeridorAgent para la empresa del usuario.
-         *     Body (opcional): {"solo_alertas": true, "persistir": false}
+         * @description Encola en Celery el ``ReordenSugeridorAgent`` para la empresa indicada o por defecto.
+         *     Body (opcional): {"empresa_id": "<uuid>", "solo_alertas": true, "persistir": false}
          *
-         *     Retorna lista de sugerencias de reorden de inventario.
+         *     Retorna HTTP 202 Accepted con el estado de la ``EjecucionAgente``.
          */
         post: operations["agentes_predicciones_analizar_reorden"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agentes/predicciones/calificar-lead-connect/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST /api/agentes/predicciones/calificar-lead-connect/
+         * @description Valida pertenencia multi-tenant del lead y encola ``connect_calificador`` (HTTP 202).
+         */
+        post: operations["agentes_predicciones_calificar_lead_connect"];
         delete?: never;
         options?: never;
         head?: never;
@@ -146,8 +420,8 @@ export interface paths {
         put?: never;
         /**
          * POST /agentes/predicciones/clasificar-gasto/
-         * @description Modo PRODUCCIÓN del ClasificadorGastos.  Predice la categoría de un Gasto
-         *     y, opcionalmente, la aplica escribiendo en Gasto.id_categoria_gasto.
+         * @description Valida pertenencia multi-tenant del gasto en todas las empresas visibles (R-CODE-1)
+         *     y encola en Celery el ``ClasificadorGastos`` sobre la empresa dueña del gasto.
          */
         post: operations["agentes_predicciones_clasificar_gasto"];
         delete?: never;
@@ -176,6 +450,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/agentes/predicciones/proponer-seguimiento-connect/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST /api/agentes/predicciones/proponer-seguimiento-connect/
+         * @description Valida pertenencia multi-tenant del lead y encola ``connect_seguimiento`` (HTTP 202).
+         *     Toda propuesta de envío externo crea obligatoriamente una ``SolicitudAprobacion``
+         *     (``CONNECT_ENVIO_EXTERNO``) sin enviar mensajes directamente.
+         */
+        post: operations["agentes_predicciones_proponer_seguimiento_connect"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/agentes/predicciones/sugerencias-activas/": {
         parameters: {
             query?: never;
@@ -185,12 +481,14 @@ export interface paths {
         };
         /**
          * GET /agentes/predicciones/sugerencias-activas/
-         * @description Retorna las predicciones pendientes de revisión humana para la empresa del usuario.
-         *     Por defecto las últimas 10, ordenadas por confianza DESC.
+         * @description Retorna las predicciones pendientes de revisión humana para las empresas visibles
+         *     (o para ``?empresa_id=`` cuando se especifica). Por defecto las últimas 10,
+         *     ordenadas por confianza DESC.
          *
          *     Query params:
-         *       ?limite=N   — máximo de resultados (default 10, max 50)
-         *       ?agente=    — filtrar por nombre de agente
+         *       ?limite=N     — máximo de resultados (default 10, max 50)
+         *       ?agente=      — filtrar por nombre de agente
+         *       ?empresa_id=  — acotar a una empresa visible (obligatorio para superusuario Omni)
          */
         get: operations["agentes_predicciones_sugerencias_activas"];
         put?: never;
@@ -212,58 +510,62 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * CRUD de predicciones de agentes IA.
-         * @description GET  /agentes/predicciones/          — listar (filtrable por ?agente=)
-         *     GET  /agentes/predicciones/{pk}/     — detalle
-         *     PATCH /agentes/predicciones/{pk}/   — actualizar resultado_humano / categoria_correcta
-         *     DELETE /agentes/predicciones/{pk}/  — eliminar
+         * CRUD de predicciones de agentes IA y disparo asíncrono de análisis.
+         * @description GET  /agentes/predicciones/                         — listar (filtrable por ?agente=)
+         *     GET  /agentes/predicciones/{pk}/                    — detalle
+         *     PATCH /agentes/predicciones/{pk}/                   — actualizar resultado_humano / categoria_correcta
+         *     DELETE /agentes/predicciones/{pk}/                  — eliminar
          *
          *     Acciones custom:
-         *     POST /agentes/predicciones/analizar-cobranza/     — ejecutar CobranzaEstrategaAgent
-         *     POST /agentes/predicciones/analizar-reorden/      — ejecutar ReordenSugeridorAgent
-         *     POST /agentes/predicciones/analizar-personalizacion/ — ejecutar PersonalizacionCapa2Agent
+         *     POST /agentes/predicciones/analizar-cobranza/       — encola CobranzaEstrategaAgent (202)
+         *     POST /agentes/predicciones/analizar-reorden/        — encola ReordenSugeridorAgent (202)
+         *     POST /agentes/predicciones/analizar-personalizacion/ — encola PersonalizacionCapa2Agent (202)
+         *     POST /agentes/predicciones/clasificar-gasto/        — encola ClasificadorGastos (202)
          */
         get: operations["agentes_predicciones_read"];
         /**
-         * CRUD de predicciones de agentes IA.
-         * @description GET  /agentes/predicciones/          — listar (filtrable por ?agente=)
-         *     GET  /agentes/predicciones/{pk}/     — detalle
-         *     PATCH /agentes/predicciones/{pk}/   — actualizar resultado_humano / categoria_correcta
-         *     DELETE /agentes/predicciones/{pk}/  — eliminar
+         * CRUD de predicciones de agentes IA y disparo asíncrono de análisis.
+         * @description GET  /agentes/predicciones/                         — listar (filtrable por ?agente=)
+         *     GET  /agentes/predicciones/{pk}/                    — detalle
+         *     PATCH /agentes/predicciones/{pk}/                   — actualizar resultado_humano / categoria_correcta
+         *     DELETE /agentes/predicciones/{pk}/                  — eliminar
          *
          *     Acciones custom:
-         *     POST /agentes/predicciones/analizar-cobranza/     — ejecutar CobranzaEstrategaAgent
-         *     POST /agentes/predicciones/analizar-reorden/      — ejecutar ReordenSugeridorAgent
-         *     POST /agentes/predicciones/analizar-personalizacion/ — ejecutar PersonalizacionCapa2Agent
+         *     POST /agentes/predicciones/analizar-cobranza/       — encola CobranzaEstrategaAgent (202)
+         *     POST /agentes/predicciones/analizar-reorden/        — encola ReordenSugeridorAgent (202)
+         *     POST /agentes/predicciones/analizar-personalizacion/ — encola PersonalizacionCapa2Agent (202)
+         *     POST /agentes/predicciones/clasificar-gasto/        — encola ClasificadorGastos (202)
          */
         put: operations["agentes_predicciones_update"];
         post?: never;
         /**
-         * CRUD de predicciones de agentes IA.
-         * @description GET  /agentes/predicciones/          — listar (filtrable por ?agente=)
-         *     GET  /agentes/predicciones/{pk}/     — detalle
-         *     PATCH /agentes/predicciones/{pk}/   — actualizar resultado_humano / categoria_correcta
-         *     DELETE /agentes/predicciones/{pk}/  — eliminar
+         * CRUD de predicciones de agentes IA y disparo asíncrono de análisis.
+         * @description GET  /agentes/predicciones/                         — listar (filtrable por ?agente=)
+         *     GET  /agentes/predicciones/{pk}/                    — detalle
+         *     PATCH /agentes/predicciones/{pk}/                   — actualizar resultado_humano / categoria_correcta
+         *     DELETE /agentes/predicciones/{pk}/                  — eliminar
          *
          *     Acciones custom:
-         *     POST /agentes/predicciones/analizar-cobranza/     — ejecutar CobranzaEstrategaAgent
-         *     POST /agentes/predicciones/analizar-reorden/      — ejecutar ReordenSugeridorAgent
-         *     POST /agentes/predicciones/analizar-personalizacion/ — ejecutar PersonalizacionCapa2Agent
+         *     POST /agentes/predicciones/analizar-cobranza/       — encola CobranzaEstrategaAgent (202)
+         *     POST /agentes/predicciones/analizar-reorden/        — encola ReordenSugeridorAgent (202)
+         *     POST /agentes/predicciones/analizar-personalizacion/ — encola PersonalizacionCapa2Agent (202)
+         *     POST /agentes/predicciones/clasificar-gasto/        — encola ClasificadorGastos (202)
          */
         delete: operations["agentes_predicciones_delete"];
         options?: never;
         head?: never;
         /**
-         * CRUD de predicciones de agentes IA.
-         * @description GET  /agentes/predicciones/          — listar (filtrable por ?agente=)
-         *     GET  /agentes/predicciones/{pk}/     — detalle
-         *     PATCH /agentes/predicciones/{pk}/   — actualizar resultado_humano / categoria_correcta
-         *     DELETE /agentes/predicciones/{pk}/  — eliminar
+         * CRUD de predicciones de agentes IA y disparo asíncrono de análisis.
+         * @description GET  /agentes/predicciones/                         — listar (filtrable por ?agente=)
+         *     GET  /agentes/predicciones/{pk}/                    — detalle
+         *     PATCH /agentes/predicciones/{pk}/                   — actualizar resultado_humano / categoria_correcta
+         *     DELETE /agentes/predicciones/{pk}/                  — eliminar
          *
          *     Acciones custom:
-         *     POST /agentes/predicciones/analizar-cobranza/     — ejecutar CobranzaEstrategaAgent
-         *     POST /agentes/predicciones/analizar-reorden/      — ejecutar ReordenSugeridorAgent
-         *     POST /agentes/predicciones/analizar-personalizacion/ — ejecutar PersonalizacionCapa2Agent
+         *     POST /agentes/predicciones/analizar-cobranza/       — encola CobranzaEstrategaAgent (202)
+         *     POST /agentes/predicciones/analizar-reorden/        — encola ReordenSugeridorAgent (202)
+         *     POST /agentes/predicciones/analizar-personalizacion/ — encola PersonalizacionCapa2Agent (202)
+         *     POST /agentes/predicciones/clasificar-gasto/        — encola ClasificadorGastos (202)
          */
         patch: operations["agentes_predicciones_partial_update"];
         trace?: never;
@@ -347,6 +649,75 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["almacenes_almacenes_partial_update"];
+        trace?: never;
+    };
+    "/almacenes/stock-ubicaciones/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["almacenes_stock-ubicaciones_list"];
+        put?: never;
+        post: operations["almacenes_stock-ubicaciones_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/almacenes/stock-ubicaciones/reservar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description POST /api/almacenes/stock-ubicaciones/reservar/ — Reserva o libera stock en una ubicación. */
+        post: operations["almacenes_stock-ubicaciones_reservar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/almacenes/stock-ubicaciones/transferir/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description POST /api/almacenes/stock-ubicaciones/transferir/ — Traslada stock entre ubicaciones del mismo almacén. */
+        post: operations["almacenes_stock-ubicaciones_transferir"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/almacenes/stock-ubicaciones/{id_stock_ubicacion}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Stock por Ubicación. */
+                id_stock_ubicacion: string;
+            };
+            cookie?: never;
+        };
+        get: operations["almacenes_stock-ubicaciones_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/almacenes/ubicaciones-almacen/": {
@@ -566,39 +937,392 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/banca-electronica/cuentas-bancarias-empresa/": {
+    "/banca-electronica/lotes-pago/": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["banca-electronica_cuentas-bancarias-empresa_list"];
+        /** @description Gestión de lotes de pagos masivos VE (proveedores y nómina). */
+        get: operations["banca-electronica_lotes-pago_list"];
         put?: never;
-        post: operations["banca-electronica_cuentas-bancarias-empresa_create"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/banca-electronica/cuentas-bancarias-empresa/{id}/": {
+    "/banca-electronica/lotes-pago/generar-nomina/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Gestión de lotes de pagos masivos VE (proveedores y nómina). */
+        post: operations["banca-electronica_lotes-pago_generar_nomina"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/banca-electronica/lotes-pago/generar-proveedores/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Gestión de lotes de pagos masivos VE (proveedores y nómina). */
+        post: operations["banca-electronica_lotes-pago_generar_proveedores"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/banca-electronica/lotes-pago/{id_lote_pago}/": {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description A unique integer value identifying this cuenta bancaria empresa. */
-                id: number;
+                /** @description A UUID string identifying this Lote de Pago Bancario. */
+                id_lote_pago: string;
             };
             cookie?: never;
         };
-        get: operations["banca-electronica_cuentas-bancarias-empresa_read"];
-        put: operations["banca-electronica_cuentas-bancarias-empresa_update"];
+        /** @description Gestión de lotes de pagos masivos VE (proveedores y nómina). */
+        get: operations["banca-electronica_lotes-pago_read"];
+        put?: never;
         post?: never;
-        delete: operations["banca-electronica_cuentas-bancarias-empresa_delete"];
+        delete?: never;
         options?: never;
         head?: never;
-        patch: operations["banca-electronica_cuentas-bancarias-empresa_partial_update"];
+        patch?: never;
+        trace?: never;
+    };
+    "/banca-electronica/lotes-pago/{id_lote_pago}/anular/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Lote de Pago Bancario. */
+                id_lote_pago: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Gestión de lotes de pagos masivos VE (proveedores y nómina). */
+        post: operations["banca-electronica_lotes-pago_anular"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/banca-electronica/lotes-pago/{id_lote_pago}/descargar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Lote de Pago Bancario. */
+                id_lote_pago: string;
+            };
+            cookie?: never;
+        };
+        /** @description Gestión de lotes de pagos masivos VE (proveedores y nómina). */
+        get: operations["banca-electronica_lotes-pago_descargar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/banca-electronica/lotes-pago/{id_lote_pago}/marcar-enviado/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Lote de Pago Bancario. */
+                id_lote_pago: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Gestión de lotes de pagos masivos VE (proveedores y nómina). */
+        post: operations["banca-electronica_lotes-pago_marcar_enviado"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/banca-electronica/lotes-pago/{id_lote_pago}/marcar-procesado/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Lote de Pago Bancario. */
+                id_lote_pago: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Gestión de lotes de pagos masivos VE (proveedores y nómina). */
+        post: operations["banca-electronica_lotes-pago_marcar_procesado"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/banca-electronica/validar-cuenta-ve/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Valida estructura y prefijo SUDEBAN de 20 dígitos para cuentas bancarias VE. */
+        post: operations["banca-electronica_validar-cuenta-ve_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/banca-electronica/validar-referencia/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Detecta referencias bancarias duplicadas en pagos, extractos y lotes activos del tenant. */
+        post: operations["banca-electronica_validar-referencia_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bots/bitacora/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description ``GET /api/bots/bitacora/`` — historial auditable de cambios del panel de bots. */
+        get: operations["bots_bitacora_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bots/control/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Plano de control multi-tenant de bots (flota, detalle y configuración auditada). */
+        get: operations["bots_control_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bots/control/{codigo}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                codigo: string;
+            };
+            cookie?: never;
+        };
+        /** @description Plano de control multi-tenant de bots (flota, detalle y configuración auditada). */
+        get: operations["bots_control_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Plano de control multi-tenant de bots (flota, detalle y configuración auditada). */
+        patch: operations["bots_control_partial_update"];
+        trace?: never;
+    };
+    "/bots/destinos/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description ``GET /api/bots/destinos/`` — resumen de salud de Omni, CxC, Gemini y cola por empresa. */
+        get: operations["bots_destinos_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bots/heartbeat/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description ``POST /api/bots/heartbeat/`` — recibe latido del bot y devuelve su configuración vigente. */
+        post: operations["bots_heartbeat_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bots/ingest/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description ``POST /ingest/`` recibe un borrador confirmado; ``GET`` lista lo recibido (p. ej. ``?estado=INCOMPLETO``). */
+        get: operations["bots_ingest_list"];
+        put?: never;
+        /** @description ``POST /ingest/`` recibe un borrador confirmado; ``GET`` lista lo recibido (p. ej. ``?estado=INCOMPLETO``). */
+        post: operations["bots_ingest_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bots/ingest/{id_ingesta}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_ingesta: string;
+            };
+            cookie?: never;
+        };
+        /** @description ``POST /ingest/`` recibe un borrador confirmado; ``GET`` lista lo recibido (p. ej. ``?estado=INCOMPLETO``). */
+        get: operations["bots_ingest_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bots/ingest/{id_ingesta}/completar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_ingesta: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Completa un pago incompleto: ``{"cambios": {"referencia": "123"}}``. */
+        post: operations["bots_ingest_completar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bots/ingest/{id_ingesta}/sincronizar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_ingesta: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Reintenta el envío a Odoo (pedidos y pagos completos). Responde 202; es asíncrono. */
+        post: operations["bots_ingest_sincronizar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bots/usuarios/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Administración multi-tenant de usuarios de Telegram autorizados por empresa. */
+        get: operations["bots_usuarios_list"];
+        put?: never;
+        /** @description Administración multi-tenant de usuarios de Telegram autorizados por empresa. */
+        post: operations["bots_usuarios_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bots/usuarios/{id_bot_usuario}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_bot_usuario: string;
+            };
+            cookie?: never;
+        };
+        /** @description Administración multi-tenant de usuarios de Telegram autorizados por empresa. */
+        get: operations["bots_usuarios_read"];
+        /** @description Administración multi-tenant de usuarios de Telegram autorizados por empresa. */
+        put: operations["bots_usuarios_update"];
+        post?: never;
+        /** @description Administración multi-tenant de usuarios de Telegram autorizados por empresa. */
+        delete: operations["bots_usuarios_delete"];
+        options?: never;
+        head?: never;
+        /** @description Administración multi-tenant de usuarios de Telegram autorizados por empresa. */
+        patch: operations["bots_usuarios_partial_update"];
         trace?: never;
     };
     "/cobranza/acuerdos/": {
@@ -1231,6 +1955,26 @@ export interface paths {
         patch: operations["compras_ofertas-proveedor_partial_update"];
         trace?: never;
     };
+    "/compras/ofertas-proveedor/{id_oferta}/adjudicar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Oferta de Proveedor. */
+                id_oferta: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description POST /ofertas-proveedor/{pk}/adjudicar/ — Adjudica total/parcialmente la oferta a una OrdenCompra. */
+        post: operations["compras_ofertas-proveedor_adjudicar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/compras/ordenes-compra/": {
         parameters: {
             query?: never;
@@ -1373,6 +2117,46 @@ export interface paths {
         patch: operations["compras_requisiciones-compra_partial_update"];
         trace?: never;
     };
+    "/compras/requisiciones-compra/{id_requisicion}/confirmar-aprobacion/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Requisición de Compra. */
+                id_requisicion: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description POST /requisiciones-compra/{pk}/confirmar-aprobacion/ — Pasa de PENDIENTE a APROBADA tras resolver flujo. */
+        post: operations["compras_requisiciones-compra_confirmar_aprobacion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/compras/requisiciones-compra/{id_requisicion}/enviar-aprobacion/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Requisición de Compra. */
+                id_requisicion: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description POST /requisiciones-compra/{pk}/enviar-aprobacion/ — Envía una requisición BORRADOR a aprobación. */
+        post: operations["compras_requisiciones-compra_enviar_aprobacion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/compras/solicitudes-cotizacion/": {
         parameters: {
             query?: never;
@@ -1383,6 +2167,23 @@ export interface paths {
         get: operations["compras_solicitudes-cotizacion_list"];
         put?: never;
         post: operations["compras_solicitudes-cotizacion_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/compras/solicitudes-cotizacion/desde-requisiciones/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description POST /solicitudes-cotizacion/desde-requisiciones/ — Consolida requisiciones APROBADA en una RFQ. */
+        post: operations["compras_solicitudes-cotizacion_desde_requisiciones"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1406,6 +2207,26 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["compras_solicitudes-cotizacion_partial_update"];
+        trace?: never;
+    };
+    "/compras/solicitudes-cotizacion/{id_solicitud_cotizacion}/comparar-ofertas/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Solicitud de Cotización. */
+                id_solicitud_cotizacion: string;
+            };
+            cookie?: never;
+        };
+        /** @description GET /solicitudes-cotizacion/{pk}/comparar-ofertas/ — Matriz comparativa lado a lado. */
+        get: operations["compras_solicitudes-cotizacion_comparar_ofertas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/configuracion/catalogos-valor/": {
@@ -1555,6 +2376,290 @@ export interface paths {
         patch: operations["configuracion_tipos-documento_partial_update"];
         trace?: never;
     };
+    "/connect/analiticas/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Analíticas agregadas de toques, leads y conversión de Omni Connect
+         * @description GET /api/connect/analiticas/ — Analíticas agregadas multi-tenant de Omni Connect (S10).
+         */
+        get: operations["connect_analiticas_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connect/perfiles/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description CRUD multi-tenant de perfiles digitales Connect y gestión de ``mi-perfil``. */
+        get: operations["connect_perfiles_list"];
+        put?: never;
+        /** @description CRUD multi-tenant de perfiles digitales Connect y gestión de ``mi-perfil``. */
+        post: operations["connect_perfiles_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connect/perfiles/mi-perfil/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Obtiene el perfil Connect propio del usuario autenticado
+         * @description CRUD multi-tenant de perfiles digitales Connect y gestión de ``mi-perfil``.
+         */
+        get: operations["connect_perfiles_mi-perfil_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Crea o actualiza el perfil Connect propio del usuario autenticado
+         * @description CRUD multi-tenant de perfiles digitales Connect y gestión de ``mi-perfil``.
+         */
+        patch: operations["connect_perfiles_mi-perfil_partial_update"];
+        trace?: never;
+    };
+    "/connect/perfiles/mi-perfil/qr/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Genera y descarga el código QR (SVG o PNG) del perfil propio del usuario
+         * @description CRUD multi-tenant de perfiles digitales Connect y gestión de ``mi-perfil``.
+         */
+        get: operations["connect_perfiles_mi-perfil_mi_perfil_qr"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connect/perfiles/{id_perfil}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Perfil Connect. */
+                id_perfil: string;
+            };
+            cookie?: never;
+        };
+        /** @description CRUD multi-tenant de perfiles digitales Connect y gestión de ``mi-perfil``. */
+        get: operations["connect_perfiles_read"];
+        /** @description CRUD multi-tenant de perfiles digitales Connect y gestión de ``mi-perfil``. */
+        put: operations["connect_perfiles_update"];
+        post?: never;
+        /** @description CRUD multi-tenant de perfiles digitales Connect y gestión de ``mi-perfil``. */
+        delete: operations["connect_perfiles_delete"];
+        options?: never;
+        head?: never;
+        /** @description CRUD multi-tenant de perfiles digitales Connect y gestión de ``mi-perfil``. */
+        patch: operations["connect_perfiles_partial_update"];
+        trace?: never;
+    };
+    "/connect/perfiles/{id_perfil}/qr/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Perfil Connect. */
+                id_perfil: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * Genera y descarga el código QR (SVG o PNG) del perfil Connect
+         * @description CRUD multi-tenant de perfiles digitales Connect y gestión de ``mi-perfil``.
+         */
+        get: operations["connect_perfiles_qr"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connect/tarjetas/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description CRUD multi-tenant y ciclo de vida de tarjetas NFC físicas (Plan 07 S11). */
+        get: operations["connect_tarjetas_list"];
+        put?: never;
+        /** @description CRUD multi-tenant y ciclo de vida de tarjetas NFC físicas (Plan 07 S11). */
+        post: operations["connect_tarjetas_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connect/tarjetas/{id_tarjeta}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Tarjeta Connect. */
+                id_tarjeta: string;
+            };
+            cookie?: never;
+        };
+        /** @description CRUD multi-tenant y ciclo de vida de tarjetas NFC físicas (Plan 07 S11). */
+        get: operations["connect_tarjetas_read"];
+        /** @description CRUD multi-tenant y ciclo de vida de tarjetas NFC físicas (Plan 07 S11). */
+        put: operations["connect_tarjetas_update"];
+        post?: never;
+        /** @description CRUD multi-tenant y ciclo de vida de tarjetas NFC físicas (Plan 07 S11). */
+        delete: operations["connect_tarjetas_delete"];
+        options?: never;
+        head?: never;
+        /** @description CRUD multi-tenant y ciclo de vida de tarjetas NFC físicas (Plan 07 S11). */
+        patch: operations["connect_tarjetas_partial_update"];
+        trace?: never;
+    };
+    "/connect/tarjetas/{id_tarjeta}/activar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Tarjeta Connect. */
+                id_tarjeta: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Activa una tarjeta física con perfil activo asignado
+         * @description CRUD multi-tenant y ciclo de vida de tarjetas NFC físicas (Plan 07 S11).
+         */
+        post: operations["connect_tarjetas_activar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connect/tarjetas/{id_tarjeta}/asignar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Tarjeta Connect. */
+                id_tarjeta: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Asigna una tarjeta física a un perfil activo (opcionalmente activándola)
+         * @description CRUD multi-tenant y ciclo de vida de tarjetas NFC físicas (Plan 07 S11).
+         */
+        post: operations["connect_tarjetas_asignar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connect/tarjetas/{id_tarjeta}/desactivar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Tarjeta Connect. */
+                id_tarjeta: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Desactiva una tarjeta física bloqueando su acceso público
+         * @description CRUD multi-tenant y ciclo de vida de tarjetas NFC físicas (Plan 07 S11).
+         */
+        post: operations["connect_tarjetas_desactivar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connect/tarjetas/{id_tarjeta}/marcar-perdida/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Tarjeta Connect. */
+                id_tarjeta: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Marca una tarjeta como PERDIDA revocando inmediatamente su acceso público
+         * @description CRUD multi-tenant y ciclo de vida de tarjetas NFC físicas (Plan 07 S11).
+         */
+        post: operations["connect_tarjetas_marcar_perdida"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connect/tarjetas/{id_tarjeta}/qr/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Tarjeta Connect. */
+                id_tarjeta: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * Genera y descarga el código QR (SVG o PNG) asociado a la tarjeta
+         * @description CRUD multi-tenant y ciclo de vida de tarjetas NFC físicas (Plan 07 S11).
+         */
+        get: operations["connect_tarjetas_qr"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/contabilidad/asientos-contables/": {
         parameters: {
             query?: never;
@@ -1578,7 +2683,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Genera un balance de comprobación básico */
+        /** @description Genera un balance de comprobación básico delegando en el motor SQL canónico. */
         get: operations["contabilidad_asientos-contables_balance_comprobacion"];
         put?: never;
         post?: never;
@@ -1619,7 +2724,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Anula un asiento contable */
+        /** @description Anula un asiento contable en borrador */
         post: operations["contabilidad_asientos-contables_anular"];
         delete?: never;
         options?: never;
@@ -1641,6 +2746,26 @@ export interface paths {
         put?: never;
         /** @description Aprueba un asiento contable */
         post: operations["contabilidad_asientos-contables_aprobar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contabilidad/asientos-contables/{id_asiento}/revertir/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Asiento Contable. */
+                id_asiento: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Genera un contra-asiento atómico ``APROBADO`` con debe/haber invertidos. */
+        post: operations["contabilidad_asientos-contables_revertir"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1680,6 +2805,285 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["contabilidad_detalles-asiento_partial_update"];
+        trace?: never;
+    };
+    "/contabilidad/diarios/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description CRUD de diarios contables (estilo ``account.journal``) aislado por tenant. */
+        get: operations["contabilidad_diarios_list"];
+        put?: never;
+        /** @description CRUD de diarios contables (estilo ``account.journal``) aislado por tenant. */
+        post: operations["contabilidad_diarios_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contabilidad/diarios/{id_diario}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Diario Contable. */
+                id_diario: string;
+            };
+            cookie?: never;
+        };
+        /** @description CRUD de diarios contables (estilo ``account.journal``) aislado por tenant. */
+        get: operations["contabilidad_diarios_read"];
+        /** @description CRUD de diarios contables (estilo ``account.journal``) aislado por tenant. */
+        put: operations["contabilidad_diarios_update"];
+        post?: never;
+        /** @description CRUD de diarios contables (estilo ``account.journal``) aislado por tenant. */
+        delete: operations["contabilidad_diarios_delete"];
+        options?: never;
+        head?: never;
+        /** @description CRUD de diarios contables (estilo ``account.journal``) aislado por tenant. */
+        patch: operations["contabilidad_diarios_partial_update"];
+        trace?: never;
+    };
+    "/contabilidad/diarios/{id_diario}/activar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Diario Contable. */
+                id_diario: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/activar/
+         *     Reactiva un registro que fue desactivado.
+         *     Busca el objeto incluyendo inactivos (necesario para reactivar).
+         */
+        post: operations["contabilidad_diarios_activar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contabilidad/diarios/{id_diario}/desactivar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Diario Contable. */
+                id_diario: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/desactivar/
+         *     Desactiva (borrado lógico) un registro activo.
+         */
+        post: operations["contabilidad_diarios_desactivar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contabilidad/mapeos-contables/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description CRUD de mapeos contables (tipo de asiento automático → cuentas debe/haber).
+         *     Expone también GET /tipos-asiento/ con el catálogo de tipos soportados.
+         */
+        get: operations["contabilidad_mapeos-contables_list"];
+        put?: never;
+        /**
+         * @description CRUD de mapeos contables (tipo de asiento automático → cuentas debe/haber).
+         *     Expone también GET /tipos-asiento/ con el catálogo de tipos soportados.
+         */
+        post: operations["contabilidad_mapeos-contables_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contabilidad/mapeos-contables/tipos-asiento/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Catálogo de tipos de asiento automático soportados por el motor. */
+        get: operations["contabilidad_mapeos-contables_tipos_asiento"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contabilidad/mapeos-contables/{id_mapeo}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Mapeo Contable. */
+                id_mapeo: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * @description CRUD de mapeos contables (tipo de asiento automático → cuentas debe/haber).
+         *     Expone también GET /tipos-asiento/ con el catálogo de tipos soportados.
+         */
+        get: operations["contabilidad_mapeos-contables_read"];
+        /**
+         * @description CRUD de mapeos contables (tipo de asiento automático → cuentas debe/haber).
+         *     Expone también GET /tipos-asiento/ con el catálogo de tipos soportados.
+         */
+        put: operations["contabilidad_mapeos-contables_update"];
+        post?: never;
+        /**
+         * @description CRUD de mapeos contables (tipo de asiento automático → cuentas debe/haber).
+         *     Expone también GET /tipos-asiento/ con el catálogo de tipos soportados.
+         */
+        delete: operations["contabilidad_mapeos-contables_delete"];
+        options?: never;
+        head?: never;
+        /**
+         * @description CRUD de mapeos contables (tipo de asiento automático → cuentas debe/haber).
+         *     Expone también GET /tipos-asiento/ con el catálogo de tipos soportados.
+         */
+        patch: operations["contabilidad_mapeos-contables_partial_update"];
+        trace?: never;
+    };
+    "/contabilidad/periodos-contables/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Gestión de períodos contables mensuales y cierre de ejercicio. */
+        get: operations["contabilidad_periodos-contables_list"];
+        put?: never;
+        /** @description Gestión de períodos contables mensuales y cierre de ejercicio. */
+        post: operations["contabilidad_periodos-contables_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contabilidad/periodos-contables/cerrar-ejercicio/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Ejecuta el cierre anual del ejercicio contable saldando cuentas de resultado a Patrimonio. */
+        post: operations["contabilidad_periodos-contables_cerrar_ejercicio"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contabilidad/periodos-contables/cerrar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Cierra (o crea y cierra) un período mensual ``(id_empresa, anio, mes)``. */
+        post: operations["contabilidad_periodos-contables_cerrar_por_fecha"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contabilidad/periodos-contables/{id_periodo}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Período Contable. */
+                id_periodo: string;
+            };
+            cookie?: never;
+        };
+        /** @description Gestión de períodos contables mensuales y cierre de ejercicio. */
+        get: operations["contabilidad_periodos-contables_read"];
+        /** @description Gestión de períodos contables mensuales y cierre de ejercicio. */
+        put: operations["contabilidad_periodos-contables_update"];
+        post?: never;
+        /** @description Gestión de períodos contables mensuales y cierre de ejercicio. */
+        delete: operations["contabilidad_periodos-contables_delete"];
+        options?: never;
+        head?: never;
+        /** @description Gestión de períodos contables mensuales y cierre de ejercicio. */
+        patch: operations["contabilidad_periodos-contables_partial_update"];
+        trace?: never;
+    };
+    "/contabilidad/periodos-contables/{id_periodo}/cerrar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Período Contable. */
+                id_periodo: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Cierra un período contable existente. */
+        post: operations["contabilidad_periodos-contables_cerrar_periodo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contabilidad/periodos-contables/{id_periodo}/reabrir/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Período Contable. */
+                id_periodo: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Reabre un período contable cerrado sin cierre anual activo. */
+        post: operations["contabilidad_periodos-contables_reabrir"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/contabilidad/plan-cuentas/": {
@@ -1749,6 +3153,86 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["contabilidad_plan-cuentas_partial_update"];
+        trace?: never;
+    };
+    "/contabilidad/reportes/balance-comprobacion/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Balance de Comprobación canónico
+         * @description GET /api/contabilidad/reportes/balance-comprobacion/
+         */
+        get: operations["contabilidad_reportes_balance-comprobacion_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contabilidad/reportes/balance-general/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Balance General canónico
+         * @description GET /api/contabilidad/reportes/balance-general/
+         */
+        get: operations["contabilidad_reportes_balance-general_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contabilidad/reportes/estado-resultados/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Estado de Resultados (P&L) canónico
+         * @description GET /api/contabilidad/reportes/estado-resultados/
+         */
+        get: operations["contabilidad_reportes_estado-resultados_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contabilidad/reportes/libro-mayor-auxiliar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Libro Mayor Auxiliar canónico
+         * @description GET /api/contabilidad/reportes/libro-mayor-auxiliar/
+         */
+        get: operations["contabilidad_reportes_libro-mayor-auxiliar_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/control-asistencia/asignaciones-horario/": {
@@ -2634,11 +4118,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * @description POST /{pk}/activar/
-         *     Reactiva un registro que fue desactivado.
-         *     Busca el objeto incluyendo inactivos (necesario para reactivar).
-         */
+        /** @description Reactiva un permiso global del sistema (solo superusuario Omni). */
         post: operations["core_permisos_activar"];
         delete?: never;
         options?: never;
@@ -2658,10 +4138,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * @description POST /{pk}/desactivar/
-         *     Desactiva (borrado lógico) un registro activo.
-         */
+        /** @description Desactiva lógicamente un permiso global del sistema (solo superusuario Omni). */
         post: operations["core_permisos_desactivar"];
         delete?: never;
         options?: never;
@@ -2987,6 +4464,117 @@ export interface paths {
         patch: operations["costos_costos-produccion_partial_update"];
         trace?: never;
     };
+    "/crm/actividades/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description CRUD multi-tenant de ``crm.Actividad`` y acción ``completar``. */
+        get: operations["crm_actividades_list"];
+        put?: never;
+        /** @description CRUD multi-tenant de ``crm.Actividad`` y acción ``completar``. */
+        post: operations["crm_actividades_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/actividades/{id_actividad}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Actividad. */
+                id_actividad: string;
+            };
+            cookie?: never;
+        };
+        /** @description CRUD multi-tenant de ``crm.Actividad`` y acción ``completar``. */
+        get: operations["crm_actividades_read"];
+        /** @description CRUD multi-tenant de ``crm.Actividad`` y acción ``completar``. */
+        put: operations["crm_actividades_update"];
+        post?: never;
+        /** @description CRUD multi-tenant de ``crm.Actividad`` y acción ``completar``. */
+        delete: operations["crm_actividades_delete"];
+        options?: never;
+        head?: never;
+        /** @description CRUD multi-tenant de ``crm.Actividad`` y acción ``completar``. */
+        patch: operations["crm_actividades_partial_update"];
+        trace?: never;
+    };
+    "/crm/actividades/{id_actividad}/activar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Actividad. */
+                id_actividad: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/activar/
+         *     Reactiva un registro que fue desactivado.
+         *     Busca el objeto incluyendo inactivos (necesario para reactivar).
+         */
+        post: operations["crm_actividades_activar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/actividades/{id_actividad}/completar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Actividad. */
+                id_actividad: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Marca o desmarca una actividad como completada
+         * @description CRUD multi-tenant de ``crm.Actividad`` y acción ``completar``.
+         */
+        post: operations["crm_actividades_completar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/actividades/{id_actividad}/desactivar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Actividad. */
+                id_actividad: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/desactivar/
+         *     Desactiva (borrado lógico) un registro activo.
+         */
+        post: operations["crm_actividades_desactivar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/crm/clientes/": {
         parameters: {
             query?: never;
@@ -3152,6 +4740,382 @@ export interface paths {
         patch: operations["crm_direcciones-cliente_partial_update"];
         trace?: never;
     };
+    "/crm/etapas/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description CRUD multi-tenant de etapas configurables de ``crm.Pipeline``. */
+        get: operations["crm_etapas_list"];
+        put?: never;
+        /** @description CRUD multi-tenant de etapas configurables de ``crm.Pipeline``. */
+        post: operations["crm_etapas_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/etapas/{id_etapa}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Etapa. */
+                id_etapa: string;
+            };
+            cookie?: never;
+        };
+        /** @description CRUD multi-tenant de etapas configurables de ``crm.Pipeline``. */
+        get: operations["crm_etapas_read"];
+        /** @description CRUD multi-tenant de etapas configurables de ``crm.Pipeline``. */
+        put: operations["crm_etapas_update"];
+        post?: never;
+        /** @description CRUD multi-tenant de etapas configurables de ``crm.Pipeline``. */
+        delete: operations["crm_etapas_delete"];
+        options?: never;
+        head?: never;
+        /** @description CRUD multi-tenant de etapas configurables de ``crm.Pipeline``. */
+        patch: operations["crm_etapas_partial_update"];
+        trace?: never;
+    };
+    "/crm/etapas/{id_etapa}/activar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Etapa. */
+                id_etapa: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/activar/
+         *     Reactiva un registro que fue desactivado.
+         *     Busca el objeto incluyendo inactivos (necesario para reactivar).
+         */
+        post: operations["crm_etapas_activar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/etapas/{id_etapa}/desactivar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Etapa. */
+                id_etapa: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/desactivar/
+         *     Desactiva (borrado lógico) un registro activo.
+         */
+        post: operations["crm_etapas_desactivar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/leads/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description CRUD multi-tenant de ``crm.Lead`` con filtros Kanban y acción ``mover-etapa``. */
+        get: operations["crm_leads_list"];
+        put?: never;
+        /** @description CRUD multi-tenant de ``crm.Lead`` con filtros Kanban y acción ``mover-etapa``. */
+        post: operations["crm_leads_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/leads/{id_lead}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Lead. */
+                id_lead: string;
+            };
+            cookie?: never;
+        };
+        /** @description CRUD multi-tenant de ``crm.Lead`` con filtros Kanban y acción ``mover-etapa``. */
+        get: operations["crm_leads_read"];
+        /** @description CRUD multi-tenant de ``crm.Lead`` con filtros Kanban y acción ``mover-etapa``. */
+        put: operations["crm_leads_update"];
+        post?: never;
+        /** @description CRUD multi-tenant de ``crm.Lead`` con filtros Kanban y acción ``mover-etapa``. */
+        delete: operations["crm_leads_delete"];
+        options?: never;
+        head?: never;
+        /** @description CRUD multi-tenant de ``crm.Lead`` con filtros Kanban y acción ``mover-etapa``. */
+        patch: operations["crm_leads_partial_update"];
+        trace?: never;
+    };
+    "/crm/leads/{id_lead}/activar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Lead. */
+                id_lead: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/activar/
+         *     Reactiva un registro que fue desactivado.
+         *     Busca el objeto incluyendo inactivos (necesario para reactivar).
+         */
+        post: operations["crm_leads_activar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/leads/{id_lead}/anonimizar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Lead. */
+                id_lead: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Anonimiza la PII de un lead conforme al derecho al olvido
+         * @description CRUD multi-tenant de ``crm.Lead`` con filtros Kanban y acción ``mover-etapa``.
+         */
+        post: operations["crm_leads_anonimizar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/leads/{id_lead}/convertir-cliente/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Lead. */
+                id_lead: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Convierte atómica e idempotentemente un lead en cliente (+ cotización borrador opcional)
+         * @description CRUD multi-tenant de ``crm.Lead`` con filtros Kanban y acción ``mover-etapa``.
+         */
+        post: operations["crm_leads_convertir_cliente"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/leads/{id_lead}/desactivar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Lead. */
+                id_lead: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/desactivar/
+         *     Desactiva (borrado lógico) un registro activo.
+         */
+        post: operations["crm_leads_desactivar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/leads/{id_lead}/mover-etapa/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Lead. */
+                id_lead: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mueve un lead a otra etapa del mismo pipeline
+         * @description CRUD multi-tenant de ``crm.Lead`` con filtros Kanban y acción ``mover-etapa``.
+         */
+        post: operations["crm_leads_mover_etapa"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/pipelines/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description CRUD multi-tenant de embudos de ventas (``crm.Pipeline``) y acciones de etapas. */
+        get: operations["crm_pipelines_list"];
+        put?: never;
+        /** @description CRUD multi-tenant de embudos de ventas (``crm.Pipeline``) y acciones de etapas. */
+        post: operations["crm_pipelines_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/pipelines/asegurar-predeterminado/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Obtiene o inicializa idempotentemente el pipeline predeterminado de la empresa
+         * @description CRUD multi-tenant de embudos de ventas (``crm.Pipeline``) y acciones de etapas.
+         */
+        post: operations["crm_pipelines_asegurar_predeterminado"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/pipelines/{id_pipeline}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pipeline. */
+                id_pipeline: string;
+            };
+            cookie?: never;
+        };
+        /** @description CRUD multi-tenant de embudos de ventas (``crm.Pipeline``) y acciones de etapas. */
+        get: operations["crm_pipelines_read"];
+        /** @description CRUD multi-tenant de embudos de ventas (``crm.Pipeline``) y acciones de etapas. */
+        put: operations["crm_pipelines_update"];
+        post?: never;
+        /** @description CRUD multi-tenant de embudos de ventas (``crm.Pipeline``) y acciones de etapas. */
+        delete: operations["crm_pipelines_delete"];
+        options?: never;
+        head?: never;
+        /** @description CRUD multi-tenant de embudos de ventas (``crm.Pipeline``) y acciones de etapas. */
+        patch: operations["crm_pipelines_partial_update"];
+        trace?: never;
+    };
+    "/crm/pipelines/{id_pipeline}/activar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pipeline. */
+                id_pipeline: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/activar/
+         *     Reactiva un registro que fue desactivado.
+         *     Busca el objeto incluyendo inactivos (necesario para reactivar).
+         */
+        post: operations["crm_pipelines_activar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/pipelines/{id_pipeline}/desactivar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pipeline. */
+                id_pipeline: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/desactivar/
+         *     Desactiva (borrado lógico) un registro activo.
+         */
+        post: operations["crm_pipelines_desactivar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/pipelines/{id_pipeline}/reordenar-etapas/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pipeline. */
+                id_pipeline: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reordena atómicamente las etapas activas del pipeline
+         * @description CRUD multi-tenant de embudos de ventas (``crm.Pipeline``) y acciones de etapas.
+         */
+        post: operations["crm_pipelines_reordenar_etapas"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/cuentas-por-pagar/abonos-cxp/": {
         parameters: {
             query?: never;
@@ -3161,7 +5125,7 @@ export interface paths {
         };
         get: operations["cuentas-por-pagar_abonos-cxp_list"];
         put?: never;
-        post: operations["cuentas-por-pagar_abonos-cxp_create"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3179,12 +5143,12 @@ export interface paths {
             cookie?: never;
         };
         get: operations["cuentas-por-pagar_abonos-cxp_read"];
-        put: operations["cuentas-por-pagar_abonos-cxp_update"];
+        put?: never;
         post?: never;
-        delete: operations["cuentas-por-pagar_abonos-cxp_delete"];
+        delete?: never;
         options?: never;
         head?: never;
-        patch: operations["cuentas-por-pagar_abonos-cxp_partial_update"];
+        patch?: never;
         trace?: never;
     };
     "/cuentas-por-pagar/cuentas-por-pagar/": {
@@ -3234,12 +5198,12 @@ export interface paths {
             cookie?: never;
         };
         get: operations["cuentas-por-pagar_cuentas-por-pagar_read"];
-        put: operations["cuentas-por-pagar_cuentas-por-pagar_update"];
+        put?: never;
         post?: never;
-        delete: operations["cuentas-por-pagar_cuentas-por-pagar_delete"];
+        delete?: never;
         options?: never;
         head?: never;
-        patch: operations["cuentas-por-pagar_cuentas-por-pagar_partial_update"];
+        patch?: never;
         trace?: never;
     };
     "/cuentas-por-pagar/cuentas-por-pagar/{id_cxp}/abonar/": {
@@ -3262,6 +5226,1232 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/cxc-lubrikca/bandeja/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Bandeja de solo lectura + acciones del cierre híbrido. */
+        get: operations["cxc-lubrikca_bandeja_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/bandeja/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Bandeja de facturación. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** @description Bandeja de solo lectura + acciones del cierre híbrido. */
+        get: operations["cxc-lubrikca_bandeja_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/bandeja/{id}/confirmar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Bandeja de facturación. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Bandeja de solo lectura + acciones del cierre híbrido. */
+        post: operations["cxc-lubrikca_bandeja_confirmar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/bandeja/{id}/proponer/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Bandeja de facturación. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Bandeja de solo lectura + acciones del cierre híbrido. */
+        post: operations["cxc-lubrikca_bandeja_proponer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/conciliaciones/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Lectura de conciliaciones + acciones ``conciliar`` / ``revisar`` / ``resumen``. */
+        get: operations["cxc-lubrikca_conciliaciones_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/conciliaciones/conciliar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Corre el motor de conciliación sobre un pedido del tenant. */
+        post: operations["cxc-lubrikca_conciliaciones_conciliar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/conciliaciones/resumen/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Tablero de cartera de la empresa del usuario. */
+        get: operations["cxc-lubrikca_conciliaciones_resumen"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/conciliaciones/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Conciliación. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** @description Lectura de conciliaciones + acciones ``conciliar`` / ``revisar`` / ``resumen``. */
+        get: operations["cxc-lubrikca_conciliaciones_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/conciliaciones/{id}/revisar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Conciliación. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Marca quién revisó la conciliación. */
+        post: operations["cxc-lubrikca_conciliaciones_revisar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/config-conciliacion/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description CRUD de tolerancias del semáforo (scope multi-tenant). */
+        get: operations["cxc-lubrikca_config-conciliacion_list"];
+        put?: never;
+        /** @description CRUD de tolerancias del semáforo (scope multi-tenant). */
+        post: operations["cxc-lubrikca_config-conciliacion_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/config-conciliacion/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Configuración de conciliación. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** @description CRUD de tolerancias del semáforo (scope multi-tenant). */
+        get: operations["cxc-lubrikca_config-conciliacion_read"];
+        /** @description CRUD de tolerancias del semáforo (scope multi-tenant). */
+        put: operations["cxc-lubrikca_config-conciliacion_update"];
+        post?: never;
+        /** @description CRUD de tolerancias del semáforo (scope multi-tenant). */
+        delete: operations["cxc-lubrikca_config-conciliacion_delete"];
+        options?: never;
+        head?: never;
+        /** @description CRUD de tolerancias del semáforo (scope multi-tenant). */
+        patch: operations["cxc-lubrikca_config-conciliacion_partial_update"];
+        trace?: never;
+    };
+    "/cxc-lubrikca/config-conciliacion/{id}/activar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Configuración de conciliación. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/activar/
+         *     Reactiva un registro que fue desactivado.
+         *     Busca el objeto incluyendo inactivos (necesario para reactivar).
+         */
+        post: operations["cxc-lubrikca_config-conciliacion_activar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/config-conciliacion/{id}/desactivar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Configuración de conciliación. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/desactivar/
+         *     Desactiva (borrado lógico) un registro activo.
+         */
+        post: operations["cxc-lubrikca_config-conciliacion_desactivar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/descuentos-bcv-completo/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["cxc-lubrikca_descuentos-bcv-completo_list"];
+        put?: never;
+        post: operations["cxc-lubrikca_descuentos-bcv-completo_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/descuentos-bcv-completo/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Descuento BCV completo. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get: operations["cxc-lubrikca_descuentos-bcv-completo_read"];
+        put: operations["cxc-lubrikca_descuentos-bcv-completo_update"];
+        post?: never;
+        delete: operations["cxc-lubrikca_descuentos-bcv-completo_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["cxc-lubrikca_descuentos-bcv-completo_partial_update"];
+        trace?: never;
+    };
+    "/cxc-lubrikca/descuentos-bcv-completo/{id}/activar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Descuento BCV completo. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/activar/
+         *     Reactiva un registro que fue desactivado.
+         *     Busca el objeto incluyendo inactivos (necesario para reactivar).
+         */
+        post: operations["cxc-lubrikca_descuentos-bcv-completo_activar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/descuentos-bcv-completo/{id}/desactivar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Descuento BCV completo. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/desactivar/
+         *     Desactiva (borrado lógico) un registro activo.
+         */
+        post: operations["cxc-lubrikca_descuentos-bcv-completo_desactivar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/descuentos-marca-categoria/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["cxc-lubrikca_descuentos-marca-categoria_list"];
+        put?: never;
+        post: operations["cxc-lubrikca_descuentos-marca-categoria_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/descuentos-marca-categoria/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Descuento por marca/categoría. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get: operations["cxc-lubrikca_descuentos-marca-categoria_read"];
+        put: operations["cxc-lubrikca_descuentos-marca-categoria_update"];
+        post?: never;
+        delete: operations["cxc-lubrikca_descuentos-marca-categoria_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["cxc-lubrikca_descuentos-marca-categoria_partial_update"];
+        trace?: never;
+    };
+    "/cxc-lubrikca/descuentos-marca-categoria/{id}/activar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Descuento por marca/categoría. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/activar/
+         *     Reactiva un registro que fue desactivado.
+         *     Busca el objeto incluyendo inactivos (necesario para reactivar).
+         */
+        post: operations["cxc-lubrikca_descuentos-marca-categoria_activar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/descuentos-marca-categoria/{id}/desactivar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Descuento por marca/categoría. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/desactivar/
+         *     Desactiva (borrado lógico) un registro activo.
+         */
+        post: operations["cxc-lubrikca_descuentos-marca-categoria_desactivar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/feriados/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["cxc-lubrikca_feriados_list"];
+        put?: never;
+        post: operations["cxc-lubrikca_feriados_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/feriados/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Feriado. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get: operations["cxc-lubrikca_feriados_read"];
+        put: operations["cxc-lubrikca_feriados_update"];
+        post?: never;
+        delete: operations["cxc-lubrikca_feriados_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["cxc-lubrikca_feriados_partial_update"];
+        trace?: never;
+    };
+    "/cxc-lubrikca/feriados/{id}/activar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Feriado. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/activar/
+         *     Reactiva un registro que fue desactivado.
+         *     Busca el objeto incluyendo inactivos (necesario para reactivar).
+         */
+        post: operations["cxc-lubrikca_feriados_activar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/feriados/{id}/desactivar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Feriado. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/desactivar/
+         *     Desactiva (borrado lógico) un registro activo.
+         */
+        post: operations["cxc-lubrikca_feriados_desactivar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/lineas-pedido/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["cxc-lubrikca_lineas-pedido_list"];
+        put?: never;
+        post: operations["cxc-lubrikca_lineas-pedido_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/lineas-pedido/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Línea de pedido (espejo). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get: operations["cxc-lubrikca_lineas-pedido_read"];
+        put: operations["cxc-lubrikca_lineas-pedido_update"];
+        post?: never;
+        delete: operations["cxc-lubrikca_lineas-pedido_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["cxc-lubrikca_lineas-pedido_partial_update"];
+        trace?: never;
+    };
+    "/cxc-lubrikca/lineas-pedido/{id}/activar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Línea de pedido (espejo). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/activar/
+         *     Reactiva un registro que fue desactivado.
+         *     Busca el objeto incluyendo inactivos (necesario para reactivar).
+         */
+        post: operations["cxc-lubrikca_lineas-pedido_activar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/lineas-pedido/{id}/desactivar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Línea de pedido (espejo). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/desactivar/
+         *     Desactiva (borrado lógico) un registro activo.
+         */
+        post: operations["cxc-lubrikca_lineas-pedido_desactivar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/metodos-pago/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["cxc-lubrikca_metodos-pago_list"];
+        put?: never;
+        post: operations["cxc-lubrikca_metodos-pago_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/metodos-pago/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Método de pago. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get: operations["cxc-lubrikca_metodos-pago_read"];
+        put: operations["cxc-lubrikca_metodos-pago_update"];
+        post?: never;
+        delete: operations["cxc-lubrikca_metodos-pago_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["cxc-lubrikca_metodos-pago_partial_update"];
+        trace?: never;
+    };
+    "/cxc-lubrikca/metodos-pago/{id}/activar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Método de pago. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/activar/
+         *     Reactiva un registro que fue desactivado.
+         *     Busca el objeto incluyendo inactivos (necesario para reactivar).
+         */
+        post: operations["cxc-lubrikca_metodos-pago_activar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/metodos-pago/{id}/desactivar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Método de pago. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/desactivar/
+         *     Desactiva (borrado lógico) un registro activo.
+         */
+        post: operations["cxc-lubrikca_metodos-pago_desactivar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/pagos/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["cxc-lubrikca_pagos_list"];
+        put?: never;
+        post: operations["cxc-lubrikca_pagos_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/pagos/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pago (espejo). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get: operations["cxc-lubrikca_pagos_read"];
+        put: operations["cxc-lubrikca_pagos_update"];
+        post?: never;
+        delete: operations["cxc-lubrikca_pagos_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["cxc-lubrikca_pagos_partial_update"];
+        trace?: never;
+    };
+    "/cxc-lubrikca/pagos/{id}/activar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pago (espejo). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/activar/
+         *     Reactiva un registro que fue desactivado.
+         *     Busca el objeto incluyendo inactivos (necesario para reactivar).
+         */
+        post: operations["cxc-lubrikca_pagos_activar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/pagos/{id}/desactivar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pago (espejo). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/desactivar/
+         *     Desactiva (borrado lógico) un registro activo.
+         */
+        post: operations["cxc-lubrikca_pagos_desactivar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/pedidos/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["cxc-lubrikca_pedidos_list"];
+        put?: never;
+        post: operations["cxc-lubrikca_pedidos_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/pedidos/sincronizar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Sincroniza el espejo desde Odoo (solo lectura) para la empresa del usuario. */
+        post: operations["cxc-lubrikca_pedidos_sincronizar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/pedidos/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pedido (espejo). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get: operations["cxc-lubrikca_pedidos_read"];
+        put: operations["cxc-lubrikca_pedidos_update"];
+        post?: never;
+        delete: operations["cxc-lubrikca_pedidos_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["cxc-lubrikca_pedidos_partial_update"];
+        trace?: never;
+    };
+    "/cxc-lubrikca/pedidos/{id}/activar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pedido (espejo). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/activar/
+         *     Reactiva un registro que fue desactivado.
+         *     Busca el objeto incluyendo inactivos (necesario para reactivar).
+         */
+        post: operations["cxc-lubrikca_pedidos_activar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/pedidos/{id}/desactivar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pedido (espejo). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/desactivar/
+         *     Desactiva (borrado lógico) un registro activo.
+         */
+        post: operations["cxc-lubrikca_pedidos_desactivar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/pedidos/{id}/recalcular/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pedido (espejo). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Recalcula y persiste la bandeja del pedido. */
+        post: operations["cxc-lubrikca_pedidos_recalcular"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/precios-lista/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["cxc-lubrikca_precios-lista_list"];
+        put?: never;
+        post: operations["cxc-lubrikca_precios-lista_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/precios-lista/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Precio de lista. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get: operations["cxc-lubrikca_precios-lista_read"];
+        put: operations["cxc-lubrikca_precios-lista_update"];
+        post?: never;
+        delete: operations["cxc-lubrikca_precios-lista_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["cxc-lubrikca_precios-lista_partial_update"];
+        trace?: never;
+    };
+    "/cxc-lubrikca/precios-lista/{id}/activar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Precio de lista. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/activar/
+         *     Reactiva un registro que fue desactivado.
+         *     Busca el objeto incluyendo inactivos (necesario para reactivar).
+         */
+        post: operations["cxc-lubrikca_precios-lista_activar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/precios-lista/{id}/desactivar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Precio de lista. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/desactivar/
+         *     Desactiva (borrado lógico) un registro activo.
+         */
+        post: operations["cxc-lubrikca_precios-lista_desactivar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/promociones-primera-compra/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["cxc-lubrikca_promociones-primera-compra_list"];
+        put?: never;
+        post: operations["cxc-lubrikca_promociones-primera-compra_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/promociones-primera-compra/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Promoción de primera compra. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get: operations["cxc-lubrikca_promociones-primera-compra_read"];
+        put: operations["cxc-lubrikca_promociones-primera-compra_update"];
+        post?: never;
+        delete: operations["cxc-lubrikca_promociones-primera-compra_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["cxc-lubrikca_promociones-primera-compra_partial_update"];
+        trace?: never;
+    };
+    "/cxc-lubrikca/promociones-primera-compra/{id}/activar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Promoción de primera compra. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/activar/
+         *     Reactiva un registro que fue desactivado.
+         *     Busca el objeto incluyendo inactivos (necesario para reactivar).
+         */
+        post: operations["cxc-lubrikca_promociones-primera-compra_activar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/promociones-primera-compra/{id}/desactivar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Promoción de primera compra. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/desactivar/
+         *     Desactiva (borrado lógico) un registro activo.
+         */
+        post: operations["cxc-lubrikca_promociones-primera-compra_desactivar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/reglas-recurrencia/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["cxc-lubrikca_reglas-recurrencia_list"];
+        put?: never;
+        post: operations["cxc-lubrikca_reglas-recurrencia_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/reglas-recurrencia/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Regla de recurrencia. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get: operations["cxc-lubrikca_reglas-recurrencia_read"];
+        put: operations["cxc-lubrikca_reglas-recurrencia_update"];
+        post?: never;
+        delete: operations["cxc-lubrikca_reglas-recurrencia_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["cxc-lubrikca_reglas-recurrencia_partial_update"];
+        trace?: never;
+    };
+    "/cxc-lubrikca/reglas-recurrencia/{id}/activar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Regla de recurrencia. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/activar/
+         *     Reactiva un registro que fue desactivado.
+         *     Busca el objeto incluyendo inactivos (necesario para reactivar).
+         */
+        post: operations["cxc-lubrikca_reglas-recurrencia_activar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/reglas-recurrencia/{id}/desactivar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Regla de recurrencia. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/desactivar/
+         *     Desactiva (borrado lógico) un registro activo.
+         */
+        post: operations["cxc-lubrikca_reglas-recurrencia_desactivar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/vinculaciones/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lectura de vinculaciones + acción ``registrar`` (servicio de captura).
+         * @description No expone create/update planos: los campos congelados (tasas, equivalentes)
+         *     se estampan en el servicio, nunca por la API.
+         */
+        get: operations["cxc-lubrikca_vinculaciones_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/vinculaciones/registrar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Lectura de vinculaciones + acción ``registrar`` (servicio de captura).
+         * @description No expone create/update planos: los campos congelados (tasas, equivalentes)
+         *     se estampan en el servicio, nunca por la API.
+         */
+        post: operations["cxc-lubrikca_vinculaciones_registrar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/vinculaciones/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Vinculación pago↔pedido. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * Lectura de vinculaciones + acción ``registrar`` (servicio de captura).
+         * @description No expone create/update planos: los campos congelados (tasas, equivalentes)
+         *     se estampan en el servicio, nunca por la API.
+         */
+        get: operations["cxc-lubrikca_vinculaciones_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/vinculaciones/{id}/activar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Vinculación pago↔pedido. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/activar/
+         *     Reactiva un registro que fue desactivado.
+         *     Busca el objeto incluyendo inactivos (necesario para reactivar).
+         */
+        post: operations["cxc-lubrikca_vinculaciones_activar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cxc-lubrikca/vinculaciones/{id}/desactivar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Vinculación pago↔pedido. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/desactivar/
+         *     Desactiva (borrado lógico) un registro activo.
+         */
+        post: operations["cxc-lubrikca_vinculaciones_desactivar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/cxc/abonos-cxc/": {
         parameters: {
             query?: never;
@@ -3271,6 +6461,7 @@ export interface paths {
         };
         get: operations["cxc_abonos-cxc_list"];
         put?: never;
+        /** @description POST /api/cxc/abonos-cxc/ */
         post: operations["cxc_abonos-cxc_create"];
         delete?: never;
         options?: never;
@@ -3289,12 +6480,12 @@ export interface paths {
             cookie?: never;
         };
         get: operations["cxc_abonos-cxc_read"];
-        put: operations["cxc_abonos-cxc_update"];
+        put?: never;
         post?: never;
-        delete: operations["cxc_abonos-cxc_delete"];
+        delete?: never;
         options?: never;
         head?: never;
-        patch: operations["cxc_abonos-cxc_partial_update"];
+        patch?: never;
         trace?: never;
     };
     "/cxc/cuentas-por-cobrar/": {
@@ -3367,12 +6558,12 @@ export interface paths {
             cookie?: never;
         };
         get: operations["cxc_cuentas-por-cobrar_read"];
-        put: operations["cxc_cuentas-por-cobrar_update"];
+        put?: never;
         post?: never;
-        delete: operations["cxc_cuentas-por-cobrar_delete"];
+        delete?: never;
         options?: never;
         head?: never;
-        patch: operations["cxc_cuentas-por-cobrar_partial_update"];
+        patch?: never;
         trace?: never;
     };
     "/cxc/cuentas-por-cobrar/{id}/abonar/": {
@@ -3411,6 +6602,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/despacho/despachos/desde-nota-venta/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description POST /api/despacho/despachos/desde-nota-venta/ */
+        post: operations["despacho_despachos_desde_nota_venta"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/despacho/despachos/{id_despacho}/": {
         parameters: {
             query?: never;
@@ -3430,6 +6638,106 @@ export interface paths {
         patch: operations["despacho_despachos_partial_update"];
         trace?: never;
     };
+    "/despacho/despachos/{id_despacho}/cancelar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Despacho. */
+                id_despacho: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description PENDIENTE → CANCELADO. Body: {motivo}. */
+        post: operations["despacho_despachos_cancelar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/despacho/despachos/{id_despacho}/devolver/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Despacho. */
+                id_despacho: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description EN_RUTA → DEVUELTO. Body: {motivo}. No reingresa stock (DevolucionVenta). */
+        post: operations["despacho_despachos_devolver"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/despacho/despachos/{id_despacho}/entregar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Despacho. */
+                id_despacho: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description EN_RUTA → ENTREGADO. Body: {receptor, documento_receptor?, firma_base64?}. */
+        post: operations["despacho_despachos_entregar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/despacho/despachos/{id_despacho}/iniciar-ruta/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Despacho. */
+                id_despacho: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description PENDIENTE → EN_RUTA. Body opcional: {id_transportista} (chofer que sale). */
+        post: operations["despacho_despachos_iniciar_ruta"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/despacho/despachos/{id_despacho}/pdf/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Despacho. */
+                id_despacho: string;
+            };
+            cookie?: never;
+        };
+        /** @description GET /api/despacho/despachos/{pk}/pdf/ — nota de entrega en PDF. */
+        get: operations["despacho_despachos_pdf"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/despacho/detalles-despacho/": {
         parameters: {
             query?: never;
@@ -3437,9 +6745,15 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * @description Líneas de despacho — SOLO LECTURA por API: se crean junto con el despacho
+         *     (servicio que valida el cupo contra la venta). Editar líneas sueltas
+         *     permitiría burlar la validación de sobre-despacho; una corrección se hace
+         *     cancelando el despacho y creando otro.
+         */
         get: operations["despacho_detalles-despacho_list"];
         put?: never;
-        post: operations["despacho_detalles-despacho_create"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3456,13 +6770,19 @@ export interface paths {
             };
             cookie?: never;
         };
+        /**
+         * @description Líneas de despacho — SOLO LECTURA por API: se crean junto con el despacho
+         *     (servicio que valida el cupo contra la venta). Editar líneas sueltas
+         *     permitiría burlar la validación de sobre-despacho; una corrección se hace
+         *     cancelando el despacho y creando otro.
+         */
         get: operations["despacho_detalles-despacho_read"];
-        put: operations["despacho_detalles-despacho_update"];
+        put?: never;
         post?: never;
-        delete: operations["despacho_detalles-despacho_delete"];
+        delete?: never;
         options?: never;
         head?: never;
-        patch: operations["despacho_detalles-despacho_partial_update"];
+        patch?: never;
         trace?: never;
     };
     "/finanzas/ajustes-caja-banco/crear_ajuste/": {
@@ -3475,6 +6795,64 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["finanzas_ajustes-caja-banco_crear_ajuste"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finanzas/asignaciones-pago/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Gestión idempotente de imputaciones N:M ``Pago ↔ Documento``. */
+        get: operations["finanzas_asignaciones-pago_list"];
+        put?: never;
+        /** @description Gestión idempotente de imputaciones N:M ``Pago ↔ Documento``. */
+        post: operations["finanzas_asignaciones-pago_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finanzas/asignaciones-pago/{id_asignacion}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Asignación de Pago. */
+                id_asignacion: string;
+            };
+            cookie?: never;
+        };
+        /** @description Gestión idempotente de imputaciones N:M ``Pago ↔ Documento``. */
+        get: operations["finanzas_asignaciones-pago_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finanzas/asignaciones-pago/{id_asignacion}/revertir/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Asignación de Pago. */
+                id_asignacion: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Revierte una asignación activa, restaura saldos y emite contra-asiento. */
+        post: operations["finanzas_asignaciones-pago_revertir"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3600,6 +6978,84 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["finanzas_cajas-fisicas_partial_update"];
+        trace?: never;
+    };
+    "/finanzas/cajas-fisicas/{id_caja_fisica}/abrir-sesion/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Caja Física. */
+                id_caja_fisica: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Abre una sesión de trabajo sobre esta caja física (FIX endpoint roto:
+         *     el frontend llama POST /finanzas/cajas-fisicas/{id}/abrir-sesion/ y la
+         *     ruta no existía). Si había una sesión abierta, se cierra
+         *     automáticamente (comportamiento de SesionCajaFisica.abrir_sesion).
+         */
+        post: operations["finanzas_cajas-fisicas_abrir_sesion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finanzas/cajas-fisicas/{id_caja_fisica}/cerrar-sesion/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Caja Física. */
+                id_caja_fisica: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Cierra la sesión ABIERTA de esta caja física (FIX endpoint roto: el
+         *     frontend llama POST /finanzas/cajas-fisicas/{id}/cerrar-sesion/ y la
+         *     ruta no existía). Acepta opcionalmente ``notas_cierre``,
+         *     ``saldos_reales`` ({id_caja: saldo real contado} — la propia caja
+         *     física y/o sus cajas virtuales) y ``hasta``; los cierres por caja y el
+         *     cambio de estado de la sesión son atómicos
+         *     (SesionCajaFisica.cerrar_sesion).
+         */
+        post: operations["finanzas_cajas-fisicas_cerrar_sesion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finanzas/cajas-fisicas/{id_caja_fisica}/cierre/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Caja Física. */
+                id_caja_fisica: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Realiza el cierre de la caja física (hallazgo P0-8): el frontend llama
+         *     POST /finanzas/cajas-fisicas/{id}/cierre, ruta que no existía. Recibe
+         *     saldo_real (contado) y opcionalmente 'hasta' (fecha/hora límite ISO).
+         *     El corte queda persistido como MovimientoCajaBanco tipo CIERRE.
+         */
+        post: operations["finanzas_cajas-fisicas_cierre"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/finanzas/cajas-usuario/": {
@@ -3737,8 +7193,13 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * @description Endpoint para realizar el cierre de una caja.
-         *     Recibe el saldo real contado y opcionalmente una fecha/hora límite.
+         * @description Realiza el cierre de la caja virtual. Recibe el saldo real contado y
+         *     opcionalmente 'hasta' (fecha/hora límite ISO). El corte queda
+         *     persistido como MovimientoCajaBanco tipo CIERRE (patrón PR #73).
+         *
+         *     FIX (endpoint roto): llamaba ``caja.realizar_cierre`` pero ``Caja``
+         *     (virtual) no definía ese método → siempre 400. Ahora el método existe
+         *     y reutiliza el helper común ``services.realizar_cierre_caja``.
          */
         post: operations["finanzas_cajas_cierre_caja"];
         delete?: never;
@@ -3762,6 +7223,25 @@ export interface paths {
          *     Permite filtrar por fecha, tipo, moneda, concepto, referencia, usuario.
          */
         get: operations["finanzas_cajas_movimientos_caja_banco"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finanzas/contactos/{id_contacto}/estado-conciliacion/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_contacto: string;
+            };
+            cookie?: never;
+        };
+        /** @description Estado unificado de pagos disponibles, obligaciones abiertas y asignaciones de un contacto. */
+        get: operations["finanzas_contactos_estado-conciliacion_list"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4108,6 +7588,39 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/finanzas/equivalencias-trimonetarias/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Calcula equivalencias simultáneas Base + País/Fiscal (BCV) + Referencia. */
+        post: operations["finanzas_equivalencias-trimonetarias_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finanzas/libro-maestro-caja/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["finanzas_libro-maestro-caja_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/finanzas/metodos-pago-empresa-activas/": {
         parameters: {
             query?: never;
@@ -4167,8 +7680,14 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Devuelve métodos de pago reutilizables (de otras empresas, genéricos o públicos) para la empresa actual.
+         * @description Devuelve métodos de pago reutilizables (genéricos o públicos) para la empresa actual.
          *     Marca con 'aplicado' los que ya están en la empresa actual (por nombre y tipo).
+         *
+         *     SEC-A3 (auditoría 2026-06-10): antes el queryset incluía los métodos
+         *     privados de TODOS los demás tenants serializados con `__all__`
+         *     (`documento_json`, `referencia_externa`). Ahora solo expone métodos
+         *     `es_generico`/`es_publico` y proyecta únicamente campos no sensibles
+         *     (MetodoPagoReutilizableSerializer).
          */
         get: operations["finanzas_metodos-pago_buscar_reutilizar"];
         put?: never;
@@ -4397,6 +7916,138 @@ export interface paths {
         patch: operations["finanzas_overrides-metodos-pago_partial_update"];
         trace?: never;
     };
+    "/finanzas/pagos-terceros/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["finanzas_pagos-terceros_list"];
+        put?: never;
+        post: operations["finanzas_pagos-terceros_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finanzas/pagos-terceros/{id_pago_tercero}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pago de Tercero. */
+                id_pago_tercero: string;
+            };
+            cookie?: never;
+        };
+        get: operations["finanzas_pagos-terceros_read"];
+        put: operations["finanzas_pagos-terceros_update"];
+        post?: never;
+        delete: operations["finanzas_pagos-terceros_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["finanzas_pagos-terceros_partial_update"];
+        trace?: never;
+    };
+    "/finanzas/pagos-terceros/{id_pago_tercero}/abonar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pago de Tercero. */
+                id_pago_tercero: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["finanzas_pagos-terceros_abonar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finanzas/pagos-terceros/{id_pago_tercero}/anular/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pago de Tercero. */
+                id_pago_tercero: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description pendiente → anulado (solo sin efectos financieros generados). */
+        post: operations["finanzas_pagos-terceros_anular"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finanzas/pagos-terceros/{id_pago_tercero}/asociar-proveedor/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pago de Tercero. */
+                id_pago_tercero: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["finanzas_pagos-terceros_asociar_proveedor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finanzas/pagos-terceros/{id_pago_tercero}/marcar-reintegrado/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pago de Tercero. */
+                id_pago_tercero: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description reintegro_pendiente → reintegrado (confirmación manual). */
+        post: operations["finanzas_pagos-terceros_marcar_reintegrado"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finanzas/pagos-terceros/{id_pago_tercero}/solicitar-reintegro/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pago de Tercero. */
+                id_pago_tercero: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["finanzas_pagos-terceros_solicitar_reintegro"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/finanzas/pagos/": {
         parameters: {
             query?: never;
@@ -4464,6 +8115,46 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["finanzas_pagos_partial_update"];
+        trace?: never;
+    };
+    "/finanzas/pagos/{id_pago}/conciliar-documentos/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pago. */
+                id_pago: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Aplica un ``Pago`` a 1..N documentos abiertos en una transacción atómica. */
+        post: operations["finanzas_pagos_conciliar_documentos"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finanzas/pagos/{id_pago}/sugerir-distribucion/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pago. */
+                id_pago: string;
+            };
+            cookie?: never;
+        };
+        /** @description Propone distribución FIFO determinística del saldo disponible del pago. */
+        get: operations["finanzas_pagos_sugerir_distribucion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/finanzas/plantillas-maestro-cajas/": {
@@ -4568,7 +8259,16 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Cierra la sesión de caja, realiza el cierre de todas las cajas asociadas y retorna el reporte. */
+        /**
+         * @description Cierra la sesión de caja: realiza el cierre de las cajas indicadas en
+         *     ``saldos_reales`` ({id_caja: saldo real contado} — la caja física de
+         *     la sesión y/o sus cajas virtuales) y marca la sesión CERRADA, todo en
+         *     una sola transacción. Retorna la sesión y el reporte de cierres.
+         *
+         *     FIX (endpoint roto): llamaba ``sesion.cerrar_sesion(saldos_reales=...)``
+         *     con una firma del modelo que solo aceptaba ``notas_cierre`` →
+         *     TypeError 500 en toda invocación.
+         */
         post: operations["finanzas_sesiones-caja_cerrar_sesion"];
         delete?: never;
         options?: never;
@@ -4588,7 +8288,17 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Permite transferir saldo de una caja origen a una caja destino tras el cierre de sesión. */
+        /**
+         * @description Transfiere saldo entre dos cajas virtuales de la sesión (las asociadas
+         *     a la caja física de la sesión), p. ej. registradora → gerencia.
+         *
+         *     FIX (CTF-015.1): hacía ``sesion.cajas.get(...)`` pero
+         *     ``SesionCajaFisica`` no tiene relación ``cajas`` (la real es
+         *     ``caja_fisica.cajas_virtuales``); el AttributeError caía en un
+         *     ``except Exception`` y el endpoint respondía 400 SIEMPRE — código
+         *     muerto que aparentaba validación. Ahora la transferencia ocurre de
+         *     verdad y solo errores esperables se traducen a 400.
+         */
         post: operations["finanzas_sesiones-caja_transferir_entre_cajas"];
         delete?: never;
         options?: never;
@@ -4687,6 +8397,41 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["finanzas_tasas-cambio_partial_update"];
+        trace?: never;
+    };
+    "/finanzas/tipos-tasa-cambio/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["finanzas_tipos-tasa-cambio_list"];
+        put?: never;
+        post: operations["finanzas_tipos-tasa-cambio_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finanzas/tipos-tasa-cambio/{id_tipo_tasa}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Tipo de Tasa de Cambio. */
+                id_tipo_tasa: string;
+            };
+            cookie?: never;
+        };
+        get: operations["finanzas_tipos-tasa-cambio_read"];
+        put: operations["finanzas_tipos-tasa-cambio_update"];
+        post?: never;
+        delete: operations["finanzas_tipos-tasa-cambio_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["finanzas_tipos-tasa-cambio_partial_update"];
         trace?: never;
     };
     "/finanzas/transacciones-datafono/": {
@@ -4858,6 +8603,80 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/fiscal/pagos-parafiscales/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["fiscal_pagos-parafiscales_list"];
+        put?: never;
+        post: operations["fiscal_pagos-parafiscales_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/fiscal/pagos-parafiscales/{id_pago_parafiscal}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pago de Contribución Parafiscal. */
+                id_pago_parafiscal: string;
+            };
+            cookie?: never;
+        };
+        get: operations["fiscal_pagos-parafiscales_read"];
+        put: operations["fiscal_pagos-parafiscales_update"];
+        post?: never;
+        delete: operations["fiscal_pagos-parafiscales_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["fiscal_pagos-parafiscales_partial_update"];
+        trace?: never;
+    };
+    "/fiscal/pagos-parafiscales/{id_pago_parafiscal}/anular/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pago de Contribución Parafiscal. */
+                id_pago_parafiscal: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description pendiente → anulado (libera el período para re-declarar). */
+        post: operations["fiscal_pagos-parafiscales_anular"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/fiscal/pagos-parafiscales/{id_pago_parafiscal}/pagar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pago de Contribución Parafiscal. */
+                id_pago_parafiscal: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["fiscal_pagos-parafiscales_pagar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/fiscal/periodos-fiscales/": {
         parameters: {
             query?: never;
@@ -5005,6 +8824,47 @@ export interface paths {
         patch: operations["gastos_categorias-gasto_partial_update"];
         trace?: never;
     };
+    "/gastos/detalles-gasto/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Líneas de imputación contable de un gasto (ExpenseLine). */
+        get: operations["gastos_detalles-gasto_list"];
+        put?: never;
+        /** @description Líneas de imputación contable de un gasto (ExpenseLine). */
+        post: operations["gastos_detalles-gasto_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/gastos/detalles-gasto/{id_detalle_gasto}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this detalle gasto. */
+                id_detalle_gasto: string;
+            };
+            cookie?: never;
+        };
+        /** @description Líneas de imputación contable de un gasto (ExpenseLine). */
+        get: operations["gastos_detalles-gasto_read"];
+        /** @description Líneas de imputación contable de un gasto (ExpenseLine). */
+        put: operations["gastos_detalles-gasto_update"];
+        post?: never;
+        /** @description Líneas de imputación contable de un gasto (ExpenseLine). */
+        delete: operations["gastos_detalles-gasto_delete"];
+        options?: never;
+        head?: never;
+        /** @description Líneas de imputación contable de un gasto (ExpenseLine). */
+        patch: operations["gastos_detalles-gasto_partial_update"];
+        trace?: never;
+    };
     "/gastos/gastos/": {
         parameters: {
             query?: never;
@@ -5086,7 +8946,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Aprueba un gasto */
+        /**
+         * Aprueba un gasto y genera su(s) asiento(s) contable(s) (R-CODE-11).
+         * @description La validación de respaldo documental, el enforcement de período fiscal y
+         *     la generación de asientos viven en ``services.aprobar_gasto`` (atómico).
+         */
         post: operations["gastos_gastos_aprobar"];
         delete?: never;
         options?: never;
@@ -5106,7 +8970,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Rechaza un gasto */
+        /** @description Rechaza un gasto pendiente. */
         post: operations["gastos_gastos_rechazar"];
         delete?: never;
         options?: never;
@@ -5309,6 +9173,26 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["gestion-aprobaciones_solicitudes-aprobacion_partial_update"];
+        trace?: never;
+    };
+    "/gestion-aprobaciones/solicitudes-aprobacion/{id_solicitud_aprobacion}/decidir/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this solicitud aprobacion. */
+                id_solicitud_aprobacion: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Registra una decisión (aprobar/rechazar) sobre la etapa actual. */
+        post: operations["gestion-aprobaciones_solicitudes-aprobacion_decidir"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/gestion-aprobaciones/tipos-aprobacion/": {
@@ -5690,13 +9574,13 @@ export interface paths {
         };
         /**
          * @description CRUD de conectores configurados por empresa.
-         *     Acciones adicionales: test, sync, jobs, entidades.
+         *     Acciones adicionales: test, sync, push-cobranza, jobs, entidades.
          */
         get: operations["integration-hub_instancias_list"];
         put?: never;
         /**
          * @description CRUD de conectores configurados por empresa.
-         *     Acciones adicionales: test, sync, jobs, entidades.
+         *     Acciones adicionales: test, sync, push-cobranza, jobs, entidades.
          */
         post: operations["integration-hub_instancias_create"];
         delete?: never;
@@ -5716,25 +9600,25 @@ export interface paths {
         };
         /**
          * @description CRUD de conectores configurados por empresa.
-         *     Acciones adicionales: test, sync, jobs, entidades.
+         *     Acciones adicionales: test, sync, push-cobranza, jobs, entidades.
          */
         get: operations["integration-hub_instancias_read"];
         /**
          * @description CRUD de conectores configurados por empresa.
-         *     Acciones adicionales: test, sync, jobs, entidades.
+         *     Acciones adicionales: test, sync, push-cobranza, jobs, entidades.
          */
         put: operations["integration-hub_instancias_update"];
         post?: never;
         /**
          * @description CRUD de conectores configurados por empresa.
-         *     Acciones adicionales: test, sync, jobs, entidades.
+         *     Acciones adicionales: test, sync, push-cobranza, jobs, entidades.
          */
         delete: operations["integration-hub_instancias_delete"];
         options?: never;
         head?: never;
         /**
          * @description CRUD de conectores configurados por empresa.
-         *     Acciones adicionales: test, sync, jobs, entidades.
+         *     Acciones adicionales: test, sync, push-cobranza, jobs, entidades.
          */
         patch: operations["integration-hub_instancias_partial_update"];
         trace?: never;
@@ -5753,6 +9637,33 @@ export interface paths {
         get: operations["integration-hub_instancias_list_entidades"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/integration-hub/instancias/{id}/exportar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dispara una exportación outbound a Google Sheets de forma asíncrona.
+         * @description Body JSON (opcional):
+         *       - tipos: ["contactos", "productos", ...] | null → usa entidades_activas
+         *       - full: bool (default false). true → export completo (no incremental).
+         *
+         *     Solo válido para instancias del proveedor 'google_sheets'. Los resultados
+         *     se consultan puleando la acción ``jobs`` (JobSincronizacion outbound).
+         */
+        post: operations["integration-hub_instancias_exportar"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5795,6 +9706,29 @@ export interface paths {
         get: operations["integration-hub_instancias_preview_data"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/integration-hub/instancias/{id}/push-cobranza/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Dispara un push outbound de cobranza (pagos y/o gestiones de cobranza)
+         *     hacia el sistema externo. Requiere ``push_habilitado=True``.
+         *     Soporta cabecera ``Idempotency-Key`` para evitar ejecuciones duplicadas.
+         */
+        post: operations["integration-hub_instancias_push_cobranza"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5919,6 +9853,64 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/integration-hub/outbox/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Consulta multi-tenant de la cola Outbox y acción controlada de reintento (FALLIDO/DLQ). */
+        get: operations["integration-hub_outbox_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/integration-hub/outbox/{id_evento}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_evento: string;
+            };
+            cookie?: never;
+        };
+        /** @description Consulta multi-tenant de la cola Outbox y acción controlada de reintento (FALLIDO/DLQ). */
+        get: operations["integration-hub_outbox_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/integration-hub/outbox/{id_evento}/reintentar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_evento: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reintenta un evento Outbox en estado FALLIDO o DLQ
+         * @description Reencola un evento Outbox en ``FALLIDO`` o ``DLQ`` hacia ``PENDIENTE``.
+         */
+        post: operations["integration-hub_outbox_reintentar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/integration-hub/proveedores/": {
         parameters: {
             query?: never;
@@ -5926,10 +9918,27 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Lista los conectores disponibles en el sistema. */
+        /**
+         * Catálogo global de proveedores de integración.
+         * @description - **Lectura** (GET list/detail): cualquier usuario autenticado. Por defecto
+         *       solo proveedores activos (para el selector de "Nuevo conector"); con
+         *       ``?incluir_inactivos=true`` se ven todos (Panel SaaS).
+         *     - **Escritura** (POST/PUT/PATCH/DELETE): solo el dueño del software
+         *       (``es_superusuario_omni``), vía SuperuserWriteMixin. DELETE es borrado
+         *       lógico (``activo=False``) porque las instancias lo referencian (FK PROTECT).
+         */
         get: operations["integration-hub_proveedores_list"];
         put?: never;
-        post?: never;
+        /**
+         * Catálogo global de proveedores de integración.
+         * @description - **Lectura** (GET list/detail): cualquier usuario autenticado. Por defecto
+         *       solo proveedores activos (para el selector de "Nuevo conector"); con
+         *       ``?incluir_inactivos=true`` se ven todos (Panel SaaS).
+         *     - **Escritura** (POST/PUT/PATCH/DELETE): solo el dueño del software
+         *       (``es_superusuario_omni``), vía SuperuserWriteMixin. DELETE es borrado
+         *       lógico (``activo=False``) porque las instancias lo referencian (FK PROTECT).
+         */
+        post: operations["integration-hub_proveedores_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5946,14 +9955,49 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** @description Lista los conectores disponibles en el sistema. */
+        /**
+         * Catálogo global de proveedores de integración.
+         * @description - **Lectura** (GET list/detail): cualquier usuario autenticado. Por defecto
+         *       solo proveedores activos (para el selector de "Nuevo conector"); con
+         *       ``?incluir_inactivos=true`` se ven todos (Panel SaaS).
+         *     - **Escritura** (POST/PUT/PATCH/DELETE): solo el dueño del software
+         *       (``es_superusuario_omni``), vía SuperuserWriteMixin. DELETE es borrado
+         *       lógico (``activo=False``) porque las instancias lo referencian (FK PROTECT).
+         */
         get: operations["integration-hub_proveedores_read"];
-        put?: never;
+        /**
+         * Catálogo global de proveedores de integración.
+         * @description - **Lectura** (GET list/detail): cualquier usuario autenticado. Por defecto
+         *       solo proveedores activos (para el selector de "Nuevo conector"); con
+         *       ``?incluir_inactivos=true`` se ven todos (Panel SaaS).
+         *     - **Escritura** (POST/PUT/PATCH/DELETE): solo el dueño del software
+         *       (``es_superusuario_omni``), vía SuperuserWriteMixin. DELETE es borrado
+         *       lógico (``activo=False``) porque las instancias lo referencian (FK PROTECT).
+         */
+        put: operations["integration-hub_proveedores_update"];
         post?: never;
-        delete?: never;
+        /**
+         * Catálogo global de proveedores de integración.
+         * @description - **Lectura** (GET list/detail): cualquier usuario autenticado. Por defecto
+         *       solo proveedores activos (para el selector de "Nuevo conector"); con
+         *       ``?incluir_inactivos=true`` se ven todos (Panel SaaS).
+         *     - **Escritura** (POST/PUT/PATCH/DELETE): solo el dueño del software
+         *       (``es_superusuario_omni``), vía SuperuserWriteMixin. DELETE es borrado
+         *       lógico (``activo=False``) porque las instancias lo referencian (FK PROTECT).
+         */
+        delete: operations["integration-hub_proveedores_delete"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Catálogo global de proveedores de integración.
+         * @description - **Lectura** (GET list/detail): cualquier usuario autenticado. Por defecto
+         *       solo proveedores activos (para el selector de "Nuevo conector"); con
+         *       ``?incluir_inactivos=true`` se ven todos (Panel SaaS).
+         *     - **Escritura** (POST/PUT/PATCH/DELETE): solo el dueño del software
+         *       (``es_superusuario_omni``), vía SuperuserWriteMixin. DELETE es borrado
+         *       lógico (``activo=False``) porque las instancias lo referencian (FK PROTECT).
+         */
+        patch: operations["integration-hub_proveedores_partial_update"];
         trace?: never;
     };
     "/integration-hub/status/": {
@@ -6043,6 +10087,94 @@ export interface paths {
         patch: operations["inventario_conversiones-unidad-medida_partial_update"];
         trace?: never;
     };
+    "/inventario/entregas/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["inventario_entregas_list"];
+        put?: never;
+        post: operations["inventario_entregas_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inventario/entregas/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get: operations["inventario_entregas_read"];
+        put: operations["inventario_entregas_update"];
+        post?: never;
+        delete: operations["inventario_entregas_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["inventario_entregas_partial_update"];
+        trace?: never;
+    };
+    "/inventario/entregas/{id}/step/{step_id}/confirm/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                step_id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["inventario_entregas_step_confirmar_step"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inventario/lotes-producto/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["inventario_lotes-producto_list"];
+        put?: never;
+        post: operations["inventario_lotes-producto_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inventario/lotes-producto/{id_lote}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Lote de Producto. */
+                id_lote: string;
+            };
+            cookie?: never;
+        };
+        get: operations["inventario_lotes-producto_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["inventario_lotes-producto_partial_update"];
+        trace?: never;
+    };
     "/inventario/movimientos-inventario/": {
         parameters: {
             query?: never;
@@ -6070,12 +10202,53 @@ export interface paths {
             cookie?: never;
         };
         get: operations["inventario_movimientos-inventario_read"];
-        put: operations["inventario_movimientos-inventario_update"];
+        put?: never;
         post?: never;
-        delete: operations["inventario_movimientos-inventario_delete"];
+        delete?: never;
         options?: never;
         head?: never;
-        patch: operations["inventario_movimientos-inventario_partial_update"];
+        patch?: never;
+        trace?: never;
+    };
+    "/inventario/pasos-operacion/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description CRUD de pasos configurables de operación (recepción/entrega) por almacén. */
+        get: operations["inventario_pasos-operacion_list"];
+        put?: never;
+        /** @description CRUD de pasos configurables de operación (recepción/entrega) por almacén. */
+        post: operations["inventario_pasos-operacion_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inventario/pasos-operacion/{id_paso_operacion}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Paso de Operación. */
+                id_paso_operacion: string;
+            };
+            cookie?: never;
+        };
+        /** @description CRUD de pasos configurables de operación (recepción/entrega) por almacén. */
+        get: operations["inventario_pasos-operacion_read"];
+        /** @description CRUD de pasos configurables de operación (recepción/entrega) por almacén. */
+        put: operations["inventario_pasos-operacion_update"];
+        post?: never;
+        /** @description CRUD de pasos configurables de operación (recepción/entrega) por almacén. */
+        delete: operations["inventario_pasos-operacion_delete"];
+        options?: never;
+        head?: never;
+        /** @description CRUD de pasos configurables de operación (recepción/entrega) por almacén. */
+        patch: operations["inventario_pasos-operacion_partial_update"];
         trace?: never;
     };
     "/inventario/productos/": {
@@ -6131,6 +10304,186 @@ export interface paths {
          *       fecha_hasta  — YYYY-MM-DD (inclusive)
          */
         get: operations["inventario_productos_kardex"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inventario/recepciones/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["inventario_recepciones_list"];
+        put?: never;
+        post: operations["inventario_recepciones_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inventario/recepciones/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get: operations["inventario_recepciones_read"];
+        put: operations["inventario_recepciones_update"];
+        post?: never;
+        delete: operations["inventario_recepciones_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["inventario_recepciones_partial_update"];
+        trace?: never;
+    };
+    "/inventario/recepciones/{id}/step/{step_id}/confirm/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                step_id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["inventario_recepciones_step_confirmar_step"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inventario/reglas-reabastecimiento/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["inventario_reglas-reabastecimiento_list"];
+        put?: never;
+        post: operations["inventario_reglas-reabastecimiento_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inventario/reglas-reabastecimiento/evaluar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description POST /api/inventario/reglas-reabastecimiento/evaluar/ — Evalúa déficit y cantidades sugeridas. */
+        post: operations["inventario_reglas-reabastecimiento_evaluar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inventario/reglas-reabastecimiento/{id_regla}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Regla de Reabastecimiento. */
+                id_regla: string;
+            };
+            cookie?: never;
+        };
+        get: operations["inventario_reglas-reabastecimiento_read"];
+        put: operations["inventario_reglas-reabastecimiento_update"];
+        post?: never;
+        delete: operations["inventario_reglas-reabastecimiento_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["inventario_reglas-reabastecimiento_partial_update"];
+        trace?: never;
+    };
+    "/inventario/reglas-reabastecimiento/{id_regla}/generar-borrador/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Regla de Reabastecimiento. */
+                id_regla: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description POST /api/inventario/reglas-reabastecimiento/{pk}/generar-borrador/ — Crea borrador según ruta. */
+        post: operations["inventario_reglas-reabastecimiento_generar_borrador"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inventario/reportes/existencias/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Existencias por producto/almacén. Filtros: ?producto=&almacen=. */
+        get: operations["inventario_reportes_existencias"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inventario/reportes/movimientos/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Historial de movimientos. Filtros: ?producto=&almacen=&tipo=&fecha_desde=&fecha_hasta=. */
+        get: operations["inventario_reportes_movimientos"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inventario/reportes/valoracion/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Valoración de existencias por producto/almacén. Método-agnóstico:
+         *     valor = Σ(ENTRADA.valor_total) − Σ(SALIDA.valor_total); coincide con FIFO
+         *     (capas) y con costo Promedio móvil. Filtros: ?producto=&almacen=.
+         */
+        get: operations["inventario_reportes_valoracion"];
         put?: never;
         post?: never;
         delete?: never;
@@ -6314,6 +10667,26 @@ export interface paths {
         patch: operations["inventario_variantes-producto_partial_update"];
         trace?: never;
     };
+    "/localizacion/estado/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Estado de localización de dos capas de la empresa
+         * @description GET /api/localizacion/estado/ — Estado de localización y puertos de una empresa.
+         */
+        get: operations["localizacion_estado_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/manufactura/centros-trabajo/": {
         parameters: {
             query?: never;
@@ -6349,6 +10722,47 @@ export interface paths {
         patch: operations["manufactura_centros-trabajo_partial_update"];
         trace?: never;
     };
+    "/manufactura/configuracion/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Configuración de manufactura por empresa (overhead configurable, 1.I). */
+        get: operations["manufactura_configuracion_list"];
+        put?: never;
+        /** @description Configuración de manufactura por empresa (overhead configurable, 1.I). */
+        post: operations["manufactura_configuracion_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/manufactura/configuracion/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Configuración de Manufactura. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** @description Configuración de manufactura por empresa (overhead configurable, 1.I). */
+        get: operations["manufactura_configuracion_read"];
+        /** @description Configuración de manufactura por empresa (overhead configurable, 1.I). */
+        put: operations["manufactura_configuracion_update"];
+        post?: never;
+        /** @description Configuración de manufactura por empresa (overhead configurable, 1.I). */
+        delete: operations["manufactura_configuracion_delete"];
+        options?: never;
+        head?: never;
+        /** @description Configuración de manufactura por empresa (overhead configurable, 1.I). */
+        patch: operations["manufactura_configuracion_partial_update"];
+        trace?: never;
+    };
     "/manufactura/consumos-material/": {
         parameters: {
             query?: never;
@@ -6382,6 +10796,135 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["manufactura_consumos-material_partial_update"];
+        trace?: never;
+    };
+    "/manufactura/etapas-produccion/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Catálogo de etapas de fabricación por empresa (1.I).
+         * @description DELETE = soft-delete (R-CODE-6). POST /crear-estandar/ siembra la secuencia
+         *     estándar de mueblería (corte → … → control final) para la empresa del usuario.
+         */
+        get: operations["manufactura_etapas-produccion_list"];
+        put?: never;
+        /**
+         * Catálogo de etapas de fabricación por empresa (1.I).
+         * @description DELETE = soft-delete (R-CODE-6). POST /crear-estandar/ siembra la secuencia
+         *     estándar de mueblería (corte → … → control final) para la empresa del usuario.
+         */
+        post: operations["manufactura_etapas-produccion_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/manufactura/etapas-produccion/crear-estandar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Crea las etapas estándar de mueblería para la empresa del usuario. */
+        post: operations["manufactura_etapas-produccion_crear_estandar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/manufactura/etapas-produccion/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Etapa de Producción. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * Catálogo de etapas de fabricación por empresa (1.I).
+         * @description DELETE = soft-delete (R-CODE-6). POST /crear-estandar/ siembra la secuencia
+         *     estándar de mueblería (corte → … → control final) para la empresa del usuario.
+         */
+        get: operations["manufactura_etapas-produccion_read"];
+        /**
+         * Catálogo de etapas de fabricación por empresa (1.I).
+         * @description DELETE = soft-delete (R-CODE-6). POST /crear-estandar/ siembra la secuencia
+         *     estándar de mueblería (corte → … → control final) para la empresa del usuario.
+         */
+        put: operations["manufactura_etapas-produccion_update"];
+        post?: never;
+        /**
+         * Catálogo de etapas de fabricación por empresa (1.I).
+         * @description DELETE = soft-delete (R-CODE-6). POST /crear-estandar/ siembra la secuencia
+         *     estándar de mueblería (corte → … → control final) para la empresa del usuario.
+         */
+        delete: operations["manufactura_etapas-produccion_delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Catálogo de etapas de fabricación por empresa (1.I).
+         * @description DELETE = soft-delete (R-CODE-6). POST /crear-estandar/ siembra la secuencia
+         *     estándar de mueblería (corte → … → control final) para la empresa del usuario.
+         */
+        patch: operations["manufactura_etapas-produccion_partial_update"];
+        trace?: never;
+    };
+    "/manufactura/etapas-produccion/{id}/activar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Etapa de Producción. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/activar/
+         *     Reactiva un registro que fue desactivado.
+         *     Busca el objeto incluyendo inactivos (necesario para reactivar).
+         */
+        post: operations["manufactura_etapas-produccion_activar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/manufactura/etapas-produccion/{id}/desactivar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Etapa de Producción. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/desactivar/
+         *     Desactiva (borrado lógico) un registro activo.
+         */
+        post: operations["manufactura_etapas-produccion_desactivar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/manufactura/listas-materiales-detalle/": {
@@ -6496,8 +11039,26 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * CRUD de OF + acciones del ciclo 1.I (R-CODE-7):
+         * @description POST /{pk}/consumir-materiales/  — explota BOM y descuenta inventario
+         *     POST /{pk}/avanzar-etapa/        — completa la siguiente etapa (quién/cuándo/MO)
+         *     GET  /{pk}/etapas/               — etapas de la OF con su estado y costo MO
+         *     POST /{pk}/completar/            — entrada de PT valorada al costo real
+         *     GET  /{pk}/costeo/               — costeo real (materiales + MO + overhead)
+         *     GET  /{pk}/mrp/                  — faltantes para producir la orden
+         */
         get: operations["manufactura_ordenes-produccion_list"];
         put?: never;
+        /**
+         * CRUD de OF + acciones del ciclo 1.I (R-CODE-7):
+         * @description POST /{pk}/consumir-materiales/  — explota BOM y descuenta inventario
+         *     POST /{pk}/avanzar-etapa/        — completa la siguiente etapa (quién/cuándo/MO)
+         *     GET  /{pk}/etapas/               — etapas de la OF con su estado y costo MO
+         *     POST /{pk}/completar/            — entrada de PT valorada al costo real
+         *     GET  /{pk}/costeo/               — costeo real (materiales + MO + overhead)
+         *     GET  /{pk}/mrp/                  — faltantes para producir la orden
+         */
         post: operations["manufactura_ordenes-produccion_create"];
         delete?: never;
         options?: never;
@@ -6515,13 +11076,181 @@ export interface paths {
             };
             cookie?: never;
         };
+        /**
+         * CRUD de OF + acciones del ciclo 1.I (R-CODE-7):
+         * @description POST /{pk}/consumir-materiales/  — explota BOM y descuenta inventario
+         *     POST /{pk}/avanzar-etapa/        — completa la siguiente etapa (quién/cuándo/MO)
+         *     GET  /{pk}/etapas/               — etapas de la OF con su estado y costo MO
+         *     POST /{pk}/completar/            — entrada de PT valorada al costo real
+         *     GET  /{pk}/costeo/               — costeo real (materiales + MO + overhead)
+         *     GET  /{pk}/mrp/                  — faltantes para producir la orden
+         */
         get: operations["manufactura_ordenes-produccion_read"];
+        /**
+         * CRUD de OF + acciones del ciclo 1.I (R-CODE-7):
+         * @description POST /{pk}/consumir-materiales/  — explota BOM y descuenta inventario
+         *     POST /{pk}/avanzar-etapa/        — completa la siguiente etapa (quién/cuándo/MO)
+         *     GET  /{pk}/etapas/               — etapas de la OF con su estado y costo MO
+         *     POST /{pk}/completar/            — entrada de PT valorada al costo real
+         *     GET  /{pk}/costeo/               — costeo real (materiales + MO + overhead)
+         *     GET  /{pk}/mrp/                  — faltantes para producir la orden
+         */
         put: operations["manufactura_ordenes-produccion_update"];
         post?: never;
+        /**
+         * CRUD de OF + acciones del ciclo 1.I (R-CODE-7):
+         * @description POST /{pk}/consumir-materiales/  — explota BOM y descuenta inventario
+         *     POST /{pk}/avanzar-etapa/        — completa la siguiente etapa (quién/cuándo/MO)
+         *     GET  /{pk}/etapas/               — etapas de la OF con su estado y costo MO
+         *     POST /{pk}/completar/            — entrada de PT valorada al costo real
+         *     GET  /{pk}/costeo/               — costeo real (materiales + MO + overhead)
+         *     GET  /{pk}/mrp/                  — faltantes para producir la orden
+         */
         delete: operations["manufactura_ordenes-produccion_delete"];
         options?: never;
         head?: never;
+        /**
+         * CRUD de OF + acciones del ciclo 1.I (R-CODE-7):
+         * @description POST /{pk}/consumir-materiales/  — explota BOM y descuenta inventario
+         *     POST /{pk}/avanzar-etapa/        — completa la siguiente etapa (quién/cuándo/MO)
+         *     GET  /{pk}/etapas/               — etapas de la OF con su estado y costo MO
+         *     POST /{pk}/completar/            — entrada de PT valorada al costo real
+         *     GET  /{pk}/costeo/               — costeo real (materiales + MO + overhead)
+         *     GET  /{pk}/mrp/                  — faltantes para producir la orden
+         */
         patch: operations["manufactura_ordenes-produccion_partial_update"];
+        trace?: never;
+    };
+    "/manufactura/ordenes-produccion/{id}/avanzar-etapa/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this orden produccion. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Completa la siguiente etapa pendiente registrando quién/cuándo y la
+         *     mano de obra (horas × tarifa y/o destajo).
+         */
+        post: operations["manufactura_ordenes-produccion_avanzar_etapa"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/manufactura/ordenes-produccion/{id}/completar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this orden produccion. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Registra producción terminada: entrada de PT al inventario valorada
+         *     al costo real. Falla (400) si quedan etapas pendientes.
+         */
+        post: operations["manufactura_ordenes-produccion_completar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/manufactura/ordenes-produccion/{id}/consumir-materiales/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this orden produccion. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Explota la BOM de la orden y descuenta los materiales del inventario. */
+        post: operations["manufactura_ordenes-produccion_consumir_materiales"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/manufactura/ordenes-produccion/{id}/costeo/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this orden produccion. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * @description Costeo real acumulado de la OF: materiales consumidos (costo del
+         *     movimiento) + mano de obra de etapas + overhead configurable.
+         */
+        get: operations["manufactura_ordenes-produccion_costeo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/manufactura/ordenes-produccion/{id}/etapas/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this orden produccion. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** @description Etapas de la OF en secuencia, con estado y costo de mano de obra. */
+        get: operations["manufactura_ordenes-produccion_etapas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/manufactura/ordenes-produccion/{id}/mrp/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this orden produccion. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * @description MRP básico: faltantes de materiales para producir la orden
+         *     (explosión de BOM vs StockActual; disponible neto).
+         */
+        get: operations["manufactura_ordenes-produccion_mrp"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/manufactura/produccion-terminada/": {
@@ -7277,7 +12006,17 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Inicia el procesamiento de nómina */
+        /**
+         * Procesa la nómina LOTTT del período (CTF-013, TEST-5).
+         * @description Calcula la nómina de cada empleado activo (motor `calculo_lottt` con
+         *     parámetros de `ParametroSistema`), persiste `Nomina` + `DetalleNomina`,
+         *     totaliza el proceso y genera el asiento `NOMINA` — todo atómico
+         *     (R-CODE-11). Body opcional: ``{"empleados": {"<id_empleado>": {
+         *     "dias_trabajados": 30, "horas_extra_diurnas": "4", ...}}}``.
+         *
+         *     Re-procesar un proceso COMPLETADO/APROBADO/CANCELADO → 400 (los recibos
+         *     emitidos son inmutables; cancele y cree un proceso nuevo).
+         */
         post: operations["nomina_procesos-nomina_procesar"];
         delete?: never;
         options?: never;
@@ -7558,6 +12297,72 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["proveedores_proveedores_partial_update"];
+        trace?: never;
+    };
+    "/public/connect/{slug}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * Detalle público del perfil Connect y registro de toque
+         * @description GET /api/public/connect/<slug>/ — Perfil digital público y registro de toque.
+         */
+        get: operations["public_connect_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/connect/{slug}/leads/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Captura pública de lead desde perfil Omni Connect
+         * @description POST /api/public/connect/<slug>/leads/ — Captura pública de lead con consentimiento.
+         */
+        post: operations["public_connect_leads_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/connect/{slug}/vcard/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * Descarga de archivo vCard (.vcf) del perfil público
+         * @description GET /api/public/connect/<slug>/vcard/ — Descarga de contacto vCard RFC 6350.
+         */
+        get: operations["public_connect_vcard_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/rrhh/beneficios-empleado/": {
@@ -8011,6 +12816,9 @@ export interface paths {
         /**
          * POST /saas/suscripciones/{pk}/cancelar/
          * @description Cancela la suscripción. Body (opcional): {"notas": "motivo de cancelación"}
+         *
+         *     Self-service: el tenant puede cancelar la suya (get_object la acota a sus
+         *     empresas visibles); el proveedor puede cancelar cualquiera.
          */
         post: operations["saas_suscripciones_cancelar"];
         delete?: never;
@@ -8034,6 +12842,10 @@ export interface paths {
         /**
          * POST /saas/suscripciones/{pk}/suspender/
          * @description Suspende la suscripción (bloquea acceso sin cancelar definitivamente).
+         *
+         *     Self-service: el tenant puede suspender la suya; el proveedor cualquiera.
+         *     La REACTIVACIÓN (estado=ACTIVA) NO pasa por aquí — es un PATCH y queda
+         *     restringida al proveedor en perform_update.
          */
         post: operations["saas_suscripciones_suspender"];
         delete?: never;
@@ -8487,6 +13299,474 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sync/pull/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Pull incremental de una entidad de catálogo para la réplica local. */
+        get: operations["sync_pull_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sync/push/ventas/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Push atómico e idempotente de una venta POS offline — ADR-012.
+         * @description ``POST /api/sync/push/ventas/`` (cabecera ``Idempotency-Key: <client_uuid>``)
+         *
+         *     Recibe el sobre ``VentaOffline`` completo y crea nota + detalles + entrega +
+         *     pagos en una sola transacción reutilizando los services de dinero existentes
+         *     (ver ``apps.sync.services.crear_venta_pos_offline``). Reenviar el mismo sobre
+         *     (misma clave) devuelve la misma respuesta sin duplicar la venta.
+         */
+        post: operations["sync_push_ventas_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tareas/alertas/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tareas_alertas_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tareas/alertas/{id_alerta_tarea}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_alerta_tarea: string;
+            };
+            cookie?: never;
+        };
+        get: operations["tareas_alertas_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tareas/areas/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tareas_areas_list"];
+        put?: never;
+        post: operations["tareas_areas_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tareas/areas/{id_area}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_area: string;
+            };
+            cookie?: never;
+        };
+        get: operations["tareas_areas_read"];
+        put: operations["tareas_areas_update"];
+        post?: never;
+        delete: operations["tareas_areas_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["tareas_areas_partial_update"];
+        trace?: never;
+    };
+    "/tareas/areas/{id_area}/miembros/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_area: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["tareas_areas_sincronizar_miembros"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tareas/configuracion/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tareas_configuracion_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["tareas_configuracion_partial_update"];
+        trace?: never;
+    };
+    "/tareas/items/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tareas_items_list"];
+        put?: never;
+        post: operations["tareas_items_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tareas/items/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get: operations["tareas_items_read"];
+        put: operations["tareas_items_update"];
+        post?: never;
+        delete: operations["tareas_items_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["tareas_items_partial_update"];
+        trace?: never;
+    };
+    "/tareas/items/{id}/cambiar-estado/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["tareas_items_cambiar_estado"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tareas/items/{id}/comentarios/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get: operations["tareas_items_comentarios_read"];
+        put?: never;
+        post: operations["tareas_items_comentarios_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tareas/items/{id}/dependencias/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get: operations["tareas_items_dependencias_read"];
+        put?: never;
+        post: operations["tareas_items_dependencias_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tareas/items/{id}/mover/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["tareas_items_mover"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tareas/minutas/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tareas_minutas_list"];
+        put?: never;
+        post: operations["tareas_minutas_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tareas/minutas/{id_minuta}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_minuta: string;
+            };
+            cookie?: never;
+        };
+        get: operations["tareas_minutas_read"];
+        put?: never;
+        post?: never;
+        delete: operations["tareas_minutas_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tareas/minutas/{id_minuta}/confirmar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_minuta: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["tareas_minutas_confirmar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tareas/proyectos/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tareas_proyectos_list"];
+        put?: never;
+        post: operations["tareas_proyectos_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tareas/proyectos/mi-tablero/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["tareas_proyectos_mi_tablero"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tareas/proyectos/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get: operations["tareas_proyectos_read"];
+        put: operations["tareas_proyectos_update"];
+        post?: never;
+        delete: operations["tareas_proyectos_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["tareas_proyectos_partial_update"];
+        trace?: never;
+    };
+    "/tareas/recurrentes/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tareas_recurrentes_list"];
+        put?: never;
+        post: operations["tareas_recurrentes_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tareas/recurrentes/materializar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["tareas_recurrentes_materializar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tareas/recurrentes/{id_plantilla_recurrente}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_plantilla_recurrente: string;
+            };
+            cookie?: never;
+        };
+        get: operations["tareas_recurrentes_read"];
+        put: operations["tareas_recurrentes_update"];
+        post?: never;
+        delete: operations["tareas_recurrentes_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["tareas_recurrentes_partial_update"];
+        trace?: never;
+    };
+    "/tareas/resumen/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tareas_resumen_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tareas/secciones/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["tareas_secciones_list"];
+        put?: never;
+        post: operations["tareas_secciones_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tareas/secciones/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get: operations["tareas_secciones_read"];
+        put: operations["tareas_secciones_update"];
+        post?: never;
+        delete: operations["tareas_secciones_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["tareas_secciones_partial_update"];
+        trace?: never;
+    };
+    "/tareas/seguimiento/ejecutar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["tareas_seguimiento_ejecutar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tesoreria/cajas/": {
         parameters: {
             query?: never;
@@ -8616,6 +13896,154 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/tesoreria/configuraciones-conciliacion/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Configuración multi-tenant de cuentas contables y diario externo por cuenta bancaria. */
+        get: operations["tesoreria_configuraciones-conciliacion_list"];
+        put?: never;
+        /** @description Configuración multi-tenant de cuentas contables y diario externo por cuenta bancaria. */
+        post: operations["tesoreria_configuraciones-conciliacion_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tesoreria/configuraciones-conciliacion/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this configuracion conciliacion cuenta. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** @description Configuración multi-tenant de cuentas contables y diario externo por cuenta bancaria. */
+        get: operations["tesoreria_configuraciones-conciliacion_read"];
+        /** @description Configuración multi-tenant de cuentas contables y diario externo por cuenta bancaria. */
+        put: operations["tesoreria_configuraciones-conciliacion_update"];
+        post?: never;
+        /** @description Configuración multi-tenant de cuentas contables y diario externo por cuenta bancaria. */
+        delete: operations["tesoreria_configuraciones-conciliacion_delete"];
+        options?: never;
+        head?: never;
+        /** @description Configuración multi-tenant de cuentas contables y diario externo por cuenta bancaria. */
+        patch: operations["tesoreria_configuraciones-conciliacion_partial_update"];
+        trace?: never;
+    };
+    "/tesoreria/extractos-bancarios/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Gestión multi-tenant de extractos bancarios validados.
+         * @description GET    /tesoreria/extractos-bancarios/                     — listar cortes (?empresa=, ?cuenta=, ?cuadra=)
+         *     GET    /tesoreria/extractos-bancarios/{pk}/                — detalle de corte
+         *     DELETE /tesoreria/extractos-bancarios/{pk}/                — borrado lógico (R-CODE-6)
+         *     POST   /tesoreria/extractos-bancarios/importar/            — subir y validar .xlsx / HTML-.xls / .csv
+         *     GET    /tesoreria/extractos-bancarios/saldos-consolidados/ — saldos USD/VES y alertas de continuidad
+         */
+        get: operations["tesoreria_extractos-bancarios_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tesoreria/extractos-bancarios/importar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Gestión multi-tenant de extractos bancarios validados.
+         * @description GET    /tesoreria/extractos-bancarios/                     — listar cortes (?empresa=, ?cuenta=, ?cuadra=)
+         *     GET    /tesoreria/extractos-bancarios/{pk}/                — detalle de corte
+         *     DELETE /tesoreria/extractos-bancarios/{pk}/                — borrado lógico (R-CODE-6)
+         *     POST   /tesoreria/extractos-bancarios/importar/            — subir y validar .xlsx / HTML-.xls / .csv
+         *     GET    /tesoreria/extractos-bancarios/saldos-consolidados/ — saldos USD/VES y alertas de continuidad
+         */
+        post: operations["tesoreria_extractos-bancarios_importar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tesoreria/extractos-bancarios/saldos-consolidados/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Gestión multi-tenant de extractos bancarios validados.
+         * @description GET    /tesoreria/extractos-bancarios/                     — listar cortes (?empresa=, ?cuenta=, ?cuadra=)
+         *     GET    /tesoreria/extractos-bancarios/{pk}/                — detalle de corte
+         *     DELETE /tesoreria/extractos-bancarios/{pk}/                — borrado lógico (R-CODE-6)
+         *     POST   /tesoreria/extractos-bancarios/importar/            — subir y validar .xlsx / HTML-.xls / .csv
+         *     GET    /tesoreria/extractos-bancarios/saldos-consolidados/ — saldos USD/VES y alertas de continuidad
+         */
+        get: operations["tesoreria_extractos-bancarios_saldos_consolidados"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tesoreria/extractos-bancarios/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this extracto bancario archivo. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * Gestión multi-tenant de extractos bancarios validados.
+         * @description GET    /tesoreria/extractos-bancarios/                     — listar cortes (?empresa=, ?cuenta=, ?cuadra=)
+         *     GET    /tesoreria/extractos-bancarios/{pk}/                — detalle de corte
+         *     DELETE /tesoreria/extractos-bancarios/{pk}/                — borrado lógico (R-CODE-6)
+         *     POST   /tesoreria/extractos-bancarios/importar/            — subir y validar .xlsx / HTML-.xls / .csv
+         *     GET    /tesoreria/extractos-bancarios/saldos-consolidados/ — saldos USD/VES y alertas de continuidad
+         */
+        get: operations["tesoreria_extractos-bancarios_read"];
+        put?: never;
+        post?: never;
+        /**
+         * Gestión multi-tenant de extractos bancarios validados.
+         * @description GET    /tesoreria/extractos-bancarios/                     — listar cortes (?empresa=, ?cuenta=, ?cuadra=)
+         *     GET    /tesoreria/extractos-bancarios/{pk}/                — detalle de corte
+         *     DELETE /tesoreria/extractos-bancarios/{pk}/                — borrado lógico (R-CODE-6)
+         *     POST   /tesoreria/extractos-bancarios/importar/            — subir y validar .xlsx / HTML-.xls / .csv
+         *     GET    /tesoreria/extractos-bancarios/saldos-consolidados/ — saldos USD/VES y alertas de continuidad
+         */
+        delete: operations["tesoreria_extractos-bancarios_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tesoreria/movimientos-bancarios/": {
         parameters: {
             query?: never;
@@ -8625,7 +14053,7 @@ export interface paths {
         };
         /**
          * CRUD de movimientos bancarios.
-         * @description GET  /tesoreria/movimientos-bancarios/                   — listar (filtros: ?empresa=, ?cuenta=, ?estado=)
+         * @description GET  /tesoreria/movimientos-bancarios/                   — listar (?empresa=, ?cuenta=, ?estado=, ?categoria=, ?archivo=)
          *     POST /tesoreria/movimientos-bancarios/                   — registrar manual
          *     POST /tesoreria/movimientos-bancarios/importar-csv/      — importar extracto CSV
          *     POST /tesoreria/movimientos-bancarios/conciliar-auto/    — conciliación automática
@@ -8634,7 +14062,7 @@ export interface paths {
         put?: never;
         /**
          * CRUD de movimientos bancarios.
-         * @description GET  /tesoreria/movimientos-bancarios/                   — listar (filtros: ?empresa=, ?cuenta=, ?estado=)
+         * @description GET  /tesoreria/movimientos-bancarios/                   — listar (?empresa=, ?cuenta=, ?estado=, ?categoria=, ?archivo=)
          *     POST /tesoreria/movimientos-bancarios/                   — registrar manual
          *     POST /tesoreria/movimientos-bancarios/importar-csv/      — importar extracto CSV
          *     POST /tesoreria/movimientos-bancarios/conciliar-auto/    — conciliación automática
@@ -8692,7 +14120,7 @@ export interface paths {
         };
         /**
          * CRUD de movimientos bancarios.
-         * @description GET  /tesoreria/movimientos-bancarios/                   — listar (filtros: ?empresa=, ?cuenta=, ?estado=)
+         * @description GET  /tesoreria/movimientos-bancarios/                   — listar (?empresa=, ?cuenta=, ?estado=, ?categoria=, ?archivo=)
          *     POST /tesoreria/movimientos-bancarios/                   — registrar manual
          *     POST /tesoreria/movimientos-bancarios/importar-csv/      — importar extracto CSV
          *     POST /tesoreria/movimientos-bancarios/conciliar-auto/    — conciliación automática
@@ -8700,7 +14128,7 @@ export interface paths {
         get: operations["tesoreria_movimientos-bancarios_read"];
         /**
          * CRUD de movimientos bancarios.
-         * @description GET  /tesoreria/movimientos-bancarios/                   — listar (filtros: ?empresa=, ?cuenta=, ?estado=)
+         * @description GET  /tesoreria/movimientos-bancarios/                   — listar (?empresa=, ?cuenta=, ?estado=, ?categoria=, ?archivo=)
          *     POST /tesoreria/movimientos-bancarios/                   — registrar manual
          *     POST /tesoreria/movimientos-bancarios/importar-csv/      — importar extracto CSV
          *     POST /tesoreria/movimientos-bancarios/conciliar-auto/    — conciliación automática
@@ -8709,7 +14137,7 @@ export interface paths {
         post?: never;
         /**
          * CRUD de movimientos bancarios.
-         * @description GET  /tesoreria/movimientos-bancarios/                   — listar (filtros: ?empresa=, ?cuenta=, ?estado=)
+         * @description GET  /tesoreria/movimientos-bancarios/                   — listar (?empresa=, ?cuenta=, ?estado=, ?categoria=, ?archivo=)
          *     POST /tesoreria/movimientos-bancarios/                   — registrar manual
          *     POST /tesoreria/movimientos-bancarios/importar-csv/      — importar extracto CSV
          *     POST /tesoreria/movimientos-bancarios/conciliar-auto/    — conciliación automática
@@ -8719,7 +14147,7 @@ export interface paths {
         head?: never;
         /**
          * CRUD de movimientos bancarios.
-         * @description GET  /tesoreria/movimientos-bancarios/                   — listar (filtros: ?empresa=, ?cuenta=, ?estado=)
+         * @description GET  /tesoreria/movimientos-bancarios/                   — listar (?empresa=, ?cuenta=, ?estado=, ?categoria=, ?archivo=)
          *     POST /tesoreria/movimientos-bancarios/                   — registrar manual
          *     POST /tesoreria/movimientos-bancarios/importar-csv/      — importar extracto CSV
          *     POST /tesoreria/movimientos-bancarios/conciliar-auto/    — conciliación automática
@@ -8795,6 +14223,254 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["tesoreria_operaciones-cambio-divisa_partial_update"];
+        trace?: never;
+    };
+    "/tesoreria/propuestas-conciliacion/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cola multi-tenant de pre-conciliación bancaria y revisión humana.
+         * @description GET  /tesoreria/propuestas-conciliacion/               — listar propuestas (?empresa=, ?cuenta=, ?estado=, ?tipo=, ?desde=, ?hasta=)
+         *     GET  /tesoreria/propuestas-conciliacion/{pk}/          — detalle de propuesta
+         *     POST /tesoreria/propuestas-conciliacion/generar/       — ejecutar motor R1/R2/R3 sobre cuenta
+         *     POST /tesoreria/propuestas-conciliacion/{pk}/decidir/  — aprobar / rechazar / corregir / reabrir
+         *     GET  /tesoreria/propuestas-conciliacion/aprobadas/     — propuestas aprobadas o corregidas (?decididas_desde=, ?decididas_hasta=)
+         *     GET  /tesoreria/propuestas-conciliacion/bitacora/      — bitácora inmutable de decisiones humanas
+         */
+        get: operations["tesoreria_propuestas-conciliacion_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tesoreria/propuestas-conciliacion/aprobadas/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cola multi-tenant de pre-conciliación bancaria y revisión humana.
+         * @description GET  /tesoreria/propuestas-conciliacion/               — listar propuestas (?empresa=, ?cuenta=, ?estado=, ?tipo=, ?desde=, ?hasta=)
+         *     GET  /tesoreria/propuestas-conciliacion/{pk}/          — detalle de propuesta
+         *     POST /tesoreria/propuestas-conciliacion/generar/       — ejecutar motor R1/R2/R3 sobre cuenta
+         *     POST /tesoreria/propuestas-conciliacion/{pk}/decidir/  — aprobar / rechazar / corregir / reabrir
+         *     GET  /tesoreria/propuestas-conciliacion/aprobadas/     — propuestas aprobadas o corregidas (?decididas_desde=, ?decididas_hasta=)
+         *     GET  /tesoreria/propuestas-conciliacion/bitacora/      — bitácora inmutable de decisiones humanas
+         */
+        get: operations["tesoreria_propuestas-conciliacion_aprobadas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tesoreria/propuestas-conciliacion/bitacora/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cola multi-tenant de pre-conciliación bancaria y revisión humana.
+         * @description GET  /tesoreria/propuestas-conciliacion/               — listar propuestas (?empresa=, ?cuenta=, ?estado=, ?tipo=, ?desde=, ?hasta=)
+         *     GET  /tesoreria/propuestas-conciliacion/{pk}/          — detalle de propuesta
+         *     POST /tesoreria/propuestas-conciliacion/generar/       — ejecutar motor R1/R2/R3 sobre cuenta
+         *     POST /tesoreria/propuestas-conciliacion/{pk}/decidir/  — aprobar / rechazar / corregir / reabrir
+         *     GET  /tesoreria/propuestas-conciliacion/aprobadas/     — propuestas aprobadas o corregidas (?decididas_desde=, ?decididas_hasta=)
+         *     GET  /tesoreria/propuestas-conciliacion/bitacora/      — bitácora inmutable de decisiones humanas
+         */
+        get: operations["tesoreria_propuestas-conciliacion_bitacora"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tesoreria/propuestas-conciliacion/generar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cola multi-tenant de pre-conciliación bancaria y revisión humana.
+         * @description GET  /tesoreria/propuestas-conciliacion/               — listar propuestas (?empresa=, ?cuenta=, ?estado=, ?tipo=, ?desde=, ?hasta=)
+         *     GET  /tesoreria/propuestas-conciliacion/{pk}/          — detalle de propuesta
+         *     POST /tesoreria/propuestas-conciliacion/generar/       — ejecutar motor R1/R2/R3 sobre cuenta
+         *     POST /tesoreria/propuestas-conciliacion/{pk}/decidir/  — aprobar / rechazar / corregir / reabrir
+         *     GET  /tesoreria/propuestas-conciliacion/aprobadas/     — propuestas aprobadas o corregidas (?decididas_desde=, ?decididas_hasta=)
+         *     GET  /tesoreria/propuestas-conciliacion/bitacora/      — bitácora inmutable de decisiones humanas
+         */
+        post: operations["tesoreria_propuestas-conciliacion_generar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tesoreria/propuestas-conciliacion/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this propuesta conciliacion bancaria. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * Cola multi-tenant de pre-conciliación bancaria y revisión humana.
+         * @description GET  /tesoreria/propuestas-conciliacion/               — listar propuestas (?empresa=, ?cuenta=, ?estado=, ?tipo=, ?desde=, ?hasta=)
+         *     GET  /tesoreria/propuestas-conciliacion/{pk}/          — detalle de propuesta
+         *     POST /tesoreria/propuestas-conciliacion/generar/       — ejecutar motor R1/R2/R3 sobre cuenta
+         *     POST /tesoreria/propuestas-conciliacion/{pk}/decidir/  — aprobar / rechazar / corregir / reabrir
+         *     GET  /tesoreria/propuestas-conciliacion/aprobadas/     — propuestas aprobadas o corregidas (?decididas_desde=, ?decididas_hasta=)
+         *     GET  /tesoreria/propuestas-conciliacion/bitacora/      — bitácora inmutable de decisiones humanas
+         */
+        get: operations["tesoreria_propuestas-conciliacion_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tesoreria/propuestas-conciliacion/{id}/decidir/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this propuesta conciliacion bancaria. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cola multi-tenant de pre-conciliación bancaria y revisión humana.
+         * @description GET  /tesoreria/propuestas-conciliacion/               — listar propuestas (?empresa=, ?cuenta=, ?estado=, ?tipo=, ?desde=, ?hasta=)
+         *     GET  /tesoreria/propuestas-conciliacion/{pk}/          — detalle de propuesta
+         *     POST /tesoreria/propuestas-conciliacion/generar/       — ejecutar motor R1/R2/R3 sobre cuenta
+         *     POST /tesoreria/propuestas-conciliacion/{pk}/decidir/  — aprobar / rechazar / corregir / reabrir
+         *     GET  /tesoreria/propuestas-conciliacion/aprobadas/     — propuestas aprobadas o corregidas (?decididas_desde=, ?decididas_hasta=)
+         *     GET  /tesoreria/propuestas-conciliacion/bitacora/      — bitácora inmutable de decisiones humanas
+         */
+        post: operations["tesoreria_propuestas-conciliacion_decidir"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ventas/comisiones/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Consulta de comisiones devengadas/liquidadas/anuladas + liquidación.
+         * @description GET  /api/ventas/comisiones/?vendedor=&estado=&desde=&hasta=
+         *     GET  /api/ventas/comisiones/resumen/   (mismos filtros, agregado por vendedor)
+         *     POST /api/ventas/comisiones/liquidar/  {vendedor, desde, hasta}
+         *
+         *     Solo lectura por diseño: las comisiones nacen al entregar la venta
+         *     (services.devengar_comision_venta) y solo mutan vía /liquidar/ o por la
+         *     anulación de la venta.
+         */
+        get: operations["ventas_comisiones_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ventas/comisiones/liquidar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description POST /api/ventas/comisiones/liquidar/ */
+        post: operations["ventas_comisiones_liquidar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ventas/comisiones/resumen/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Totales por vendedor y estado para el período filtrado (R-CODE-4: los
+         *     montos viajan como string, nunca float).
+         */
+        get: operations["ventas_comisiones_resumen"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ventas/comisiones/{id_comision_venta}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Comisión de Venta. */
+                id_comision_venta: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * Consulta de comisiones devengadas/liquidadas/anuladas + liquidación.
+         * @description GET  /api/ventas/comisiones/?vendedor=&estado=&desde=&hasta=
+         *     GET  /api/ventas/comisiones/resumen/   (mismos filtros, agregado por vendedor)
+         *     POST /api/ventas/comisiones/liquidar/  {vendedor, desde, hasta}
+         *
+         *     Solo lectura por diseño: las comisiones nacen al entregar la venta
+         *     (services.devengar_comision_venta) y solo mutan vía /liquidar/ o por la
+         *     anulación de la venta.
+         */
+        get: operations["ventas_comisiones_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/ventas/cotizaciones/": {
@@ -9167,6 +14843,118 @@ export interface paths {
         patch: operations["ventas_devoluciones-venta_partial_update"];
         trace?: never;
     };
+    "/ventas/esquemas-comision-categorias/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Overrides de % por categoría de producto de un esquema de comisión. */
+        get: operations["ventas_esquemas-comision-categorias_list"];
+        put?: never;
+        /** @description Overrides de % por categoría de producto de un esquema de comisión. */
+        post: operations["ventas_esquemas-comision-categorias_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ventas/esquemas-comision-categorias/{id_esquema_comision_categoria}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Override de Comisión por Categoría. */
+                id_esquema_comision_categoria: string;
+            };
+            cookie?: never;
+        };
+        /** @description Overrides de % por categoría de producto de un esquema de comisión. */
+        get: operations["ventas_esquemas-comision-categorias_read"];
+        /** @description Overrides de % por categoría de producto de un esquema de comisión. */
+        put: operations["ventas_esquemas-comision-categorias_update"];
+        post?: never;
+        /** @description Overrides de % por categoría de producto de un esquema de comisión. */
+        delete: operations["ventas_esquemas-comision-categorias_delete"];
+        options?: never;
+        head?: never;
+        /** @description Overrides de % por categoría de producto de un esquema de comisión. */
+        patch: operations["ventas_esquemas-comision-categorias_partial_update"];
+        trace?: never;
+    };
+    "/ventas/esquemas-comision/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * CRUD de esquemas de comisión por vendedor.
+         * @description GET/POST  /api/ventas/esquemas-comision/
+         *     El % base aplica al subtotal sin impuestos; overrides por categoría en
+         *     /api/ventas/esquemas-comision-categorias/.
+         */
+        get: operations["ventas_esquemas-comision_list"];
+        put?: never;
+        /**
+         * CRUD de esquemas de comisión por vendedor.
+         * @description GET/POST  /api/ventas/esquemas-comision/
+         *     El % base aplica al subtotal sin impuestos; overrides por categoría en
+         *     /api/ventas/esquemas-comision-categorias/.
+         */
+        post: operations["ventas_esquemas-comision_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ventas/esquemas-comision/{id_esquema_comision}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Esquema de Comisión. */
+                id_esquema_comision: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * CRUD de esquemas de comisión por vendedor.
+         * @description GET/POST  /api/ventas/esquemas-comision/
+         *     El % base aplica al subtotal sin impuestos; overrides por categoría en
+         *     /api/ventas/esquemas-comision-categorias/.
+         */
+        get: operations["ventas_esquemas-comision_read"];
+        /**
+         * CRUD de esquemas de comisión por vendedor.
+         * @description GET/POST  /api/ventas/esquemas-comision/
+         *     El % base aplica al subtotal sin impuestos; overrides por categoría en
+         *     /api/ventas/esquemas-comision-categorias/.
+         */
+        put: operations["ventas_esquemas-comision_update"];
+        post?: never;
+        /**
+         * CRUD de esquemas de comisión por vendedor.
+         * @description GET/POST  /api/ventas/esquemas-comision/
+         *     El % base aplica al subtotal sin impuestos; overrides por categoría en
+         *     /api/ventas/esquemas-comision-categorias/.
+         */
+        delete: operations["ventas_esquemas-comision_delete"];
+        options?: never;
+        head?: never;
+        /**
+         * CRUD de esquemas de comisión por vendedor.
+         * @description GET/POST  /api/ventas/esquemas-comision/
+         *     El % base aplica al subtotal sin impuestos; overrides por categoría en
+         *     /api/ventas/esquemas-comision-categorias/.
+         */
+        patch: operations["ventas_esquemas-comision_partial_update"];
+        trace?: never;
+    };
     "/ventas/facturas-fiscales/": {
         parameters: {
             query?: never;
@@ -9387,6 +15175,96 @@ export interface paths {
         patch: operations["ventas_notas-venta_partial_update"];
         trace?: never;
     };
+    "/ventas/notas-venta/{id_nota_venta}/convertir-factura/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Nota de Venta. */
+                id_nota_venta: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST /api/ventas/notas-venta/{pk}/convertir-factura/
+         * @description Emite la FacturaFiscal desde una nota ENTREGADA delegando en
+         *     ``emitir_factura_fiscal`` (asiento contable R-CODE-11 + CxC única del
+         *     flujo, BUG-A4). Gap E2E (PR #76): el botón "Convertir a Factura" del
+         *     frontend llamaba a este endpoint y no existía (404).
+         */
+        post: operations["ventas_notas-venta_convertir_factura"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ventas/notas-venta/{id_nota_venta}/devoluciones/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Nota de Venta. */
+                id_nota_venta: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * GET /api/ventas/notas-venta/{pk}/devoluciones/   (1.G — devolución POS)
+         * @description Devuelve las devoluciones de la venta y el estado devolvible por línea
+         *     (vendido / ya devuelto / disponible) para que el POS limite cantidades.
+         */
+        get: operations["ventas_notas-venta_devoluciones"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ventas/notas-venta/{id_nota_venta}/devolver/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Nota de Venta. */
+                id_nota_venta: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description POST /api/ventas/notas-venta/{pk}/devolver/   (1.G — devolución POS) */
+        post: operations["ventas_notas-venta_devolver"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ventas/notas-venta/{id_nota_venta}/entregar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Nota de Venta. */
+                id_nota_venta: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description POST /api/ventas/notas-venta/{pk}/entregar/ */
+        post: operations["ventas_notas-venta_entregar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ventas/pedidos/": {
         parameters: {
             query?: never;
@@ -9442,10 +15320,308 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ventas/pedidos/{id_pedido}/convertir-nota-venta/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pedido. */
+                id_pedido: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST /api/ventas/pedidos/{pk}/convertir-nota-venta/
+         * @description Crea la NotaVenta (BORRADOR) desde un pedido APROBADO copiando sus
+         *     detalles, y marca el pedido como convertido. Gap E2E (PR #76): el
+         *     botón del frontend llamaba a este endpoint y no existía (404).
+         */
+        post: operations["ventas_pedidos_convertir_nota_venta"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        CalendarioActivacion: {
+            /**
+             * Id calendario
+             * Format: uuid
+             */
+            readonly id_calendario?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /** Nombre */
+            nombre: string;
+            /** Google calendar id */
+            google_calendar_id?: string;
+            /** Zona horaria */
+            zona_horaria?: string;
+            /** Es predeterminado */
+            es_predeterminado?: boolean;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+        };
+        UsoRecursoEvento: {
+            /**
+             * Recurso
+             * Format: uuid
+             */
+            recurso: string;
+            /** Recurso codigo */
+            readonly recurso_codigo?: string;
+            /** Cantidad */
+            cantidad: number;
+        };
+        EventoActivacion: {
+            /**
+             * Id evento
+             * Format: uuid
+             */
+            readonly id_evento?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /**
+             * Calendario
+             * Format: uuid
+             */
+            readonly calendario?: string;
+            /**
+             * Cliente
+             * Format: uuid
+             */
+            readonly cliente?: string | null;
+            /**
+             * Cliente nombre
+             * @description Nombre tal como lo indicó el vendedor.
+             */
+            readonly cliente_nombre?: string;
+            /**
+             * Vendedor
+             * Format: uuid
+             */
+            readonly vendedor?: string | null;
+            /** Vendedor nombre */
+            readonly vendedor_nombre?: string;
+            /**
+             * Ubicacion
+             * @description Punto de venta / dirección.
+             */
+            readonly ubicacion?: string;
+            /**
+             * Inicio
+             * Format: date-time
+             */
+            readonly inicio?: string;
+            /**
+             * Fin
+             * Format: date-time
+             */
+            readonly fin?: string;
+            /**
+             * Materiales
+             * @description Lista de materiales a llevar.
+             */
+            readonly materiales?: Record<string, never>;
+            /** Notas */
+            readonly notas?: string;
+            /**
+             * Estado
+             * @enum {string}
+             */
+            readonly estado?: "PROGRAMADO" | "REALIZADO" | "CANCELADO";
+            /**
+             * Origen
+             * @enum {string}
+             */
+            readonly origen?: "WEB" | "BOT";
+            /** Google event id */
+            readonly google_event_id?: string;
+            /** Sync error */
+            readonly sync_error?: string;
+            readonly usos?: components["schemas"]["UsoRecursoEvento"][];
+        };
+        RecursoActivacion: {
+            /**
+             * Id recurso
+             * Format: uuid
+             */
+            readonly id_recurso?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /**
+             * Calendario
+             * Format: uuid
+             */
+            calendario: string;
+            /**
+             * Codigo
+             * Format: slug
+             * @description Identificador estable, p. ej. promotoras, igloos.
+             */
+            codigo: string;
+            /** Nombre */
+            nombre: string;
+            /**
+             * Capacidad
+             * @description Unidades disponibles simultáneamente.
+             */
+            capacidad: number;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+        };
+        ConsumoLLM: {
+            /**
+             * Id consumo
+             * Format: uuid
+             */
+            readonly id_consumo?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string | null;
+            /** Proveedor */
+            readonly proveedor?: string;
+            /** Uso */
+            readonly uso?: string;
+            /** Modelo */
+            readonly modelo?: string;
+            /** Tokens entrada */
+            readonly tokens_entrada?: number;
+            /** Tokens salida */
+            readonly tokens_salida?: number;
+            /**
+             * Costo estimado usd
+             * Format: decimal
+             */
+            readonly costo_estimado_usd?: string;
+            /** Latencia ms */
+            readonly latencia_ms?: number;
+            /**
+             * Creado en
+             * Format: date-time
+             */
+            readonly creado_en?: string;
+        };
+        ConsumoLLMPorModelo: {
+            /** Modelo */
+            readonly modelo?: string;
+            /** Llamadas */
+            readonly llamadas?: number;
+            /** Tokens entrada total */
+            readonly tokens_entrada_total?: number;
+            /** Tokens salida total */
+            readonly tokens_salida_total?: number;
+            /**
+             * Costo total usd
+             * Format: decimal
+             */
+            readonly costo_total_usd?: string;
+        };
+        ConsumoLLMPorUso: {
+            /** Uso */
+            readonly uso?: string;
+            /** Llamadas */
+            readonly llamadas?: number;
+            /** Tokens entrada total */
+            readonly tokens_entrada_total?: number;
+            /** Tokens salida total */
+            readonly tokens_salida_total?: number;
+            /**
+             * Costo total usd
+             * Format: decimal
+             */
+            readonly costo_total_usd?: string;
+        };
+        ConsumoLLMResumen: {
+            /** Llamadas */
+            readonly llamadas?: number;
+            /** Tokens entrada total */
+            readonly tokens_entrada_total?: number;
+            /** Tokens salida total */
+            readonly tokens_salida_total?: number;
+            /**
+             * Costo total usd
+             * Format: decimal
+             */
+            readonly costo_total_usd?: string;
+            /** Latencia promedio ms */
+            readonly latencia_promedio_ms?: number;
+            readonly por_modelo?: components["schemas"]["ConsumoLLMPorModelo"][];
+            readonly por_uso?: components["schemas"]["ConsumoLLMPorUso"][];
+        };
+        EjecucionAgente: {
+            /**
+             * Id ejecucion
+             * Format: uuid
+             */
+            readonly id_ejecucion?: string;
+            /**
+             * Agente
+             * @enum {string}
+             */
+            readonly agente?: "clasificador_gastos" | "cobranza_estratega" | "reorden_sugeridor" | "personalizacion_capa2" | "connect_calificador" | "connect_seguimiento";
+            /**
+             * Estado
+             * @enum {string}
+             */
+            readonly estado?: "pendiente" | "ejecutando" | "completado" | "fallido";
+            /** Celery task id */
+            readonly celery_task_id?: string;
+            /** Parametros */
+            readonly parametros?: Record<string, never>;
+            /** Resultado */
+            readonly resultado?: Record<string, never>;
+            /** Mensaje error */
+            readonly mensaje_error?: string;
+            /**
+             * Iniciado por
+             * Format: uuid
+             */
+            readonly iniciado_por?: string | null;
+            /**
+             * Fecha creacion
+             * Format: date-time
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha inicio
+             * Format: date-time
+             */
+            readonly fecha_inicio?: string | null;
+            /**
+             * Fecha fin
+             * Format: date-time
+             */
+            readonly fecha_fin?: string | null;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+        };
         PrediccionAgente: {
             /**
              * Id prediccion
@@ -9458,7 +15634,7 @@ export interface components {
              * Agente
              * @enum {string}
              */
-            agente: "clasificador_gastos" | "cobranza_estratega" | "reorden_sugeridor" | "personalizacion_capa2";
+            agente: "clasificador_gastos" | "cobranza_estratega" | "reorden_sugeridor" | "personalizacion_capa2" | "connect_calificador" | "connect_seguimiento";
             /** Input texto */
             input_texto: string;
             /**
@@ -9498,6 +15674,68 @@ export interface components {
              */
             id_empresa: string;
         };
+        AnalizarCobranzaInput: {
+            /**
+             * Empresa id
+             * Format: uuid
+             */
+            empresa_id?: string;
+            /**
+             * Persistir
+             * @default false
+             */
+            persistir: boolean;
+        };
+        AnalizarPersonalizacionInput: {
+            /**
+             * Empresa id
+             * Format: uuid
+             */
+            empresa_id?: string;
+        };
+        AnalizarReordenInput: {
+            /**
+             * Empresa id
+             * Format: uuid
+             */
+            empresa_id?: string;
+            /**
+             * Solo alertas
+             * @default true
+             */
+            solo_alertas: boolean;
+            /**
+             * Persistir
+             * @default false
+             */
+            persistir: boolean;
+        };
+        CalificarLeadConnectInput: {
+            /**
+             * Lead id
+             * Format: uuid
+             */
+            lead_id: string;
+        };
+        ClasificarGastoInput: {
+            /**
+             * Gasto id
+             * Format: uuid
+             */
+            gasto_id: string;
+            /**
+             * Aplicar
+             * @default false
+             */
+            aplicar: boolean;
+        };
+        ProponerSeguimientoConnectInput: {
+            /**
+             * Lead id
+             * Format: uuid
+             */
+            lead_id: string;
+        };
         Almacen: {
             /**
              * Id almacen
@@ -9510,6 +15748,11 @@ export interface components {
             codigo_almacen: string;
             /** Direccion */
             direccion?: string | null;
+            /**
+             * Usa ubicaciones
+             * @description Si True, habilita control de stock y transferencias por ubicación interna (opt-in).
+             */
+            usa_ubicaciones?: boolean;
             /** Referencia externa */
             referencia_externa?: string | null;
             /** Documento json */
@@ -9531,6 +15774,159 @@ export interface components {
              * Format: uuid
              */
             id_sucursal?: string | null;
+        };
+        StockUbicacion: {
+            /**
+             * Id stock ubicacion
+             * Format: uuid
+             */
+            readonly id_stock_ubicacion?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /**
+             * Id almacen
+             * Format: uuid
+             */
+            id_almacen: string;
+            /** Almacen nombre */
+            readonly almacen_nombre?: string;
+            /**
+             * Id ubicacion
+             * Format: uuid
+             */
+            id_ubicacion: string;
+            /** Ubicacion codigo */
+            readonly ubicacion_codigo?: string;
+            /** Ubicacion nombre */
+            readonly ubicacion_nombre?: string;
+            /** Requiere autorizacion */
+            readonly requiere_autorizacion?: boolean;
+            /**
+             * Id producto
+             * Format: uuid
+             */
+            id_producto: string;
+            /** Producto nombre */
+            readonly producto_nombre?: string;
+            /** Producto sku */
+            readonly producto_sku?: string | null;
+            /**
+             * Id variante
+             * Format: uuid
+             */
+            id_variante?: string | null;
+            /**
+             * Cantidad disponible
+             * Format: decimal
+             */
+            cantidad_disponible?: string;
+            /**
+             * Cantidad reservada
+             * Format: decimal
+             */
+            readonly cantidad_reservada?: string;
+            /** Cantidad libre */
+            readonly cantidad_libre?: string;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        ReservarUbicacionInput: {
+            /**
+             * Id almacen
+             * Format: uuid
+             */
+            id_almacen: string;
+            /**
+             * Id ubicacion
+             * Format: uuid
+             */
+            id_ubicacion: string;
+            /**
+             * Id producto
+             * Format: uuid
+             */
+            id_producto: string;
+            /**
+             * Id variante
+             * Format: uuid
+             */
+            id_variante?: string | null;
+            /**
+             * Cantidad
+             * Format: decimal
+             */
+            cantidad: string;
+            /**
+             * Liberar
+             * @default false
+             */
+            liberar: boolean;
+        };
+        TransferirUbicacionInput: {
+            /**
+             * Id almacen
+             * Format: uuid
+             */
+            id_almacen: string;
+            /**
+             * Id ubicacion origen
+             * Format: uuid
+             */
+            id_ubicacion_origen: string;
+            /**
+             * Id ubicacion destino
+             * Format: uuid
+             */
+            id_ubicacion_destino: string;
+            /**
+             * Id producto
+             * Format: uuid
+             */
+            id_producto: string;
+            /**
+             * Id variante
+             * Format: uuid
+             */
+            id_variante?: string | null;
+            /**
+             * Cantidad
+             * Format: decimal
+             */
+            cantidad: string;
+            /**
+             * Observaciones
+             * @default
+             */
+            observaciones: string;
+        };
+        TransferirUbicacionResponse: {
+            origen: components["schemas"]["StockUbicacion"];
+            destino: components["schemas"]["StockUbicacion"];
+            /**
+             * Id movimiento
+             * Format: uuid
+             */
+            id_movimiento: string;
+            /** Tipo movimiento */
+            tipo_movimiento: string;
         };
         UbicacionAlmacen: {
             /**
@@ -9641,39 +16037,322 @@ export interface components {
             /** Password */
             password: string;
         };
-        CuentaBancariaEmpresaBanca: {
-            /** ID */
-            readonly id?: number;
-            /** Referencia externa */
-            referencia_externa?: string | null;
-            /** Documento json */
-            documento_json?: Record<string, never> | null;
-            /** Banco */
-            banco: string;
-            /** Numero cuenta */
-            numero_cuenta: string;
+        DetalleLotePagoBancario: {
             /**
-             * Tipo cuenta
-             * @enum {string}
+             * Id detalle
+             * Format: uuid
              */
-            tipo_cuenta: "corriente" | "ahorro";
+            readonly id_detalle?: string;
             /**
-             * Saldo actual
+             * Id lote pago
+             * Format: uuid
+             */
+            readonly id_lote_pago?: string;
+            /**
+             * Id pago
+             * Format: uuid
+             */
+            readonly id_pago?: string | null;
+            /**
+             * Id nomina
+             * Format: uuid
+             */
+            readonly id_nomina?: string | null;
+            /** Beneficiario nombre */
+            readonly beneficiario_nombre?: string;
+            /** Beneficiario identificacion */
+            readonly beneficiario_identificacion?: string;
+            /** Cuenta destino */
+            readonly cuenta_destino?: string;
+            /** Banco destino */
+            readonly banco_destino?: string;
+            /**
+             * Monto
              * Format: decimal
              */
-            saldo_actual?: string;
-            /** Activa */
-            activa?: boolean;
+            readonly monto?: string;
+            /** Referencia linea */
+            readonly referencia_linea?: string;
+            /** Concepto */
+            readonly concepto?: string;
+        };
+        LotePagoBancario: {
             /**
-             * Empresa
+             * Id lote pago
              * Format: uuid
              */
-            empresa: string;
+            readonly id_lote_pago?: string;
             /**
-             * Moneda
+             * Id empresa
              * Format: uuid
              */
-            moneda: string;
+            readonly id_empresa?: string;
+            /** Empresa nombre */
+            readonly empresa_nombre?: string;
+            /**
+             * Id cuenta bancaria
+             * Format: uuid
+             */
+            readonly id_cuenta_bancaria?: string;
+            /** Cuenta bancaria nombre */
+            readonly cuenta_bancaria_nombre?: string;
+            /** Cuenta bancaria numero */
+            readonly cuenta_bancaria_numero?: string;
+            /**
+             * Tipo lote
+             * @enum {string}
+             */
+            readonly tipo_lote?: "PROVEEDORES" | "NOMINA";
+            /**
+             * Formato banco
+             * @enum {string}
+             */
+            readonly formato_banco?: "BANESCO_TXT" | "MERCANTIL_TXT" | "BDV_TXT" | "GENERICO_CSV";
+            /** Referencia lote */
+            readonly referencia_lote?: string;
+            /**
+             * Fecha valor
+             * Format: date
+             */
+            readonly fecha_valor?: string;
+            /**
+             * Estado
+             * @enum {string}
+             */
+            readonly estado?: "BORRADOR" | "GENERADO" | "ENVIADO" | "PROCESADO" | "ANULADO";
+            /**
+             * Id proceso nomina
+             * Format: uuid
+             */
+            readonly id_proceso_nomina?: string | null;
+            /** Total registros */
+            readonly total_registros?: number;
+            /**
+             * Monto total
+             * Format: decimal
+             */
+            readonly monto_total?: string;
+            /** Sha256 archivo */
+            readonly sha256_archivo?: string;
+            /** Nombre archivo */
+            readonly nombre_archivo?: string;
+            /**
+             * Generado por
+             * Format: uuid
+             */
+            readonly generado_por?: string | null;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            readonly activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+            readonly detalles?: components["schemas"]["DetalleLotePagoBancario"][];
+        };
+        GenerarLoteNominaInput: {
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa?: string | null;
+            /**
+             * Id cuenta bancaria
+             * Format: uuid
+             */
+            id_cuenta_bancaria: string;
+            /**
+             * Id proceso nomina
+             * Format: uuid
+             */
+            id_proceso_nomina: string;
+            /**
+             * Formato banco
+             * @enum {string}
+             */
+            formato_banco: "BANESCO_TXT" | "MERCANTIL_TXT" | "BDV_TXT" | "GENERICO_CSV";
+            /**
+             * Fecha valor
+             * Format: date
+             */
+            fecha_valor: string;
+            /** Referencia lote */
+            referencia_lote?: string | null;
+            /** Cuentas empleados */
+            cuentas_empleados?: {
+                [key: string]: string;
+            };
+        };
+        GenerarLoteProveedoresInput: {
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa?: string | null;
+            /**
+             * Id cuenta bancaria
+             * Format: uuid
+             */
+            id_cuenta_bancaria: string;
+            pagos_ids: string[];
+            /**
+             * Formato banco
+             * @enum {string}
+             */
+            formato_banco: "BANESCO_TXT" | "MERCANTIL_TXT" | "BDV_TXT" | "GENERICO_CSV";
+            /**
+             * Fecha valor
+             * Format: date
+             */
+            fecha_valor: string;
+            /** Referencia lote */
+            referencia_lote?: string | null;
+            /** Cuentas destino override */
+            cuentas_destino_override?: {
+                [key: string]: string;
+            };
+        };
+        ValidarCuentaVeInput: {
+            /** Numero cuenta */
+            numero_cuenta: string;
+        };
+        ValidarCuentaVeResponse: {
+            /** Valida */
+            valida: boolean;
+            /** Numero normalizado */
+            numero_normalizado: string;
+            /** Codigo banco */
+            codigo_banco: string | null;
+            /** Banco nombre */
+            banco_nombre: string | null;
+            errores: string[];
+        };
+        ValidarReferenciaInput: {
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa?: string | null;
+            /**
+             * Id cuenta bancaria
+             * Format: uuid
+             */
+            id_cuenta_bancaria?: string | null;
+            /** Referencia */
+            referencia: string;
+            /**
+             * Excluir pago id
+             * Format: uuid
+             */
+            excluir_pago_id?: string | null;
+        };
+        CoincidenciaReferencia: {
+            /** Origen */
+            origen: string;
+            /** Id */
+            id: string;
+            /** Detalle */
+            detalle: string;
+        };
+        ValidarReferenciaResponse: {
+            /** Duplicada */
+            duplicada: boolean;
+            /** Referencia normalizada */
+            referencia_normalizada: string;
+            coincidencias: components["schemas"]["CoincidenciaReferencia"][];
+        };
+        Ingesta: {
+            /**
+             * Id ingesta
+             * Format: uuid
+             */
+            readonly id_ingesta?: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            readonly kind?: "contacto" | "cotizacion" | "pedido" | "pago" | "pago_proveedor" | "proveedor" | "factura_proveedor" | "gasto" | "evento";
+            /**
+             * Estado
+             * @enum {string}
+             */
+            readonly estado?: "PROCESADO" | "BORRADOR" | "INCOMPLETO" | "SINCRONIZADO" | "ERROR";
+            /**
+             * Incompleto
+             * @description Campos/datos que faltan.
+             */
+            readonly incompleto?: Record<string, never>;
+            /**
+             * Resultado
+             * @description Referencias a lo creado en Omni.
+             */
+            readonly resultado?: Record<string, never>;
+            /**
+             * Auto
+             * @description Enviado automáticamente por falta de respuesta.
+             */
+            readonly auto?: boolean;
+            /**
+             * Payload
+             * @description Borrador tal como lo confirmó el usuario.
+             */
+            readonly payload?: Record<string, never>;
+            /** Odoo ref */
+            readonly odoo_ref?: string;
+            /** Error */
+            readonly error?: string;
+            /** Idempotency key */
+            readonly idempotency_key?: string;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        BotUsuario: {
+            /**
+             * Id bot usuario
+             * Format: uuid
+             */
+            readonly id_bot_usuario?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /** Telegram user id */
+            telegram_user_id: number;
+            /**
+             * Usuario
+             * Format: uuid
+             */
+            usuario: string;
+            /** Nombre */
+            nombre?: string;
+            /** @default [] */
+            bots: string[];
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            readonly activo?: boolean;
         };
         CuotaAcuerdo: {
             /**
@@ -10059,6 +16738,16 @@ export interface components {
              */
             readonly id_detalle_factura?: string;
             /**
+             * Id factura compra
+             * Format: uuid
+             */
+            id_factura_compra: string;
+            /**
+             * Id producto
+             * Format: uuid
+             */
+            id_producto: string;
+            /**
              * Cantidad
              * Format: decimal
              */
@@ -10095,16 +16784,6 @@ export interface components {
             total_linea: string;
             /** Observaciones */
             observaciones?: string | null;
-            /**
-             * Id factura compra
-             * Format: uuid
-             */
-            id_factura_compra: string;
-            /**
-             * Id producto
-             * Format: uuid
-             */
-            id_producto: string;
         };
         DetalleOfertaProveedor: {
             /**
@@ -10112,6 +16791,16 @@ export interface components {
              * Format: uuid
              */
             readonly id_detalle_oferta?: string;
+            /**
+             * Id oferta
+             * Format: uuid
+             */
+            id_oferta: string;
+            /**
+             * Id producto
+             * Format: uuid
+             */
+            id_producto: string;
             /**
              * Cantidad
              * Format: decimal
@@ -10131,16 +16820,6 @@ export interface components {
             tiempo_entrega?: string | null;
             /** Observaciones */
             observaciones?: string | null;
-            /**
-             * Id oferta
-             * Format: uuid
-             */
-            id_oferta: string;
-            /**
-             * Id producto
-             * Format: uuid
-             */
-            id_producto: string;
         };
         DetalleOrdenCompra: {
             /**
@@ -10148,6 +16827,16 @@ export interface components {
              * Format: uuid
              */
             readonly id_detalle_orden_compra?: string;
+            /**
+             * Id orden compra
+             * Format: uuid
+             */
+            id_orden_compra: string;
+            /**
+             * Id producto
+             * Format: uuid
+             */
+            id_producto: string;
             /**
              * Cantidad
              * Format: decimal
@@ -10165,16 +16854,6 @@ export interface components {
             subtotal: string;
             /** Observaciones */
             observaciones?: string | null;
-            /**
-             * Id orden compra
-             * Format: uuid
-             */
-            id_orden_compra: string;
-            /**
-             * Id producto
-             * Format: uuid
-             */
-            id_producto: string;
         };
         DetalleRecepcionMercancia: {
             /**
@@ -10182,6 +16861,16 @@ export interface components {
              * Format: uuid
              */
             readonly id_detalle_recepcion?: string;
+            /**
+             * Id recepcion
+             * Format: uuid
+             */
+            id_recepcion: string;
+            /**
+             * Id producto
+             * Format: uuid
+             */
+            id_producto: string;
             /**
              * Cantidad esperada
              * Format: decimal
@@ -10209,16 +16898,6 @@ export interface components {
             estado_mercancia?: "CONFORME" | "DEFECTUOSO" | "INCOMPLETO" | "DAÑADO";
             /** Observaciones */
             observaciones?: string | null;
-            /**
-             * Id recepcion
-             * Format: uuid
-             */
-            id_recepcion: string;
-            /**
-             * Id producto
-             * Format: uuid
-             */
-            id_producto: string;
         };
         DetalleRequisicionCompra: {
             /**
@@ -10226,6 +16905,16 @@ export interface components {
              * Format: uuid
              */
             readonly id_detalle_requisicion?: string;
+            /**
+             * Id requisicion
+             * Format: uuid
+             */
+            id_requisicion: string;
+            /**
+             * Id producto
+             * Format: uuid
+             */
+            id_producto: string;
             /**
              * Cantidad solicitada
              * Format: decimal
@@ -10240,16 +16929,6 @@ export interface components {
             justificacion?: string | null;
             /** Observaciones */
             observaciones?: string | null;
-            /**
-             * Id requisicion
-             * Format: uuid
-             */
-            id_requisicion: string;
-            /**
-             * Id producto
-             * Format: uuid
-             */
-            id_producto: string;
         };
         DetalleSolicitudCotizacion: {
             /**
@@ -10257,15 +16936,6 @@ export interface components {
              * Format: uuid
              */
             readonly id_detalle_solicitud?: string;
-            /**
-             * Cantidad
-             * Format: decimal
-             */
-            cantidad: string;
-            /** Especificaciones */
-            especificaciones?: string | null;
-            /** Observaciones */
-            observaciones?: string | null;
             /**
              * Id solicitud cotizacion
              * Format: uuid
@@ -10276,6 +16946,15 @@ export interface components {
              * Format: uuid
              */
             id_producto: string;
+            /**
+             * Cantidad
+             * Format: decimal
+             */
+            cantidad: string;
+            /** Especificaciones */
+            especificaciones?: string | null;
+            /** Observaciones */
+            observaciones?: string | null;
         };
         FacturaCompra: {
             /**
@@ -10283,6 +16962,26 @@ export interface components {
              * Format: uuid
              */
             readonly id_factura_compra?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /**
+             * Id orden compra
+             * Format: uuid
+             */
+            id_orden_compra?: string | null;
+            /**
+             * Id proveedor
+             * Format: uuid
+             */
+            id_proveedor?: string | null;
+            /**
+             * Id recepcion
+             * Format: uuid
+             */
+            id_recepcion?: string | null;
             /** Numero factura */
             numero_factura: string;
             /**
@@ -10304,21 +17003,6 @@ export interface components {
              * Format: date-time
              */
             readonly fecha_creacion?: string;
-            /**
-             * Id empresa
-             * Format: uuid
-             */
-            readonly id_empresa?: string;
-            /**
-             * Id orden compra
-             * Format: uuid
-             */
-            id_orden_compra: string;
-            /**
-             * Id recepcion
-             * Format: uuid
-             */
-            id_recepcion?: string | null;
         };
         OfertaProveedor: {
             /**
@@ -10326,6 +17010,16 @@ export interface components {
              * Format: uuid
              */
             readonly id_oferta?: string;
+            /**
+             * Id solicitud cotizacion
+             * Format: uuid
+             */
+            id_solicitud_cotizacion: string;
+            /**
+             * Id proveedor
+             * Format: uuid
+             */
+            id_proveedor: string;
             /** Numero oferta */
             numero_oferta: string;
             /**
@@ -10359,16 +17053,60 @@ export interface components {
              * Format: date-time
              */
             readonly fecha_creacion?: string;
+        };
+        AdjudicacionParcialItem: {
             /**
-             * Id solicitud cotizacion
+             * Id producto
              * Format: uuid
              */
-            id_solicitud_cotizacion: string;
+            id_producto: string;
             /**
-             * Id proveedor
+             * Cantidad
+             * Format: decimal
+             */
+            cantidad: string;
+        } | null;
+        AdjudicarOfertaInput: {
+            /**
+             * Id almacen destino
              * Format: uuid
              */
-            id_proveedor: string;
+            id_almacen_destino: string;
+            /**
+             * Rechazar competidoras
+             * @default true
+             */
+            rechazar_competidoras: boolean;
+            adjudicacion_parcial?: components["schemas"]["AdjudicacionParcialItem"][] | null;
+        };
+        AdjudicarOfertaResponse: {
+            /**
+             * Id orden compra
+             * Format: uuid
+             */
+            id_orden_compra: string;
+            /** Numero orden */
+            numero_orden: string;
+            /** Estado orden */
+            estado_orden: string;
+            /** Monto total */
+            monto_total: string;
+            /**
+             * Oferta id
+             * Format: uuid
+             */
+            oferta_id: string;
+            /** Oferta estado */
+            oferta_estado: string;
+            /**
+             * Rfq id
+             * Format: uuid
+             */
+            rfq_id: string;
+            /** Rfq estado */
+            rfq_estado: string;
+            /** Lineas */
+            lineas: number;
         };
         OrdenCompra: {
             /**
@@ -10414,6 +17152,16 @@ export interface components {
              * Format: uuid
              */
             id_proveedor: string;
+            /**
+             * Id oferta origen
+             * Format: uuid
+             */
+            id_oferta_origen?: string | null;
+            /**
+             * Id almacen destino
+             * Format: uuid
+             */
+            id_almacen_destino?: string | null;
         };
         RecepcionMercancia: {
             /**
@@ -10457,6 +17205,16 @@ export interface components {
              * Format: uuid
              */
             readonly id_requisicion?: string;
+            /**
+             * Id solicitante
+             * Format: uuid
+             */
+            id_solicitante: string;
+            /**
+             * Id departamento
+             * Format: uuid
+             */
+            id_departamento?: string | null;
             /** Numero requisicion */
             numero_requisicion: string;
             /**
@@ -10468,7 +17226,7 @@ export interface components {
              * Estado
              * @enum {string}
              */
-            estado?: "BORRADOR" | "PENDIENTE" | "APROBADA" | "RECHAZADA" | "PROCESADA" | "ANULADA";
+            readonly estado?: "BORRADOR" | "PENDIENTE" | "APROBADA" | "RECHAZADA" | "PROCESADA" | "ANULADA";
             /**
              * Prioridad
              * @enum {string}
@@ -10493,16 +17251,6 @@ export interface components {
              * Format: uuid
              */
             readonly id_empresa?: string;
-            /**
-             * Id solicitante
-             * Format: uuid
-             */
-            id_solicitante: string;
-            /**
-             * Id departamento
-             * Format: uuid
-             */
-            id_departamento?: string | null;
         };
         SolicitudCotizacion: {
             /**
@@ -10529,6 +17277,8 @@ export interface components {
             estado?: "BORRADOR" | "ENVIADA" | "RESPONDIDA" | "VENCIDA" | "ANULADA";
             /** Observaciones */
             observaciones?: string | null;
+            requisiciones?: string[];
+            proveedores_invitados?: string[];
             /**
              * Fecha creacion
              * Format: date-time
@@ -10539,6 +17289,115 @@ export interface components {
              * Format: uuid
              */
             readonly id_empresa?: string;
+        };
+        CrearRfqDesdeRequisicionesInput: {
+            requisicion_ids: string[];
+            proveedores_ids: string[];
+            /**
+             * Fecha vencimiento
+             * Format: date
+             */
+            fecha_vencimiento: string;
+            /**
+             * Numero solicitud
+             * @default
+             */
+            numero_solicitud: string;
+            /**
+             * Observaciones
+             * @default
+             */
+            observaciones: string;
+        };
+        OfertaResumenComparativo: {
+            /**
+             * Id oferta
+             * Format: uuid
+             */
+            id_oferta: string;
+            /** Numero oferta */
+            numero_oferta: string;
+            /**
+             * Id proveedor
+             * Format: uuid
+             */
+            id_proveedor: string;
+            /** Proveedor nombre */
+            proveedor_nombre: string;
+            /** Estado */
+            estado: string;
+            /** Monto total */
+            monto_total: string;
+            /** Tiempo entrega */
+            tiempo_entrega: string;
+            /** Condiciones pago */
+            condiciones_pago: string;
+            /** Es mejor total */
+            es_mejor_total: boolean;
+        };
+        CotizacionComparada: {
+            /**
+             * Id oferta
+             * Format: uuid
+             */
+            id_oferta: string;
+            /**
+             * Id proveedor
+             * Format: uuid
+             */
+            id_proveedor: string;
+            /** Proveedor nombre */
+            proveedor_nombre: string;
+            /** Cantidad */
+            cantidad: string | null;
+            /** Precio unitario */
+            precio_unitario: string | null;
+            /** Subtotal */
+            subtotal: string | null;
+            /** Tiempo entrega */
+            tiempo_entrega: string | null;
+            /** Es mejor precio */
+            es_mejor_precio: boolean;
+        };
+        ProductoComparado: {
+            /**
+             * Id producto
+             * Format: uuid
+             */
+            id_producto: string;
+            /** Producto nombre */
+            producto_nombre: string;
+            /** Sku */
+            sku: string;
+            /** Cantidad solicitada */
+            cantidad_solicitada: string;
+            /** Especificaciones */
+            especificaciones: string;
+            /** Mejor precio unitario */
+            mejor_precio_unitario: string | null;
+            cotizaciones: components["schemas"]["CotizacionComparada"][];
+        };
+        CompararOfertasResponse: {
+            /**
+             * Rfq id
+             * Format: uuid
+             */
+            rfq_id: string;
+            /** Numero solicitud */
+            numero_solicitud: string;
+            /** Estado */
+            estado: string;
+            /** Fecha solicitud */
+            fecha_solicitud: string;
+            /** Fecha vencimiento */
+            fecha_vencimiento: string;
+            /**
+             * Mejor oferta id
+             * Format: uuid
+             */
+            mejor_oferta_id: string | null;
+            ofertas: components["schemas"]["OfertaResumenComparativo"][];
+            productos: components["schemas"]["ProductoComparado"][];
         };
         CatalogoValor: {
             /**
@@ -10605,6 +17464,261 @@ export interface components {
             /** Ultimo correlativo */
             ultimo_correlativo?: number;
         };
+        ConnectAnaliticasPeriodo: {
+            /**
+             * Desde
+             * Format: date
+             */
+            readonly desde?: string;
+            /**
+             * Hasta
+             * Format: date
+             */
+            readonly hasta?: string;
+            /** Dias */
+            readonly dias?: number;
+        };
+        ConnectAnaliticasSerieDia: {
+            /**
+             * Fecha
+             * Format: date
+             */
+            readonly fecha?: string;
+            /** Toques */
+            readonly toques?: number;
+            /** Leads */
+            readonly leads?: number;
+        };
+        ConnectAnaliticasTopPerfil: {
+            /**
+             * Id perfil
+             * Format: uuid
+             */
+            readonly id_perfil?: string;
+            /** Slug */
+            readonly slug?: string;
+            /** Nombre publico */
+            readonly nombre_publico?: string;
+            /** Toques */
+            readonly toques?: number;
+            /** Visitantes unicos */
+            readonly visitantes_unicos?: number;
+            /** Leads */
+            readonly leads?: number;
+            /** Leads convertidos */
+            readonly leads_convertidos?: number;
+            /** Tasa conversion pct */
+            readonly tasa_conversion_pct?: string;
+        };
+        ConnectAnaliticas: {
+            periodo?: components["schemas"]["ConnectAnaliticasPeriodo"];
+            /**
+             * Perfil id
+             * Format: uuid
+             */
+            readonly perfil_id?: string | null;
+            /** Total toques */
+            readonly total_toques?: number;
+            /** Visitantes unicos */
+            readonly visitantes_unicos?: number;
+            /** Total leads */
+            readonly total_leads?: number;
+            /** Leads convertidos */
+            readonly leads_convertidos?: number;
+            /** Tasa conversion pct */
+            readonly tasa_conversion_pct?: string;
+            /** Tasa cierre pct */
+            readonly tasa_cierre_pct?: string;
+            /** Por origen */
+            readonly por_origen?: {
+                [key: string]: number;
+            };
+            /** Por dispositivo */
+            readonly por_dispositivo?: {
+                [key: string]: number;
+            };
+            readonly serie_diaria?: components["schemas"]["ConnectAnaliticasSerieDia"][];
+            readonly top_perfiles?: components["schemas"]["ConnectAnaliticasTopPerfil"][];
+        };
+        Perfil: {
+            /**
+             * Id perfil
+             * Format: uuid
+             */
+            readonly id_perfil?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa?: string;
+            /**
+             * Usuario
+             * Format: uuid
+             */
+            usuario?: string;
+            /** Slug */
+            slug: string;
+            /** Nombre publico */
+            nombre_publico: string;
+            /** Cargo */
+            cargo?: string;
+            /** Bio */
+            bio?: string;
+            /** Telefono publico */
+            telefono_publico?: string;
+            /**
+             * Email publico
+             * Format: email
+             */
+            email_publico?: string;
+            /** Tema */
+            tema?: string;
+            /** Botones */
+            botones?: Record<string, never>;
+            /** Plantilla bloqueada */
+            plantilla_bloqueada?: boolean;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        MiPerfil: {
+            /**
+             * Id perfil
+             * Format: uuid
+             */
+            readonly id_perfil?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /**
+             * Usuario
+             * Format: uuid
+             */
+            readonly usuario?: string;
+            /** Slug */
+            slug: string;
+            /** Nombre publico */
+            nombre_publico: string;
+            /** Cargo */
+            cargo?: string;
+            /** Bio */
+            bio?: string;
+            /** Telefono publico */
+            telefono_publico?: string;
+            /**
+             * Email publico
+             * Format: email
+             */
+            email_publico?: string;
+            /** Tema */
+            tema?: string;
+            /** Botones */
+            botones?: Record<string, never>;
+            /** Plantilla bloqueada */
+            plantilla_bloqueada?: boolean;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        Tarjeta: {
+            /**
+             * Id tarjeta
+             * Format: uuid
+             */
+            readonly id_tarjeta?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa?: string;
+            /**
+             * Perfil
+             * Format: uuid
+             */
+            perfil?: string | null;
+            /** Perfil slug */
+            readonly perfil_slug?: string;
+            /** Perfil nombre */
+            readonly perfil_nombre?: string;
+            /** Uid chip */
+            uid_chip: string;
+            /**
+             * Tipo
+             * @enum {string}
+             */
+            tipo?: "PVC" | "METAL" | "PULSERA";
+            /**
+             * Estado
+             * @enum {string}
+             */
+            estado?: "INVENTARIO" | "ACTIVA" | "DESACTIVADA" | "PERDIDA";
+            /**
+             * Fecha activacion
+             * Format: date-time
+             */
+            readonly fecha_activacion?: string | null;
+            /** Notas */
+            notas?: string;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        TarjetaAsignarInput: {
+            /**
+             * Perfil id
+             * Format: uuid
+             */
+            perfil_id: string;
+            /**
+             * Activar
+             * @default false
+             */
+            activar: boolean;
+        };
         DetalleAsiento: {
             /**
              * Id detalle asiento
@@ -10638,13 +17752,23 @@ export interface components {
              * Format: uuid
              */
             id_cuenta_contable: string;
+            /**
+             * Id contacto
+             * Format: uuid
+             */
+            id_contacto?: string | null;
+            /**
+             * Contacto nombre
+             * @default
+             */
+            readonly contacto_nombre: string | null;
         };
         AsientoContable: {
             /**
              * Id asiento
              * Format: uuid
              */
-            id_asiento?: string;
+            readonly id_asiento?: string;
             readonly detalles?: components["schemas"]["DetalleAsiento"][];
             /**
              * Fecha asiento
@@ -10668,6 +17792,11 @@ export interface components {
              */
             estado_asiento: "BORRADOR" | "APROBADO" | "ANULADO";
             /**
+             * Id usuario registro
+             * Format: uuid
+             */
+            id_usuario_registro?: string | null;
+            /**
              * Id usuario registro temp
              * Format: uuid
              */
@@ -10682,6 +17811,300 @@ export interface components {
              * Format: uuid
              */
             id_empresa: string;
+            /**
+             * Id diario
+             * Format: uuid
+             */
+            id_diario?: string | null;
+            /**
+             * Diario nombre
+             * @default
+             */
+            readonly diario_nombre: string | null;
+            /**
+             * Asiento revertido
+             * Format: uuid
+             */
+            readonly asiento_revertido?: string | null;
+            /**
+             * Contra asiento id
+             * Format: uuid
+             */
+            readonly contra_asiento_id?: string | null;
+            /** Es cierre */
+            readonly es_cierre?: boolean;
+        };
+        RevertirAsientoInput: {
+            /**
+             * Fecha reversion
+             * Format: date
+             */
+            fecha_reversion?: string | null;
+            /**
+             * Motivo
+             * @default
+             */
+            motivo: string;
+        };
+        DiarioContable: {
+            /**
+             * Id diario
+             * Format: uuid
+             */
+            readonly id_diario?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa: string;
+            /** Codigo */
+            codigo: string;
+            /** Nombre */
+            nombre: string;
+            /**
+             * Tipo
+             * @enum {string}
+             */
+            tipo?: "VENTAS" | "COMPRAS" | "BANCO" | "CAJA" | "NOMINA" | "VARIOS";
+            /** Tipo display */
+            readonly tipo_display?: string;
+            /** Prefijo secuencia */
+            prefijo_secuencia?: string;
+            /** Siguiente numero */
+            siguiente_numero?: number;
+            /**
+             * Cuenta defecto debe
+             * Format: uuid
+             */
+            cuenta_defecto_debe?: string | null;
+            /**
+             * Cuenta defecto debe nombre
+             * @default
+             */
+            readonly cuenta_defecto_debe_nombre: string | null;
+            /**
+             * Cuenta defecto haber
+             * Format: uuid
+             */
+            cuenta_defecto_haber?: string | null;
+            /**
+             * Cuenta defecto haber nombre
+             * @default
+             */
+            readonly cuenta_defecto_haber_nombre: string | null;
+            /**
+             * Id cuenta bancaria
+             * Format: uuid
+             */
+            id_cuenta_bancaria?: string | null;
+            /**
+             * Id caja
+             * Format: uuid
+             */
+            id_caja?: string | null;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        MapeoContable: {
+            /**
+             * Id mapeo
+             * Format: uuid
+             */
+            readonly id_mapeo?: string;
+            /** Tipo asiento display */
+            readonly tipo_asiento_display?: string;
+            /** Cuenta debe nombre */
+            readonly cuenta_debe_nombre?: string;
+            /** Cuenta haber nombre */
+            readonly cuenta_haber_nombre?: string;
+            /**
+             * Tipo asiento
+             * @enum {string}
+             */
+            tipo_asiento: "FACTURA_VENTA" | "DEVOLUCION_VENTA" | "DEVOLUCION_VENTA_IVA" | "FACTURA_COMPRA" | "GASTO" | "GASTO_IVA" | "RECEPCION_MERCANCIA" | "COSTO_VENTA" | "AJUSTE_INVENTARIO" | "SALIDA_INTERNA" | "PAGO_CXC" | "PAGO_CXP" | "GANANCIA_CAMBIARIA" | "PERDIDA_CAMBIARIA" | "NOMINA" | "CAMBIO_DIVISA" | "PAGO_TERCERO" | "PAGO_PARAFISCAL";
+            /**
+             * Descripcion plantilla
+             * @description Plantilla de descripción. Use {tipo}, {numero}.
+             */
+            descripcion_plantilla?: string;
+            /** Activo */
+            activo?: boolean;
+            /**
+             * Fecha creacion
+             * Format: date-time
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa: string;
+            /**
+             * Id diario
+             * Format: uuid
+             */
+            id_diario?: string | null;
+            /**
+             * Diario nombre
+             * @default
+             */
+            readonly diario_nombre: string | null;
+            /**
+             * Cuenta debe
+             * Format: uuid
+             * @description Cuenta que va al Debe en este tipo de asiento.
+             */
+            cuenta_debe: string;
+            /**
+             * Cuenta haber
+             * Format: uuid
+             * @description Cuenta que va al Haber en este tipo de asiento.
+             */
+            cuenta_haber: string;
+        };
+        PeriodoContable: {
+            /**
+             * Id periodo
+             * Format: uuid
+             */
+            readonly id_periodo?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa: string;
+            /** Anio */
+            anio: number;
+            /** Mes */
+            mes: number;
+            /**
+             * Estado
+             * @enum {string}
+             */
+            readonly estado?: "ABIERTO" | "CERRADO";
+            /** Estado display */
+            readonly estado_display?: string;
+            /**
+             * Fecha cierre
+             * Format: date-time
+             */
+            readonly fecha_cierre?: string | null;
+            /**
+             * Cerrado por
+             * Format: uuid
+             */
+            readonly cerrado_por?: string | null;
+            /**
+             * Cerrado por username
+             * @default
+             */
+            readonly cerrado_por_username: string | null;
+            /**
+             * Asiento cierre
+             * Format: uuid
+             */
+            readonly asiento_cierre?: string | null;
+            /**
+             * Asiento cierre numero
+             * @default
+             */
+            readonly asiento_cierre_numero: string | null;
+            /** Observaciones */
+            observaciones?: string;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        CerrarEjercicioInput: {
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa: string;
+            /** Anio */
+            anio: number;
+            /**
+             * Cuenta resultado acumulado
+             * Format: uuid
+             */
+            cuenta_resultado_acumulado: string;
+            /**
+             * Fecha cierre
+             * Format: date
+             */
+            fecha_cierre?: string | null;
+        };
+        CerrarEjercicioResponse: {
+            /** Anio */
+            readonly anio?: number;
+            asiento_cierre?: components["schemas"]["AsientoContable"];
+            /**
+             * Resultado ejercicio
+             * Format: decimal
+             */
+            readonly resultado_ejercicio?: string;
+            /** Cantidad cuentas saldadas */
+            readonly cantidad_cuentas_saldadas?: number;
+            readonly periodos_cerrados?: components["schemas"]["PeriodoContable"][];
+        };
+        CerrarPeriodoInput: {
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa: string;
+            /** Anio */
+            anio: number;
+            /** Mes */
+            mes: number;
+            /**
+             * Observaciones
+             * @default
+             */
+            observaciones: string;
+        };
+        CerrarPeriodoDetalleInput: {
+            /**
+             * Observaciones
+             * @default
+             */
+            observaciones: string;
+        };
+        ReabrirPeriodoInput: {
+            /**
+             * Motivo
+             * @default
+             */
+            motivo: string;
         };
         PlanCuentas: {
             /**
@@ -10722,6 +18145,643 @@ export interface components {
              * Format: uuid
              */
             id_cuenta_padre?: string | null;
+        };
+        BalanceComprobacionCuenta: {
+            /**
+             * Id cuenta contable
+             * Format: uuid
+             */
+            readonly id_cuenta_contable?: string;
+            /**
+             * Id cuenta padre
+             * Format: uuid
+             */
+            readonly id_cuenta_padre?: string | null;
+            /** Codigo cuenta */
+            readonly codigo_cuenta?: string;
+            /** Nombre cuenta */
+            readonly nombre_cuenta?: string;
+            /** Tipo cuenta */
+            readonly tipo_cuenta?: string;
+            /** Naturaleza */
+            readonly naturaleza?: string;
+            /** Nivel */
+            readonly nivel?: number;
+            /**
+             * Debe inicial
+             * Format: decimal
+             */
+            readonly debe_inicial?: string;
+            /**
+             * Haber inicial
+             * Format: decimal
+             */
+            readonly haber_inicial?: string;
+            /**
+             * Saldo inicial
+             * Format: decimal
+             */
+            readonly saldo_inicial?: string;
+            /**
+             * Saldo inicial deudor
+             * Format: decimal
+             */
+            readonly saldo_inicial_deudor?: string;
+            /**
+             * Saldo inicial acreedor
+             * Format: decimal
+             */
+            readonly saldo_inicial_acreedor?: string;
+            /**
+             * Debe
+             * Format: decimal
+             */
+            readonly debe?: string;
+            /**
+             * Haber
+             * Format: decimal
+             */
+            readonly haber?: string;
+            /**
+             * Debe periodo
+             * Format: decimal
+             */
+            readonly debe_periodo?: string;
+            /**
+             * Haber periodo
+             * Format: decimal
+             */
+            readonly haber_periodo?: string;
+            /**
+             * Debe final acum
+             * Format: decimal
+             */
+            readonly debe_final_acum?: string;
+            /**
+             * Haber final acum
+             * Format: decimal
+             */
+            readonly haber_final_acum?: string;
+            /**
+             * Saldo
+             * Format: decimal
+             */
+            readonly saldo?: string;
+            /**
+             * Saldo final deudor
+             * Format: decimal
+             */
+            readonly saldo_final_deudor?: string;
+            /**
+             * Saldo final acreedor
+             * Format: decimal
+             */
+            readonly saldo_final_acreedor?: string;
+            /**
+             * Debe inicial usd
+             * Format: decimal
+             */
+            readonly debe_inicial_usd?: string | null;
+            /**
+             * Haber inicial usd
+             * Format: decimal
+             */
+            readonly haber_inicial_usd?: string | null;
+            /**
+             * Saldo inicial usd
+             * Format: decimal
+             */
+            readonly saldo_inicial_usd?: string | null;
+            /**
+             * Debe usd
+             * Format: decimal
+             */
+            readonly debe_usd?: string | null;
+            /**
+             * Haber usd
+             * Format: decimal
+             */
+            readonly haber_usd?: string | null;
+            /**
+             * Debe final acum usd
+             * Format: decimal
+             */
+            readonly debe_final_acum_usd?: string | null;
+            /**
+             * Haber final acum usd
+             * Format: decimal
+             */
+            readonly haber_final_acum_usd?: string | null;
+            /**
+             * Saldo usd
+             * Format: decimal
+             */
+            readonly saldo_usd?: string | null;
+        };
+        BalanceComprobacionResponse: {
+            /**
+             * Empresa id
+             * Format: uuid
+             */
+            readonly empresa_id?: string;
+            /** Moneda base */
+            readonly moneda_base?: string;
+            /** Moneda base simbolo */
+            readonly moneda_base_simbolo?: string;
+            /** Incluir equivalentes usd */
+            readonly incluir_equivalentes_usd?: boolean;
+            /** Usd disponible */
+            readonly usd_disponible?: boolean;
+            /**
+             * Tasa usd
+             * Format: decimal
+             */
+            readonly tasa_usd?: string | null;
+            /** Tasa usd inversa */
+            readonly tasa_usd_inversa?: boolean;
+            /** Usd mensaje */
+            readonly usd_mensaje?: string;
+            /**
+             * Fecha desde
+             * Format: date
+             */
+            readonly fecha_desde?: string | null;
+            /**
+             * Fecha hasta
+             * Format: date
+             */
+            readonly fecha_hasta?: string | null;
+            /**
+             * Id diario
+             * Format: uuid
+             */
+            readonly id_diario?: string | null;
+            /** Diario nombre */
+            readonly diario_nombre?: string;
+            readonly cuentas?: components["schemas"]["BalanceComprobacionCuenta"][];
+            /**
+             * Total debe inicial
+             * Format: decimal
+             */
+            readonly total_debe_inicial?: string;
+            /**
+             * Total haber inicial
+             * Format: decimal
+             */
+            readonly total_haber_inicial?: string;
+            /**
+             * Total saldo inicial deudor
+             * Format: decimal
+             */
+            readonly total_saldo_inicial_deudor?: string;
+            /**
+             * Total saldo inicial acreedor
+             * Format: decimal
+             */
+            readonly total_saldo_inicial_acreedor?: string;
+            /**
+             * Total debe
+             * Format: decimal
+             */
+            readonly total_debe?: string;
+            /**
+             * Total haber
+             * Format: decimal
+             */
+            readonly total_haber?: string;
+            /**
+             * Total debe periodo
+             * Format: decimal
+             */
+            readonly total_debe_periodo?: string;
+            /**
+             * Total haber periodo
+             * Format: decimal
+             */
+            readonly total_haber_periodo?: string;
+            /**
+             * Total debe final acum
+             * Format: decimal
+             */
+            readonly total_debe_final_acum?: string;
+            /**
+             * Total haber final acum
+             * Format: decimal
+             */
+            readonly total_haber_final_acum?: string;
+            /**
+             * Total saldo final deudor
+             * Format: decimal
+             */
+            readonly total_saldo_final_deudor?: string;
+            /**
+             * Total saldo final acreedor
+             * Format: decimal
+             */
+            readonly total_saldo_final_acreedor?: string;
+            /** Cuadrado */
+            readonly cuadrado?: boolean;
+            /**
+             * Total debe usd
+             * Format: decimal
+             */
+            readonly total_debe_usd?: string | null;
+            /**
+             * Total haber usd
+             * Format: decimal
+             */
+            readonly total_haber_usd?: string | null;
+        };
+        EstadoFinancieroCuenta: {
+            /**
+             * Id cuenta contable
+             * Format: uuid
+             */
+            readonly id_cuenta_contable?: string;
+            /**
+             * Id cuenta padre
+             * Format: uuid
+             */
+            readonly id_cuenta_padre?: string | null;
+            /** Codigo cuenta */
+            readonly codigo_cuenta?: string;
+            /** Nombre cuenta */
+            readonly nombre_cuenta?: string;
+            /** Tipo cuenta */
+            readonly tipo_cuenta?: string;
+            /** Naturaleza */
+            readonly naturaleza?: string;
+            /** Nivel */
+            readonly nivel?: number;
+            /**
+             * Debe
+             * Format: decimal
+             */
+            readonly debe?: string;
+            /**
+             * Haber
+             * Format: decimal
+             */
+            readonly haber?: string;
+            /**
+             * Saldo
+             * Format: decimal
+             */
+            readonly saldo?: string;
+            /**
+             * Saldo usd
+             * Format: decimal
+             */
+            readonly saldo_usd?: string | null;
+        };
+        BalanceGeneralResponse: {
+            /**
+             * Empresa id
+             * Format: uuid
+             */
+            readonly empresa_id?: string;
+            /** Moneda base */
+            readonly moneda_base?: string;
+            /** Moneda base simbolo */
+            readonly moneda_base_simbolo?: string;
+            /** Incluir equivalentes usd */
+            readonly incluir_equivalentes_usd?: boolean;
+            /** Usd disponible */
+            readonly usd_disponible?: boolean;
+            /**
+             * Tasa usd
+             * Format: decimal
+             */
+            readonly tasa_usd?: string | null;
+            /** Tasa usd inversa */
+            readonly tasa_usd_inversa?: boolean;
+            /** Usd mensaje */
+            readonly usd_mensaje?: string;
+            /**
+             * Fecha corte
+             * Format: date
+             */
+            readonly fecha_corte?: string;
+            readonly activos?: components["schemas"]["EstadoFinancieroCuenta"][];
+            readonly pasivos?: components["schemas"]["EstadoFinancieroCuenta"][];
+            readonly patrimonio?: components["schemas"]["EstadoFinancieroCuenta"][];
+            /**
+             * Total activos
+             * Format: decimal
+             */
+            readonly total_activos?: string;
+            /**
+             * Total pasivos
+             * Format: decimal
+             */
+            readonly total_pasivos?: string;
+            /**
+             * Total patrimonio
+             * Format: decimal
+             */
+            readonly total_patrimonio?: string;
+            /**
+             * Resultado periodo
+             * Format: decimal
+             */
+            readonly resultado_periodo?: string;
+            /**
+             * Total pasivo patrimonio y resultado
+             * Format: decimal
+             */
+            readonly total_pasivo_patrimonio_y_resultado?: string;
+            /** Ecuacion cuadrada */
+            readonly ecuacion_cuadrada?: boolean;
+            /**
+             * Total activos usd
+             * Format: decimal
+             */
+            readonly total_activos_usd?: string | null;
+            /**
+             * Total pasivos usd
+             * Format: decimal
+             */
+            readonly total_pasivos_usd?: string | null;
+            /**
+             * Total patrimonio usd
+             * Format: decimal
+             */
+            readonly total_patrimonio_usd?: string | null;
+            /**
+             * Resultado periodo usd
+             * Format: decimal
+             */
+            readonly resultado_periodo_usd?: string | null;
+            /**
+             * Total pasivo patrimonio y resultado usd
+             * Format: decimal
+             */
+            readonly total_pasivo_patrimonio_y_resultado_usd?: string | null;
+        };
+        EstadoResultadosResponse: {
+            /**
+             * Empresa id
+             * Format: uuid
+             */
+            readonly empresa_id?: string;
+            /** Moneda base */
+            readonly moneda_base?: string;
+            /** Moneda base simbolo */
+            readonly moneda_base_simbolo?: string;
+            /** Incluir equivalentes usd */
+            readonly incluir_equivalentes_usd?: boolean;
+            /** Usd disponible */
+            readonly usd_disponible?: boolean;
+            /**
+             * Tasa usd
+             * Format: decimal
+             */
+            readonly tasa_usd?: string | null;
+            /** Tasa usd inversa */
+            readonly tasa_usd_inversa?: boolean;
+            /** Usd mensaje */
+            readonly usd_mensaje?: string;
+            /**
+             * Fecha desde
+             * Format: date
+             */
+            readonly fecha_desde?: string;
+            /**
+             * Fecha hasta
+             * Format: date
+             */
+            readonly fecha_hasta?: string;
+            readonly ingresos?: components["schemas"]["EstadoFinancieroCuenta"][];
+            readonly costos?: components["schemas"]["EstadoFinancieroCuenta"][];
+            readonly gastos?: components["schemas"]["EstadoFinancieroCuenta"][];
+            /**
+             * Total ingresos
+             * Format: decimal
+             */
+            readonly total_ingresos?: string;
+            /**
+             * Total costos
+             * Format: decimal
+             */
+            readonly total_costos?: string;
+            /**
+             * Total gastos
+             * Format: decimal
+             */
+            readonly total_gastos?: string;
+            /**
+             * Utilidad bruta
+             * Format: decimal
+             */
+            readonly utilidad_bruta?: string;
+            /**
+             * Resultado neto
+             * Format: decimal
+             */
+            readonly resultado_neto?: string;
+            /**
+             * Total ingresos usd
+             * Format: decimal
+             */
+            readonly total_ingresos_usd?: string | null;
+            /**
+             * Total costos usd
+             * Format: decimal
+             */
+            readonly total_costos_usd?: string | null;
+            /**
+             * Total gastos usd
+             * Format: decimal
+             */
+            readonly total_gastos_usd?: string | null;
+            /**
+             * Utilidad bruta usd
+             * Format: decimal
+             */
+            readonly utilidad_bruta_usd?: string | null;
+            /**
+             * Resultado neto usd
+             * Format: decimal
+             */
+            readonly resultado_neto_usd?: string | null;
+        };
+        LibroMayorMovimiento: {
+            /**
+             * Id detalle asiento
+             * Format: uuid
+             */
+            readonly id_detalle_asiento?: string;
+            /**
+             * Id asiento
+             * Format: uuid
+             */
+            readonly id_asiento?: string;
+            /**
+             * Fecha asiento
+             * Format: date
+             */
+            readonly fecha_asiento?: string;
+            /** Numero asiento */
+            readonly numero_asiento?: string;
+            /** Descripcion asiento */
+            readonly descripcion_asiento?: string;
+            /** Descripcion detalle */
+            readonly descripcion_detalle?: string;
+            /**
+             * Id diario
+             * Format: uuid
+             */
+            readonly id_diario?: string | null;
+            /** Diario codigo */
+            readonly diario_codigo?: string;
+            /** Diario nombre */
+            readonly diario_nombre?: string;
+            /**
+             * Id cuenta contable
+             * Format: uuid
+             */
+            readonly id_cuenta_contable?: string;
+            /** Codigo cuenta */
+            readonly codigo_cuenta?: string;
+            /** Nombre cuenta */
+            readonly nombre_cuenta?: string;
+            /**
+             * Id contacto
+             * Format: uuid
+             */
+            readonly id_contacto?: string | null;
+            /** Contacto nombre */
+            readonly contacto_nombre?: string;
+            /**
+             * Debe
+             * Format: decimal
+             */
+            readonly debe?: string;
+            /**
+             * Haber
+             * Format: decimal
+             */
+            readonly haber?: string;
+            /**
+             * Saldo corrido
+             * Format: decimal
+             */
+            readonly saldo_corrido?: string;
+            /**
+             * Debe usd
+             * Format: decimal
+             */
+            readonly debe_usd?: string | null;
+            /**
+             * Haber usd
+             * Format: decimal
+             */
+            readonly haber_usd?: string | null;
+            /**
+             * Saldo corrido usd
+             * Format: decimal
+             */
+            readonly saldo_corrido_usd?: string | null;
+        };
+        LibroMayorAuxiliarResponse: {
+            /**
+             * Empresa id
+             * Format: uuid
+             */
+            readonly empresa_id?: string;
+            /** Moneda base */
+            readonly moneda_base?: string;
+            /** Moneda base simbolo */
+            readonly moneda_base_simbolo?: string;
+            /** Incluir equivalentes usd */
+            readonly incluir_equivalentes_usd?: boolean;
+            /** Usd disponible */
+            readonly usd_disponible?: boolean;
+            /**
+             * Tasa usd
+             * Format: decimal
+             */
+            readonly tasa_usd?: string | null;
+            /** Tasa usd inversa */
+            readonly tasa_usd_inversa?: boolean;
+            /** Usd mensaje */
+            readonly usd_mensaje?: string;
+            /**
+             * Fecha desde
+             * Format: date
+             */
+            readonly fecha_desde?: string | null;
+            /**
+             * Fecha hasta
+             * Format: date
+             */
+            readonly fecha_hasta?: string | null;
+            /**
+             * Id cuenta contable
+             * Format: uuid
+             */
+            readonly id_cuenta_contable?: string | null;
+            /** Cuenta label */
+            readonly cuenta_label?: string;
+            /**
+             * Id contacto
+             * Format: uuid
+             */
+            readonly id_contacto?: string | null;
+            /** Contacto label */
+            readonly contacto_label?: string;
+            /**
+             * Id diario
+             * Format: uuid
+             */
+            readonly id_diario?: string | null;
+            /** Diario label */
+            readonly diario_label?: string;
+            /** Limit */
+            readonly limit?: number;
+            /**
+             * Saldo inicial
+             * Format: decimal
+             */
+            readonly saldo_inicial?: string;
+            /**
+             * Total debe
+             * Format: decimal
+             */
+            readonly total_debe?: string;
+            /**
+             * Total haber
+             * Format: decimal
+             */
+            readonly total_haber?: string;
+            /**
+             * Saldo final
+             * Format: decimal
+             */
+            readonly saldo_final?: string;
+            /** Truncado */
+            readonly truncado?: boolean;
+            readonly movimientos?: components["schemas"]["LibroMayorMovimiento"][];
+            /**
+             * Saldo inicial usd
+             * Format: decimal
+             */
+            readonly saldo_inicial_usd?: string | null;
+            /**
+             * Total debe usd
+             * Format: decimal
+             */
+            readonly total_debe_usd?: string | null;
+            /**
+             * Total haber usd
+             * Format: decimal
+             */
+            readonly total_haber_usd?: string | null;
+            /**
+             * Saldo final usd
+             * Format: decimal
+             */
+            readonly saldo_final_usd?: string | null;
         };
         AsignacionHorario: {
             /**
@@ -10901,6 +18961,26 @@ export interface components {
             telefono?: string;
             /** Direccion fiscal */
             direccion_fiscal?: string;
+            /**
+             * Latitud
+             * Format: decimal
+             */
+            latitud?: string | null;
+            /**
+             * Longitud
+             * Format: decimal
+             */
+            longitud?: string | null;
+            /**
+             * Gps precision m
+             * Format: decimal
+             */
+            gps_precision_m?: string | null;
+            /**
+             * Gps capturado en
+             * Format: date-time
+             */
+            gps_capturado_en?: string | null;
             /** Es cliente */
             es_cliente?: boolean;
             /** Es proveedor */
@@ -10951,33 +19031,6 @@ export interface components {
              * Format: uuid
              */
             readonly id_departamento?: string;
-            /**
-             * Fecha de Creación
-             * Format: date-time
-             * @description Fecha y hora de creación del registro.
-             */
-            readonly fecha_creacion?: string;
-            /**
-             * Fecha de Actualización
-             * Format: date-time
-             * @description Fecha y hora de la última modificación del registro.
-             */
-            readonly fecha_actualizacion?: string;
-            /**
-             * Activo
-             * @description Indica si el registro está activo (False = borrado lógico).
-             */
-            activo?: boolean;
-            /**
-             * Referencia externa
-             * @description Identificador del registro en el sistema externo de origen.
-             */
-            referencia_externa?: string | null;
-            /**
-             * Documento JSON
-             * @description Payload raw del documento externo (para auditoría/reprocesamiento).
-             */
-            documento_json?: Record<string, never> | null;
             /** Nombre de Departamento */
             nombre_departamento: string;
             /** Descripción */
@@ -10992,6 +19045,33 @@ export interface components {
              * Format: uuid
              */
             id_empresa: string;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+            /**
+             * Referencia externa
+             * @description Identificador del registro en el sistema externo de origen.
+             */
+            referencia_externa?: string | null;
+            /**
+             * Documento JSON
+             * @description Payload raw del documento externo (para auditoría/reprocesamiento).
+             */
+            documento_json?: Record<string, never> | null;
         };
         Dispositivo: {
             /**
@@ -11294,33 +19374,6 @@ export interface components {
              * Format: uuid
              */
             readonly id_permiso?: string;
-            /**
-             * Fecha de Creación
-             * Format: date-time
-             * @description Fecha y hora de creación del registro.
-             */
-            readonly fecha_creacion?: string;
-            /**
-             * Fecha de Actualización
-             * Format: date-time
-             * @description Fecha y hora de la última modificación del registro.
-             */
-            readonly fecha_actualizacion?: string;
-            /**
-             * Activo
-             * @description Indica si el registro está activo (False = borrado lógico).
-             */
-            activo?: boolean;
-            /**
-             * Referencia externa
-             * @description Identificador del registro en el sistema externo de origen.
-             */
-            referencia_externa?: string | null;
-            /**
-             * Documento JSON
-             * @description Payload raw del documento externo (para auditoría/reprocesamiento).
-             */
-            documento_json?: Record<string, never> | null;
             /** Código de Permiso */
             codigo_permiso: string;
             /** Nombre de Permiso */
@@ -11329,13 +19382,11 @@ export interface components {
             descripcion?: string | null;
             /** Módulo Asociado */
             modulo: string;
-        };
-        Roles: {
             /**
-             * Id rol
-             * Format: uuid
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
              */
-            readonly id_rol?: string;
+            activo?: boolean;
             /**
              * Fecha de Creación
              * Format: date-time
@@ -11349,11 +19400,6 @@ export interface components {
              */
             readonly fecha_actualizacion?: string;
             /**
-             * Activo
-             * @description Indica si el registro está activo (False = borrado lógico).
-             */
-            activo?: boolean;
-            /**
              * Referencia externa
              * @description Identificador del registro en el sistema externo de origen.
              */
@@ -11363,6 +19409,13 @@ export interface components {
              * @description Payload raw del documento externo (para auditoría/reprocesamiento).
              */
             documento_json?: Record<string, never> | null;
+        };
+        Roles: {
+            /**
+             * Id rol
+             * Format: uuid
+             */
+            readonly id_rol?: string;
             /** Nombre de Rol */
             nombre_rol: string;
             /** Descripción */
@@ -11372,6 +19425,33 @@ export interface components {
              * Format: uuid
              */
             id_empresa?: string | null;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+            /**
+             * Referencia externa
+             * @description Identificador del registro en el sistema externo de origen.
+             */
+            referencia_externa?: string | null;
+            /**
+             * Documento JSON
+             * @description Payload raw del documento externo (para auditoría/reprocesamiento).
+             */
+            documento_json?: Record<string, never> | null;
         };
         Sucursal: {
             /**
@@ -11656,6 +19736,89 @@ export interface components {
              */
             id_moneda: string;
         };
+        Actividad: {
+            /**
+             * Id actividad
+             * Format: uuid
+             */
+            readonly id_actividad?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa?: string;
+            /**
+             * Lead
+             * Format: uuid
+             */
+            lead: string;
+            /** Lead nombre */
+            readonly lead_nombre?: string;
+            /**
+             * Tipo
+             * @enum {string}
+             */
+            tipo?: "LLAMADA" | "CORREO" | "REUNION" | "NOTA" | "WHATSAPP";
+            /** Asunto */
+            asunto: string;
+            /** Descripcion */
+            descripcion?: string;
+            /**
+             * Fecha vencimiento
+             * Format: date-time
+             */
+            fecha_vencimiento?: string | null;
+            /** Completada */
+            completada?: boolean;
+            /**
+             * Fecha completada
+             * Format: date-time
+             */
+            readonly fecha_completada?: string | null;
+            /**
+             * Asignado a
+             * Format: uuid
+             */
+            asignado_a?: string | null;
+            /** Asignado a nombre */
+            readonly asignado_a_nombre?: string;
+            /**
+             * Creado por
+             * Format: uuid
+             */
+            readonly creado_por?: string;
+            /**
+             * Tarea
+             * Format: uuid
+             */
+            tarea?: string | null;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        CompletarActividad: {
+            /**
+             * Completada
+             * @default true
+             */
+            completada: boolean;
+            /** Descripcion */
+            descripcion?: string;
+        };
         Cliente: {
             /**
              * Id cliente
@@ -11836,6 +19999,26 @@ export interface components {
             /** Observaciones */
             observaciones?: string | null;
             /**
+             * Latitud
+             * Format: decimal
+             */
+            latitud?: string | null;
+            /**
+             * Longitud
+             * Format: decimal
+             */
+            longitud?: string | null;
+            /**
+             * Gps precision m
+             * Format: decimal
+             */
+            gps_precision_m?: string | null;
+            /**
+             * Gps capturado en
+             * Format: date-time
+             */
+            gps_capturado_en?: string | null;
+            /**
              * Id empresa
              * Format: uuid
              */
@@ -11846,12 +20029,321 @@ export interface components {
              */
             id_cliente: string;
         };
+        Etapa: {
+            /**
+             * Id etapa
+             * Format: uuid
+             */
+            readonly id_etapa?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa?: string;
+            /**
+             * Pipeline
+             * Format: uuid
+             */
+            pipeline: string;
+            /** Nombre */
+            nombre: string;
+            /** Orden */
+            orden?: number;
+            /**
+             * Tipo
+             * @enum {string}
+             */
+            tipo?: "ABIERTA" | "GANADA" | "PERDIDA";
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        Lead: {
+            /**
+             * Id lead
+             * Format: uuid
+             */
+            readonly id_lead?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa?: string;
+            /** Nombre */
+            nombre: string;
+            /** Apellido */
+            apellido?: string;
+            /** Empresa nombre */
+            empresa_nombre?: string;
+            /**
+             * Email
+             * Format: email
+             */
+            email?: string;
+            /** Telefono */
+            telefono?: string;
+            /** Email normalizado */
+            readonly email_normalizado?: string;
+            /** Telefono normalizado */
+            readonly telefono_normalizado?: string;
+            /** Mensaje */
+            mensaje?: string;
+            /**
+             * Fuente
+             * @enum {string}
+             */
+            fuente?: "NFC" | "QR" | "ENLACE" | "MANUAL" | "IMPORTACION";
+            /**
+             * Tarjeta
+             * Format: uuid
+             */
+            tarjeta?: string | null;
+            /**
+             * Perfil
+             * Format: uuid
+             */
+            perfil?: string | null;
+            /**
+             * Pipeline
+             * Format: uuid
+             */
+            pipeline?: string;
+            /** Pipeline nombre */
+            readonly pipeline_nombre?: string;
+            /**
+             * Etapa
+             * Format: uuid
+             */
+            etapa?: string;
+            /** Etapa nombre */
+            readonly etapa_nombre?: string;
+            /** Etapa tipo */
+            readonly etapa_tipo?: string;
+            /**
+             * Propietario
+             * Format: uuid
+             */
+            propietario?: string;
+            /** Propietario nombre */
+            readonly propietario_nombre?: string;
+            /**
+             * Contacto
+             * Format: uuid
+             */
+            contacto?: string | null;
+            /**
+             * Cliente convertido
+             * Format: uuid
+             */
+            readonly cliente_convertido?: string | null;
+            /** Cliente convertido nombre */
+            readonly cliente_convertido_nombre?: string;
+            /** Cliente convertido rif */
+            readonly cliente_convertido_rif?: string;
+            /**
+             * Fecha conversion
+             * Format: date-time
+             */
+            readonly fecha_conversion?: string | null;
+            /**
+             * Cotizacion convertida id
+             * Format: uuid
+             */
+            readonly cotizacion_convertida_id?: string | null;
+            /** Ya convertido */
+            readonly ya_convertido?: boolean;
+            /** Anonimizado */
+            readonly anonimizado?: boolean;
+            /**
+             * Fecha anonimizacion
+             * Format: date-time
+             */
+            readonly fecha_anonimizacion?: string | null;
+            /** Consentimiento aceptado */
+            consentimiento_aceptado?: boolean;
+            /**
+             * Consentimiento fecha
+             * Format: date-time
+             */
+            consentimiento_fecha?: string | null;
+            /** Consentimiento texto */
+            consentimiento_texto?: string;
+            /** Actividades pendientes */
+            readonly actividades_pendientes?: number;
+            /** Actividades vencidas */
+            readonly actividades_vencidas?: number;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        AnonimizarLeadInput: {
+            /** Motivo */
+            motivo?: string;
+        };
+        ConvertirLeadInput: {
+            /** Razon social */
+            razon_social?: string;
+            /** Nombre comercial */
+            nombre_comercial?: string;
+            /** Rif */
+            rif?: string;
+            /**
+             * Email
+             * Format: email
+             */
+            email?: string;
+            /** Telefono */
+            telefono?: string;
+            /** Direccion */
+            direccion?: string;
+            /**
+             * Tipo cliente
+             * @default CONTADO
+             * @enum {string}
+             */
+            tipo_cliente: "CONTADO" | "CREDITO";
+            /**
+             * Limite credito
+             * Format: decimal
+             * @default 0.00
+             */
+            limite_credito: string;
+            /**
+             * Dias credito
+             * @default 0
+             */
+            dias_credito: number;
+            /**
+             * Reutilizar cliente existente
+             * @default true
+             */
+            reutilizar_cliente_existente: boolean;
+            /**
+             * Crear cotizacion
+             * @default false
+             */
+            crear_cotizacion: boolean;
+            /**
+             * Id moneda
+             * Format: uuid
+             */
+            id_moneda?: string | null;
+            /**
+             * Fecha cotizacion
+             * Format: date
+             */
+            fecha_cotizacion?: string | null;
+            /**
+             * Fecha vencimiento
+             * Format: date
+             */
+            fecha_vencimiento?: string | null;
+            /** Observaciones cotizacion */
+            observaciones_cotizacion?: string;
+        };
+        ConvertirLeadResponse: {
+            /** Ya convertido */
+            ya_convertido: boolean;
+            lead: components["schemas"]["Lead"];
+            cliente: components["schemas"]["Cliente"];
+            /**
+             * Cotizacion id
+             * Format: uuid
+             */
+            cotizacion_id: string | null;
+            /** Numero cotizacion */
+            numero_cotizacion: string | null;
+        };
+        MoverEtapa: {
+            /**
+             * Etapa
+             * Format: uuid
+             */
+            etapa: string;
+        };
+        Pipeline: {
+            /**
+             * Id pipeline
+             * Format: uuid
+             */
+            readonly id_pipeline?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa?: string;
+            /** Nombre */
+            nombre: string;
+            /** Es predeterminado */
+            es_predeterminado?: boolean;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            readonly etapas?: components["schemas"]["Etapa"][];
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        AsegurarPipelineInput: {
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa?: string;
+        };
+        ReordenarEtapas: {
+            etapas: string[];
+        };
         AbonoCxP: {
             /**
              * Id abono cxp
              * Format: uuid
              */
             readonly id_abono_cxp?: string;
+            /**
+             * Cuenta por pagar
+             * Format: uuid
+             */
+            cuenta_por_pagar: string;
             /**
              * Monto
              * Format: decimal
@@ -11862,20 +20354,15 @@ export interface components {
              * Format: date
              */
             readonly fecha_abono?: string;
-            /** Descripcion */
-            descripcion?: string;
-            /** Referencia externa */
-            referencia_externa?: string | null;
-            /**
-             * Cuenta por pagar
-             * Format: uuid
-             */
-            cuenta_por_pagar: string;
             /**
              * Usuario
              * Format: uuid
              */
             usuario?: string | null;
+            /** Descripcion */
+            descripcion?: string;
+            /** Referencia externa */
+            referencia_externa?: string | null;
         };
         CuentaPorPagar: {
             /**
@@ -11939,10 +20426,653 @@ export interface components {
              */
             id_proveedor: string;
             /**
+             * Proveedor nombre
+             * @default
+             */
+            readonly proveedor_nombre: string;
+            /**
+             * Contacto id
+             * Format: uuid
+             */
+            readonly contacto_id?: string | null;
+            /**
              * Id factura compra
              * Format: uuid
              */
             id_factura_compra?: string | null;
+        };
+        BandejaFacturacion: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            readonly id?: string;
+            /**
+             * Pedido
+             * Format: uuid
+             */
+            readonly pedido?: string;
+            /** Lista aplicada */
+            readonly lista_aplicada?: string;
+            /**
+             * Precio base calculado
+             * Format: decimal
+             */
+            readonly precio_base_calculado?: string;
+            /** Descuentos detalle */
+            readonly descuentos_detalle?: Record<string, never>;
+            /**
+             * Total descuentos
+             * Format: decimal
+             */
+            readonly total_descuentos?: string;
+            /**
+             * Ncs calculadas
+             * Format: decimal
+             */
+            readonly ncs_calculadas?: string;
+            /**
+             * Total motor
+             * Format: decimal
+             */
+            readonly total_motor?: string;
+            /** Requiere revision */
+            readonly requiere_revision?: boolean;
+            /** Candidata a cierre */
+            readonly candidata_a_cierre?: boolean;
+            /**
+             * Estado
+             * @enum {string}
+             */
+            readonly estado?: "calculado" | "aprobado" | "facturado";
+            /**
+             * Aprobado por
+             * Format: uuid
+             */
+            readonly aprobado_por?: string | null;
+            /**
+             * Calculado en
+             * Format: date-time
+             */
+            readonly calculado_en?: string;
+            /**
+             * Created at
+             * Format: date-time
+             */
+            readonly created_at?: string;
+            /**
+             * Updated at
+             * Format: date-time
+             */
+            readonly updated_at?: string;
+        };
+        ConciliacionLubrikca: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            readonly id?: string;
+            /**
+             * Pedido
+             * Format: uuid
+             */
+            readonly pedido?: string;
+            /**
+             * Total motor
+             * Format: decimal
+             */
+            readonly total_motor?: string;
+            /**
+             * Monto facturado
+             * Format: decimal
+             */
+            readonly monto_facturado?: string;
+            /**
+             * Ncs
+             * Format: decimal
+             */
+            readonly ncs?: string;
+            /**
+             * Diferencia
+             * Format: decimal
+             */
+            readonly diferencia?: string;
+            /**
+             * Resultado
+             * @enum {string}
+             */
+            readonly resultado?: "verde" | "amarillo" | "rojo";
+            /**
+             * Revisado por
+             * Format: uuid
+             */
+            readonly revisado_por?: string | null;
+            /**
+             * Conciliado en
+             * Format: date-time
+             */
+            readonly conciliado_en?: string;
+            /**
+             * Created at
+             * Format: date-time
+             */
+            readonly created_at?: string;
+            /**
+             * Updated at
+             * Format: date-time
+             */
+            readonly updated_at?: string;
+        };
+        ConfiguracionConciliacion: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            readonly id?: string;
+            /**
+             * Tolerance rounding
+             * Format: decimal
+             */
+            tolerance_rounding?: string;
+            /**
+             * Tolerance red
+             * Format: decimal
+             */
+            tolerance_red?: string;
+            /**
+             * Created at
+             * Format: date-time
+             */
+            readonly created_at?: string;
+            /**
+             * Updated at
+             * Format: date-time
+             */
+            readonly updated_at?: string;
+        };
+        DescuentoBCVCompleto: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            readonly id?: string;
+            /**
+             * Porcentaje
+             * Format: decimal
+             */
+            porcentaje: string;
+            /**
+             * Vigencia desde
+             * Format: date
+             */
+            vigencia_desde: string;
+            /**
+             * Vigencia hasta
+             * Format: date
+             */
+            vigencia_hasta?: string | null;
+            /** Activo */
+            activo?: boolean;
+            /**
+             * Created at
+             * Format: date-time
+             */
+            readonly created_at?: string;
+            /**
+             * Updated at
+             * Format: date-time
+             */
+            readonly updated_at?: string;
+        };
+        DescuentoMarcaCategoria: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            readonly id?: string;
+            /** Marca */
+            marca?: string;
+            /** Categoria */
+            categoria?: string;
+            /**
+             * Tipo descuento
+             * @enum {string}
+             */
+            tipo_descuento?: "contado";
+            /**
+             * Porcentaje
+             * Format: decimal
+             */
+            porcentaje: string;
+            /**
+             * Vigencia desde
+             * Format: date
+             */
+            vigencia_desde: string;
+            /**
+             * Vigencia hasta
+             * Format: date
+             */
+            vigencia_hasta?: string | null;
+            /** Activo */
+            activo?: boolean;
+            /**
+             * Created at
+             * Format: date-time
+             */
+            readonly created_at?: string;
+            /**
+             * Updated at
+             * Format: date-time
+             */
+            readonly updated_at?: string;
+        };
+        Feriado: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            readonly id?: string;
+            /**
+             * Fecha
+             * Format: date
+             */
+            fecha: string;
+            /** Descripcion */
+            descripcion: string;
+            /**
+             * Tipo
+             * @enum {string}
+             */
+            tipo?: "nacional" | "regional" | "bancario";
+            /** Activo */
+            activo?: boolean;
+            /**
+             * Created at
+             * Format: date-time
+             */
+            readonly created_at?: string;
+            /**
+             * Updated at
+             * Format: date-time
+             */
+            readonly updated_at?: string;
+        };
+        LineaPedidoLubrikca: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            readonly id?: string;
+            /**
+             * Pedido
+             * Format: uuid
+             */
+            pedido: string;
+            /** Linea id */
+            linea_id: string;
+            /** Producto */
+            producto: string;
+            /** Marca */
+            marca?: string;
+            /** Categoria */
+            categoria?: string;
+            /**
+             * Cantidad
+             * Format: decimal
+             */
+            cantidad: string;
+            /**
+             * Precio unitario
+             * Format: decimal
+             */
+            precio_unitario: string;
+            /**
+             * Cantidad entregada
+             * Format: decimal
+             */
+            cantidad_entregada?: string;
+            /**
+             * Created at
+             * Format: date-time
+             */
+            readonly created_at?: string;
+            /**
+             * Updated at
+             * Format: date-time
+             */
+            readonly updated_at?: string;
+        };
+        CxcLubrikcaMetodoPago: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            readonly id?: string;
+            /** Codigo */
+            codigo: string;
+            /** Nombre */
+            nombre: string;
+            /**
+             * Moneda
+             * @enum {string}
+             */
+            moneda: "USD" | "VES";
+            /**
+             * Tipo tasa
+             * @enum {string}
+             */
+            tipo_tasa: "BCV" | "Binance" | "N_A";
+            /** Es contado */
+            es_contado?: boolean;
+            /** Activo */
+            activo?: boolean;
+            /**
+             * Created at
+             * Format: date-time
+             */
+            readonly created_at?: string;
+            /**
+             * Updated at
+             * Format: date-time
+             */
+            readonly updated_at?: string;
+        };
+        PagoLubrikca: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            readonly id?: string;
+            /** Pago id */
+            pago_id: string;
+            /** Cliente externo id */
+            cliente_externo_id: string;
+            /**
+             * Monto
+             * Format: decimal
+             */
+            monto: string;
+            /**
+             * Moneda
+             * @enum {string}
+             */
+            moneda: "USD" | "VES";
+            /** Metodo pago */
+            metodo_pago: string;
+            /**
+             * Fecha pago
+             * Format: date-time
+             */
+            fecha_pago: string;
+            /** Vendedor email */
+            vendedor_email?: string;
+            /** Vinculado */
+            readonly vinculado?: boolean;
+            /**
+             * Created at
+             * Format: date-time
+             */
+            readonly created_at?: string;
+            /**
+             * Updated at
+             * Format: date-time
+             */
+            readonly updated_at?: string;
+        };
+        PedidoLubrikca: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            readonly id?: string;
+            /** So id */
+            so_id: string;
+            /** Cliente externo id */
+            cliente_externo_id: string;
+            /** Cliente nombre */
+            cliente_nombre?: string;
+            /** Vendedor email */
+            vendedor_email?: string;
+            /**
+             * Fecha
+             * Format: date
+             */
+            fecha: string;
+            /**
+             * Fecha entrega
+             * Format: date
+             */
+            fecha_entrega?: string | null;
+            /**
+             * Monto total
+             * Format: decimal
+             */
+            monto_total?: string;
+            /** Lista precios */
+            lista_precios: string;
+            /** Es primera compra */
+            es_primera_compra?: boolean;
+            /** Facturada */
+            facturada?: boolean;
+            /** Factura id */
+            factura_id?: string;
+            /**
+             * Monto facturado
+             * Format: decimal
+             */
+            monto_facturado?: string | null;
+            /**
+             * Estado entrega
+             * @enum {string}
+             */
+            estado_entrega?: "pending" | "partial" | "full";
+            /** Entregada completa */
+            entregada_completa?: boolean;
+            /** Tiene devolucion */
+            tiene_devolucion?: boolean;
+            readonly lineas?: components["schemas"]["LineaPedidoLubrikca"][];
+            bandeja?: components["schemas"]["BandejaFacturacion"];
+            /**
+             * Created at
+             * Format: date-time
+             */
+            readonly created_at?: string;
+            /**
+             * Updated at
+             * Format: date-time
+             */
+            readonly updated_at?: string;
+        };
+        PrecioListaLubrikca: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            readonly id?: string;
+            /** Producto */
+            producto: string;
+            /** Lista */
+            lista: string;
+            /**
+             * Precio
+             * Format: decimal
+             */
+            precio: string;
+            /**
+             * Created at
+             * Format: date-time
+             */
+            readonly created_at?: string;
+            /**
+             * Updated at
+             * Format: date-time
+             */
+            readonly updated_at?: string;
+        };
+        PromocionPrimeraCompra: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            readonly id?: string;
+            /** Producto */
+            producto: string;
+            /**
+             * Vigencia desde
+             * Format: date
+             */
+            vigencia_desde: string;
+            /**
+             * Vigencia hasta
+             * Format: date
+             */
+            vigencia_hasta?: string | null;
+            /** Activo */
+            activo?: boolean;
+            /**
+             * Created at
+             * Format: date-time
+             */
+            readonly created_at?: string;
+            /**
+             * Updated at
+             * Format: date-time
+             */
+            readonly updated_at?: string;
+        };
+        ReglaRecurrencia: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            readonly id?: string;
+            /**
+             * Condicion
+             * @enum {string}
+             */
+            condicion: "primera_compra" | "recompra";
+            /**
+             * Tipo beneficio
+             * @enum {string}
+             */
+            tipo_beneficio: "nota_credito" | "porcentaje";
+            /**
+             * Valor
+             * Format: decimal
+             */
+            valor: string;
+            /**
+             * Vigencia desde
+             * Format: date
+             */
+            vigencia_desde: string;
+            /**
+             * Vigencia hasta
+             * Format: date
+             */
+            vigencia_hasta?: string | null;
+            /** Activo */
+            activo?: boolean;
+            /**
+             * Created at
+             * Format: date-time
+             */
+            readonly created_at?: string;
+            /**
+             * Updated at
+             * Format: date-time
+             */
+            readonly updated_at?: string;
+        };
+        Vinculacion: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            readonly id?: string;
+            /**
+             * Pedido
+             * Format: uuid
+             */
+            readonly pedido?: string;
+            /**
+             * Pago
+             * Format: uuid
+             */
+            readonly pago?: string;
+            /**
+             * Monto aplicado
+             * Format: decimal
+             */
+            readonly monto_aplicado?: string;
+            /**
+             * Hora pago confirmada
+             * Format: date-time
+             */
+            readonly hora_pago_confirmada?: string;
+            /**
+             * Tasa bcv aplicada
+             * Format: decimal
+             */
+            readonly tasa_bcv_aplicada?: string;
+            /**
+             * Tasa binance aplicada
+             * Format: decimal
+             */
+            readonly tasa_binance_aplicada?: string;
+            /** Es tasa heredada */
+            readonly es_tasa_heredada?: boolean;
+            /**
+             * Moneda abono
+             * @enum {string}
+             */
+            readonly moneda_abono?: "USD" | "VES";
+            /**
+             * Tipo tasa abono
+             * @enum {string}
+             */
+            readonly tipo_tasa_abono?: "BCV" | "Binance" | "N_A";
+            /**
+             * Equiv usd bcv
+             * Format: decimal
+             */
+            readonly equiv_usd_bcv?: string | null;
+            /**
+             * Equiv usd binance
+             * Format: decimal
+             */
+            readonly equiv_usd_binance?: string | null;
+            /**
+             * Equiv ves bcv
+             * Format: decimal
+             */
+            readonly equiv_ves_bcv?: string | null;
+            /**
+             * Equiv ves binance
+             * Format: decimal
+             */
+            readonly equiv_ves_binance?: string | null;
+            /**
+             * Estado
+             * @enum {string}
+             */
+            readonly estado?: "pendiente" | "aprobado" | "facturado" | "conciliado";
+            /**
+             * Confirmado por
+             * Format: uuid
+             */
+            readonly confirmado_por?: string | null;
+            /**
+             * Created at
+             * Format: date-time
+             */
+            readonly created_at?: string;
+            /**
+             * Updated at
+             * Format: date-time
+             */
+            readonly updated_at?: string;
         };
         AbonoCxC: {
             /** ID */
@@ -11976,8 +21106,25 @@ export interface components {
             readonly id?: number;
             /** Cliente nombre */
             readonly cliente_nombre?: string;
+            /** Cliente ref */
+            readonly cliente_ref?: string;
+            /**
+             * Contacto id
+             * Format: uuid
+             */
+            readonly contacto_id?: string | null;
             /** Saldo pendiente */
             readonly saldo_pendiente?: string;
+            /**
+             * Cliente externo id
+             * @description ID del deudor en la fuente externa (p. ej. partner_id de Odoo). Se usa cuando no hay FK a crm.Cliente.
+             */
+            cliente_externo_id?: string;
+            /**
+             * Cliente externo nombre
+             * @description Nombre del deudor denormalizado (fuente externa sin crm.Cliente).
+             */
+            cliente_externo_nombre?: string;
             /**
              * Monto
              * Format: decimal
@@ -12015,74 +21162,12 @@ export interface components {
              * Cliente
              * Format: uuid
              */
-            cliente: string;
+            cliente?: string | null;
             /**
              * Empresa
              * Format: uuid
              */
             empresa?: string | null;
-        };
-        Despacho: {
-            /**
-             * Id despacho
-             * Format: uuid
-             */
-            readonly id_despacho?: string;
-            /** Numero despacho */
-            numero_despacho: string;
-            /**
-             * Fecha despacho
-             * Format: date-time
-             */
-            fecha_despacho: string;
-            /** Direccion destino */
-            direccion_destino: string;
-            /**
-             * Estado despacho
-             * @enum {string}
-             */
-            estado_despacho?: "PENDIENTE" | "EN_PREPARACION" | "LISTO_ENVIO" | "EN_TRANSITO" | "ENTREGADO" | "DEVUELTO" | "CANCELADO";
-            /**
-             * Fecha entrega estimada
-             * Format: date-time
-             */
-            fecha_entrega_estimada?: string | null;
-            /**
-             * Fecha entrega real
-             * Format: date-time
-             */
-            fecha_entrega_real?: string | null;
-            /** Observaciones */
-            observaciones?: string | null;
-            /** Activo */
-            activo?: boolean;
-            /**
-             * Fecha creacion
-             * Format: date-time
-             */
-            readonly fecha_creacion?: string;
-            /**
-             * Id empresa
-             * Format: uuid
-             */
-            id_empresa: string;
-            /**
-             * Id pedido
-             * Format: uuid
-             */
-            id_pedido?: string | null;
-            /**
-             * Id orden compra
-             * Format: uuid
-             */
-            id_orden_compra?: string | null;
-            /**
-             * Id almacen origen
-             * Format: uuid
-             */
-            id_almacen_origen: string;
-            /** Id transportista */
-            id_transportista?: number | null;
         };
         DetalleDespacho: {
             /**
@@ -12091,34 +21176,370 @@ export interface components {
              */
             readonly id_detalle_despacho?: string;
             /**
-             * Cantidad despachada
-             * Format: decimal
-             */
-            cantidad_despachada: string;
-            /** Lote */
-            lote?: string | null;
-            /**
-             * Fecha vencimiento
-             * Format: date
-             */
-            fecha_vencimiento?: string | null;
-            /** Observaciones */
-            observaciones?: string | null;
-            /**
              * Id despacho
              * Format: uuid
              */
-            id_despacho: string;
+            readonly id_despacho?: string;
             /**
              * Id producto
              * Format: uuid
              */
-            id_producto: string;
+            readonly id_producto?: string;
+            /** Nombre producto */
+            readonly nombre_producto?: string;
+            /**
+             * Cantidad despachada
+             * Format: decimal
+             */
+            readonly cantidad_despachada?: string;
             /**
              * Id unidad medida
              * Format: uuid
              */
-            id_unidad_medida: string;
+            readonly id_unidad_medida?: string;
+            /** Unidad medida */
+            readonly unidad_medida?: string;
+            /** Lote */
+            readonly lote?: string | null;
+            /**
+             * Fecha vencimiento
+             * Format: date
+             */
+            readonly fecha_vencimiento?: string | null;
+            /** Observaciones */
+            readonly observaciones?: string | null;
+        };
+        Despacho: {
+            /**
+             * Id despacho
+             * Format: uuid
+             */
+            readonly id_despacho?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /** Numero despacho */
+            readonly numero_despacho?: string;
+            /**
+             * Id nota venta
+             * Format: uuid
+             * @description Nota de venta origen (ENTREGADA/FACTURADA). Nulo solo en despachos manuales.
+             */
+            id_nota_venta?: string | null;
+            /** Numero nota venta */
+            readonly numero_nota_venta?: string;
+            /**
+             * Id pedido
+             * Format: uuid
+             */
+            id_pedido?: string | null;
+            /**
+             * Fecha despacho
+             * Format: date-time
+             * @default 2026-11-22T09:24:36.205099-04:00
+             */
+            fecha_despacho: string;
+            /**
+             * Id almacen origen
+             * Format: uuid
+             */
+            id_almacen_origen: string;
+            /** Nombre almacen */
+            readonly nombre_almacen?: string;
+            /**
+             * Dirección de entrega
+             * @description Dirección física donde se entrega la mercancía.
+             */
+            direccion_destino: string;
+            /** Id transportista */
+            id_transportista?: number | null;
+            /**
+             * Estado despacho
+             * @enum {string}
+             */
+            readonly estado_despacho?: "PENDIENTE" | "EN_RUTA" | "ENTREGADO" | "DEVUELTO" | "CANCELADO";
+            /**
+             * Fecha entrega estimada
+             * Format: date-time
+             */
+            fecha_entrega_estimada?: string | null;
+            /**
+             * Fecha en ruta
+             * Format: date-time
+             */
+            readonly fecha_en_ruta?: string | null;
+            /**
+             * Fecha entrega real
+             * Format: date-time
+             */
+            readonly fecha_entrega_real?: string | null;
+            /**
+             * Fecha devolucion
+             * Format: date-time
+             */
+            readonly fecha_devolucion?: string | null;
+            /**
+             * Fecha cancelacion
+             * Format: date-time
+             */
+            readonly fecha_cancelacion?: string | null;
+            /** Observaciones */
+            observaciones?: string | null;
+            /**
+             * Referencia externa
+             * @description Identificador del registro en el sistema externo de origen.
+             */
+            referencia_externa?: string | null;
+            /**
+             * Documento JSON
+             * @description Payload raw del documento externo (para auditoría/reprocesamiento).
+             */
+            readonly documento_json?: Record<string, never> | null;
+            readonly detalles?: components["schemas"]["DetalleDespacho"][];
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            readonly activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        AsignacionPago: {
+            /**
+             * Id asignacion
+             * Format: uuid
+             */
+            readonly id_asignacion?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /**
+             * Id contacto
+             * Format: uuid
+             */
+            readonly id_contacto?: string;
+            /**
+             * Contacto nombre
+             * @default
+             */
+            readonly contacto_nombre: string;
+            /**
+             * Id pago
+             * Format: uuid
+             */
+            readonly id_pago?: string;
+            /**
+             * Pago referencia
+             * @default
+             */
+            readonly pago_referencia: string | null;
+            /**
+             * Tipo documento
+             * @enum {string}
+             */
+            readonly tipo_documento?: "CUENTA_POR_COBRAR" | "CUENTA_POR_PAGAR" | "FACTURA_VENTA" | "FACTURA_COMPRA";
+            /** Id documento */
+            readonly id_documento?: string;
+            /** Id cxc */
+            readonly id_cxc?: number | null;
+            /**
+             * Id cxp
+             * Format: uuid
+             */
+            readonly id_cxp?: string | null;
+            /**
+             * Id factura venta
+             * Format: uuid
+             */
+            readonly id_factura_venta?: string | null;
+            /**
+             * Id factura compra
+             * Format: uuid
+             */
+            readonly id_factura_compra?: string | null;
+            /** Id abono cxc */
+            readonly id_abono_cxc?: number | null;
+            /**
+             * Id abono cxp
+             * Format: uuid
+             */
+            readonly id_abono_cxp?: string | null;
+            /**
+             * Monto asignado pago
+             * Format: decimal
+             */
+            readonly monto_asignado_pago?: string;
+            /**
+             * Monto asignado documento
+             * Format: decimal
+             */
+            readonly monto_asignado_documento?: string;
+            /**
+             * Id moneda documento
+             * Format: uuid
+             */
+            readonly id_moneda_documento?: string;
+            /**
+             * Moneda documento codigo
+             * @default
+             */
+            readonly moneda_documento_codigo: string;
+            /**
+             * Tasa aplicada
+             * Format: decimal
+             */
+            readonly tasa_aplicada?: string;
+            /**
+             * Diferencia cambiaria
+             * Format: decimal
+             */
+            readonly diferencia_cambiaria?: string;
+            /**
+             * Tipo diferencia
+             * @enum {string}
+             */
+            readonly tipo_diferencia?: "" | "GANANCIA" | "PERDIDA";
+            /**
+             * Estado
+             * @enum {string}
+             */
+            readonly estado?: "ACTIVA" | "REVERTIDA";
+            /**
+             * Fecha aplicacion
+             * Format: date-time
+             */
+            readonly fecha_aplicacion?: string;
+            /**
+             * Fecha reversion
+             * Format: date-time
+             */
+            readonly fecha_reversion?: string | null;
+            /** Motivo reversion */
+            readonly motivo_reversion?: string;
+            /**
+             * Id asiento
+             * Format: uuid
+             */
+            readonly id_asiento?: string | null;
+            /**
+             * Id asiento reversion
+             * Format: uuid
+             */
+            readonly id_asiento_reversion?: string | null;
+            /**
+             * Id usuario registro
+             * Format: uuid
+             */
+            readonly id_usuario_registro?: string | null;
+            /** Referencia externa */
+            readonly referencia_externa?: string;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            readonly activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+        };
+        LineaConciliacionInput: {
+            /**
+             * Tipo documento
+             * @enum {string}
+             */
+            tipo_documento: "CUENTA_POR_COBRAR" | "CUENTA_POR_PAGAR" | "FACTURA_VENTA" | "FACTURA_COMPRA";
+            /** Id documento */
+            id_documento: string;
+            /**
+             * Monto asignado pago
+             * Format: decimal
+             */
+            monto_asignado_pago: string;
+            /**
+             * Monto asignado documento
+             * Format: decimal
+             */
+            monto_asignado_documento?: string | null;
+            /**
+             * Tasa aplicada
+             * Format: decimal
+             */
+            tasa_aplicada?: string | null;
+            /**
+             * Tasa original
+             * Format: decimal
+             */
+            tasa_original?: string | null;
+            /**
+             * Tasa liquidacion
+             * Format: decimal
+             */
+            tasa_liquidacion?: string | null;
+            /**
+             * Moneda documento
+             * @default
+             */
+            moneda_documento: string | null;
+            /**
+             * Referencia externa
+             * @default
+             */
+            referencia_externa: string;
+        };
+        CrearAsignacionPagoInput: {
+            asignaciones: components["schemas"]["LineaConciliacionInput"][];
+            /**
+             * Descripcion
+             * @default
+             */
+            descripcion: string;
+            /**
+             * Generar asiento
+             * @default true
+             */
+            generar_asiento: boolean;
+            /**
+             * Pago
+             * Format: uuid
+             */
+            pago: string;
+        };
+        ConciliarDocumentosResponse: {
+            /**
+             * Pago id
+             * Format: uuid
+             */
+            readonly pago_id?: string;
+            /**
+             * Saldo disponible
+             * Format: decimal
+             */
+            readonly saldo_disponible?: string;
+            readonly asignaciones?: components["schemas"]["AsignacionPago"][];
+        };
+        RevertirAsignacionInput: {
+            /**
+             * Motivo
+             * @default
+             */
+            motivo: string;
         };
         CajaFisicaUsuario: {
             /**
@@ -12373,6 +21794,130 @@ export interface components {
             /** @description Métodos de pago permitidos para esta caja virtual. */
             metodos_pago?: string[];
         };
+        ContactoResumenConciliacion: {
+            /**
+             * Id contacto
+             * Format: uuid
+             */
+            readonly id_contacto?: string;
+            /** Nombre */
+            readonly nombre?: string;
+            /**
+             * Rif
+             * @default
+             */
+            readonly rif: string;
+            /** Es cliente */
+            readonly es_cliente?: boolean;
+            /** Es proveedor */
+            readonly es_proveedor?: boolean;
+        };
+        SaldoMonedaConciliacion: {
+            /**
+             * Moneda id
+             * Format: uuid
+             */
+            readonly moneda_id?: string;
+            /** Codigo iso */
+            readonly codigo_iso?: string;
+            /** Simbolo */
+            readonly simbolo?: string;
+            /**
+             * Ingreso
+             * Format: decimal
+             */
+            readonly INGRESO?: string;
+            /**
+             * Egreso
+             * Format: decimal
+             */
+            readonly EGRESO?: string;
+            /** Cantidad pagos */
+            readonly cantidad_pagos?: number;
+        };
+        SaldoAFavorResumen: {
+            /** Total por moneda */
+            readonly total_por_moneda?: {
+                [key: string]: components["schemas"]["SaldoMonedaConciliacion"];
+            };
+            /** Total pagos con saldo */
+            readonly total_pagos_con_saldo?: number;
+        };
+        PagoDisponibleConciliacion: {
+            /**
+             * Id pago
+             * Format: uuid
+             */
+            readonly id_pago?: string;
+            /**
+             * Fecha pago
+             * Format: date-time
+             */
+            readonly fecha_pago?: string;
+            /** Tipo operacion */
+            readonly tipo_operacion?: string;
+            /**
+             * Monto
+             * Format: decimal
+             */
+            readonly monto?: string;
+            /**
+             * Saldo disponible
+             * Format: decimal
+             */
+            readonly saldo_disponible?: string;
+            /** Moneda codigo */
+            readonly moneda_codigo?: string;
+            /**
+             * Referencia
+             * @default
+             */
+            readonly referencia: string;
+            /**
+             * Tasa
+             * Format: decimal
+             */
+            readonly tasa?: string;
+        };
+        ObligacionAbiertaConciliacion: {
+            /** Tipo documento */
+            readonly tipo_documento?: string;
+            /** Id documento */
+            readonly id_documento?: string;
+            /** Numero documento */
+            readonly numero_documento?: string;
+            /**
+             * Fecha emision
+             * Format: date
+             */
+            readonly fecha_emision?: string;
+            /**
+             * Fecha vencimiento
+             * Format: date
+             */
+            readonly fecha_vencimiento?: string;
+            /**
+             * Monto total
+             * Format: decimal
+             */
+            readonly monto_total?: string;
+            /**
+             * Saldo pendiente
+             * Format: decimal
+             */
+            readonly saldo_pendiente?: string;
+            /** Moneda codigo */
+            readonly moneda_codigo?: string;
+            /** Estado */
+            readonly estado?: string;
+        };
+        EstadoConciliacionContactoResponse: {
+            contacto?: components["schemas"]["ContactoResumenConciliacion"];
+            saldo_a_favor?: components["schemas"]["SaldoAFavorResumen"];
+            readonly pagos_disponibles?: components["schemas"]["PagoDisponibleConciliacion"][];
+            readonly obligaciones_abiertas?: components["schemas"]["ObligacionAbiertaConciliacion"][];
+            readonly asignaciones_activas?: components["schemas"]["AsignacionPago"][];
+        };
         CuentaBancariaEmpresaFinanzas: {
             /**
              * Id cuenta bancaria
@@ -12381,7 +21926,7 @@ export interface components {
             readonly id_cuenta_bancaria?: string;
             /** Moneda codigo iso */
             readonly moneda_codigo_iso?: string;
-            metodos_pago: string[];
+            metodos_pago?: string[];
             monedas?: string[];
             /** Nombre banco */
             nombre_banco: string;
@@ -12594,6 +22139,30 @@ export interface components {
              */
             usuario_conciliacion?: string | null;
         };
+        EquivalenciasTrimonetariasInput: {
+            /**
+             * Monto
+             * Format: decimal
+             */
+            monto: string;
+            /** Moneda origen */
+            moneda_origen: string;
+            /**
+             * Fecha
+             * Format: date
+             */
+            fecha?: string | null;
+            /**
+             * Codigo tipo tasa base
+             * @default
+             */
+            codigo_tipo_tasa_base: string;
+            /**
+             * Codigo tipo tasa referencia
+             * @default
+             */
+            codigo_tipo_tasa_referencia: string;
+        };
         MetodoPagoEmpresaActiva: {
             /**
              * Id
@@ -12604,7 +22173,7 @@ export interface components {
              * Empresa
              * Format: uuid
              */
-            empresa: string;
+            readonly empresa?: string;
             /**
              * Metodo pago
              * Format: uuid
@@ -12686,6 +22255,11 @@ export interface components {
             readonly moneda_nombre?: string;
             /** Activa */
             activa?: boolean;
+            /**
+             * Es moneda referencia
+             * @description Moneda de referencia adicional activable por empresa (ej. USDT) para cálculos y reportería trimonetaria.
+             */
+            es_moneda_referencia?: boolean;
             /** Es base */
             readonly es_base?: string;
             /** Es pais */
@@ -12776,7 +22350,7 @@ export interface components {
              * Tipo movimiento
              * @enum {string}
              */
-            tipo_movimiento: "INGRESO" | "EGRESO" | "TRANSFERENCIA_ENTRADA" | "TRANSFERENCIA_SALIDA" | "AJUSTE_POSITIVO" | "AJUSTE_NEGATIVO";
+            tipo_movimiento: "INGRESO" | "EGRESO" | "TRANSFERENCIA_ENTRADA" | "TRANSFERENCIA_SALIDA" | "AJUSTE_POSITIVO" | "AJUSTE_NEGATIVO" | "CIERRE";
             /**
              * Monto
              * Format: decimal
@@ -12886,6 +22460,101 @@ export interface components {
              */
             readonly fecha_creacion?: string;
         };
+        PagoTercero: {
+            /**
+             * Id pago tercero
+             * Format: uuid
+             */
+            readonly id_pago_tercero?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa: string;
+            /**
+             * Id proveedor
+             * Format: uuid
+             * @description Proveedor por cuya cuenta entró el cobro. Opcional al crear (cobro originado en caja); requerido para abonar o reintegrar.
+             */
+            id_proveedor?: string | null;
+            /** Proveedor nombre */
+            readonly proveedor_nombre?: string;
+            /**
+             * Id moneda
+             * Format: uuid
+             */
+            id_moneda: string;
+            /** Moneda codigo */
+            readonly moneda_codigo?: string;
+            /**
+             * Monto
+             * Format: decimal
+             * @description Monto del cobro recibido en la cuenta del tercero.
+             */
+            monto: string;
+            /**
+             * Comision
+             * Format: decimal
+             * @description Comisión que cobra el proveedor por el reintegro (opcional). La CxC del reintegro se emite por monto − comisión.
+             */
+            readonly comision?: string | null;
+            /**
+             * Referencia zelle
+             * @description Referencia/confirmación de la transferencia Zelle.
+             */
+            referencia_zelle: string;
+            /**
+             * Fecha
+             * Format: date
+             * @description Fecha del cobro en la cuenta del tercero.
+             */
+            fecha: string;
+            /** Concepto */
+            concepto?: string;
+            /**
+             * Estado
+             * @enum {string}
+             */
+            readonly estado?: "pendiente" | "abonado" | "reintegro_pendiente" | "reintegrado" | "anulado";
+            /**
+             * Id abono cxp
+             * Format: uuid
+             * @description Abono CxP generado por la acción 'abonar'.
+             */
+            readonly id_abono_cxp?: string | null;
+            /**
+             * Id cxc reintegro
+             * @description CxC contra el proveedor generada por 'solicitar_reintegro'.
+             */
+            readonly id_cxc_reintegro?: number | null;
+            /**
+             * Referencia externa
+             * @description Identificador del registro en el sistema externo de origen.
+             */
+            referencia_externa?: string | null;
+            /**
+             * Documento JSON
+             * @description Payload raw del documento externo (para auditoría/reprocesamiento).
+             */
+            documento_json?: Record<string, never> | null;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            readonly activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
         Pago: {
             /**
              * Id pago
@@ -12894,6 +22563,11 @@ export interface components {
             readonly id_pago?: string;
             /** Empresa nombre */
             readonly empresa_nombre?: string;
+            /**
+             * Contacto nombre
+             * @default
+             */
+            readonly contacto_nombre: string;
             /** Metodo pago nombre */
             readonly metodo_pago_nombre?: string;
             /** Moneda codigo */
@@ -12923,13 +22597,13 @@ export interface components {
              * Tipo documento
              * @enum {string}
              */
-            tipo_documento: "PEDIDO" | "FACTURA" | "NOTA_VENTA" | "NOTA_CREDITO_VENTA" | "CXP" | "COMPRA" | "GASTO" | "REEMBOLSO_GASTO" | "NOMINA" | "IMPUESTO" | "AJUSTE" | "TRANSFERENCIA";
+            tipo_documento: "PEDIDO" | "FACTURA" | "NOTA_VENTA" | "NOTA_CREDITO_VENTA" | "CXP" | "CXC" | "COMPRA" | "GASTO" | "REEMBOLSO_GASTO" | "NOMINA" | "IMPUESTO" | "AJUSTE" | "TRANSFERENCIA" | "ANTICIPO" | "CONCILIACION_MULTIPLE";
             /**
              * Id documento
              * Format: uuid
-             * @description ID del documento específico (pedido, cxp, etc.)
+             * @description ID del documento específico (opcional para anticipos o conciliación múltiple).
              */
-            id_documento: string;
+            id_documento?: string | null;
             /**
              * Fecha pago
              * Format: date-time
@@ -12964,6 +22638,12 @@ export interface components {
              * Format: uuid
              */
             id_empresa: string;
+            /**
+             * Id contacto
+             * Format: uuid
+             * @description Contacto común (cliente/proveedor) propietario del pago y su saldo a favor.
+             */
+            id_contacto?: string | null;
             /**
              * Id moneda
              * Format: uuid
@@ -13053,6 +22733,101 @@ export interface components {
              */
             id_usuario_registro?: string | null;
         };
+        ConciliarDocumentosInput: {
+            asignaciones: components["schemas"]["LineaConciliacionInput"][];
+            /**
+             * Descripcion
+             * @default
+             */
+            descripcion: string;
+            /**
+             * Generar asiento
+             * @default true
+             */
+            generar_asiento: boolean;
+        };
+        PropuestaDistribucionItem: {
+            /** Tipo documento */
+            readonly tipo_documento?: string;
+            /** Id documento */
+            readonly id_documento?: string;
+            /**
+             * Referencia
+             * @default
+             */
+            readonly referencia: string;
+            /**
+             * Fecha emision
+             * Format: date
+             */
+            readonly fecha_emision?: string;
+            /**
+             * Fecha vencimiento
+             * Format: date
+             */
+            readonly fecha_vencimiento?: string;
+            /**
+             * Moneda documento
+             * Format: uuid
+             */
+            readonly moneda_documento?: string;
+            /** Moneda documento codigo */
+            readonly moneda_documento_codigo?: string;
+            /**
+             * Saldo pendiente documento
+             * Format: decimal
+             */
+            readonly saldo_pendiente_documento?: string;
+            /**
+             * Tasa aplicada
+             * Format: decimal
+             */
+            readonly tasa_aplicada?: string;
+            /**
+             * Monto asignado pago
+             * Format: decimal
+             */
+            readonly monto_asignado_pago?: string;
+            /**
+             * Monto asignado documento
+             * Format: decimal
+             */
+            readonly monto_asignado_documento?: string;
+        };
+        OmitidaSinTasa: {
+            /** Tipo documento */
+            readonly tipo_documento?: string;
+            /** Id documento */
+            readonly id_documento?: string;
+            /** Moneda codigo */
+            readonly moneda_codigo?: string;
+            /** Motivo */
+            readonly motivo?: string;
+        };
+        SugerirDistribucionResponse: {
+            /**
+             * Pago id
+             * Format: uuid
+             */
+            readonly pago_id?: string;
+            /**
+             * Saldo disponible
+             * Format: decimal
+             */
+            readonly saldo_disponible?: string;
+            readonly propuestas?: components["schemas"]["PropuestaDistribucionItem"][];
+            /**
+             * Total a aplicar
+             * Format: decimal
+             */
+            readonly total_a_aplicar?: string;
+            /**
+             * Saldo a favor resultante
+             * Format: decimal
+             */
+            readonly saldo_a_favor_resultante?: string;
+            readonly omitidas_sin_tasa?: components["schemas"]["OmitidaSinTasa"][];
+        };
         PlantillaMaestroCajasVirtuales: {
             /**
              * Id plantilla
@@ -13111,7 +22886,7 @@ export interface components {
              * Estado
              * @enum {string}
              */
-            estado?: "ABIERTA" | "CERRADA" | "PAUSADA";
+            readonly estado?: "ABIERTA" | "CERRADA" | "PAUSADA";
             /**
              * Fecha apertura
              * Format: date-time
@@ -13200,10 +22975,20 @@ export interface components {
             /** Usuario registro username */
             readonly usuario_registro_username?: string;
             /**
+             * Id tipo tasa
+             * Format: uuid
+             * @description Tipo de tasa extensible (permite múltiples tasas personalizadas para el mismo par).
+             */
+            id_tipo_tasa?: string | null;
+            /** Tipo tasa codigo */
+            readonly tipo_tasa_codigo?: string;
+            /** Tipo tasa nombre */
+            readonly tipo_tasa_nombre?: string;
+            /**
              * Tipo tasa
              * @enum {string}
              */
-            tipo_tasa: "OFICIAL_BCV" | "ESPECIAL_USUARIO" | "PROMEDIO_MERCADO" | "FIJA";
+            tipo_tasa?: "OFICIAL_BCV" | "ESPECIAL_USUARIO" | "PROMEDIO_MERCADO" | "FIJA" | "PERSONALIZADA";
             /**
              * Valor tasa
              * Format: decimal
@@ -13253,6 +23038,51 @@ export interface components {
              * Format: uuid
              */
             id_usuario_registro?: string | null;
+        };
+        TipoTasaCambio: {
+            /**
+             * Id tipo tasa
+             * Format: uuid
+             */
+            readonly id_tipo_tasa?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa?: string | null;
+            /** Codigo */
+            codigo: string;
+            /** Nombre */
+            nombre: string;
+            /** Descripcion */
+            descripcion?: string;
+            /**
+             * Es oficial fiscal
+             * @description Si es True, se usa obligatoriamente para cumplimiento fiscal/contable (ej. BCV).
+             */
+            es_oficial_fiscal?: boolean;
+            /**
+             * Prioridad
+             * @description Menor valor = mayor prioridad en búsqueda por defecto.
+             */
+            prioridad?: number;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
         };
         TransaccionDatafono: {
             /**
@@ -13474,6 +23304,107 @@ export interface components {
              */
             id_empresa: string;
         };
+        PagoContribucionParafiscal: {
+            /**
+             * Id pago parafiscal
+             * Format: uuid
+             */
+            readonly id_pago_parafiscal?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa: string;
+            /**
+             * Contribucion
+             * @description Contribución parafiscal que se paga (IVSS, FAOV, INCES…).
+             */
+            contribucion: number;
+            /** Contribucion codigo */
+            readonly contribucion_codigo?: string;
+            /** Contribucion nombre */
+            readonly contribucion_nombre?: string;
+            /**
+             * Periodo año
+             * @description Año del período declarado (ej. 2026).
+             */
+            "periodo_a\u00F1o": number;
+            /**
+             * Periodo mes
+             * @description Mes del período declarado (1–12).
+             */
+            periodo_mes: number;
+            /** Periodo */
+            readonly periodo?: string;
+            /**
+             * Monto
+             * Format: decimal
+             * @description Monto a pagar de la contribución para el período (R-CODE-4).
+             */
+            monto: string;
+            /**
+             * Id moneda
+             * Format: uuid
+             */
+            id_moneda: string;
+            /** Moneda codigo */
+            readonly moneda_codigo?: string;
+            /**
+             * Referencia
+             * @description Referencia del pago (planilla, comprobante o transferencia).
+             */
+            referencia?: string;
+            /**
+             * Id proceso nomina
+             * Format: uuid
+             * @description Proceso de nómina del que proviene el cálculo (trazabilidad, opcional).
+             */
+            id_proceso_nomina?: string | null;
+            /**
+             * Estado
+             * @enum {string}
+             */
+            readonly estado?: "pendiente" | "pagado" | "anulado";
+            /**
+             * Fecha pago
+             * Format: date
+             * @description Fecha en que se ejecutó el pago (se fija al pagar).
+             */
+            readonly fecha_pago?: string | null;
+            /**
+             * Id pago
+             * Format: uuid
+             * @description Pago genérico de finanzas generado por la acción 'pagar'.
+             */
+            readonly id_pago?: string | null;
+            /**
+             * Referencia externa
+             * @description Identificador del registro en el sistema externo de origen.
+             */
+            referencia_externa?: string | null;
+            /**
+             * Documento JSON
+             * @description Payload raw del documento externo (para auditoría/reprocesamiento).
+             */
+            documento_json?: Record<string, never> | null;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            readonly activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
         TasaIVAEmpresa: {
             /**
              * Id
@@ -13515,6 +23446,13 @@ export interface components {
             nombre_categoria: string;
             /** Descripcion */
             descripcion?: string | null;
+            /**
+             * Id cuenta contable
+             * Format: uuid
+             */
+            id_cuenta_contable?: string | null;
+            /** Requiere factura */
+            requiere_factura?: boolean;
             /** Activo */
             activo?: boolean;
             /**
@@ -13522,6 +23460,35 @@ export interface components {
              * Format: uuid
              */
             id_empresa: string;
+        };
+        DetalleGasto: {
+            /**
+             * Id detalle gasto
+             * Format: uuid
+             */
+            id_detalle_gasto?: string;
+            /**
+             * Id gasto
+             * Format: uuid
+             */
+            id_gasto: string;
+            /**
+             * Id cuenta contable
+             * Format: uuid
+             */
+            id_cuenta_contable: string;
+            /** Descripcion */
+            descripcion?: string | null;
+            /**
+             * Monto
+             * Format: decimal
+             */
+            monto: string;
+            /**
+             * Monto iva
+             * Format: decimal
+             */
+            monto_iva?: string;
         };
         Gasto: {
             /**
@@ -13542,6 +23509,34 @@ export interface components {
              */
             monto: string;
             /**
+             * Monto iva
+             * Format: decimal
+             */
+            monto_iva?: string;
+            /**
+             * Tasa cambio
+             * Format: decimal
+             */
+            tasa_cambio?: string;
+            /**
+             * Id proveedor
+             * Format: uuid
+             */
+            id_proveedor?: string | null;
+            /**
+             * Id producto
+             * Format: uuid
+             */
+            id_producto?: string | null;
+            /** Tiene factura */
+            tiene_factura?: boolean;
+            /** Numero factura */
+            numero_factura?: string | null;
+            /** Sin respaldo */
+            readonly sin_respaldo?: boolean;
+            /** Id empleado responsable */
+            id_empleado_responsable?: number | null;
+            /**
              * Id empleado responsable temp
              * Format: uuid
              */
@@ -13550,7 +23545,14 @@ export interface components {
              * Estado gasto
              * @enum {string}
              */
-            estado_gasto: "PENDIENTE_APROBACION" | "APROBADO" | "RECHAZADO" | "REEMBOLSADO" | "CONTABILIZADO";
+            readonly estado_gasto?: "PENDIENTE_APROBACION" | "APROBADO" | "RECHAZADO" | "REEMBOLSADO" | "CONTABILIZADO";
+            /** Estado gasto display */
+            readonly estado_gasto_display?: string;
+            /**
+             * Id usuario registro
+             * Format: uuid
+             */
+            id_usuario_registro?: string | null;
             /**
              * Id usuario registro temp
              * Format: uuid
@@ -13576,6 +23578,7 @@ export interface components {
              * Format: uuid
              */
             id_categoria_gasto: string;
+            readonly detalles?: components["schemas"]["DetalleGasto"][];
         };
         ReembolsoGasto: {
             /**
@@ -13583,6 +23586,8 @@ export interface components {
              * Format: uuid
              */
             id_reembolso?: string;
+            /** Id empleado */
+            id_empleado?: number | null;
             /**
              * Id empleado temp
              * Format: uuid
@@ -13603,6 +23608,11 @@ export interface components {
              * @enum {string}
              */
             estado_reembolso: "PENDIENTE" | "PAGADO" | "ANULADO";
+            /**
+             * Id usuario registro
+             * Format: uuid
+             */
+            id_usuario_registro?: string | null;
             /**
              * Id usuario registro temp
              * Format: uuid
@@ -13662,6 +23672,11 @@ export interface components {
              */
             id_tipo_aprobacion: string;
             /**
+             * Id departamento
+             * Format: uuid
+             */
+            id_departamento?: string | null;
+            /**
              * Rol aprobador
              * Format: uuid
              */
@@ -13671,6 +23686,18 @@ export interface components {
              * Format: uuid
              */
             id_usuario_aprobador?: string | null;
+            /** Sla horas */
+            sla_horas?: number | null;
+            /**
+             * Escalar a rol
+             * Format: uuid
+             */
+            escalar_a_rol?: string | null;
+            /**
+             * Escalar a usuario
+             * Format: uuid
+             */
+            escalar_a_usuario?: string | null;
         };
         RegistroAprobacion: {
             /**
@@ -13722,7 +23749,7 @@ export interface components {
              */
             readonly fecha_solicitud?: string;
             /** Estado solicitud */
-            estado_solicitud: string;
+            readonly estado_solicitud?: string;
             /** Comentarios solicitante */
             comentarios_solicitante?: string | null;
             /**
@@ -13736,6 +23763,11 @@ export interface components {
              */
             id_tipo_aprobacion: string;
             /**
+             * Id departamento
+             * Format: uuid
+             */
+            readonly id_departamento?: string | null;
+            /**
              * Id usuario solicitante
              * Format: uuid
              */
@@ -13744,7 +23776,33 @@ export interface components {
              * Etapa actual flujo
              * Format: uuid
              */
-            etapa_actual_flujo?: string | null;
+            readonly etapa_actual_flujo?: string | null;
+            /**
+             * Monto
+             * Format: decimal
+             */
+            readonly monto?: string | null;
+            /**
+             * Fecha inicio etapa
+             * Format: date-time
+             */
+            readonly fecha_inicio_etapa?: string;
+            /** Escalada */
+            readonly escalada?: boolean;
+            /**
+             * Fecha escalacion
+             * Format: date-time
+             */
+            readonly fecha_escalacion?: string | null;
+        };
+        DecidirSolicitudInput: {
+            /** Aprobado */
+            aprobado: boolean;
+            /**
+             * Comentarios
+             * @default
+             */
+            comentarios: string;
         };
         TipoAprobacion: {
             /**
@@ -13799,7 +23857,7 @@ export interface components {
              * Id usuario creacion
              * Format: uuid
              */
-            id_usuario_creacion: string;
+            readonly id_usuario_creacion?: string;
         };
         Documento: {
             /**
@@ -14067,6 +24125,11 @@ export interface components {
         };
         ConectorInstanciaCreate: {
             /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa?: string;
+            /**
              * Id proveedor
              * Format: uuid
              */
@@ -14094,6 +24157,28 @@ export interface components {
             entidades_activas?: Record<string, never>;
             /** Activo */
             activo?: boolean;
+        };
+        PushCobranzaInput: {
+            /**
+             * Tipo
+             * @default todos
+             * @enum {string}
+             */
+            tipo: "pagos" | "gestiones_cobranza" | "todos";
+            /** @default [] */
+            ids: string[];
+            /**
+             * Push modo pago
+             * @enum {string|null}
+             */
+            push_modo_pago?: "borrador" | "confirmado" | null;
+            /** Journal id */
+            journal_id?: number | null;
+            /**
+             * Sync completo
+             * @default false
+             */
+            sync_completo: boolean;
         };
         JobSincronizacion: {
             /**
@@ -14157,6 +24242,104 @@ export interface components {
             /** Parametros */
             parametros?: Record<string, never>;
         };
+        PushCobranzaResponse: {
+            /** Mensaje */
+            mensaje: string;
+            /**
+             * Job id
+             * Format: uuid
+             */
+            job_id?: string | null;
+            jobs: components["schemas"]["JobSincronizacion"][];
+        };
+        JobSincronizacionTrigger: {
+            /**
+             * Tipo entidad
+             * @enum {string}
+             */
+            tipo_entidad: "contactos" | "productos" | "pedidos_venta" | "pedidos_compra" | "facturas_venta" | "facturas_compra" | "pagos" | "gestiones_cobranza" | "inventario";
+            /**
+             * Direccion
+             * @default inbound
+             * @enum {string}
+             */
+            direccion: "inbound" | "outbound" | "bidireccional";
+            /**
+             * Sync completo
+             * @description True = ignorar último sync, traer todos los registros.
+             * @default false
+             */
+            sync_completo: boolean;
+            /**
+             * Desde
+             * Format: date
+             * @description Fecha ISO desde la cual sincronizar (opcional).
+             */
+            desde?: string | null;
+        };
+        EventoOutbox: {
+            /**
+             * Id evento
+             * Format: uuid
+             */
+            readonly id_evento?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /** Tipo evento */
+            readonly tipo_evento?: string;
+            /** Entidad tipo */
+            readonly entidad_tipo?: string;
+            /**
+             * Entidad id
+             * Format: uuid
+             */
+            readonly entidad_id?: string;
+            /** Clave idempotencia */
+            readonly clave_idempotencia?: string;
+            /** Payload */
+            readonly payload?: Record<string, never>;
+            /**
+             * Estado
+             * @enum {string}
+             */
+            readonly estado?: "PENDIENTE" | "PROCESANDO" | "ENVIADO" | "FALLIDO" | "DLQ";
+            /** Intentos */
+            readonly intentos?: number;
+            /** Max intentos */
+            readonly max_intentos?: number;
+            /**
+             * Proximo intento en
+             * Format: date-time
+             */
+            readonly proximo_intento_en?: string;
+            /**
+             * Procesado en
+             * Format: date-time
+             */
+            readonly procesado_en?: string | null;
+            /** Ultimo error */
+            readonly ultimo_error?: string;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            readonly activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
         ConectorProveedor: {
             /**
              * Id proveedor
@@ -14167,36 +24350,36 @@ export interface components {
              * Codigo
              * @description Identificador slug del proveedor: odoo, sap_b1, shopify, etc.
              */
-            readonly codigo?: string;
+            codigo: string;
             /** Nombre */
-            readonly nombre?: string;
+            nombre: string;
             /** Descripcion */
-            readonly descripcion?: string;
+            descripcion?: string;
             /** Icono url */
-            readonly icono_url?: string;
+            icono_url?: string;
             /**
              * Versiones soportadas
              * @description ['8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18']
              */
-            readonly versiones_soportadas?: Record<string, never>;
+            versiones_soportadas?: Record<string, never>;
             /**
              * Capacidades
              * @description Lista de entidades soportadas: ['contactos', 'productos', 'pedidos_venta', 'pedidos_compra', 'facturas', 'pagos', 'inventario']
              */
-            readonly capacidades?: Record<string, never>;
+            capacidades?: Record<string, never>;
             /** Requiere url */
-            readonly requiere_url?: boolean;
+            requiere_url?: boolean;
             /** Requiere db */
-            readonly requiere_db?: boolean;
+            requiere_db?: boolean;
             /**
              * Estado
              * @enum {string}
              */
-            readonly estado?: "activo" | "beta" | "proximamente";
+            estado?: "activo" | "beta" | "proximamente";
             /** Activo */
-            readonly activo?: boolean;
+            activo?: boolean;
             /** Orden */
-            readonly orden?: number;
+            orden?: number;
         };
         CategoriaProducto: {
             /**
@@ -14295,6 +24478,204 @@ export interface components {
              */
             id_unidad_destino: string;
         };
+        OperacionInventarioPaso: {
+            /**
+             * Id operacion paso
+             * Format: uuid
+             */
+            readonly id_operacion_paso?: string;
+            /** Secuencia */
+            readonly secuencia?: number;
+            /** Nombre paso */
+            readonly nombre_paso?: string;
+            /** Confirmado */
+            readonly confirmado?: boolean;
+            /**
+             * Id usuario confirmacion
+             * Format: uuid
+             */
+            readonly id_usuario_confirmacion?: string | null;
+            /**
+             * Fecha confirmacion
+             * Format: date-time
+             */
+            readonly fecha_confirmacion?: string | null;
+        };
+        OperacionInventarioLinea: {
+            /**
+             * Id linea
+             * Format: uuid
+             */
+            readonly id_linea?: string;
+            /**
+             * Id producto
+             * Format: uuid
+             */
+            id_producto: string;
+            /** Producto nombre */
+            readonly producto_nombre?: string;
+            /**
+             * Id variante
+             * Format: uuid
+             */
+            id_variante?: string | null;
+            /**
+             * Cantidad
+             * Format: decimal
+             */
+            cantidad: string;
+            /**
+             * Costo unitario
+             * Format: decimal
+             * @description Costo de recepción; en entregas lo calcula la valoración.
+             */
+            costo_unitario?: string | null;
+        };
+        OperacionInventario: {
+            /**
+             * Id operacion
+             * Format: uuid
+             */
+            readonly id_operacion?: string;
+            /** Numero */
+            readonly numero?: string;
+            /**
+             * Tipo operacion
+             * @enum {string}
+             */
+            readonly tipo_operacion?: "RECEPCION" | "ENTREGA";
+            /**
+             * Origen tipo
+             * @enum {string}
+             */
+            readonly origen_tipo?: "PURCHASE" | "SALE" | "TRANSFER" | "RETURN" | "SCRAP";
+            /**
+             * Origen id
+             * Format: uuid
+             * @description Documento de origen (OC, NotaVenta, etc.) si aplica.
+             */
+            readonly origen_id?: string | null;
+            /**
+             * Id almacen
+             * Format: uuid
+             * @description Almacén que recibe (recepción) o despacha (entrega).
+             */
+            readonly id_almacen?: string;
+            /**
+             * Id almacen contraparte
+             * Format: uuid
+             * @description Almacén destino en transferencias.
+             */
+            readonly id_almacen_contraparte?: string | null;
+            /**
+             * Estado
+             * @enum {string}
+             */
+            readonly estado?: "EN_PROCESO" | "COMPLETADA" | "CANCELADA";
+            /**
+             * Motivo
+             * @description Obligatorio para devoluciones/desechos.
+             */
+            readonly motivo?: string;
+            /**
+             * Fecha
+             * Format: date-time
+             */
+            readonly fecha?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            readonly pasos?: components["schemas"]["OperacionInventarioPaso"][];
+            readonly lineas?: components["schemas"]["OperacionInventarioLinea"][];
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        LoteProducto: {
+            /**
+             * Id lote
+             * Format: uuid
+             */
+            readonly id_lote?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /**
+             * Id producto
+             * Format: uuid
+             */
+            id_producto: string;
+            /** Producto nombre */
+            readonly producto_nombre?: string;
+            /** Producto sku */
+            readonly producto_sku?: string | null;
+            /**
+             * Id variante
+             * Format: uuid
+             */
+            id_variante?: string | null;
+            /**
+             * Id almacen
+             * Format: uuid
+             */
+            id_almacen: string;
+            /** Almacen nombre */
+            readonly almacen_nombre?: string;
+            /** Numero lote */
+            numero_lote: string;
+            /**
+             * Fecha fabricacion
+             * Format: date
+             */
+            fecha_fabricacion?: string | null;
+            /**
+             * Fecha vencimiento
+             * Format: date
+             */
+            fecha_vencimiento?: string | null;
+            /**
+             * Cantidad disponible
+             * Format: decimal
+             */
+            readonly cantidad_disponible?: string;
+            /**
+             * Cantidad reservada
+             * Format: decimal
+             */
+            readonly cantidad_reservada?: string;
+            /** Cantidad libre */
+            readonly cantidad_libre?: string;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
         MovimientoInventario: {
             /**
              * Id movimiento inventario
@@ -14328,7 +24709,7 @@ export interface components {
              * Tipo movimiento
              * @enum {string}
              */
-            tipo_movimiento: "ENTRADA" | "SALIDA" | "TRANSFERENCIA" | "AJUSTE" | "CONSUMO_PRODUCCION" | "RECEPCION_COMPRA" | "DESPACHO_VENTA" | "SALIDA_INTERNA" | "RESERVA_VENTA";
+            tipo_movimiento: "ENTRADA" | "SALIDA" | "TRANSFERENCIA" | "AJUSTE" | "CONSUMO_PRODUCCION" | "RECEPCION_COMPRA" | "DESPACHO_VENTA" | "SALIDA_INTERNA" | "RESERVA_VENTA" | "TRANSFERENCIA_UBICACION";
             /**
              * Cantidad
              * Format: decimal
@@ -14374,10 +24755,75 @@ export interface components {
              */
             id_almacen_destino?: string | null;
             /**
+             * Id lote
+             * Format: uuid
+             */
+            id_lote?: string | null;
+            /** Lote numero */
+            readonly lote_numero?: string | null;
+            /** Numero lote */
+            numero_lote?: string;
+            /**
+             * Fecha fabricacion
+             * Format: date
+             */
+            fecha_fabricacion?: string | null;
+            /**
+             * Fecha vencimiento
+             * Format: date
+             */
+            fecha_vencimiento?: string | null;
+            /**
              * Id usuario registro
              * Format: uuid
              */
             readonly id_usuario_registro?: string;
+        };
+        PasoOperacion: {
+            /**
+             * Id paso operacion
+             * Format: uuid
+             */
+            readonly id_paso_operacion?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa: string;
+            /**
+             * Id almacen
+             * Format: uuid
+             */
+            id_almacen: string;
+            /**
+             * Tipo operacion
+             * @enum {string}
+             */
+            tipo_operacion: "RECEPCION" | "ENTREGA";
+            /** Nombre paso */
+            nombre_paso: string;
+            /**
+             * Secuencia
+             * @description Orden del paso (1 = primero). Debe ser único por almacén y tipo de operación.
+             */
+            secuencia: number;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
         };
         Producto: {
             /**
@@ -14439,15 +24885,43 @@ export interface components {
             /** Maneja seriales */
             maneja_seriales?: boolean;
             /**
+             * Estrategia salida
+             * @description Estrategia automática de descarga de lotes cuando maneja_lotes=True.
+             * @enum {string}
+             */
+            estrategia_salida?: "FIFO" | "FEFO";
+            /**
+             * Es vendible
+             * @description Si es False, el producto es solo-compra y no puede venderse.
+             */
+            es_vendible?: boolean;
+            /**
+             * Es comprable
+             * @description Si es False, el producto no puede comprarse (solo-venta).
+             */
+            es_comprable?: boolean;
+            /**
              * Costo promedio
              * Format: decimal
              */
             costo_promedio?: string;
             /**
+             * Metodo valoracion
+             * @description Método de valoración de inventario usado al costear las salidas de este producto.
+             * @enum {string}
+             */
+            metodo_valoracion?: "PROMEDIO" | "FIFO";
+            /**
              * Precio venta sugerido
              * Format: decimal
              */
             precio_venta_sugerido?: string;
+            /**
+             * Punto reorden
+             * Format: decimal
+             * @description Stock mínimo a partir del cual se generan alertas de reorden. NULL = sin alerta.
+             */
+            punto_reorden?: string | null;
             /**
              * Id empresa
              * Format: uuid
@@ -14472,6 +24946,201 @@ export interface components {
             id_configuracion_impuesto_venta_default?: number | null;
             /** Id configuracion impuesto compra default */
             id_configuracion_impuesto_compra_default?: number | null;
+        };
+        ReglaReabastecimiento: {
+            /**
+             * Id regla
+             * Format: uuid
+             */
+            readonly id_regla?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /**
+             * Id producto
+             * Format: uuid
+             */
+            id_producto: string;
+            /** Producto nombre */
+            readonly producto_nombre?: string;
+            /** Producto sku */
+            readonly producto_sku?: string | null;
+            /**
+             * Id variante
+             * Format: uuid
+             */
+            id_variante?: string | null;
+            /**
+             * Id almacen
+             * Format: uuid
+             */
+            id_almacen: string;
+            /** Almacen nombre */
+            readonly almacen_nombre?: string;
+            /**
+             * Stock minimo
+             * Format: decimal
+             */
+            stock_minimo: string;
+            /**
+             * Stock maximo
+             * Format: decimal
+             */
+            stock_maximo: string;
+            /**
+             * Cantidad multiplo
+             * Format: decimal
+             */
+            cantidad_multiplo?: string;
+            /**
+             * Ruta
+             * @enum {string}
+             */
+            ruta?: "COMPRA" | "MANUFACTURA" | "TRANSFERENCIA";
+            /**
+             * Id proveedor preferido
+             * Format: uuid
+             */
+            id_proveedor_preferido?: string | null;
+            /** Proveedor nombre */
+            readonly proveedor_nombre?: string | null;
+            /**
+             * Id almacen origen
+             * Format: uuid
+             */
+            id_almacen_origen?: string | null;
+            /** Almacen origen nombre */
+            readonly almacen_origen_nombre?: string | null;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        EvaluarReabastecimientoInput: {
+            /**
+             * Almacen
+             * Format: uuid
+             */
+            almacen?: string | null;
+            /**
+             * Incluir ok
+             * @default false
+             */
+            incluir_ok: boolean;
+        };
+        EvaluarReabastecimientoItem: {
+            /**
+             * Id regla
+             * Format: uuid
+             */
+            id_regla: string;
+            /**
+             * Id producto
+             * Format: uuid
+             */
+            id_producto: string;
+            /** Producto nombre */
+            producto_nombre: string;
+            /** Producto sku */
+            producto_sku: string;
+            /**
+             * Id variante
+             * Format: uuid
+             */
+            id_variante: string | null;
+            /**
+             * Id almacen
+             * Format: uuid
+             */
+            id_almacen: string;
+            /** Almacen nombre */
+            almacen_nombre: string;
+            /** Ruta */
+            ruta: string;
+            /**
+             * Id proveedor preferido
+             * Format: uuid
+             */
+            id_proveedor_preferido: string | null;
+            /**
+             * Id almacen origen
+             * Format: uuid
+             */
+            id_almacen_origen: string | null;
+            /** Stock disponible */
+            stock_disponible: string;
+            /** Cantidad comprometida */
+            cantidad_comprometida: string;
+            /** Cantidad en transito */
+            cantidad_en_transito: string;
+            /** Stock libre */
+            stock_libre: string;
+            /** Stock proyectado */
+            stock_proyectado: string;
+            /** Stock minimo */
+            stock_minimo: string;
+            /** Stock maximo */
+            stock_maximo: string;
+            /** Cantidad multiplo */
+            cantidad_multiplo: string;
+            /** Requiere reabastecimiento */
+            requiere_reabastecimiento: boolean;
+            /** Deficit */
+            deficit: string;
+            /** Cantidad sugerida */
+            cantidad_sugerida: string;
+        };
+        EvaluarReabastecimientoResponse: {
+            resultados: components["schemas"]["EvaluarReabastecimientoItem"][];
+        };
+        GenerarBorradorInput: {
+            /**
+             * Cantidad
+             * Format: decimal
+             */
+            cantidad?: string | null;
+            /**
+             * Fecha necesidad
+             * Format: date
+             */
+            fecha_necesidad?: string | null;
+        };
+        GenerarBorradorResponse: {
+            /** Ruta */
+            ruta: string;
+            /** Tipo documento */
+            tipo_documento: string;
+            /**
+             * Id documento
+             * Format: uuid
+             */
+            id_documento: string;
+            /** Numero */
+            numero: string;
+            /** Estado */
+            estado: string;
+            /** Cantidad */
+            cantidad: string;
+            /**
+             * Lista materiales id
+             * Format: uuid
+             */
+            lista_materiales_id?: string | null;
         };
         StockActual: {
             /**
@@ -14775,6 +25444,33 @@ export interface components {
              */
             id_producto: string;
         };
+        PuertoLocalizacionEstado: {
+            /** Clase */
+            readonly clase?: string;
+            /** Es noop */
+            readonly es_noop?: boolean;
+            /** Activo */
+            readonly activo?: boolean;
+        };
+        EstadoLocalizacionResponse: {
+            /**
+             * Empresa id
+             * Format: uuid
+             */
+            readonly empresa_id?: string;
+            /** Pais codigo iso */
+            readonly pais_codigo_iso?: string | null;
+            /** Pais normalizado */
+            readonly pais_normalizado?: string | null;
+            /** Localizacion legal activa */
+            readonly localizacion_legal_activa?: boolean;
+            /** Localizacion mercado activa */
+            readonly localizacion_mercado_activa?: boolean;
+            /** Puertos */
+            readonly puertos?: {
+                [key: string]: components["schemas"]["PuertoLocalizacionEstado"];
+            };
+        };
         CentroTrabajo: {
             /**
              * Id centro trabajo
@@ -14815,6 +25511,24 @@ export interface components {
              */
             id_empresa: string;
         };
+        ConfiguracionManufactura: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            readonly id?: string;
+            /**
+             * Porcentaje overhead
+             * Format: decimal
+             * @description Overhead como % sobre (materiales + mano de obra). Ej: 10 = 10%.
+             */
+            porcentaje_overhead?: string;
+            /**
+             * Empresa
+             * Format: uuid
+             */
+            readonly empresa?: string;
+        };
         ConsumoMaterial: {
             /**
              * Id
@@ -14831,6 +25545,11 @@ export interface components {
              */
             cantidad: string;
             /**
+             * Costo unitario
+             * Format: decimal
+             */
+            costo_unitario?: string;
+            /**
              * Orden produccion
              * Format: uuid
              */
@@ -14840,6 +25559,45 @@ export interface components {
              * Format: uuid
              */
             producto: string;
+        };
+        EtapaProduccion: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            readonly id?: string;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            /** Codigo */
+            codigo: string;
+            /** Nombre */
+            nombre: string;
+            /**
+             * Orden
+             * @description Posición en la secuencia de fabricación (1 = primera).
+             */
+            orden: number;
+            /**
+             * Tarifa destajo
+             * Format: decimal
+             * @description Pago a destajo por unidad procesada en esta etapa (0 = no aplica).
+             */
+            tarifa_destajo?: string;
+            /** Descripcion */
+            descripcion?: string;
+            /**
+             * Fecha creacion
+             * Format: date-time
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Empresa
+             * Format: uuid
+             */
+            readonly empresa?: string;
         };
         ListaMaterialesDetalle: {
             /**
@@ -15788,6 +26546,109 @@ export interface components {
              */
             contacto?: string | null;
         };
+        ConnectBoton: {
+            /** Tipo */
+            readonly tipo?: string;
+            /** Etiqueta */
+            readonly etiqueta?: string;
+            /** Valor */
+            readonly valor?: string;
+        };
+        PublicPerfil: {
+            /** Slug */
+            readonly slug?: string;
+            /** Nombre publico */
+            readonly nombre_publico?: string;
+            /** Cargo */
+            readonly cargo?: string;
+            /** Bio */
+            readonly bio?: string;
+            /** Telefono publico */
+            readonly telefono_publico?: string;
+            /** Email publico */
+            readonly email_publico?: string;
+            /** Tema */
+            readonly tema?: string;
+            readonly botones?: components["schemas"]["ConnectBoton"][];
+            /** Empresa nombre */
+            readonly empresa_nombre?: string;
+            /** Acepta leads */
+            readonly acepta_leads?: boolean;
+            /** Consentimiento texto */
+            readonly consentimiento_texto?: string;
+        };
+        PublicLeadCreate: {
+            /** Nombre */
+            nombre: string;
+            /**
+             * Apellido
+             * @default
+             */
+            apellido: string;
+            /**
+             * Empresa nombre
+             * @default
+             */
+            empresa_nombre: string;
+            /**
+             * Email
+             * Format: email
+             * @default
+             */
+            email: string;
+            /**
+             * Telefono
+             * @default
+             */
+            telefono: string;
+            /**
+             * Mensaje
+             * @default
+             */
+            mensaje: string;
+            /**
+             * Fuente
+             * @default
+             * @enum {string}
+             */
+            fuente: "NFC" | "QR" | "ENLACE";
+            /**
+             * Origen
+             * @default
+             * @enum {string}
+             */
+            origen: "NFC" | "QR" | "ENLACE";
+            /**
+             * Uid
+             * @default
+             */
+            uid: string;
+            /**
+             * Uid chip
+             * @default
+             */
+            uid_chip: string;
+            /** Consentimiento aceptado */
+            consentimiento_aceptado: boolean;
+            /** Consentimiento texto */
+            consentimiento_texto: string;
+            /**
+             * Website
+             * @default
+             */
+            website: string;
+            /**
+             * Company url
+             * @default
+             */
+            company_url: string;
+        };
+        PublicLeadCreateResponse: {
+            /** Ok */
+            readonly ok?: boolean;
+            /** Mensaje */
+            readonly mensaje?: string;
+        };
         BeneficioEmpleado: {
             /**
              * Id beneficio empleado
@@ -16346,6 +27207,558 @@ export interface components {
              */
             id_categoria_ticket: string;
         };
+        RegistroAlertaTarea: {
+            /**
+             * Id alerta tarea
+             * Format: uuid
+             */
+            readonly id_alerta_tarea?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /**
+             * Tarea
+             * Format: uuid
+             */
+            readonly tarea?: string;
+            /** Tarea titulo */
+            readonly tarea_titulo?: string;
+            /** Clave alerta */
+            readonly clave_alerta?: string;
+            /**
+             * Destinatario
+             * Format: uuid
+             */
+            readonly destinatario?: string | null;
+            /** Canal */
+            readonly canal?: string;
+            /** Detalle */
+            readonly detalle?: string;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+        };
+        AreaOperativa: {
+            /**
+             * Id area
+             * Format: uuid
+             */
+            readonly id_area?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /** Nombre */
+            nombre: string;
+            /**
+             * Slug
+             * Format: slug
+             */
+            readonly slug?: string;
+            /** Color */
+            color?: string;
+            /**
+             * Departamento
+             * Format: uuid
+             */
+            departamento?: string | null;
+            /**
+             * Lider
+             * Format: uuid
+             */
+            lider?: string | null;
+            /** Lider nombre */
+            readonly lider_nombre?: string;
+            /** @default [] */
+            palabras_clave: string[];
+            readonly miembros?: Record<string, never>[];
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             * @default true
+             */
+            readonly activo: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        Tarea: {
+            /**
+             * Id tarea
+             * Format: uuid
+             */
+            readonly id_tarea?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /** Titulo */
+            titulo: string;
+            /** Descripcion */
+            descripcion?: string;
+            /**
+             * Estado
+             * @enum {string}
+             */
+            estado?: "PENDIENTE" | "EN_EJECUCION" | "EN_REVISION" | "COMPLETADA" | "BLOQUEADA" | "CANCELADA";
+            /**
+             * Prioridad
+             * @enum {string}
+             */
+            prioridad?: "BAJA" | "MEDIA" | "ALTA" | "URGENTE";
+            /**
+             * Origen
+             * @enum {string}
+             */
+            origen?: "WEB" | "BOT" | "MINUTA_IA" | "RECURRENCIA" | "AGENTE" | "ERP_EVENTO";
+            /**
+             * Proyecto
+             * Format: uuid
+             */
+            proyecto?: string | null;
+            /**
+             * Proyecto nombre
+             * @default
+             */
+            readonly proyecto_nombre: string;
+            /**
+             * Seccion
+             * Format: uuid
+             */
+            seccion?: string | null;
+            /**
+             * Seccion nombre
+             * @default
+             */
+            readonly seccion_nombre: string;
+            /**
+             * Area
+             * Format: uuid
+             */
+            area?: string | null;
+            /**
+             * Area nombre
+             * @default
+             */
+            readonly area_nombre: string;
+            /**
+             * Tarea padre
+             * Format: uuid
+             */
+            tarea_padre?: string | null;
+            /**
+             * Asignado a
+             * Format: uuid
+             */
+            asignado_a?: string | null;
+            /** Asignado nombre */
+            readonly asignado_nombre?: string;
+            /**
+             * Creado por
+             * Format: uuid
+             */
+            readonly creado_por?: string | null;
+            /**
+             * Fecha inicio
+             * Format: date
+             */
+            fecha_inicio?: string | null;
+            /**
+             * Fecha vencimiento
+             * Format: date
+             */
+            fecha_vencimiento?: string | null;
+            /** Hora vencimiento */
+            hora_vencimiento?: string | null;
+            /**
+             * Completada en
+             * Format: date-time
+             */
+            readonly completada_en?: string | null;
+            /** Bloqueada por escalacion */
+            readonly bloqueada_por_escalacion?: boolean;
+            /** Motivo bloqueo */
+            motivo_bloqueo?: string;
+            /**
+             * Entidad tipo
+             * @description Etiqueta 'app.Modelo' del objeto vinculado (ej. ventas.Pedido).
+             */
+            entidad_tipo?: string;
+            /**
+             * Entidad id
+             * Format: uuid
+             */
+            entidad_id?: string | null;
+            /**
+             * Plantilla recurrente
+             * Format: uuid
+             */
+            readonly plantilla_recurrente?: string | null;
+            /**
+             * Minuta origen
+             * Format: uuid
+             */
+            readonly minuta_origen?: string | null;
+            /**
+             * Idempotency key
+             * @default
+             */
+            idempotency_key: string;
+            /** Orden tablero */
+            orden_tablero?: number;
+            /**
+             * Usar tablero personal si falta
+             * @default true
+             */
+            usar_tablero_personal_si_falta: boolean;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            readonly activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        /**
+         * @default {
+         *       "titulo": "",
+         *       "task_name": "",
+         *       "descripcion": "",
+         *       "notes": "",
+         *       "prioridad": "MEDIA",
+         *       "asignado_nombre": "",
+         *       "assignee_name": "",
+         *       "area": ""
+         *     }
+         */
+        MinutaItemPropuesto: {
+            /**
+             * Titulo
+             * @default
+             */
+            titulo: string;
+            /**
+             * Task name
+             * @default
+             */
+            task_name: string;
+            /**
+             * Descripcion
+             * @default
+             */
+            descripcion: string;
+            /**
+             * Notes
+             * @default
+             */
+            notes: string;
+            /**
+             * Prioridad
+             * @default MEDIA
+             * @enum {string}
+             */
+            prioridad: "BAJA" | "MEDIA" | "ALTA" | "URGENTE";
+            /**
+             * Asignado a id
+             * Format: uuid
+             */
+            asignado_a_id?: string | null;
+            /**
+             * Asignado nombre
+             * @default
+             */
+            asignado_nombre: string;
+            /**
+             * Assignee name
+             * @default
+             */
+            assignee_name: string;
+            /**
+             * Area
+             * @default
+             */
+            area: string;
+            /**
+             * Area id
+             * Format: uuid
+             */
+            area_id?: string | null;
+            /** Fecha vencimiento */
+            fecha_vencimiento?: string | null;
+            /** Due on */
+            due_on?: string | null;
+        };
+        MinutaReunion: {
+            /**
+             * Id minuta
+             * Format: uuid
+             */
+            readonly id_minuta?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /** Titulo */
+            titulo: string;
+            /**
+             * Fecha reunion
+             * Format: date
+             */
+            fecha_reunion?: string | null;
+            /** Texto fuente */
+            texto_fuente?: string;
+            /**
+             * Documento adjunto
+             * Format: uuid
+             */
+            documento_adjunto?: string | null;
+            /** @default [] */
+            items_propuestos: components["schemas"]["MinutaItemPropuesto"][];
+            /**
+             * Borrador tareas
+             * @description Ítems estructurados propuestos antes de materializar las tareas.
+             */
+            readonly borrador_tareas?: Record<string, never>;
+            /**
+             * Estado
+             * @enum {string}
+             */
+            readonly estado?: "BORRADOR" | "CONFIRMADA" | "DESCARTADA";
+            /**
+             * Creado por
+             * Format: uuid
+             */
+            readonly creado_por?: string | null;
+            /**
+             * Confirmada en
+             * Format: date-time
+             */
+            readonly confirmada_en?: string | null;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            readonly activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        Proyecto: {
+            /**
+             * Id proyecto
+             * Format: uuid
+             */
+            readonly id_proyecto?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /** Nombre */
+            nombre: string;
+            /** Descripcion */
+            descripcion?: string;
+            /** Color */
+            color?: string;
+            /**
+             * Vista predeterminada
+             * @enum {string}
+             */
+            vista_predeterminada?: "TABLERO" | "LISTA" | "CALENDARIO";
+            /**
+             * Es personal
+             * @description True si es el tablero personal automático de un colaborador.
+             * @default false
+             */
+            readonly es_personal: boolean;
+            /** Archivado */
+            archivado?: boolean;
+            /**
+             * Area
+             * Format: uuid
+             */
+            area?: string | null;
+            /**
+             * Area nombre
+             * @default
+             */
+            readonly area_nombre: string;
+            /**
+             * Propietario
+             * Format: uuid
+             */
+            propietario?: string | null;
+            /** Propietario nombre */
+            readonly propietario_nombre?: string;
+            readonly secciones?: Record<string, never>[];
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             * @default true
+             */
+            readonly activo: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        PlantillaTareaRecurrente: {
+            /**
+             * Id plantilla recurrente
+             * Format: uuid
+             */
+            readonly id_plantilla_recurrente?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /** Titulo */
+            titulo: string;
+            /** Descripcion */
+            descripcion?: string;
+            /**
+             * Prioridad
+             * @enum {string}
+             */
+            prioridad?: "BAJA" | "MEDIA" | "ALTA" | "URGENTE";
+            /**
+             * Frecuencia
+             * @enum {string}
+             */
+            frecuencia: "INTRADIA" | "DIARIA" | "SEMANAL" | "QUINCENAL" | "MENSUAL";
+            /** @default [] */
+            dias_semana: number[];
+            /** Dia mes */
+            dia_mes?: number | null;
+            /** @default [] */
+            horas_dia: string[];
+            /**
+             * Proxima ejecucion
+             * Format: date
+             */
+            proxima_ejecucion: string;
+            /**
+             * Ultima generacion en
+             * Format: date-time
+             */
+            readonly ultima_generacion_en?: string | null;
+            /**
+             * Proyecto
+             * Format: uuid
+             */
+            proyecto?: string | null;
+            /**
+             * Area
+             * Format: uuid
+             */
+            area?: string | null;
+            /**
+             * Asignado a
+             * Format: uuid
+             */
+            asignado_a?: string | null;
+            /** Asignado nombre */
+            readonly asignado_nombre?: string;
+            /**
+             * Creado por
+             * Format: uuid
+             */
+            readonly creado_por?: string | null;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            readonly activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        SeccionProyecto: {
+            /**
+             * Id seccion
+             * Format: uuid
+             */
+            readonly id_seccion?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /**
+             * Proyecto
+             * Format: uuid
+             */
+            proyecto: string;
+            /** Nombre */
+            nombre: string;
+            /**
+             * Estado destino
+             * @enum {string}
+             */
+            estado_destino?: "PENDIENTE" | "EN_EJECUCION" | "EN_REVISION" | "COMPLETADA" | "BLOQUEADA" | "CANCELADA";
+            /** Orden */
+            orden?: number;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             * @default true
+             */
+            readonly activo: boolean;
+        };
         ConciliacionBancaria: {
             /**
              * Id
@@ -16416,6 +27829,216 @@ export interface components {
             /** Observaciones */
             observaciones?: string;
         };
+        ConfiguracionConciliacionCuenta: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            readonly id?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa: string;
+            /**
+             * Id cuenta bancaria
+             * Format: uuid
+             */
+            id_cuenta_bancaria: string;
+            /** Cuenta nombre banco */
+            readonly cuenta_nombre_banco?: string;
+            /** Cuenta numero */
+            readonly cuenta_numero?: string;
+            /**
+             * Id cuenta comisiones
+             * Format: uuid
+             */
+            id_cuenta_comisiones?: string | null;
+            /** Codigo cuenta comisiones */
+            codigo_cuenta_comisiones?: string;
+            /**
+             * Id cuenta igtf
+             * Format: uuid
+             */
+            id_cuenta_igtf?: string | null;
+            /** Codigo cuenta igtf */
+            codigo_cuenta_igtf?: string;
+            /**
+             * Id cuenta transito pendientes
+             * Format: uuid
+             */
+            id_cuenta_transito_pendientes?: string | null;
+            /** Codigo cuenta transito pendientes */
+            codigo_cuenta_transito_pendientes?: string;
+            /**
+             * Id conector odoo
+             * Format: uuid
+             */
+            id_conector_odoo?: string | null;
+            /** Odoo journal id */
+            odoo_journal_id?: number | null;
+            /** Ventana dias */
+            ventana_dias?: number;
+            /** Incluir pagos nativos */
+            incluir_pagos_nativos?: boolean;
+            /** Incluir pagos odoo */
+            incluir_pagos_odoo?: boolean;
+            /**
+             * Activo
+             * @default true
+             */
+            readonly activo: boolean;
+            /**
+             * Fecha creacion
+             * Format: date-time
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha actualizacion
+             * Format: date-time
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        ExtractoBancarioArchivo: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            readonly id?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /**
+             * Id cuenta bancaria
+             * Format: uuid
+             */
+            readonly id_cuenta_bancaria?: string;
+            /** Cuenta nombre banco */
+            readonly cuenta_nombre_banco?: string;
+            /** Cuenta numero */
+            readonly cuenta_numero?: string;
+            /** Formato banco */
+            readonly formato_banco?: string;
+            /** Nombre archivo */
+            readonly nombre_archivo?: string;
+            /** Sha256 */
+            readonly sha256?: string;
+            /** Tamano bytes */
+            readonly tamano_bytes?: number;
+            /** Moneda */
+            readonly moneda?: string;
+            /**
+             * Fecha desde
+             * Format: date
+             */
+            readonly fecha_desde?: string | null;
+            /**
+             * Fecha hasta
+             * Format: date
+             */
+            readonly fecha_hasta?: string | null;
+            /**
+             * Saldo inicial
+             * Format: decimal
+             */
+            readonly saldo_inicial?: string | null;
+            /**
+             * Saldo final
+             * Format: decimal
+             */
+            readonly saldo_final?: string | null;
+            /**
+             * Total debitos
+             * Format: decimal
+             */
+            readonly total_debitos?: string;
+            /**
+             * Total creditos
+             * Format: decimal
+             */
+            readonly total_creditos?: string;
+            /** Total lineas */
+            readonly total_lineas?: number;
+            /** Lineas nuevas */
+            readonly lineas_nuevas?: number;
+            /** Lineas duplicadas */
+            readonly lineas_duplicadas?: number;
+            /** Cuadra */
+            readonly cuadra?: boolean;
+            /** Observaciones */
+            readonly observaciones?: string;
+            /**
+             * Subido por
+             * Format: uuid
+             */
+            readonly subido_por?: string | null;
+            /**
+             * Activo
+             * @default true
+             */
+            readonly activo: boolean;
+            /**
+             * Fecha creacion
+             * Format: date-time
+             */
+            readonly fecha_creacion?: string;
+        };
+        ImportarExtractoResponse: {
+            archivo?: components["schemas"]["ExtractoBancarioArchivo"];
+            /** Ya existia archivo */
+            readonly ya_existia_archivo?: boolean;
+            /** Lineas nuevas */
+            readonly lineas_nuevas?: number;
+            /** Lineas duplicadas */
+            readonly lineas_duplicadas?: number;
+            /** Cuadra */
+            readonly cuadra?: boolean;
+            readonly saltos?: string[];
+            readonly avisos?: string[];
+        };
+        SaldoCuentaExtracto: {
+            /**
+             * Cuenta id
+             * Format: uuid
+             */
+            readonly cuenta_id?: string;
+            /** Nombre banco */
+            readonly nombre_banco?: string;
+            /** Numero cuenta */
+            readonly numero_cuenta?: string;
+            /** Moneda */
+            readonly moneda?: string;
+            /**
+             * Fecha corte
+             * Format: date
+             */
+            readonly fecha_corte?: string | null;
+            /** Saldo */
+            readonly saldo?: string | null;
+            /** Tasa usd ves */
+            readonly tasa_usd_ves?: string | null;
+            /** Saldo usd */
+            readonly saldo_usd?: string | null;
+            /** Saldo ves */
+            readonly saldo_ves?: string | null;
+            /** N cortes */
+            readonly n_cortes?: number;
+            /** Cortes sin cuadrar */
+            readonly cortes_sin_cuadrar?: number;
+            readonly alertas?: string[];
+        };
+        SaldosConsolidadosResponse: {
+            /** Total usd */
+            readonly total_usd?: string;
+            /** Total ves */
+            readonly total_ves?: string;
+            readonly fechas_de_corte?: string[];
+            readonly cuentas_sin_tasa?: string[];
+            readonly cuentas?: components["schemas"]["SaldoCuentaExtracto"][];
+            readonly formatos_soportados?: string[];
+        };
         MovimientoBancario: {
             /**
              * Id
@@ -16432,6 +28055,11 @@ export interface components {
              * Format: uuid
              */
             id_cuenta_bancaria: string;
+            /**
+             * Id archivo extracto
+             * Format: uuid
+             */
+            readonly id_archivo_extracto?: string | null;
             /**
              * Fecha mov
              * Format: date
@@ -16462,10 +28090,40 @@ export interface components {
              */
             readonly id_pago_conciliado?: string | null;
             /**
+             * Pago contacto id
+             * Format: uuid
+             */
+            readonly pago_contacto_id?: string | null;
+            /**
+             * Huella
+             * @default
+             */
+            readonly huella: string;
+            /**
+             * Saldo posterior
+             * Format: decimal
+             */
+            readonly saldo_posterior?: string | null;
+            /** Orden en archivo */
+            readonly orden_en_archivo?: number | null;
+            /** Codigo operacion */
+            readonly codigo_operacion?: string;
+            /** Correlativo */
+            readonly correlativo?: string;
+            /** Categoria clasificacion */
+            readonly categoria_clasificacion?: string;
+            /** Regla clasificacion */
+            readonly regla_clasificacion?: string;
+            /**
+             * Activo
+             * @default true
+             */
+            readonly activo: boolean;
+            /**
              * Origen
              * @enum {string}
              */
-            origen?: "CSV" | "MANUAL" | "API";
+            origen?: "EXTRACTO" | "CSV" | "MANUAL" | "API";
             /**
              * Fecha creacion
              * Format: date-time
@@ -16629,6 +28287,329 @@ export interface components {
              */
             casa_de_cambio?: string | null;
         };
+        PropuestaConciliacionBancaria: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            readonly id?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /**
+             * Id movimiento bancario
+             * Format: uuid
+             */
+            readonly id_movimiento_bancario?: string;
+            /**
+             * Cuenta bancaria id
+             * Format: uuid
+             */
+            readonly cuenta_bancaria_id?: string;
+            /** Cuenta nombre banco */
+            readonly cuenta_nombre_banco?: string;
+            /** Cuenta numero */
+            readonly cuenta_numero?: string;
+            /** Moneda */
+            readonly moneda?: string;
+            /**
+             * Movimiento fecha
+             * Format: date
+             */
+            readonly movimiento_fecha?: string;
+            /** Movimiento tipo */
+            readonly movimiento_tipo?: string;
+            /**
+             * Movimiento monto
+             * Format: decimal
+             */
+            readonly movimiento_monto?: string;
+            /** Movimiento referencia */
+            readonly movimiento_referencia?: string;
+            /** Movimiento descripcion */
+            readonly movimiento_descripcion?: string;
+            /** Movimiento categoria */
+            readonly movimiento_categoria?: string;
+            /** Movimiento huella */
+            readonly movimiento_huella?: string;
+            /**
+             * Tipo
+             * @enum {string}
+             */
+            readonly tipo?: "PAGO" | "CUENTA" | "AMBIGUO" | "SIN_PROPUESTA";
+            /** Regla */
+            readonly regla?: string;
+            /** Motivo */
+            readonly motivo?: string;
+            /**
+             * Fuente pago
+             * @default
+             * @enum {string}
+             */
+            readonly fuente_pago: "" | "OMNI" | "ODOO";
+            /**
+             * Id pago nativo
+             * Format: uuid
+             */
+            readonly id_pago_nativo?: string | null;
+            /**
+             * Pago externo id
+             * @default
+             */
+            readonly pago_externo_id: string;
+            /** Pago nombre */
+            readonly pago_nombre?: string;
+            /** Pago socio */
+            readonly pago_socio?: string;
+            /**
+             * Id cuenta contable
+             * Format: uuid
+             */
+            readonly id_cuenta_contable?: string | null;
+            /** Cuenta contable codigo */
+            readonly cuenta_contable_codigo?: string;
+            /** Puntaje */
+            readonly puntaje?: number;
+            /** Candidatos json */
+            readonly candidatos_json?: Record<string, never>;
+            /**
+             * Estado
+             * @default PENDIENTE
+             * @enum {string}
+             */
+            readonly estado: "PENDIENTE" | "APROBADA" | "RECHAZADA" | "CORREGIDA";
+            /** Ultimo comentario */
+            readonly ultimo_comentario?: string;
+            /**
+             * Decidida por
+             * Format: uuid
+             */
+            readonly decidida_por?: string | null;
+            /**
+             * Decidida por username
+             * @default
+             */
+            readonly decidida_por_username: string;
+            /**
+             * Decidida en
+             * Format: date-time
+             */
+            readonly decidida_en?: string | null;
+            /**
+             * Generada en
+             * Format: date-time
+             */
+            readonly generada_en?: string;
+            /**
+             * Actualizada en
+             * Format: date-time
+             */
+            readonly actualizada_en?: string;
+            /**
+             * Activo
+             * @default true
+             */
+            readonly activo: boolean;
+        };
+        DecisionPreconciliacionBancaria: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            readonly id?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /**
+             * Id propuesta
+             * Format: uuid
+             */
+            readonly id_propuesta?: string;
+            /**
+             * Id movimiento bancario
+             * Format: uuid
+             */
+            readonly id_movimiento_bancario?: string;
+            /** Movimiento referencia */
+            readonly movimiento_referencia?: string;
+            /** Movimiento descripcion */
+            readonly movimiento_descripcion?: string;
+            /**
+             * Accion
+             * @enum {string}
+             */
+            readonly accion?: "APROBAR" | "RECHAZAR" | "CORREGIR" | "REABRIR";
+            /** Estado anterior json */
+            readonly estado_anterior_json?: Record<string, never>;
+            /** Estado nuevo json */
+            readonly estado_nuevo_json?: Record<string, never>;
+            /** Comentario */
+            readonly comentario?: string;
+            /**
+             * Id usuario
+             * Format: uuid
+             */
+            readonly id_usuario?: string | null;
+            /** Usuario nombre */
+            readonly usuario_nombre?: string;
+            /**
+             * Fecha decision
+             * Format: date-time
+             */
+            readonly fecha_decision?: string;
+            /** Activo */
+            readonly activo?: boolean;
+        };
+        GenerarPropuestasRequest: {
+            /**
+             * Empresa
+             * Format: uuid
+             */
+            empresa?: string;
+            /**
+             * Cuenta bancaria
+             * Format: uuid
+             */
+            cuenta_bancaria: string;
+            /**
+             * Desde
+             * Format: date
+             */
+            desde?: string | null;
+            /**
+             * Hasta
+             * Format: date
+             */
+            hasta?: string | null;
+            /** Incluir odoo */
+            incluir_odoo?: boolean | null;
+        };
+        GenerarPropuestasResponse: {
+            /** Nuevas */
+            readonly nuevas?: number;
+            /** Actualizadas */
+            readonly actualizadas?: number;
+            /** Ya decididas */
+            readonly ya_decididas?: number;
+            /** Total evaluados */
+            readonly total_evaluados?: number;
+        };
+        DecidirPropuestaRequest: {
+            /**
+             * Accion
+             * @enum {string}
+             */
+            accion: "APROBAR" | "RECHAZAR" | "CORREGIR" | "REABRIR" | "aprobar" | "rechazar" | "corregir" | "reabrir";
+            /**
+             * Pago nativo id
+             * Format: uuid
+             */
+            pago_nativo_id?: string | null;
+            /**
+             * Pago externo id
+             * @default
+             */
+            pago_externo_id: string | null;
+            /**
+             * Pago nombre
+             * @default
+             */
+            pago_nombre: string | null;
+            /**
+             * Cuenta contable id
+             * Format: uuid
+             */
+            cuenta_contable_id?: string | null;
+            /**
+             * Cuenta contable codigo
+             * @default
+             */
+            cuenta_contable_codigo: string | null;
+            /**
+             * Comentario
+             * @default
+             */
+            comentario: string | null;
+        };
+        ComisionVenta: {
+            /**
+             * Id comision venta
+             * Format: uuid
+             */
+            readonly id_comision_venta?: string;
+            /**
+             * Vendedor
+             * Format: uuid
+             */
+            readonly vendedor?: string;
+            /** Vendedor username */
+            readonly vendedor_username?: string;
+            /**
+             * Nota venta
+             * Format: uuid
+             */
+            readonly nota_venta?: string;
+            /** Numero nota */
+            readonly numero_nota?: string;
+            /**
+             * Esquema
+             * Format: uuid
+             */
+            readonly esquema?: string;
+            /**
+             * Id moneda
+             * Format: uuid
+             * @description Moneda base de la empresa al momento del devengo.
+             */
+            readonly id_moneda?: string | null;
+            /**
+             * Liquidada por
+             * Format: uuid
+             */
+            readonly liquidada_por?: string | null;
+            /**
+             * Base comisionable
+             * Format: decimal
+             * @description Subtotal sin impuestos de la nota.
+             */
+            readonly base_comisionable?: string;
+            /**
+             * Monto
+             * Format: decimal
+             */
+            readonly monto?: string;
+            /**
+             * Estado
+             * @enum {string}
+             */
+            readonly estado?: "DEVENGADA" | "LIQUIDADA" | "ANULADA";
+            /**
+             * Fecha devengo
+             * Format: date
+             */
+            readonly fecha_devengo?: string;
+            /**
+             * Fecha liquidacion
+             * Format: date
+             */
+            readonly fecha_liquidacion?: string | null;
+            /** Detalle json */
+            readonly detalle_json?: Record<string, never> | null;
+            /**
+             * Fecha creacion
+             * Format: date-time
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+        };
         Cotizacion: {
             /**
              * Id cotizacion
@@ -16703,6 +28684,21 @@ export interface components {
              */
             readonly id_detalle_cotizacion?: string;
             /**
+             * Id cotizacion
+             * Format: uuid
+             */
+            id_cotizacion: string;
+            /**
+             * Id producto
+             * Format: uuid
+             */
+            id_producto: string;
+            /**
+             * Id variante
+             * Format: uuid
+             */
+            id_variante?: string | null;
+            /**
              * Cantidad
              * Format: decimal
              */
@@ -16729,11 +28725,18 @@ export interface components {
             subtotal: string;
             /** Observaciones */
             observaciones?: string | null;
+        };
+        DetalleDevolucionVenta: {
             /**
-             * Id cotizacion
+             * Id detalle devolucion
              * Format: uuid
              */
-            id_cotizacion: string;
+            readonly id_detalle_devolucion?: string;
+            /**
+             * Id devolucion
+             * Format: uuid
+             */
+            id_devolucion: string;
             /**
              * Id producto
              * Format: uuid
@@ -16744,13 +28747,6 @@ export interface components {
              * Format: uuid
              */
             id_variante?: string | null;
-        };
-        DetalleDevolucionVenta: {
-            /**
-             * Id detalle devolucion
-             * Format: uuid
-             */
-            readonly id_detalle_devolucion?: string;
             /**
              * Cantidad devuelta
              * Format: decimal
@@ -16778,21 +28774,6 @@ export interface components {
             accion_inventario: "REINTEGRAR" | "CUARENTENA" | "DESCARTAR" | "REPARAR";
             /** Observaciones */
             observaciones?: string | null;
-            /**
-             * Id devolucion
-             * Format: uuid
-             */
-            id_devolucion: string;
-            /**
-             * Id producto
-             * Format: uuid
-             */
-            id_producto: string;
-            /**
-             * Id variante
-             * Format: uuid
-             */
-            id_variante?: string | null;
         };
         DetalleFacturaFiscal: {
             /**
@@ -16800,43 +28781,6 @@ export interface components {
              * Format: uuid
              */
             readonly id_detalle_factura?: string;
-            /**
-             * Cantidad
-             * Format: decimal
-             */
-            cantidad: string;
-            /**
-             * Precio unitario
-             * Format: decimal
-             */
-            precio_unitario: string;
-            /**
-             * Descuento porcentaje
-             * Format: decimal
-             */
-            descuento_porcentaje?: string;
-            /**
-             * Descuento monto
-             * Format: decimal
-             */
-            descuento_monto?: string;
-            /**
-             * Subtotal
-             * Format: decimal
-             */
-            subtotal: string;
-            /**
-             * Monto impuesto
-             * Format: decimal
-             */
-            monto_impuesto?: string;
-            /**
-             * Total linea
-             * Format: decimal
-             */
-            total_linea: string;
-            /** Observaciones */
-            observaciones?: string | null;
             /**
              * Id factura
              * Format: uuid
@@ -16852,13 +28796,6 @@ export interface components {
              * Format: uuid
              */
             id_variante?: string | null;
-        };
-        DetalleNotaCreditoFiscal: {
-            /**
-             * Id detalle nota credito
-             * Format: uuid
-             */
-            readonly id_detalle_nota_credito?: string;
             /**
              * Cantidad
              * Format: decimal
@@ -16896,6 +28833,13 @@ export interface components {
             total_linea: string;
             /** Observaciones */
             observaciones?: string | null;
+        };
+        DetalleNotaCreditoFiscal: {
+            /**
+             * Id detalle nota credito
+             * Format: uuid
+             */
+            readonly id_detalle_nota_credito?: string;
             /**
              * Id nota credito fiscal
              * Format: uuid
@@ -16911,6 +28855,43 @@ export interface components {
              * Format: uuid
              */
             id_variante?: string | null;
+            /**
+             * Cantidad
+             * Format: decimal
+             */
+            cantidad: string;
+            /**
+             * Precio unitario
+             * Format: decimal
+             */
+            precio_unitario: string;
+            /**
+             * Descuento porcentaje
+             * Format: decimal
+             */
+            descuento_porcentaje?: string;
+            /**
+             * Descuento monto
+             * Format: decimal
+             */
+            descuento_monto?: string;
+            /**
+             * Subtotal
+             * Format: decimal
+             */
+            subtotal: string;
+            /**
+             * Monto impuesto
+             * Format: decimal
+             */
+            monto_impuesto?: string;
+            /**
+             * Total linea
+             * Format: decimal
+             */
+            total_linea: string;
+            /** Observaciones */
+            observaciones?: string | null;
         };
         DetalleNotaCreditoVenta: {
             /**
@@ -16918,6 +28899,21 @@ export interface components {
              * Format: uuid
              */
             readonly id_detalle_nota_credito?: string;
+            /**
+             * Id nota credito
+             * Format: uuid
+             */
+            id_nota_credito: string;
+            /**
+             * Id producto
+             * Format: uuid
+             */
+            id_producto: string;
+            /**
+             * Id variante
+             * Format: uuid
+             */
+            id_variante?: string | null;
             /**
              * Cantidad
              * Format: decimal
@@ -16945,21 +28941,6 @@ export interface components {
             total_linea: string;
             /** Observaciones */
             observaciones?: string | null;
-            /**
-             * Id nota credito
-             * Format: uuid
-             */
-            id_nota_credito: string;
-            /**
-             * Id producto
-             * Format: uuid
-             */
-            id_producto: string;
-            /**
-             * Id variante
-             * Format: uuid
-             */
-            id_variante?: string | null;
         };
         DetalleNotaVenta: {
             /**
@@ -16967,6 +28948,16 @@ export interface components {
              * Format: uuid
              */
             readonly id_detalle_nota_venta?: string;
+            /**
+             * Id nota venta
+             * Format: uuid
+             */
+            id_nota_venta: string;
+            /**
+             * Id producto
+             * Format: uuid
+             */
+            id_producto: string;
             /**
              * Cantidad
              * Format: decimal
@@ -16984,16 +28975,6 @@ export interface components {
             subtotal: string;
             /** Observaciones */
             observaciones?: string | null;
-            /**
-             * Id nota venta
-             * Format: uuid
-             */
-            id_nota_venta: string;
-            /**
-             * Id producto
-             * Format: uuid
-             */
-            id_producto: string;
         };
         DetallePedido: {
             /**
@@ -17036,6 +29017,16 @@ export interface components {
              */
             readonly id_detalle?: string;
             /**
+             * Id lista
+             * Format: uuid
+             */
+            id_lista: string;
+            /**
+             * Id producto
+             * Format: uuid
+             */
+            id_producto: string;
+            /**
              * Precio
              * Format: decimal
              */
@@ -17057,16 +29048,6 @@ export interface components {
             vigente_hasta?: string | null;
             /** Activo */
             activo?: boolean;
-            /**
-             * Id lista
-             * Format: uuid
-             */
-            id_lista: string;
-            /**
-             * Id producto
-             * Format: uuid
-             */
-            id_producto: string;
         };
         DevolucionVenta: {
             /**
@@ -17079,6 +29060,26 @@ export interface components {
              * Format: uuid
              */
             id_cliente: string;
+            /**
+             * Id factura origen
+             * Format: uuid
+             */
+            id_factura_origen?: string | null;
+            /**
+             * Id nota venta origen
+             * Format: uuid
+             */
+            id_nota_venta_origen?: string | null;
+            /**
+             * Id nota credito generada
+             * Format: uuid
+             */
+            id_nota_credito_generada?: string | null;
+            /**
+             * Id moneda
+             * Format: uuid
+             */
+            id_moneda: string;
             /** Numero devolucion */
             numero_devolucion: string;
             /**
@@ -17113,21 +29114,74 @@ export interface components {
              * Format: uuid
              */
             readonly id_empresa?: string;
+        };
+        EsquemaComisionCategoria: {
             /**
-             * Id factura origen
+             * Id esquema comision categoria
              * Format: uuid
              */
-            id_factura_origen?: string | null;
+            readonly id_esquema_comision_categoria?: string;
             /**
-             * Id nota credito generada
+             * Esquema
              * Format: uuid
              */
-            id_nota_credito_generada?: string | null;
+            esquema: string;
             /**
-             * Id moneda
+             * Categoria
              * Format: uuid
              */
-            id_moneda: string;
+            categoria: string;
+            /** Categoria nombre */
+            readonly categoria_nombre?: string;
+            /**
+             * Porcentaje
+             * Format: decimal
+             * @description Porcentaje que reemplaza al base para productos de esta categoría (0–100).
+             */
+            porcentaje: string;
+        };
+        EsquemaComision: {
+            /**
+             * Id esquema comision
+             * Format: uuid
+             */
+            readonly id_esquema_comision?: string;
+            /**
+             * Vendedor
+             * Format: uuid
+             */
+            vendedor: string;
+            /** Vendedor username */
+            readonly vendedor_username?: string;
+            readonly overrides_categoria?: components["schemas"]["EsquemaComisionCategoria"][];
+            /**
+             * Porcentaje base
+             * Format: decimal
+             * @description Porcentaje de comisión sobre el subtotal sin impuestos (0–100).
+             */
+            porcentaje_base: string;
+            /**
+             * Vigente desde
+             * Format: date
+             */
+            vigente_desde?: string | null;
+            /**
+             * Vigente hasta
+             * Format: date
+             */
+            vigente_hasta?: string | null;
+            /** Activo */
+            activo?: boolean;
+            /**
+             * Fecha creacion
+             * Format: date-time
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
         };
         FacturaFiscal: {
             /**
@@ -17223,6 +29277,11 @@ export interface components {
              * Format: uuid
              */
             readonly id_lista?: string;
+            /**
+             * Id moneda
+             * Format: uuid
+             */
+            id_moneda: string;
             /** Nombre */
             nombre: string;
             /**
@@ -17247,11 +29306,6 @@ export interface components {
              * Format: uuid
              */
             readonly id_empresa?: string;
-            /**
-             * Id moneda
-             * Format: uuid
-             */
-            id_moneda: string;
         };
         NotaCreditoFiscal: {
             /**
@@ -17352,6 +29406,16 @@ export interface components {
              * Format: uuid
              */
             id_cliente: string;
+            /**
+             * Id factura origen
+             * Format: uuid
+             */
+            id_factura_origen?: string | null;
+            /**
+             * Id moneda
+             * Format: uuid
+             */
+            id_moneda: string;
             /** Numero nota credito */
             numero_nota_credito: string;
             /**
@@ -17386,16 +29450,6 @@ export interface components {
              * Format: uuid
              */
             readonly id_empresa?: string;
-            /**
-             * Id factura origen
-             * Format: uuid
-             */
-            id_factura_origen?: string | null;
-            /**
-             * Id moneda
-             * Format: uuid
-             */
-            id_moneda: string;
         };
         NotaVenta: {
             /**
@@ -17446,6 +29500,12 @@ export interface components {
              * Format: uuid
              */
             id_factura_resultante?: string | null;
+            /**
+             * Id vendedor
+             * Format: uuid
+             * @description Vendedor de la venta; al entregar se devenga su comisión.
+             */
+            id_vendedor?: string | null;
         };
         DetallePedidoNested: {
             /**
@@ -17544,11 +29604,22 @@ export interface components {
              * Format: uuid
              */
             id_nota_venta_resultante?: string | null;
+            /**
+             * Id vendedor
+             * Format: uuid
+             * @description Vendedor que tomó el pedido (base del cálculo de comisiones).
+             */
+            id_vendedor?: string | null;
         };
     };
     responses: never;
     parameters: never;
     requestBodies: {
+        ConectorProveedor: {
+            content: {
+                "application/json": components["schemas"]["ConectorProveedor"];
+            };
+        };
         CajaMetodoPagoOverride: {
             content: {
                 "application/json": components["schemas"]["CajaMetodoPagoOverride"];
@@ -17569,9 +29640,24 @@ export interface components {
                 "application/json": components["schemas"]["TipoLicencia"];
             };
         };
+        PeriodoContable: {
+            content: {
+                "application/json": components["schemas"]["PeriodoContable"];
+            };
+        };
         Pedido: {
             content: {
                 "application/json": components["schemas"]["Pedido"];
+            };
+        };
+        PagoTercero: {
+            content: {
+                "application/json": components["schemas"]["PagoTercero"];
+            };
+        };
+        EventoActivacion: {
+            content: {
+                "application/json": components["schemas"]["EventoActivacion"];
             };
         };
         OrdenProduccion: {
@@ -17599,24 +29685,19 @@ export interface components {
                 "application/json": components["schemas"]["Permisos"];
             };
         };
-        DetalleDespacho: {
-            content: {
-                "application/json": components["schemas"]["DetalleDespacho"];
-            };
-        };
         DetalleFacturaCompra: {
             content: {
                 "application/json": components["schemas"]["DetalleFacturaCompra"];
             };
         };
+        EtapaProduccion: {
+            content: {
+                "application/json": components["schemas"]["EtapaProduccion"];
+            };
+        };
         HorarioTrabajo: {
             content: {
                 "application/json": components["schemas"]["HorarioTrabajo"];
-            };
-        };
-        MovimientoInventario: {
-            content: {
-                "application/json": components["schemas"]["MovimientoInventario"];
             };
         };
         Plan: {
@@ -17629,14 +29710,29 @@ export interface components {
                 "application/json": components["schemas"]["Empresa"];
             };
         };
+        ReglaReabastecimiento: {
+            content: {
+                "application/json": components["schemas"]["ReglaReabastecimiento"];
+            };
+        };
         VentaFraccionada: {
             content: {
                 "application/json": components["schemas"]["VentaFraccionada"];
             };
         };
+        PasoOperacion: {
+            content: {
+                "application/json": components["schemas"]["PasoOperacion"];
+            };
+        };
         Cargo: {
             content: {
                 "application/json": components["schemas"]["Cargo"];
+            };
+        };
+        ConfiguracionConciliacionCuenta: {
+            content: {
+                "application/json": components["schemas"]["ConfiguracionConciliacionCuenta"];
             };
         };
         DetalleNomina: {
@@ -17659,6 +29755,11 @@ export interface components {
                 "application/json": components["schemas"]["Almacen"];
             };
         };
+        DetalleGasto: {
+            content: {
+                "application/json": components["schemas"]["DetalleGasto"];
+            };
+        };
         CajaVirtualAuto: {
             content: {
                 "application/json": components["schemas"]["CajaVirtualAuto"];
@@ -17667,6 +29768,11 @@ export interface components {
         TicketSoporte: {
             content: {
                 "application/json": components["schemas"]["TicketSoporte"];
+            };
+        };
+        LineaPedidoLubrikca: {
+            content: {
+                "application/json": components["schemas"]["LineaPedidoLubrikca"];
             };
         };
         ProduccionTerminada: {
@@ -17684,14 +29790,39 @@ export interface components {
                 "application/json": components["schemas"]["DetalleSolicitudCotizacion"];
             };
         };
+        PrecioListaLubrikca: {
+            content: {
+                "application/json": components["schemas"]["PrecioListaLubrikca"];
+            };
+        };
         ConfiguracionFlujoDocumentos: {
             content: {
                 "application/json": components["schemas"]["ConfiguracionFlujoDocumentos"];
             };
         };
+        PedidoLubrikca: {
+            content: {
+                "application/json": components["schemas"]["PedidoLubrikca"];
+            };
+        };
+        EsquemaComision: {
+            content: {
+                "application/json": components["schemas"]["EsquemaComision"];
+            };
+        };
+        Perfil: {
+            content: {
+                "application/json": components["schemas"]["Perfil"];
+            };
+        };
         ListaMaterialesDetalle: {
             content: {
                 "application/json": components["schemas"]["ListaMaterialesDetalle"];
+            };
+        };
+        TipoTasaCambio: {
+            content: {
+                "application/json": components["schemas"]["TipoTasaCambio"];
             };
         };
         RutaProduccionDetalle: {
@@ -17714,14 +29845,19 @@ export interface components {
                 "application/json": components["schemas"]["DetalleCotizacion"];
             };
         };
-        AbonoCxP: {
-            content: {
-                "application/json": components["schemas"]["AbonoCxP"];
-            };
-        };
         MovimientoCajaBanco: {
             content: {
                 "application/json": components["schemas"]["MovimientoCajaBanco"];
+            };
+        };
+        ConfiguracionManufactura: {
+            content: {
+                "application/json": components["schemas"]["ConfiguracionManufactura"];
+            };
+        };
+        Proyecto: {
+            content: {
+                "application/json": components["schemas"]["Proyecto"];
             };
         };
         CajaTesoreria: {
@@ -17732,6 +29868,11 @@ export interface components {
         DevolucionVenta: {
             content: {
                 "application/json": components["schemas"]["DevolucionVenta"];
+            };
+        };
+        AreaOperativa: {
+            content: {
+                "application/json": components["schemas"]["AreaOperativa"];
             };
         };
         "gestion-documental_documentos_create": {
@@ -17773,6 +29914,11 @@ export interface components {
                 "application/json": components["schemas"]["DetalleDevolucionVenta"];
             };
         };
+        Tarea: {
+            content: {
+                "application/json": components["schemas"]["Tarea"];
+            };
+        };
         DetallePedido: {
             content: {
                 "application/json": components["schemas"]["DetallePedido"];
@@ -17781,6 +29927,11 @@ export interface components {
         Moneda: {
             content: {
                 "application/json": components["schemas"]["Moneda"];
+            };
+        };
+        PagoContribucionParafiscal: {
+            content: {
+                "application/json": components["schemas"]["PagoContribucionParafiscal"];
             };
         };
         Cotizacion: {
@@ -17833,6 +29984,11 @@ export interface components {
                 "application/json": components["schemas"]["Producto"];
             };
         };
+        DiarioContable: {
+            content: {
+                "application/json": components["schemas"]["DiarioContable"];
+            };
+        };
         ProcesoMigracion: {
             content: {
                 "application/json": components["schemas"]["ProcesoMigracion"];
@@ -17853,9 +30009,24 @@ export interface components {
                 "application/json": components["schemas"]["RegistroAprobacion"];
             };
         };
+        SeccionProyecto: {
+            content: {
+                "application/json": components["schemas"]["SeccionProyecto"];
+            };
+        };
+        Ingesta: {
+            content: {
+                "application/json": components["schemas"]["Ingesta"];
+            };
+        };
         ListaPrecio: {
             content: {
                 "application/json": components["schemas"]["ListaPrecio"];
+            };
+        };
+        Pipeline: {
+            content: {
+                "application/json": components["schemas"]["Pipeline"];
             };
         };
         SesionDatafono: {
@@ -17876,11 +30047,6 @@ export interface components {
         ProcesoNomina: {
             content: {
                 "application/json": components["schemas"]["ProcesoNomina"];
-            };
-        };
-        AbonoCxC: {
-            content: {
-                "application/json": components["schemas"]["AbonoCxC"];
             };
         };
         CajaVirtualUsuario: {
@@ -17943,6 +30109,11 @@ export interface components {
                 "application/json": components["schemas"]["DetallePrecio"];
             };
         };
+        Etapa: {
+            content: {
+                "application/json": components["schemas"]["Etapa"];
+            };
+        };
         DetalleErrorMigracion: {
             content: {
                 "application/json": components["schemas"]["DetalleErrorMigracion"];
@@ -17988,6 +30159,16 @@ export interface components {
                 "application/json": components["schemas"]["CategoriaTicket"];
             };
         };
+        ConfiguracionConciliacion: {
+            content: {
+                "application/json": components["schemas"]["ConfiguracionConciliacion"];
+            };
+        };
+        BandejaFacturacion: {
+            content: {
+                "application/json": components["schemas"]["BandejaFacturacion"];
+            };
+        };
         AsientoContable: {
             content: {
                 "application/json": components["schemas"]["AsientoContable"];
@@ -17998,9 +30179,19 @@ export interface components {
                 "application/json": components["schemas"]["CajaFisica"];
             };
         };
-        CuentaBancariaEmpresaBanca: {
+        CalendarioActivacion: {
             content: {
-                "application/json": components["schemas"]["CuentaBancariaEmpresaBanca"];
+                "application/json": components["schemas"]["CalendarioActivacion"];
+            };
+        };
+        RecursoActivacion: {
+            content: {
+                "application/json": components["schemas"]["RecursoActivacion"];
+            };
+        };
+        BotUsuario: {
+            content: {
+                "application/json": components["schemas"]["BotUsuario"];
             };
         };
         AcuerdoPago: {
@@ -18043,9 +30234,19 @@ export interface components {
                 "application/json": components["schemas"]["TipoDocumento"];
             };
         };
+        Tarjeta: {
+            content: {
+                "application/json": components["schemas"]["Tarjeta"];
+            };
+        };
         DetalleAsiento: {
             content: {
                 "application/json": components["schemas"]["DetalleAsiento"];
+            };
+        };
+        MapeoContable: {
+            content: {
+                "application/json": components["schemas"]["MapeoContable"];
             };
         };
         PlanCuentas: {
@@ -18098,9 +30299,64 @@ export interface components {
                 "application/json": components["schemas"]["CostoProduccion"];
             };
         };
+        Actividad: {
+            content: {
+                "application/json": components["schemas"]["Actividad"];
+            };
+        };
+        Lead: {
+            content: {
+                "application/json": components["schemas"]["Lead"];
+            };
+        };
         CuentaPorPagar: {
             content: {
                 "application/json": components["schemas"]["CuentaPorPagar"];
+            };
+        };
+        ConciliacionLubrikca: {
+            content: {
+                "application/json": components["schemas"]["ConciliacionLubrikca"];
+            };
+        };
+        DescuentoBCVCompleto: {
+            content: {
+                "application/json": components["schemas"]["DescuentoBCVCompleto"];
+            };
+        };
+        DescuentoMarcaCategoria: {
+            content: {
+                "application/json": components["schemas"]["DescuentoMarcaCategoria"];
+            };
+        };
+        Feriado: {
+            content: {
+                "application/json": components["schemas"]["Feriado"];
+            };
+        };
+        CxcLubrikcaMetodoPago: {
+            content: {
+                "application/json": components["schemas"]["CxcLubrikcaMetodoPago"];
+            };
+        };
+        PagoLubrikca: {
+            content: {
+                "application/json": components["schemas"]["PagoLubrikca"];
+            };
+        };
+        PromocionPrimeraCompra: {
+            content: {
+                "application/json": components["schemas"]["PromocionPrimeraCompra"];
+            };
+        };
+        ReglaRecurrencia: {
+            content: {
+                "application/json": components["schemas"]["ReglaRecurrencia"];
+            };
+        };
+        Vinculacion: {
+            content: {
+                "application/json": components["schemas"]["Vinculacion"];
             };
         };
         Datafono: {
@@ -18201,6 +30457,16 @@ export interface components {
         ConversionUnidadMedida: {
             content: {
                 "application/json": components["schemas"]["ConversionUnidadMedida"];
+            };
+        };
+        OperacionInventario: {
+            content: {
+                "application/json": components["schemas"]["OperacionInventario"];
+            };
+        };
+        LoteProducto: {
+            content: {
+                "application/json": components["schemas"]["LoteProducto"];
             };
         };
         StockActual: {
@@ -18313,6 +30579,16 @@ export interface components {
                 "application/json": components["schemas"]["InteraccionTicket"];
             };
         };
+        MinutaReunion: {
+            content: {
+                "application/json": components["schemas"]["MinutaReunion"];
+            };
+        };
+        PlantillaTareaRecurrente: {
+            content: {
+                "application/json": components["schemas"]["PlantillaTareaRecurrente"];
+            };
+        };
         ConciliacionBancaria: {
             content: {
                 "application/json": components["schemas"]["ConciliacionBancaria"];
@@ -18338,6 +30614,11 @@ export interface components {
                 "application/json": components["schemas"]["DetalleNotaVenta"];
             };
         };
+        EsquemaComisionCategoria: {
+            content: {
+                "application/json": components["schemas"]["EsquemaComisionCategoria"];
+            };
+        };
         FacturaFiscal: {
             content: {
                 "application/json": components["schemas"]["FacturaFiscal"];
@@ -18359,6 +30640,389 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    activaciones_calendarios_list: {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["CalendarioActivacion"][];
+                    };
+                };
+            };
+        };
+    };
+    activaciones_calendarios_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["CalendarioActivacion"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarioActivacion"];
+                };
+            };
+        };
+    };
+    activaciones_calendarios_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarioActivacion"];
+                };
+            };
+        };
+    };
+    activaciones_calendarios_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["CalendarioActivacion"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarioActivacion"];
+                };
+            };
+        };
+    };
+    activaciones_calendarios_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    activaciones_calendarios_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["CalendarioActivacion"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarioActivacion"];
+                };
+            };
+        };
+    };
+    activaciones_calendarios_disponibilidad: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarioActivacion"];
+                };
+            };
+        };
+    };
+    activaciones_eventos_list: {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["EventoActivacion"][];
+                    };
+                };
+            };
+        };
+    };
+    activaciones_eventos_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["EventoActivacion"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventoActivacion"];
+                };
+            };
+        };
+    };
+    activaciones_eventos_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventoActivacion"];
+                };
+            };
+        };
+    };
+    activaciones_eventos_cancelar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["EventoActivacion"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventoActivacion"];
+                };
+            };
+        };
+    };
+    activaciones_recursos_list: {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["RecursoActivacion"][];
+                    };
+                };
+            };
+        };
+    };
+    activaciones_recursos_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["RecursoActivacion"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecursoActivacion"];
+                };
+            };
+        };
+    };
+    activaciones_recursos_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecursoActivacion"];
+                };
+            };
+        };
+    };
+    activaciones_recursos_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["RecursoActivacion"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecursoActivacion"];
+                };
+            };
+        };
+    };
+    activaciones_recursos_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    activaciones_recursos_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["RecursoActivacion"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecursoActivacion"];
+                };
+            };
+        };
+    };
     agentes_chat_create: {
         parameters: {
             query?: never;
@@ -18373,6 +31037,162 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    "agentes_consumo-llm_list": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description UUID de empresa visible (obligatorio para superusuarios Omni sin empresa propia). */
+                empresa_id?: string;
+                /** @description Filtrar por identificador exacto del modelo LLM. */
+                modelo?: string;
+                /** @description Filtrar por tipo de uso (agente, chat, analisis). */
+                uso?: string;
+                /** @description Fecha inicial inclusive (YYYY-MM-DD). */
+                fecha_desde?: string;
+                /** @description Fecha final inclusive (YYYY-MM-DD). */
+                fecha_hasta?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["ConsumoLLM"][];
+                    };
+                };
+            };
+        };
+    };
+    "agentes_consumo-llm_resumen": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description UUID de empresa visible (obligatorio para superusuarios Omni sin empresa propia). */
+                empresa_id?: string;
+                /** @description Filtrar por identificador exacto del modelo LLM. */
+                modelo?: string;
+                /** @description Filtrar por tipo de uso (agente, chat, analisis). */
+                uso?: string;
+                /** @description Fecha inicial inclusive (YYYY-MM-DD). */
+                fecha_desde?: string;
+                /** @description Fecha final inclusive (YYYY-MM-DD). */
+                fecha_hasta?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsumoLLMResumen"];
+                };
+            };
+        };
+    };
+    "agentes_consumo-llm_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Consumo LLM. */
+                id_consumo: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsumoLLM"];
+                };
+            };
+        };
+    };
+    agentes_ejecuciones_list: {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["EjecucionAgente"][];
+                    };
+                };
+            };
+        };
+    };
+    agentes_ejecuciones_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Ejecución de Agente. */
+                id_ejecucion: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EjecucionAgente"];
+                };
             };
         };
     };
@@ -18435,14 +31255,18 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody: components["requestBodies"]["PrediccionAgente"];
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnalizarCobranzaInput"];
+            };
+        };
         responses: {
-            201: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PrediccionAgente"];
+                    "application/json": components["schemas"]["EjecucionAgente"];
                 };
             };
         };
@@ -18454,14 +31278,18 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody: components["requestBodies"]["PrediccionAgente"];
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnalizarPersonalizacionInput"];
+            };
+        };
         responses: {
-            201: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PrediccionAgente"];
+                    "application/json": components["schemas"]["EjecucionAgente"];
                 };
             };
         };
@@ -18473,15 +31301,56 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody: components["requestBodies"]["PrediccionAgente"];
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnalizarReordenInput"];
+            };
+        };
         responses: {
-            201: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PrediccionAgente"];
+                    "application/json": components["schemas"]["EjecucionAgente"];
                 };
+            };
+        };
+    };
+    agentes_predicciones_calificar_lead_connect: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CalificarLeadConnectInput"];
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EjecucionAgente"];
+                };
+            };
+            /** @description Sin empresa asignada */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Lead no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -18492,14 +31361,18 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody: components["requestBodies"]["PrediccionAgente"];
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClasificarGastoInput"];
+            };
+        };
         responses: {
-            201: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PrediccionAgente"];
+                    "application/json": components["schemas"]["EjecucionAgente"];
                 };
             };
         };
@@ -18513,6 +31386,8 @@ export interface operations {
                 ordering?: string;
                 /** @description A page number within the paginated result set. */
                 page?: number;
+                /** @description UUID de empresa visible (obligatorio para superusuarios Omni sin empresa propia). */
+                empresa_id?: string;
             };
             header?: never;
             path?: never;
@@ -18537,6 +31412,43 @@ export interface operations {
             };
         };
     };
+    agentes_predicciones_proponer_seguimiento_connect: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProponerSeguimientoConnectInput"];
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EjecucionAgente"];
+                };
+            };
+            /** @description Sin empresa asignada */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Lead no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     agentes_predicciones_sugerencias_activas: {
         parameters: {
             query?: {
@@ -18546,6 +31458,8 @@ export interface operations {
                 ordering?: string;
                 /** @description A page number within the paginated result set. */
                 page?: number;
+                /** @description UUID de empresa visible (obligatorio para superusuarios Omni sin empresa propia). */
+                empresa_id?: string;
             };
             header?: never;
             path?: never;
@@ -18834,6 +31748,130 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Almacen"];
+                };
+            };
+        };
+    };
+    "almacenes_stock-ubicaciones_list": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["StockUbicacion"][];
+                    };
+                };
+            };
+        };
+    };
+    "almacenes_stock-ubicaciones_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StockUbicacion"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StockUbicacion"];
+                };
+            };
+        };
+    };
+    "almacenes_stock-ubicaciones_reservar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReservarUbicacionInput"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StockUbicacion"];
+                };
+            };
+        };
+    };
+    "almacenes_stock-ubicaciones_transferir": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferirUbicacionInput"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransferirUbicacionResponse"];
+                };
+            };
+        };
+    };
+    "almacenes_stock-ubicaciones_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Stock por Ubicación. */
+                id_stock_ubicacion: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StockUbicacion"];
                 };
             };
         };
@@ -19173,7 +32211,474 @@ export interface operations {
             };
         };
     };
-    "banca-electronica_cuentas-bancarias-empresa_list": {
+    "banca-electronica_lotes-pago_list": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Filtrar lotes por UUID de empresa. */
+                empresa?: string;
+                /** @description Filtrar por tipo de lote (PROVEEDORES | NOMINA). */
+                tipo_lote?: "PROVEEDORES" | "NOMINA";
+                /** @description Filtrar por estado del lote. */
+                estado?: "BORRADOR" | "GENERADO" | "ENVIADO" | "PROCESADO" | "ANULADO";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["LotePagoBancario"][];
+                    };
+                };
+            };
+        };
+    };
+    "banca-electronica_lotes-pago_generar_nomina": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerarLoteNominaInput"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LotePagoBancario"];
+                };
+            };
+        };
+    };
+    "banca-electronica_lotes-pago_generar_proveedores": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerarLoteProveedoresInput"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LotePagoBancario"];
+                };
+            };
+        };
+    };
+    "banca-electronica_lotes-pago_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Lote de Pago Bancario. */
+                id_lote_pago: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LotePagoBancario"];
+                };
+            };
+        };
+    };
+    "banca-electronica_lotes-pago_anular": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Lote de Pago Bancario. */
+                id_lote_pago: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LotePagoBancario"];
+                };
+            };
+        };
+    };
+    "banca-electronica_lotes-pago_descargar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Lote de Pago Bancario. */
+                id_lote_pago: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Archivo plano/CSV del lote bancario */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+        };
+    };
+    "banca-electronica_lotes-pago_marcar_enviado": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Lote de Pago Bancario. */
+                id_lote_pago: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LotePagoBancario"];
+                };
+            };
+        };
+    };
+    "banca-electronica_lotes-pago_marcar_procesado": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Lote de Pago Bancario. */
+                id_lote_pago: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LotePagoBancario"];
+                };
+            };
+        };
+    };
+    "banca-electronica_validar-cuenta-ve_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ValidarCuentaVeInput"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidarCuentaVeResponse"];
+                };
+            };
+        };
+    };
+    "banca-electronica_validar-referencia_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ValidarReferenciaInput"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidarReferenciaResponse"];
+                };
+            };
+        };
+    };
+    bots_bitacora_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    bots_control_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    bots_control_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                codigo: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    bots_control_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                codigo: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    bots_destinos_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    bots_heartbeat_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    bots_ingest_list: {
+        parameters: {
+            query?: {
+                /** @description estado */
+                estado?: "PROCESADO" | "BORRADOR" | "INCOMPLETO" | "SINCRONIZADO" | "ERROR";
+                /** @description kind */
+                kind?: "contacto" | "cotizacion" | "pedido" | "pago" | "pago_proveedor" | "proveedor" | "factura_proveedor" | "gasto" | "evento";
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["Ingesta"][];
+                    };
+                };
+            };
+        };
+    };
+    bots_ingest_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Ingesta"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Ingesta"];
+                };
+            };
+        };
+    };
+    bots_ingest_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_ingesta: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Ingesta"];
+                };
+            };
+        };
+    };
+    bots_ingest_completar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_ingesta: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Ingesta"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Ingesta"];
+                };
+            };
+        };
+    };
+    bots_ingest_sincronizar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_ingesta: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Ingesta"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Ingesta"];
+                };
+            };
+        };
+    };
+    bots_usuarios_list: {
         parameters: {
             query?: {
                 /** @description A search term. */
@@ -19200,38 +32705,37 @@ export interface operations {
                         next?: string | null;
                         /** Format: uri */
                         previous?: string | null;
-                        results: components["schemas"]["CuentaBancariaEmpresaBanca"][];
+                        results: components["schemas"]["BotUsuario"][];
                     };
                 };
             };
         };
     };
-    "banca-electronica_cuentas-bancarias-empresa_create": {
+    bots_usuarios_create: {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody: components["requestBodies"]["CuentaBancariaEmpresaBanca"];
+        requestBody: components["requestBodies"]["BotUsuario"];
         responses: {
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CuentaBancariaEmpresaBanca"];
+                    "application/json": components["schemas"]["BotUsuario"];
                 };
             };
         };
     };
-    "banca-electronica_cuentas-bancarias-empresa_read": {
+    bots_usuarios_read: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description A unique integer value identifying this cuenta bancaria empresa. */
-                id: number;
+                id_bot_usuario: string;
             };
             cookie?: never;
         };
@@ -19242,40 +32746,38 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CuentaBancariaEmpresaBanca"];
+                    "application/json": components["schemas"]["BotUsuario"];
                 };
             };
         };
     };
-    "banca-electronica_cuentas-bancarias-empresa_update": {
+    bots_usuarios_update: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description A unique integer value identifying this cuenta bancaria empresa. */
-                id: number;
+                id_bot_usuario: string;
             };
             cookie?: never;
         };
-        requestBody: components["requestBodies"]["CuentaBancariaEmpresaBanca"];
+        requestBody: components["requestBodies"]["BotUsuario"];
         responses: {
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CuentaBancariaEmpresaBanca"];
+                    "application/json": components["schemas"]["BotUsuario"];
                 };
             };
         };
     };
-    "banca-electronica_cuentas-bancarias-empresa_delete": {
+    bots_usuarios_delete: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description A unique integer value identifying this cuenta bancaria empresa. */
-                id: number;
+                id_bot_usuario: string;
             };
             cookie?: never;
         };
@@ -19289,24 +32791,23 @@ export interface operations {
             };
         };
     };
-    "banca-electronica_cuentas-bancarias-empresa_partial_update": {
+    bots_usuarios_partial_update: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description A unique integer value identifying this cuenta bancaria empresa. */
-                id: number;
+                id_bot_usuario: string;
             };
             cookie?: never;
         };
-        requestBody: components["requestBodies"]["CuentaBancariaEmpresaBanca"];
+        requestBody: components["requestBodies"]["BotUsuario"];
         responses: {
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CuentaBancariaEmpresaBanca"];
+                    "application/json": components["schemas"]["BotUsuario"];
                 };
             };
         };
@@ -21337,6 +34838,32 @@ export interface operations {
             };
         };
     };
+    "compras_ofertas-proveedor_adjudicar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Oferta de Proveedor. */
+                id_oferta: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdjudicarOfertaInput"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdjudicarOfertaResponse"];
+                };
+            };
+        };
+    };
     "compras_ordenes-compra_list": {
         parameters: {
             query?: {
@@ -21792,6 +35319,50 @@ export interface operations {
             };
         };
     };
+    "compras_requisiciones-compra_confirmar_aprobacion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Requisición de Compra. */
+                id_requisicion: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequisicionCompra"];
+                };
+            };
+        };
+    };
+    "compras_requisiciones-compra_enviar_aprobacion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Requisición de Compra. */
+                id_requisicion: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequisicionCompra"];
+                };
+            };
+        };
+    };
     "compras_solicitudes-cotizacion_list": {
         parameters: {
             query?: {
@@ -21833,6 +35404,29 @@ export interface operations {
             cookie?: never;
         };
         requestBody: components["requestBodies"]["SolicitudCotizacion"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SolicitudCotizacion"];
+                };
+            };
+        };
+    };
+    "compras_solicitudes-cotizacion_desde_requisiciones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CrearRfqDesdeRequisicionesInput"];
+            };
+        };
         responses: {
             201: {
                 headers: {
@@ -21926,6 +35520,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SolicitudCotizacion"];
+                };
+            };
+        };
+    };
+    "compras_solicitudes-cotizacion_comparar_ofertas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Solicitud de Cotización. */
+                id_solicitud_cotizacion: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompararOfertasResponse"];
                 };
             };
         };
@@ -22344,6 +35960,723 @@ export interface operations {
             };
         };
     };
+    connect_analiticas_list: {
+        parameters: {
+            query?: {
+                /** @description UUID de la empresa visible activa (opcional). */
+                empresa_id?: string;
+                /** @description Fecha inicial inclusive (YYYY-MM-DD). */
+                desde?: string;
+                /** @description Fecha final inclusive (YYYY-MM-DD). */
+                hasta?: string;
+                /** @description Ventana en días (1..365, defecto 30) si no se especifica rango completo. */
+                dias?: number;
+                /** @description UUID de un perfil Connect de la empresa para filtrar métricas. */
+                perfil_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectAnaliticas"];
+                };
+            };
+            /** @description Parámetros de rango o filtros inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin acceso a la empresa solicitada */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Perfil no encontrado en la empresa */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    connect_perfiles_list: {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["Perfil"][];
+                    };
+                };
+            };
+        };
+    };
+    connect_perfiles_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Perfil"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Perfil"];
+                };
+            };
+        };
+    };
+    "connect_perfiles_mi-perfil_read": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description UUID de la empresa visible activa (opcional). */
+                empresa_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MiPerfil"];
+                };
+            };
+            /** @description Sin acceso */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Perfil no configurado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "connect_perfiles_mi-perfil_partial_update": {
+        parameters: {
+            query?: {
+                /** @description UUID de la empresa visible activa (opcional). */
+                empresa_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MiPerfil"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MiPerfil"];
+                };
+            };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MiPerfil"];
+                };
+            };
+            /** @description Datos inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin acceso */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "connect_perfiles_mi-perfil_mi_perfil_qr": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description UUID de la empresa visible activa (opcional). */
+                empresa_id?: string;
+                /** @description Formato de salida del código QR: svg (defecto) o png. */
+                formato?: "svg" | "png";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Código QR en formato SVG o PNG */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                    "image/svg+xml": string;
+                    "image/png": string;
+                };
+            };
+            /** @description Formato inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Perfil no configurado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    connect_perfiles_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Perfil Connect. */
+                id_perfil: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Perfil"];
+                };
+            };
+        };
+    };
+    connect_perfiles_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Perfil Connect. */
+                id_perfil: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Perfil"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Perfil"];
+                };
+            };
+        };
+    };
+    connect_perfiles_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Perfil Connect. */
+                id_perfil: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    connect_perfiles_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Perfil Connect. */
+                id_perfil: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Perfil"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Perfil"];
+                };
+            };
+        };
+    };
+    connect_perfiles_qr: {
+        parameters: {
+            query?: {
+                /** @description Formato de salida del código QR: svg (defecto) o png. */
+                formato?: "svg" | "png";
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Perfil Connect. */
+                id_perfil: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Código QR en formato SVG o PNG */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                    "image/svg+xml": string;
+                    "image/png": string;
+                };
+            };
+            /** @description Formato o perfil inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Perfil no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    connect_tarjetas_list: {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["Tarjeta"][];
+                    };
+                };
+            };
+        };
+    };
+    connect_tarjetas_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Tarjeta"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tarjeta"];
+                };
+            };
+        };
+    };
+    connect_tarjetas_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Tarjeta Connect. */
+                id_tarjeta: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tarjeta"];
+                };
+            };
+        };
+    };
+    connect_tarjetas_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Tarjeta Connect. */
+                id_tarjeta: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Tarjeta"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tarjeta"];
+                };
+            };
+        };
+    };
+    connect_tarjetas_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Tarjeta Connect. */
+                id_tarjeta: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    connect_tarjetas_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Tarjeta Connect. */
+                id_tarjeta: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Tarjeta"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tarjeta"];
+                };
+            };
+        };
+    };
+    connect_tarjetas_activar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Tarjeta Connect. */
+                id_tarjeta: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Tarjeta"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tarjeta"];
+                };
+            };
+            /** @description Estado o perfil inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin permiso */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tarjeta no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    connect_tarjetas_asignar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Tarjeta Connect. */
+                id_tarjeta: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TarjetaAsignarInput"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tarjeta"];
+                };
+            };
+            /** @description Datos o estado inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin permiso */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tarjeta no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    connect_tarjetas_desactivar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Tarjeta Connect. */
+                id_tarjeta: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Tarjeta"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tarjeta"];
+                };
+            };
+            /** @description Estado inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin permiso */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tarjeta no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    connect_tarjetas_marcar_perdida: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Tarjeta Connect. */
+                id_tarjeta: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Tarjeta"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tarjeta"];
+                };
+            };
+            /** @description Sin permiso */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tarjeta no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    connect_tarjetas_qr: {
+        parameters: {
+            query?: {
+                /** @description Formato de salida del código QR: svg (defecto) o png. */
+                formato?: "svg" | "png";
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Tarjeta Connect. */
+                id_tarjeta: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Código QR en formato SVG o PNG */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                    "image/svg+xml": string;
+                    "image/png": string;
+                };
+            };
+            /** @description Tarjeta sin perfil asignado o formato inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tarjeta no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     "contabilidad_asientos-contables_list": {
         parameters: {
             query?: {
@@ -22525,9 +36858,9 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: components["requestBodies"]["AsientoContable"];
+        requestBody?: never;
         responses: {
-            201: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -22547,7 +36880,33 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: components["requestBodies"]["AsientoContable"];
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AsientoContable"];
+                };
+            };
+        };
+    };
+    "contabilidad_asientos-contables_revertir": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Asiento Contable. */
+                id_asiento: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevertirAsientoInput"];
+            };
+        };
         responses: {
             201: {
                 headers: {
@@ -22693,6 +37052,595 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DetalleAsiento"];
+                };
+            };
+        };
+    };
+    contabilidad_diarios_list: {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["DiarioContable"][];
+                    };
+                };
+            };
+        };
+    };
+    contabilidad_diarios_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["DiarioContable"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiarioContable"];
+                };
+            };
+        };
+    };
+    contabilidad_diarios_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Diario Contable. */
+                id_diario: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiarioContable"];
+                };
+            };
+        };
+    };
+    contabilidad_diarios_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Diario Contable. */
+                id_diario: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["DiarioContable"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiarioContable"];
+                };
+            };
+        };
+    };
+    contabilidad_diarios_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Diario Contable. */
+                id_diario: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    contabilidad_diarios_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Diario Contable. */
+                id_diario: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["DiarioContable"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiarioContable"];
+                };
+            };
+        };
+    };
+    contabilidad_diarios_activar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Diario Contable. */
+                id_diario: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["DiarioContable"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiarioContable"];
+                };
+            };
+        };
+    };
+    contabilidad_diarios_desactivar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Diario Contable. */
+                id_diario: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["DiarioContable"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiarioContable"];
+                };
+            };
+        };
+    };
+    "contabilidad_mapeos-contables_list": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["MapeoContable"][];
+                    };
+                };
+            };
+        };
+    };
+    "contabilidad_mapeos-contables_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["MapeoContable"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MapeoContable"];
+                };
+            };
+        };
+    };
+    "contabilidad_mapeos-contables_tipos_asiento": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["MapeoContable"][];
+                    };
+                };
+            };
+        };
+    };
+    "contabilidad_mapeos-contables_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Mapeo Contable. */
+                id_mapeo: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MapeoContable"];
+                };
+            };
+        };
+    };
+    "contabilidad_mapeos-contables_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Mapeo Contable. */
+                id_mapeo: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["MapeoContable"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MapeoContable"];
+                };
+            };
+        };
+    };
+    "contabilidad_mapeos-contables_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Mapeo Contable. */
+                id_mapeo: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "contabilidad_mapeos-contables_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Mapeo Contable. */
+                id_mapeo: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["MapeoContable"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MapeoContable"];
+                };
+            };
+        };
+    };
+    "contabilidad_periodos-contables_list": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["PeriodoContable"][];
+                    };
+                };
+            };
+        };
+    };
+    "contabilidad_periodos-contables_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PeriodoContable"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeriodoContable"];
+                };
+            };
+        };
+    };
+    "contabilidad_periodos-contables_cerrar_ejercicio": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CerrarEjercicioInput"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CerrarEjercicioResponse"];
+                };
+            };
+        };
+    };
+    "contabilidad_periodos-contables_cerrar_por_fecha": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CerrarPeriodoInput"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeriodoContable"];
+                };
+            };
+        };
+    };
+    "contabilidad_periodos-contables_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Período Contable. */
+                id_periodo: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeriodoContable"];
+                };
+            };
+        };
+    };
+    "contabilidad_periodos-contables_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Período Contable. */
+                id_periodo: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PeriodoContable"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeriodoContable"];
+                };
+            };
+        };
+    };
+    "contabilidad_periodos-contables_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Período Contable. */
+                id_periodo: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "contabilidad_periodos-contables_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Período Contable. */
+                id_periodo: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PeriodoContable"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeriodoContable"];
+                };
+            };
+        };
+    };
+    "contabilidad_periodos-contables_cerrar_periodo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Período Contable. */
+                id_periodo: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CerrarPeriodoDetalleInput"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeriodoContable"];
+                };
+            };
+        };
+    };
+    "contabilidad_periodos-contables_reabrir": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Período Contable. */
+                id_periodo: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReabrirPeriodoInput"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeriodoContable"];
                 };
             };
         };
@@ -22897,6 +37845,122 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlanCuentas"];
+                };
+            };
+        };
+    };
+    "contabilidad_reportes_balance-comprobacion_list": {
+        parameters: {
+            query: {
+                /** @description UUID de la empresa (requerido). */
+                empresa_id: string;
+                fecha_desde?: string;
+                fecha_hasta?: string;
+                id_diario?: string;
+                /** @description Si true, incluye equivalentes convertidos a USD cuando existe tasa disponible. */
+                incluir_equivalentes_usd?: boolean;
+                /** @description Formato de salida: json (default), csv o pdf. */
+                formato?: "json" | "csv" | "pdf";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BalanceComprobacionResponse"];
+                };
+            };
+        };
+    };
+    "contabilidad_reportes_balance-general_list": {
+        parameters: {
+            query: {
+                /** @description UUID de la empresa (requerido). */
+                empresa_id: string;
+                fecha_corte?: string;
+                /** @description Si true, incluye equivalentes convertidos a USD cuando existe tasa disponible. */
+                incluir_equivalentes_usd?: boolean;
+                /** @description Formato de salida: json (default), csv o pdf. */
+                formato?: "json" | "csv" | "pdf";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BalanceGeneralResponse"];
+                };
+            };
+        };
+    };
+    "contabilidad_reportes_estado-resultados_list": {
+        parameters: {
+            query: {
+                /** @description UUID de la empresa (requerido). */
+                empresa_id: string;
+                fecha_desde?: string;
+                fecha_hasta?: string;
+                /** @description Si true, incluye equivalentes convertidos a USD cuando existe tasa disponible. */
+                incluir_equivalentes_usd?: boolean;
+                /** @description Formato de salida: json (default), csv o pdf. */
+                formato?: "json" | "csv" | "pdf";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EstadoResultadosResponse"];
+                };
+            };
+        };
+    };
+    "contabilidad_reportes_libro-mayor-auxiliar_list": {
+        parameters: {
+            query: {
+                /** @description UUID de la empresa (requerido). */
+                empresa_id: string;
+                id_cuenta_contable?: string;
+                id_contacto?: string;
+                id_diario?: string;
+                fecha_desde?: string;
+                fecha_hasta?: string;
+                limit?: number;
+                /** @description Si true, incluye equivalentes convertidos a USD cuando existe tasa disponible. */
+                incluir_equivalentes_usd?: boolean;
+                /** @description Formato de salida: json (default), csv o pdf. */
+                formato?: "json" | "csv" | "pdf";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibroMayorAuxiliarResponse"];
                 };
             };
         };
@@ -25846,6 +40910,228 @@ export interface operations {
             };
         };
     };
+    crm_actividades_list: {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["Actividad"][];
+                    };
+                };
+            };
+        };
+    };
+    crm_actividades_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Actividad"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Actividad"];
+                };
+            };
+        };
+    };
+    crm_actividades_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Actividad. */
+                id_actividad: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Actividad"];
+                };
+            };
+        };
+    };
+    crm_actividades_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Actividad. */
+                id_actividad: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Actividad"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Actividad"];
+                };
+            };
+        };
+    };
+    crm_actividades_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Actividad. */
+                id_actividad: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    crm_actividades_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Actividad. */
+                id_actividad: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Actividad"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Actividad"];
+                };
+            };
+        };
+    };
+    crm_actividades_activar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Actividad. */
+                id_actividad: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Actividad"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Actividad"];
+                };
+            };
+        };
+    };
+    crm_actividades_completar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Actividad. */
+                id_actividad: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompletarActividad"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Actividad"];
+                };
+            };
+            /** @description Error de validación */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Actividad no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    crm_actividades_desactivar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Actividad. */
+                id_actividad: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Actividad"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Actividad"];
+                };
+            };
+        };
+    };
     crm_clientes_list: {
         parameters: {
             query?: {
@@ -26337,6 +41623,752 @@ export interface operations {
             };
         };
     };
+    crm_etapas_list: {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["Etapa"][];
+                    };
+                };
+            };
+        };
+    };
+    crm_etapas_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Etapa"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Etapa"];
+                };
+            };
+        };
+    };
+    crm_etapas_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Etapa. */
+                id_etapa: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Etapa"];
+                };
+            };
+        };
+    };
+    crm_etapas_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Etapa. */
+                id_etapa: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Etapa"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Etapa"];
+                };
+            };
+        };
+    };
+    crm_etapas_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Etapa. */
+                id_etapa: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    crm_etapas_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Etapa. */
+                id_etapa: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Etapa"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Etapa"];
+                };
+            };
+        };
+    };
+    crm_etapas_activar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Etapa. */
+                id_etapa: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Etapa"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Etapa"];
+                };
+            };
+        };
+    };
+    crm_etapas_desactivar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Etapa. */
+                id_etapa: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Etapa"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Etapa"];
+                };
+            };
+        };
+    };
+    crm_leads_list: {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["Lead"][];
+                    };
+                };
+            };
+        };
+    };
+    crm_leads_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Lead"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Lead"];
+                };
+            };
+        };
+    };
+    crm_leads_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Lead. */
+                id_lead: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Lead"];
+                };
+            };
+        };
+    };
+    crm_leads_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Lead. */
+                id_lead: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Lead"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Lead"];
+                };
+            };
+        };
+    };
+    crm_leads_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Lead. */
+                id_lead: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    crm_leads_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Lead. */
+                id_lead: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Lead"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Lead"];
+                };
+            };
+        };
+    };
+    crm_leads_activar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Lead. */
+                id_lead: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Lead"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Lead"];
+                };
+            };
+        };
+    };
+    crm_leads_anonimizar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Lead. */
+                id_lead: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnonimizarLeadInput"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Lead"];
+                };
+            };
+            /** @description Lead ya anonimizado o inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Lead no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    crm_leads_convertir_cliente: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Lead. */
+                id_lead: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConvertirLeadInput"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConvertirLeadResponse"];
+                };
+            };
+            /** @description Datos o estado inválido para convertir */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Lead no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    crm_leads_desactivar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Lead. */
+                id_lead: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Lead"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Lead"];
+                };
+            };
+        };
+    };
+    crm_leads_mover_etapa: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Lead. */
+                id_lead: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MoverEtapa"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Lead"];
+                };
+            };
+            /** @description Transición de etapa inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Lead no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    crm_pipelines_list: {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["Pipeline"][];
+                    };
+                };
+            };
+        };
+    };
+    crm_pipelines_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Pipeline"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Pipeline"];
+                };
+            };
+        };
+    };
+    crm_pipelines_asegurar_predeterminado: {
+        parameters: {
+            query?: {
+                /** @description UUID de la empresa visible (opcional). */
+                empresa?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AsegurarPipelineInput"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Pipeline"];
+                };
+            };
+            /** @description Parámetros inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin acceso */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    crm_pipelines_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pipeline. */
+                id_pipeline: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Pipeline"];
+                };
+            };
+        };
+    };
+    crm_pipelines_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pipeline. */
+                id_pipeline: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Pipeline"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Pipeline"];
+                };
+            };
+        };
+    };
+    crm_pipelines_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pipeline. */
+                id_pipeline: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    crm_pipelines_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pipeline. */
+                id_pipeline: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Pipeline"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Pipeline"];
+                };
+            };
+        };
+    };
+    crm_pipelines_activar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pipeline. */
+                id_pipeline: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Pipeline"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Pipeline"];
+                };
+            };
+        };
+    };
+    crm_pipelines_desactivar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pipeline. */
+                id_pipeline: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Pipeline"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Pipeline"];
+                };
+            };
+        };
+    };
+    crm_pipelines_reordenar_etapas: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pipeline. */
+                id_pipeline: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReordenarEtapas"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Pipeline"];
+                };
+            };
+            /** @description Orden o etapas inválidas */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Pipeline no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     "cuentas-por-pagar_abonos-cxp_list": {
         parameters: {
             query?: {
@@ -26370,25 +42402,6 @@ export interface operations {
             };
         };
     };
-    "cuentas-por-pagar_abonos-cxp_create": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: components["requestBodies"]["AbonoCxP"];
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AbonoCxP"];
-                };
-            };
-        };
-    };
     "cuentas-por-pagar_abonos-cxp_read": {
         parameters: {
             query?: never;
@@ -26400,70 +42413,6 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AbonoCxP"];
-                };
-            };
-        };
-    };
-    "cuentas-por-pagar_abonos-cxp_update": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description A UUID string identifying this abono cx p. */
-                id_abono_cxp: string;
-            };
-            cookie?: never;
-        };
-        requestBody: components["requestBodies"]["AbonoCxP"];
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AbonoCxP"];
-                };
-            };
-        };
-    };
-    "cuentas-por-pagar_abonos-cxp_delete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description A UUID string identifying this abono cx p. */
-                id_abono_cxp: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    "cuentas-por-pagar_abonos-cxp_partial_update": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description A UUID string identifying this abono cx p. */
-                id_abono_cxp: string;
-            };
-            cookie?: never;
-        };
-        requestBody: components["requestBodies"]["AbonoCxP"];
         responses: {
             200: {
                 headers: {
@@ -26582,70 +42531,6 @@ export interface operations {
             };
         };
     };
-    "cuentas-por-pagar_cuentas-por-pagar_update": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description A UUID string identifying this cuenta por pagar. */
-                id_cxp: string;
-            };
-            cookie?: never;
-        };
-        requestBody: components["requestBodies"]["CuentaPorPagar"];
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CuentaPorPagar"];
-                };
-            };
-        };
-    };
-    "cuentas-por-pagar_cuentas-por-pagar_delete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description A UUID string identifying this cuenta por pagar. */
-                id_cxp: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    "cuentas-por-pagar_cuentas-por-pagar_partial_update": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description A UUID string identifying this cuenta por pagar. */
-                id_cxp: string;
-            };
-            cookie?: never;
-        };
-        requestBody: components["requestBodies"]["CuentaPorPagar"];
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CuentaPorPagar"];
-                };
-            };
-        };
-    };
     "cuentas-por-pagar_cuentas-por-pagar_abonar": {
         parameters: {
             query?: never;
@@ -26664,6 +42549,2395 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CuentaPorPagar"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_bandeja_list": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["BandejaFacturacion"][];
+                    };
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_bandeja_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Bandeja de facturación. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BandejaFacturacion"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_bandeja_confirmar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Bandeja de facturación. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["BandejaFacturacion"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BandejaFacturacion"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_bandeja_proponer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Bandeja de facturación. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["BandejaFacturacion"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BandejaFacturacion"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_conciliaciones_list": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["ConciliacionLubrikca"][];
+                    };
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_conciliaciones_conciliar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ConciliacionLubrikca"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConciliacionLubrikca"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_conciliaciones_resumen": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["ConciliacionLubrikca"][];
+                    };
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_conciliaciones_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Conciliación. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConciliacionLubrikca"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_conciliaciones_revisar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Conciliación. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ConciliacionLubrikca"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConciliacionLubrikca"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_config-conciliacion_list": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["ConfiguracionConciliacion"][];
+                    };
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_config-conciliacion_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ConfiguracionConciliacion"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfiguracionConciliacion"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_config-conciliacion_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Configuración de conciliación. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfiguracionConciliacion"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_config-conciliacion_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Configuración de conciliación. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ConfiguracionConciliacion"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfiguracionConciliacion"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_config-conciliacion_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Configuración de conciliación. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "cxc-lubrikca_config-conciliacion_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Configuración de conciliación. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ConfiguracionConciliacion"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfiguracionConciliacion"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_config-conciliacion_activar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Configuración de conciliación. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ConfiguracionConciliacion"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfiguracionConciliacion"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_config-conciliacion_desactivar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Configuración de conciliación. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ConfiguracionConciliacion"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfiguracionConciliacion"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_descuentos-bcv-completo_list": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["DescuentoBCVCompleto"][];
+                    };
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_descuentos-bcv-completo_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["DescuentoBCVCompleto"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DescuentoBCVCompleto"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_descuentos-bcv-completo_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Descuento BCV completo. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DescuentoBCVCompleto"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_descuentos-bcv-completo_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Descuento BCV completo. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["DescuentoBCVCompleto"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DescuentoBCVCompleto"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_descuentos-bcv-completo_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Descuento BCV completo. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "cxc-lubrikca_descuentos-bcv-completo_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Descuento BCV completo. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["DescuentoBCVCompleto"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DescuentoBCVCompleto"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_descuentos-bcv-completo_activar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Descuento BCV completo. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["DescuentoBCVCompleto"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DescuentoBCVCompleto"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_descuentos-bcv-completo_desactivar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Descuento BCV completo. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["DescuentoBCVCompleto"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DescuentoBCVCompleto"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_descuentos-marca-categoria_list": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["DescuentoMarcaCategoria"][];
+                    };
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_descuentos-marca-categoria_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["DescuentoMarcaCategoria"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DescuentoMarcaCategoria"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_descuentos-marca-categoria_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Descuento por marca/categoría. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DescuentoMarcaCategoria"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_descuentos-marca-categoria_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Descuento por marca/categoría. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["DescuentoMarcaCategoria"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DescuentoMarcaCategoria"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_descuentos-marca-categoria_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Descuento por marca/categoría. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "cxc-lubrikca_descuentos-marca-categoria_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Descuento por marca/categoría. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["DescuentoMarcaCategoria"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DescuentoMarcaCategoria"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_descuentos-marca-categoria_activar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Descuento por marca/categoría. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["DescuentoMarcaCategoria"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DescuentoMarcaCategoria"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_descuentos-marca-categoria_desactivar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Descuento por marca/categoría. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["DescuentoMarcaCategoria"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DescuentoMarcaCategoria"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_feriados_list": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["Feriado"][];
+                    };
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_feriados_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Feriado"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Feriado"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_feriados_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Feriado. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Feriado"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_feriados_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Feriado. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Feriado"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Feriado"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_feriados_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Feriado. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "cxc-lubrikca_feriados_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Feriado. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Feriado"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Feriado"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_feriados_activar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Feriado. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Feriado"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Feriado"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_feriados_desactivar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Feriado. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Feriado"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Feriado"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_lineas-pedido_list": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["LineaPedidoLubrikca"][];
+                    };
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_lineas-pedido_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["LineaPedidoLubrikca"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LineaPedidoLubrikca"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_lineas-pedido_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Línea de pedido (espejo). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LineaPedidoLubrikca"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_lineas-pedido_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Línea de pedido (espejo). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["LineaPedidoLubrikca"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LineaPedidoLubrikca"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_lineas-pedido_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Línea de pedido (espejo). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "cxc-lubrikca_lineas-pedido_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Línea de pedido (espejo). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["LineaPedidoLubrikca"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LineaPedidoLubrikca"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_lineas-pedido_activar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Línea de pedido (espejo). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["LineaPedidoLubrikca"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LineaPedidoLubrikca"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_lineas-pedido_desactivar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Línea de pedido (espejo). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["LineaPedidoLubrikca"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LineaPedidoLubrikca"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_metodos-pago_list": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["CxcLubrikcaMetodoPago"][];
+                    };
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_metodos-pago_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["CxcLubrikcaMetodoPago"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CxcLubrikcaMetodoPago"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_metodos-pago_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Método de pago. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CxcLubrikcaMetodoPago"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_metodos-pago_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Método de pago. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["CxcLubrikcaMetodoPago"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CxcLubrikcaMetodoPago"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_metodos-pago_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Método de pago. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "cxc-lubrikca_metodos-pago_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Método de pago. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["CxcLubrikcaMetodoPago"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CxcLubrikcaMetodoPago"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_metodos-pago_activar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Método de pago. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["CxcLubrikcaMetodoPago"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CxcLubrikcaMetodoPago"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_metodos-pago_desactivar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Método de pago. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["CxcLubrikcaMetodoPago"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CxcLubrikcaMetodoPago"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_pagos_list": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["PagoLubrikca"][];
+                    };
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_pagos_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PagoLubrikca"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagoLubrikca"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_pagos_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pago (espejo). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagoLubrikca"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_pagos_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pago (espejo). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PagoLubrikca"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagoLubrikca"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_pagos_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pago (espejo). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "cxc-lubrikca_pagos_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pago (espejo). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PagoLubrikca"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagoLubrikca"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_pagos_activar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pago (espejo). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PagoLubrikca"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagoLubrikca"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_pagos_desactivar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pago (espejo). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PagoLubrikca"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagoLubrikca"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_pedidos_list": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["PedidoLubrikca"][];
+                    };
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_pedidos_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PedidoLubrikca"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PedidoLubrikca"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_pedidos_sincronizar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PedidoLubrikca"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PedidoLubrikca"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_pedidos_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pedido (espejo). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PedidoLubrikca"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_pedidos_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pedido (espejo). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PedidoLubrikca"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PedidoLubrikca"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_pedidos_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pedido (espejo). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "cxc-lubrikca_pedidos_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pedido (espejo). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PedidoLubrikca"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PedidoLubrikca"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_pedidos_activar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pedido (espejo). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PedidoLubrikca"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PedidoLubrikca"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_pedidos_desactivar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pedido (espejo). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PedidoLubrikca"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PedidoLubrikca"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_pedidos_recalcular": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pedido (espejo). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PedidoLubrikca"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PedidoLubrikca"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_precios-lista_list": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["PrecioListaLubrikca"][];
+                    };
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_precios-lista_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PrecioListaLubrikca"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrecioListaLubrikca"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_precios-lista_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Precio de lista. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrecioListaLubrikca"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_precios-lista_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Precio de lista. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PrecioListaLubrikca"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrecioListaLubrikca"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_precios-lista_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Precio de lista. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "cxc-lubrikca_precios-lista_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Precio de lista. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PrecioListaLubrikca"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrecioListaLubrikca"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_precios-lista_activar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Precio de lista. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PrecioListaLubrikca"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrecioListaLubrikca"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_precios-lista_desactivar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Precio de lista. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PrecioListaLubrikca"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrecioListaLubrikca"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_promociones-primera-compra_list": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["PromocionPrimeraCompra"][];
+                    };
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_promociones-primera-compra_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PromocionPrimeraCompra"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromocionPrimeraCompra"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_promociones-primera-compra_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Promoción de primera compra. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromocionPrimeraCompra"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_promociones-primera-compra_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Promoción de primera compra. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PromocionPrimeraCompra"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromocionPrimeraCompra"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_promociones-primera-compra_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Promoción de primera compra. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "cxc-lubrikca_promociones-primera-compra_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Promoción de primera compra. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PromocionPrimeraCompra"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromocionPrimeraCompra"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_promociones-primera-compra_activar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Promoción de primera compra. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PromocionPrimeraCompra"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromocionPrimeraCompra"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_promociones-primera-compra_desactivar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Promoción de primera compra. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PromocionPrimeraCompra"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromocionPrimeraCompra"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_reglas-recurrencia_list": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["ReglaRecurrencia"][];
+                    };
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_reglas-recurrencia_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ReglaRecurrencia"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReglaRecurrencia"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_reglas-recurrencia_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Regla de recurrencia. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReglaRecurrencia"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_reglas-recurrencia_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Regla de recurrencia. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ReglaRecurrencia"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReglaRecurrencia"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_reglas-recurrencia_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Regla de recurrencia. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "cxc-lubrikca_reglas-recurrencia_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Regla de recurrencia. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ReglaRecurrencia"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReglaRecurrencia"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_reglas-recurrencia_activar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Regla de recurrencia. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ReglaRecurrencia"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReglaRecurrencia"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_reglas-recurrencia_desactivar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Regla de recurrencia. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ReglaRecurrencia"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReglaRecurrencia"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_vinculaciones_list": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["Vinculacion"][];
+                    };
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_vinculaciones_registrar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Vinculacion"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Vinculacion"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_vinculaciones_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Vinculación pago↔pedido. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Vinculacion"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_vinculaciones_activar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Vinculación pago↔pedido. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Vinculacion"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Vinculacion"];
+                };
+            };
+        };
+    };
+    "cxc-lubrikca_vinculaciones_desactivar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Vinculación pago↔pedido. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Vinculacion"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Vinculacion"];
                 };
             };
         };
@@ -26708,7 +44982,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody: components["requestBodies"]["AbonoCxC"];
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AbonoCxC"];
+            };
+        };
         responses: {
             201: {
                 headers: {
@@ -26731,70 +45009,6 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AbonoCxC"];
-                };
-            };
-        };
-    };
-    "cxc_abonos-cxc_update": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description A unique integer value identifying this abono cx c. */
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: components["requestBodies"]["AbonoCxC"];
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AbonoCxC"];
-                };
-            };
-        };
-    };
-    "cxc_abonos-cxc_delete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description A unique integer value identifying this abono cx c. */
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    "cxc_abonos-cxc_partial_update": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description A unique integer value identifying this abono cx c. */
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: components["requestBodies"]["AbonoCxC"];
         responses: {
             200: {
                 headers: {
@@ -26948,70 +45162,6 @@ export interface operations {
             };
         };
     };
-    "cxc_cuentas-por-cobrar_update": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description A unique integer value identifying this cuenta por cobrar. */
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: components["requestBodies"]["CuentaPorCobrar"];
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CuentaPorCobrar"];
-                };
-            };
-        };
-    };
-    "cxc_cuentas-por-cobrar_delete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description A unique integer value identifying this cuenta por cobrar. */
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    "cxc_cuentas-por-cobrar_partial_update": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description A unique integer value identifying this cuenta por cobrar. */
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: components["requestBodies"]["CuentaPorCobrar"];
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CuentaPorCobrar"];
-                };
-            };
-        };
-    };
     "cxc_cuentas-por-cobrar_abonar": {
         parameters: {
             query?: never;
@@ -27068,6 +45218,25 @@ export interface operations {
         };
     };
     despacho_despachos_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Despacho"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Despacho"];
+                };
+            };
+        };
+    };
+    despacho_despachos_desde_nota_venta: {
         parameters: {
             query?: never;
             header?: never;
@@ -27172,6 +45341,116 @@ export interface operations {
             };
         };
     };
+    despacho_despachos_cancelar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Despacho. */
+                id_despacho: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Despacho"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Despacho"];
+                };
+            };
+        };
+    };
+    despacho_despachos_devolver: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Despacho. */
+                id_despacho: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Despacho"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Despacho"];
+                };
+            };
+        };
+    };
+    despacho_despachos_entregar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Despacho. */
+                id_despacho: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Despacho"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Despacho"];
+                };
+            };
+        };
+    };
+    despacho_despachos_iniciar_ruta: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Despacho. */
+                id_despacho: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Despacho"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Despacho"];
+                };
+            };
+        };
+    };
+    despacho_despachos_pdf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Despacho. */
+                id_despacho: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Despacho"];
+                };
+            };
+        };
+    };
     "despacho_detalles-despacho_list": {
         parameters: {
             query?: {
@@ -27205,25 +45484,6 @@ export interface operations {
             };
         };
     };
-    "despacho_detalles-despacho_create": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: components["requestBodies"]["DetalleDespacho"];
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DetalleDespacho"];
-                };
-            };
-        };
-    };
     "despacho_detalles-despacho_read": {
         parameters: {
             query?: never;
@@ -27235,70 +45495,6 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DetalleDespacho"];
-                };
-            };
-        };
-    };
-    "despacho_detalles-despacho_update": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description A UUID string identifying this Detalle de Despacho. */
-                id_detalle_despacho: string;
-            };
-            cookie?: never;
-        };
-        requestBody: components["requestBodies"]["DetalleDespacho"];
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DetalleDespacho"];
-                };
-            };
-        };
-    };
-    "despacho_detalles-despacho_delete": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description A UUID string identifying this Detalle de Despacho. */
-                id_detalle_despacho: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    "despacho_detalles-despacho_partial_update": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description A UUID string identifying this Detalle de Despacho. */
-                id_detalle_despacho: string;
-            };
-            cookie?: never;
-        };
-        requestBody: components["requestBodies"]["DetalleDespacho"];
         responses: {
             200: {
                 headers: {
@@ -27324,6 +45520,120 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    "finanzas_asignaciones-pago_list": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Filtrar por UUID de Pago. */
+                pago?: string;
+                /** @description Filtrar por UUID de core.Contacto. */
+                contacto?: string;
+                /** @description Filtrar por tipo de documento destino. */
+                tipo_documento?: "CUENTA_POR_COBRAR" | "CUENTA_POR_PAGAR" | "FACTURA_COMPRA" | "FACTURA_VENTA";
+                /** @description Filtrar por identificador del documento destino. */
+                id_documento?: string;
+                /** @description Filtrar por estado (ACTIVA | REVERTIDA). */
+                estado?: "ACTIVA" | "REVERTIDA";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["AsignacionPago"][];
+                    };
+                };
+            };
+        };
+    };
+    "finanzas_asignaciones-pago_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CrearAsignacionPagoInput"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConciliarDocumentosResponse"];
+                };
+            };
+        };
+    };
+    "finanzas_asignaciones-pago_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Asignación de Pago. */
+                id_asignacion: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AsignacionPago"];
+                };
+            };
+        };
+    };
+    "finanzas_asignaciones-pago_revertir": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Asignación de Pago. */
+                id_asignacion: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevertirAsignacionInput"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AsignacionPago"];
+                };
             };
         };
     };
@@ -27693,6 +46003,72 @@ export interface operations {
         requestBody: components["requestBodies"]["CajaFisica"];
         responses: {
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CajaFisica"];
+                };
+            };
+        };
+    };
+    "finanzas_cajas-fisicas_abrir_sesion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Caja Física. */
+                id_caja_fisica: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["CajaFisica"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CajaFisica"];
+                };
+            };
+        };
+    };
+    "finanzas_cajas-fisicas_cerrar_sesion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Caja Física. */
+                id_caja_fisica: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["CajaFisica"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CajaFisica"];
+                };
+            };
+        };
+    };
+    "finanzas_cajas-fisicas_cierre": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Caja Física. */
+                id_caja_fisica: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["CajaFisica"];
+        responses: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -28189,6 +46565,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CajaTesoreria"];
+                };
+            };
+        };
+    };
+    "finanzas_contactos_estado-conciliacion_list": {
+        parameters: {
+            query?: {
+                /** @description Filtra pagos y obligaciones compatibles (INGRESO | EGRESO). */
+                tipo_operacion?: "INGRESO" | "EGRESO";
+            };
+            header?: never;
+            path: {
+                id_contacto: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EstadoConciliacionContactoResponse"];
                 };
             };
         };
@@ -29067,6 +47467,46 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["DepositoDatafono"];
                 };
+            };
+        };
+    };
+    "finanzas_equivalencias-trimonetarias_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EquivalenciasTrimonetariasInput"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquivalenciasTrimonetariasInput"];
+                };
+            };
+        };
+    };
+    "finanzas_libro-maestro-caja_list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -30008,6 +48448,254 @@ export interface operations {
             };
         };
     };
+    "finanzas_pagos-terceros_list": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["PagoTercero"][];
+                    };
+                };
+            };
+        };
+    };
+    "finanzas_pagos-terceros_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PagoTercero"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagoTercero"];
+                };
+            };
+        };
+    };
+    "finanzas_pagos-terceros_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pago de Tercero. */
+                id_pago_tercero: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagoTercero"];
+                };
+            };
+        };
+    };
+    "finanzas_pagos-terceros_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pago de Tercero. */
+                id_pago_tercero: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PagoTercero"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagoTercero"];
+                };
+            };
+        };
+    };
+    "finanzas_pagos-terceros_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pago de Tercero. */
+                id_pago_tercero: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "finanzas_pagos-terceros_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pago de Tercero. */
+                id_pago_tercero: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PagoTercero"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagoTercero"];
+                };
+            };
+        };
+    };
+    "finanzas_pagos-terceros_abonar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pago de Tercero. */
+                id_pago_tercero: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PagoTercero"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagoTercero"];
+                };
+            };
+        };
+    };
+    "finanzas_pagos-terceros_anular": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pago de Tercero. */
+                id_pago_tercero: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PagoTercero"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagoTercero"];
+                };
+            };
+        };
+    };
+    "finanzas_pagos-terceros_asociar_proveedor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pago de Tercero. */
+                id_pago_tercero: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PagoTercero"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagoTercero"];
+                };
+            };
+        };
+    };
+    "finanzas_pagos-terceros_marcar_reintegrado": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pago de Tercero. */
+                id_pago_tercero: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PagoTercero"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagoTercero"];
+                };
+            };
+        };
+    };
+    "finanzas_pagos-terceros_solicitar_reintegro": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pago de Tercero. */
+                id_pago_tercero: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PagoTercero"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagoTercero"];
+                };
+            };
+        };
+    };
     finanzas_pagos_list: {
         parameters: {
             query?: {
@@ -30208,6 +48896,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Pago"];
+                };
+            };
+        };
+    };
+    finanzas_pagos_conciliar_documentos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pago. */
+                id_pago: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConciliarDocumentosInput"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConciliarDocumentosResponse"];
+                };
+            };
+        };
+    };
+    finanzas_pagos_sugerir_distribucion: {
+        parameters: {
+            query?: {
+                /** @description Opcional: restringe sugerencia FIFO a un tipo de documento. */
+                tipo_documento?: "CUENTA_POR_COBRAR" | "FACTURA_VENTA" | "CUENTA_POR_PAGAR" | "FACTURA_COMPRA";
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pago. */
+                id_pago: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SugerirDistribucionResponse"];
                 };
             };
         };
@@ -30847,6 +49586,144 @@ export interface operations {
             };
         };
     };
+    "finanzas_tipos-tasa-cambio_list": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["TipoTasaCambio"][];
+                    };
+                };
+            };
+        };
+    };
+    "finanzas_tipos-tasa-cambio_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["TipoTasaCambio"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TipoTasaCambio"];
+                };
+            };
+        };
+    };
+    "finanzas_tipos-tasa-cambio_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Tipo de Tasa de Cambio. */
+                id_tipo_tasa: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TipoTasaCambio"];
+                };
+            };
+        };
+    };
+    "finanzas_tipos-tasa-cambio_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Tipo de Tasa de Cambio. */
+                id_tipo_tasa: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["TipoTasaCambio"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TipoTasaCambio"];
+                };
+            };
+        };
+    };
+    "finanzas_tipos-tasa-cambio_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Tipo de Tasa de Cambio. */
+                id_tipo_tasa: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "finanzas_tipos-tasa-cambio_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Tipo de Tasa de Cambio. */
+                id_tipo_tasa: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["TipoTasaCambio"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TipoTasaCambio"];
+                };
+            };
+        };
+    };
     "finanzas_transacciones-datafono_list": {
         parameters: {
             query?: {
@@ -31320,6 +50197,188 @@ export interface operations {
             };
         };
     };
+    "fiscal_pagos-parafiscales_list": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["PagoContribucionParafiscal"][];
+                    };
+                };
+            };
+        };
+    };
+    "fiscal_pagos-parafiscales_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PagoContribucionParafiscal"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagoContribucionParafiscal"];
+                };
+            };
+        };
+    };
+    "fiscal_pagos-parafiscales_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pago de Contribución Parafiscal. */
+                id_pago_parafiscal: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagoContribucionParafiscal"];
+                };
+            };
+        };
+    };
+    "fiscal_pagos-parafiscales_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pago de Contribución Parafiscal. */
+                id_pago_parafiscal: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PagoContribucionParafiscal"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagoContribucionParafiscal"];
+                };
+            };
+        };
+    };
+    "fiscal_pagos-parafiscales_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pago de Contribución Parafiscal. */
+                id_pago_parafiscal: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "fiscal_pagos-parafiscales_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pago de Contribución Parafiscal. */
+                id_pago_parafiscal: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PagoContribucionParafiscal"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagoContribucionParafiscal"];
+                };
+            };
+        };
+    };
+    "fiscal_pagos-parafiscales_anular": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pago de Contribución Parafiscal. */
+                id_pago_parafiscal: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PagoContribucionParafiscal"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagoContribucionParafiscal"];
+                };
+            };
+        };
+    };
+    "fiscal_pagos-parafiscales_pagar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pago de Contribución Parafiscal. */
+                id_pago_parafiscal: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PagoContribucionParafiscal"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagoContribucionParafiscal"];
+                };
+            };
+        };
+    };
     "fiscal_periodos-fiscales_list": {
         parameters: {
             query?: never;
@@ -31681,6 +50740,144 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CategoriaGasto"];
+                };
+            };
+        };
+    };
+    "gastos_detalles-gasto_list": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["DetalleGasto"][];
+                    };
+                };
+            };
+        };
+    };
+    "gastos_detalles-gasto_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["DetalleGasto"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetalleGasto"];
+                };
+            };
+        };
+    };
+    "gastos_detalles-gasto_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this detalle gasto. */
+                id_detalle_gasto: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetalleGasto"];
+                };
+            };
+        };
+    };
+    "gastos_detalles-gasto_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this detalle gasto. */
+                id_detalle_gasto: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["DetalleGasto"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetalleGasto"];
+                };
+            };
+        };
+    };
+    "gastos_detalles-gasto_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this detalle gasto. */
+                id_detalle_gasto: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "gastos_detalles-gasto_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this detalle gasto. */
+                id_detalle_gasto: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["DetalleGasto"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetalleGasto"];
                 };
             };
         };
@@ -32551,6 +51748,32 @@ export interface operations {
             cookie?: never;
         };
         requestBody: components["requestBodies"]["SolicitudAprobacion"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SolicitudAprobacion"];
+                };
+            };
+        };
+    };
+    "gestion-aprobaciones_solicitudes-aprobacion_decidir": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this solicitud aprobacion. */
+                id_solicitud_aprobacion: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecidirSolicitudInput"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -33791,7 +53014,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ConectorInstanciaCreate"];
+                    "application/json": components["schemas"]["ConectorInstancia"];
                 };
             };
         };
@@ -33833,7 +53056,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ConectorInstanciaCreate"];
+                    "application/json": components["schemas"]["ConectorInstancia"];
                 };
             };
         };
@@ -33873,7 +53096,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ConectorInstanciaCreate"];
+                    "application/json": components["schemas"]["ConectorInstancia"];
                 };
             };
         };
@@ -33891,6 +53114,27 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConectorInstancia"];
+                };
+            };
+        };
+    };
+    "integration-hub_instancias_exportar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ConectorInstancia"];
+        responses: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -33943,6 +53187,31 @@ export interface operations {
             };
         };
     };
+    "integration-hub_instancias_push_cobranza": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PushCobranzaInput"];
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PushCobranzaResponse"];
+                };
+            };
+        };
+    };
     "integration-hub_instancias_trigger_sync": {
         parameters: {
             query?: never;
@@ -33952,14 +53221,18 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: components["requestBodies"]["ConectorInstancia"];
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JobSincronizacionTrigger"];
+            };
+        };
         responses: {
-            201: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ConectorInstancia"];
+                    "application/json": components["schemas"]["JobSincronizacion"];
                 };
             };
         };
@@ -34085,6 +53358,95 @@ export interface operations {
             };
         };
     };
+    "integration-hub_outbox_list": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["EventoOutbox"][];
+                    };
+                };
+            };
+        };
+    };
+    "integration-hub_outbox_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_evento: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventoOutbox"];
+                };
+            };
+        };
+    };
+    "integration-hub_outbox_reintentar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_evento: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventoOutbox"];
+                };
+            };
+            /** @description El evento no está en estado reintentable (FALLIDO o DLQ) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Evento outbox no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     "integration-hub_proveedores_list": {
         parameters: {
             query?: {
@@ -34109,6 +53471,25 @@ export interface operations {
             };
         };
     };
+    "integration-hub_proveedores_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ConectorProveedor"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConectorProveedor"];
+                };
+            };
+        };
+    };
     "integration-hub_proveedores_read": {
         parameters: {
             query?: never;
@@ -34120,6 +53501,70 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConectorProveedor"];
+                };
+            };
+        };
+    };
+    "integration-hub_proveedores_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Conector Proveedor. */
+                id_proveedor: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ConectorProveedor"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConectorProveedor"];
+                };
+            };
+        };
+    };
+    "integration-hub_proveedores_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Conector Proveedor. */
+                id_proveedor: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "integration-hub_proveedores_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Conector Proveedor. */
+                id_proveedor: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ConectorProveedor"];
         responses: {
             200: {
                 headers: {
@@ -34424,6 +53869,258 @@ export interface operations {
             };
         };
     };
+    inventario_entregas_list: {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["OperacionInventario"][];
+                    };
+                };
+            };
+        };
+    };
+    inventario_entregas_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["OperacionInventario"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperacionInventario"];
+                };
+            };
+        };
+    };
+    inventario_entregas_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperacionInventario"];
+                };
+            };
+        };
+    };
+    inventario_entregas_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["OperacionInventario"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperacionInventario"];
+                };
+            };
+        };
+    };
+    inventario_entregas_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    inventario_entregas_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["OperacionInventario"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperacionInventario"];
+                };
+            };
+        };
+    };
+    inventario_entregas_step_confirmar_step: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                step_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["OperacionInventario"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperacionInventario"];
+                };
+            };
+        };
+    };
+    "inventario_lotes-producto_list": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["LoteProducto"][];
+                    };
+                };
+            };
+        };
+    };
+    "inventario_lotes-producto_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["LoteProducto"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoteProducto"];
+                };
+            };
+        };
+    };
+    "inventario_lotes-producto_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Lote de Producto. */
+                id_lote: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoteProducto"];
+                };
+            };
+        };
+    };
+    "inventario_lotes-producto_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Lote de Producto. */
+                id_lote: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["LoteProducto"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoteProducto"];
+                };
+            };
+        };
+    };
     "inventario_movimientos-inventario_list": {
         parameters: {
             query?: {
@@ -34464,7 +54161,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody: components["requestBodies"]["MovimientoInventario"];
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MovimientoInventario"];
+            };
+        };
         responses: {
             201: {
                 headers: {
@@ -34498,35 +54199,109 @@ export interface operations {
             };
         };
     };
-    "inventario_movimientos-inventario_update": {
+    "inventario_pasos-operacion_list": {
         parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description A UUID string identifying this Movimiento de Inventario. */
-                id_movimiento_inventario: string;
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
             };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
-        requestBody: components["requestBodies"]["MovimientoInventario"];
+        requestBody?: never;
         responses: {
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MovimientoInventario"];
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["PasoOperacion"][];
+                    };
                 };
             };
         };
     };
-    "inventario_movimientos-inventario_delete": {
+    "inventario_pasos-operacion_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PasoOperacion"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasoOperacion"];
+                };
+            };
+        };
+    };
+    "inventario_pasos-operacion_read": {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this Movimiento de Inventario. */
-                id_movimiento_inventario: string;
+                /** @description A UUID string identifying this Paso de Operación. */
+                id_paso_operacion: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasoOperacion"];
+                };
+            };
+        };
+    };
+    "inventario_pasos-operacion_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Paso de Operación. */
+                id_paso_operacion: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PasoOperacion"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasoOperacion"];
+                };
+            };
+        };
+    };
+    "inventario_pasos-operacion_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Paso de Operación. */
+                id_paso_operacion: string;
             };
             cookie?: never;
         };
@@ -34540,24 +54315,24 @@ export interface operations {
             };
         };
     };
-    "inventario_movimientos-inventario_partial_update": {
+    "inventario_pasos-operacion_partial_update": {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description A UUID string identifying this Movimiento de Inventario. */
-                id_movimiento_inventario: string;
+                /** @description A UUID string identifying this Paso de Operación. */
+                id_paso_operacion: string;
             };
             cookie?: never;
         };
-        requestBody: components["requestBodies"]["MovimientoInventario"];
+        requestBody: components["requestBodies"]["PasoOperacion"];
         responses: {
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MovimientoInventario"];
+                    "application/json": components["schemas"]["PasoOperacion"];
                 };
             };
         };
@@ -34719,6 +54494,400 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Producto"];
                 };
+            };
+        };
+    };
+    inventario_recepciones_list: {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["OperacionInventario"][];
+                    };
+                };
+            };
+        };
+    };
+    inventario_recepciones_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["OperacionInventario"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperacionInventario"];
+                };
+            };
+        };
+    };
+    inventario_recepciones_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperacionInventario"];
+                };
+            };
+        };
+    };
+    inventario_recepciones_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["OperacionInventario"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperacionInventario"];
+                };
+            };
+        };
+    };
+    inventario_recepciones_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    inventario_recepciones_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["OperacionInventario"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperacionInventario"];
+                };
+            };
+        };
+    };
+    inventario_recepciones_step_confirmar_step: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                step_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["OperacionInventario"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperacionInventario"];
+                };
+            };
+        };
+    };
+    "inventario_reglas-reabastecimiento_list": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["ReglaReabastecimiento"][];
+                    };
+                };
+            };
+        };
+    };
+    "inventario_reglas-reabastecimiento_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ReglaReabastecimiento"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReglaReabastecimiento"];
+                };
+            };
+        };
+    };
+    "inventario_reglas-reabastecimiento_evaluar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EvaluarReabastecimientoInput"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvaluarReabastecimientoResponse"];
+                };
+            };
+        };
+    };
+    "inventario_reglas-reabastecimiento_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Regla de Reabastecimiento. */
+                id_regla: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReglaReabastecimiento"];
+                };
+            };
+        };
+    };
+    "inventario_reglas-reabastecimiento_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Regla de Reabastecimiento. */
+                id_regla: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ReglaReabastecimiento"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReglaReabastecimiento"];
+                };
+            };
+        };
+    };
+    "inventario_reglas-reabastecimiento_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Regla de Reabastecimiento. */
+                id_regla: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "inventario_reglas-reabastecimiento_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Regla de Reabastecimiento. */
+                id_regla: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ReglaReabastecimiento"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReglaReabastecimiento"];
+                };
+            };
+        };
+    };
+    "inventario_reglas-reabastecimiento_generar_borrador": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Regla de Reabastecimiento. */
+                id_regla: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerarBorradorInput"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenerarBorradorResponse"];
+                };
+            };
+        };
+    };
+    inventario_reportes_existencias: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    inventario_reportes_movimientos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    inventario_reportes_valoracion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -35412,6 +55581,28 @@ export interface operations {
             };
         };
     };
+    localizacion_estado_list: {
+        parameters: {
+            query?: {
+                /** @description UUID de la empresa visible (obligatorio para superusuarios Omni sin empresa propia). */
+                empresa_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EstadoLocalizacionResponse"];
+                };
+            };
+        };
+    };
     "manufactura_centros-trabajo_list": {
         parameters: {
             query?: {
@@ -35550,6 +55741,144 @@ export interface operations {
             };
         };
     };
+    manufactura_configuracion_list: {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["ConfiguracionManufactura"][];
+                    };
+                };
+            };
+        };
+    };
+    manufactura_configuracion_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ConfiguracionManufactura"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfiguracionManufactura"];
+                };
+            };
+        };
+    };
+    manufactura_configuracion_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Configuración de Manufactura. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfiguracionManufactura"];
+                };
+            };
+        };
+    };
+    manufactura_configuracion_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Configuración de Manufactura. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ConfiguracionManufactura"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfiguracionManufactura"];
+                };
+            };
+        };
+    };
+    manufactura_configuracion_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Configuración de Manufactura. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    manufactura_configuracion_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Configuración de Manufactura. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ConfiguracionManufactura"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfiguracionManufactura"];
+                };
+            };
+        };
+    };
     "manufactura_consumos-material_list": {
         parameters: {
             query?: {
@@ -35684,6 +56013,207 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ConsumoMaterial"];
+                };
+            };
+        };
+    };
+    "manufactura_etapas-produccion_list": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["EtapaProduccion"][];
+                    };
+                };
+            };
+        };
+    };
+    "manufactura_etapas-produccion_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["EtapaProduccion"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EtapaProduccion"];
+                };
+            };
+        };
+    };
+    "manufactura_etapas-produccion_crear_estandar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["EtapaProduccion"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EtapaProduccion"];
+                };
+            };
+        };
+    };
+    "manufactura_etapas-produccion_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Etapa de Producción. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EtapaProduccion"];
+                };
+            };
+        };
+    };
+    "manufactura_etapas-produccion_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Etapa de Producción. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["EtapaProduccion"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EtapaProduccion"];
+                };
+            };
+        };
+    };
+    "manufactura_etapas-produccion_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Etapa de Producción. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "manufactura_etapas-produccion_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Etapa de Producción. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["EtapaProduccion"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EtapaProduccion"];
+                };
+            };
+        };
+    };
+    "manufactura_etapas-produccion_activar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Etapa de Producción. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["EtapaProduccion"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EtapaProduccion"];
+                };
+            };
+        };
+    };
+    "manufactura_etapas-produccion_desactivar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Etapa de Producción. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["EtapaProduccion"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EtapaProduccion"];
                 };
             };
         };
@@ -36229,6 +56759,138 @@ export interface operations {
             cookie?: never;
         };
         requestBody: components["requestBodies"]["OrdenProduccion"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrdenProduccion"];
+                };
+            };
+        };
+    };
+    "manufactura_ordenes-produccion_avanzar_etapa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this orden produccion. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["OrdenProduccion"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrdenProduccion"];
+                };
+            };
+        };
+    };
+    "manufactura_ordenes-produccion_completar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this orden produccion. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["OrdenProduccion"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrdenProduccion"];
+                };
+            };
+        };
+    };
+    "manufactura_ordenes-produccion_consumir_materiales": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this orden produccion. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["OrdenProduccion"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrdenProduccion"];
+                };
+            };
+        };
+    };
+    "manufactura_ordenes-produccion_costeo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this orden produccion. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrdenProduccion"];
+                };
+            };
+        };
+    };
+    "manufactura_ordenes-produccion_etapas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this orden produccion. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrdenProduccion"];
+                };
+            };
+        };
+    };
+    "manufactura_ordenes-produccion_mrp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this orden produccion. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {
@@ -39288,6 +59950,137 @@ export interface operations {
             };
         };
     };
+    public_connect_read: {
+        parameters: {
+            query?: {
+                /** @description UID hexadecimal de la tarjeta NFC física (opcional). */
+                uid?: string;
+                /** @description Origen de visita pública: NFC, QR o ENLACE (opcional). */
+                origen?: string;
+            };
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicPerfil"];
+                };
+            };
+            /** @description Parámetros inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Perfil no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    public_connect_leads_create: {
+        parameters: {
+            query?: {
+                /** @description UID hexadecimal de la tarjeta NFC física (opcional). */
+                uid?: string;
+                /** @description Origen de visita pública: NFC, QR o ENLACE (opcional). */
+                origen?: string;
+            };
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicLeadCreate"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicLeadCreateResponse"];
+                };
+            };
+            /** @description Datos o consentimiento inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Perfil no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Límite de envíos excedido */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    public_connect_vcard_list: {
+        parameters: {
+            query?: {
+                /** @description UID hexadecimal de la tarjeta NFC física (opcional). */
+                uid?: string;
+            };
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Archivo vCard RFC 6350 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                    "text/vcard": string;
+                };
+            };
+            /** @description Parámetros inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Perfil no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     "rrhh_beneficios-empleado_list": {
         parameters: {
             query?: {
@@ -41602,6 +62395,1130 @@ export interface operations {
             };
         };
     };
+    sync_pull_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    sync_push_ventas_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tareas_alertas_list: {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["RegistroAlertaTarea"][];
+                    };
+                };
+            };
+        };
+    };
+    tareas_alertas_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_alerta_tarea: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistroAlertaTarea"];
+                };
+            };
+        };
+    };
+    tareas_areas_list: {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["AreaOperativa"][];
+                    };
+                };
+            };
+        };
+    };
+    tareas_areas_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["AreaOperativa"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AreaOperativa"];
+                };
+            };
+        };
+    };
+    tareas_areas_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_area: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AreaOperativa"];
+                };
+            };
+        };
+    };
+    tareas_areas_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_area: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["AreaOperativa"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AreaOperativa"];
+                };
+            };
+        };
+    };
+    tareas_areas_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_area: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tareas_areas_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_area: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["AreaOperativa"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AreaOperativa"];
+                };
+            };
+        };
+    };
+    tareas_areas_sincronizar_miembros: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_area: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["AreaOperativa"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AreaOperativa"];
+                };
+            };
+        };
+    };
+    tareas_configuracion_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tareas_configuracion_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tareas_items_list: {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["Tarea"][];
+                    };
+                };
+            };
+        };
+    };
+    tareas_items_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Tarea"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tarea"];
+                };
+            };
+        };
+    };
+    tareas_items_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tarea"];
+                };
+            };
+        };
+    };
+    tareas_items_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Tarea"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tarea"];
+                };
+            };
+        };
+    };
+    tareas_items_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tareas_items_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Tarea"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tarea"];
+                };
+            };
+        };
+    };
+    tareas_items_cambiar_estado: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Tarea"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tarea"];
+                };
+            };
+        };
+    };
+    tareas_items_comentarios_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tarea"];
+                };
+            };
+        };
+    };
+    tareas_items_comentarios_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Tarea"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tarea"];
+                };
+            };
+        };
+    };
+    tareas_items_dependencias_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tarea"];
+                };
+            };
+        };
+    };
+    tareas_items_dependencias_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Tarea"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tarea"];
+                };
+            };
+        };
+    };
+    tareas_items_mover: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Tarea"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tarea"];
+                };
+            };
+        };
+    };
+    tareas_minutas_list: {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["MinutaReunion"][];
+                    };
+                };
+            };
+        };
+    };
+    tareas_minutas_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["MinutaReunion"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MinutaReunion"];
+                };
+            };
+        };
+    };
+    tareas_minutas_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_minuta: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MinutaReunion"];
+                };
+            };
+        };
+    };
+    tareas_minutas_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_minuta: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tareas_minutas_confirmar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_minuta: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["MinutaReunion"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MinutaReunion"];
+                };
+            };
+        };
+    };
+    tareas_proyectos_list: {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["Proyecto"][];
+                    };
+                };
+            };
+        };
+    };
+    tareas_proyectos_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Proyecto"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Proyecto"];
+                };
+            };
+        };
+    };
+    tareas_proyectos_mi_tablero: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Proyecto"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Proyecto"];
+                };
+            };
+        };
+    };
+    tareas_proyectos_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Proyecto"];
+                };
+            };
+        };
+    };
+    tareas_proyectos_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Proyecto"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Proyecto"];
+                };
+            };
+        };
+    };
+    tareas_proyectos_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tareas_proyectos_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Proyecto"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Proyecto"];
+                };
+            };
+        };
+    };
+    tareas_recurrentes_list: {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["PlantillaTareaRecurrente"][];
+                    };
+                };
+            };
+        };
+    };
+    tareas_recurrentes_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PlantillaTareaRecurrente"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlantillaTareaRecurrente"];
+                };
+            };
+        };
+    };
+    tareas_recurrentes_materializar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PlantillaTareaRecurrente"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlantillaTareaRecurrente"];
+                };
+            };
+        };
+    };
+    tareas_recurrentes_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_plantilla_recurrente: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlantillaTareaRecurrente"];
+                };
+            };
+        };
+    };
+    tareas_recurrentes_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_plantilla_recurrente: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PlantillaTareaRecurrente"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlantillaTareaRecurrente"];
+                };
+            };
+        };
+    };
+    tareas_recurrentes_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_plantilla_recurrente: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tareas_recurrentes_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_plantilla_recurrente: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PlantillaTareaRecurrente"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlantillaTareaRecurrente"];
+                };
+            };
+        };
+    };
+    tareas_resumen_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tareas_secciones_list: {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["SeccionProyecto"][];
+                    };
+                };
+            };
+        };
+    };
+    tareas_secciones_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["SeccionProyecto"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeccionProyecto"];
+                };
+            };
+        };
+    };
+    tareas_secciones_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeccionProyecto"];
+                };
+            };
+        };
+    };
+    tareas_secciones_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["SeccionProyecto"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeccionProyecto"];
+                };
+            };
+        };
+    };
+    tareas_secciones_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tareas_secciones_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["SeccionProyecto"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeccionProyecto"];
+                };
+            };
+        };
+    };
+    tareas_seguimiento_ejecutar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     tesoreria_cajas_list: {
         parameters: {
             query?: {
@@ -41897,6 +63814,290 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ConciliacionBancaria"];
                 };
+            };
+        };
+    };
+    "tesoreria_configuraciones-conciliacion_list": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                empresa?: string;
+                cuenta?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["ConfiguracionConciliacionCuenta"][];
+                    };
+                };
+            };
+        };
+    };
+    "tesoreria_configuraciones-conciliacion_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ConfiguracionConciliacionCuenta"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfiguracionConciliacionCuenta"];
+                };
+            };
+        };
+    };
+    "tesoreria_configuraciones-conciliacion_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this configuracion conciliacion cuenta. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfiguracionConciliacionCuenta"];
+                };
+            };
+        };
+    };
+    "tesoreria_configuraciones-conciliacion_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this configuracion conciliacion cuenta. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ConfiguracionConciliacionCuenta"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfiguracionConciliacionCuenta"];
+                };
+            };
+        };
+    };
+    "tesoreria_configuraciones-conciliacion_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this configuracion conciliacion cuenta. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "tesoreria_configuraciones-conciliacion_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this configuracion conciliacion cuenta. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ConfiguracionConciliacionCuenta"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfiguracionConciliacionCuenta"];
+                };
+            };
+        };
+    };
+    "tesoreria_extractos-bancarios_list": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["ExtractoBancarioArchivo"][];
+                    };
+                };
+            };
+        };
+    };
+    "tesoreria_extractos-bancarios_importar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: uuid */
+                    empresa?: string;
+                    /** Format: uuid */
+                    cuenta_bancaria: string;
+                    formato_banco?: string;
+                    /** Format: binary */
+                    archivo: string;
+                };
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportarExtractoResponse"];
+                };
+            };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportarExtractoResponse"];
+                };
+            };
+        };
+    };
+    "tesoreria_extractos-bancarios_saldos_consolidados": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description UUID de la empresa (opcional; usa la empresa activa accesible). */
+                empresa?: string;
+                /** @description UUID de CuentaBancariaEmpresa para filtrar. */
+                cuenta?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SaldosConsolidadosResponse"];
+                };
+            };
+        };
+    };
+    "tesoreria_extractos-bancarios_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this extracto bancario archivo. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExtractoBancarioArchivo"];
+                };
+            };
+        };
+    };
+    "tesoreria_extractos-bancarios_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this extracto bancario archivo. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -42348,6 +64549,288 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OperacionCambioDivisa"];
+                };
+            };
+        };
+    };
+    "tesoreria_propuestas-conciliacion_list": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                empresa?: string;
+                cuenta?: string;
+                estado?: string;
+                tipo?: string;
+                regla?: string;
+                desde?: string;
+                hasta?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["PropuestaConciliacionBancaria"][];
+                    };
+                };
+            };
+        };
+    };
+    "tesoreria_propuestas-conciliacion_aprobadas": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                empresa?: string;
+                cuenta?: string;
+                decididas_desde?: string;
+                decididas_hasta?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PropuestaConciliacionBancaria"][];
+                };
+            };
+        };
+    };
+    "tesoreria_propuestas-conciliacion_bitacora": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                empresa?: string;
+                propuesta?: string;
+                movimiento?: string;
+                accion?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DecisionPreconciliacionBancaria"][];
+                };
+            };
+        };
+    };
+    "tesoreria_propuestas-conciliacion_generar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerarPropuestasRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenerarPropuestasResponse"];
+                };
+            };
+        };
+    };
+    "tesoreria_propuestas-conciliacion_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this propuesta conciliacion bancaria. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PropuestaConciliacionBancaria"];
+                };
+            };
+        };
+    };
+    "tesoreria_propuestas-conciliacion_decidir": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this propuesta conciliacion bancaria. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecidirPropuestaRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PropuestaConciliacionBancaria"];
+                };
+            };
+        };
+    };
+    ventas_comisiones_list: {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["ComisionVenta"][];
+                    };
+                };
+            };
+        };
+    };
+    ventas_comisiones_liquidar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ComisionVenta"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComisionVenta"];
+                };
+            };
+        };
+    };
+    ventas_comisiones_resumen: {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["ComisionVenta"][];
+                    };
+                };
+            };
+        };
+    };
+    ventas_comisiones_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Comisión de Venta. */
+                id_comision_venta: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComisionVenta"];
                 };
             };
         };
@@ -43754,6 +66237,282 @@ export interface operations {
             };
         };
     };
+    "ventas_esquemas-comision-categorias_list": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["EsquemaComisionCategoria"][];
+                    };
+                };
+            };
+        };
+    };
+    "ventas_esquemas-comision-categorias_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["EsquemaComisionCategoria"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EsquemaComisionCategoria"];
+                };
+            };
+        };
+    };
+    "ventas_esquemas-comision-categorias_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Override de Comisión por Categoría. */
+                id_esquema_comision_categoria: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EsquemaComisionCategoria"];
+                };
+            };
+        };
+    };
+    "ventas_esquemas-comision-categorias_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Override de Comisión por Categoría. */
+                id_esquema_comision_categoria: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["EsquemaComisionCategoria"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EsquemaComisionCategoria"];
+                };
+            };
+        };
+    };
+    "ventas_esquemas-comision-categorias_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Override de Comisión por Categoría. */
+                id_esquema_comision_categoria: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "ventas_esquemas-comision-categorias_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Override de Comisión por Categoría. */
+                id_esquema_comision_categoria: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["EsquemaComisionCategoria"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EsquemaComisionCategoria"];
+                };
+            };
+        };
+    };
+    "ventas_esquemas-comision_list": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["EsquemaComision"][];
+                    };
+                };
+            };
+        };
+    };
+    "ventas_esquemas-comision_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["EsquemaComision"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EsquemaComision"];
+                };
+            };
+        };
+    };
+    "ventas_esquemas-comision_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Esquema de Comisión. */
+                id_esquema_comision: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EsquemaComision"];
+                };
+            };
+        };
+    };
+    "ventas_esquemas-comision_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Esquema de Comisión. */
+                id_esquema_comision: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["EsquemaComision"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EsquemaComision"];
+                };
+            };
+        };
+    };
+    "ventas_esquemas-comision_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Esquema de Comisión. */
+                id_esquema_comision: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "ventas_esquemas-comision_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Esquema de Comisión. */
+                id_esquema_comision: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["EsquemaComision"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EsquemaComision"];
+                };
+            };
+        };
+    };
     "ventas_facturas-fiscales_list": {
         parameters: {
             query?: {
@@ -44488,6 +67247,94 @@ export interface operations {
             };
         };
     };
+    "ventas_notas-venta_convertir_factura": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Nota de Venta. */
+                id_nota_venta: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["NotaVenta"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotaVenta"];
+                };
+            };
+        };
+    };
+    "ventas_notas-venta_devoluciones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Nota de Venta. */
+                id_nota_venta: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotaVenta"];
+                };
+            };
+        };
+    };
+    "ventas_notas-venta_devolver": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Nota de Venta. */
+                id_nota_venta: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["NotaVenta"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotaVenta"];
+                };
+            };
+        };
+    };
+    "ventas_notas-venta_entregar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Nota de Venta. */
+                id_nota_venta: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["NotaVenta"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotaVenta"];
+                };
+            };
+        };
+    };
     ventas_pedidos_list: {
         parameters: {
             query?: {
@@ -44627,6 +67474,28 @@ export interface operations {
         };
     };
     ventas_pedidos_confirmar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Pedido. */
+                id_pedido: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Pedido"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Pedido"];
+                };
+            };
+        };
+    };
+    ventas_pedidos_convertir_nota_venta: {
         parameters: {
             query?: never;
             header?: never;

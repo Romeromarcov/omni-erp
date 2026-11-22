@@ -197,9 +197,7 @@ class TestCalcularAgingCxP:
         assert resultado["corriente"]["count"] == 0
         assert resultado["total_general"] == Decimal("0")
 
-    def test_aging_vence_hoy_caracas_es_corriente(
-        self, db, empresa_a, proveedor_a, factura_compra_a
-    ):
+    def test_aging_vence_hoy_caracas_es_corriente(self, db, empresa_a, proveedor_a, factura_compra_a):
         # Hallazgo BAJO (auditoría 2026-06-10): el aging usaba la fecha UTC.
         # Congelamos now() a las 02:00 UTC (= 22:00 Caracas del día anterior),
         # la ventana que fallaba: una CxP que vence HOY en Caracas debe quedar
@@ -281,8 +279,12 @@ def _cuenta(empresa, codigo, nombre, tipo, naturaleza):
     from apps.contabilidad.models import PlanCuentas
 
     return PlanCuentas.objects.create(
-        id_empresa=empresa, codigo_cuenta=codigo, nombre_cuenta=nombre,
-        tipo_cuenta=tipo, naturaleza=naturaleza, nivel=1,
+        id_empresa=empresa,
+        codigo_cuenta=codigo,
+        nombre_cuenta=nombre,
+        tipo_cuenta=tipo,
+        naturaleza=naturaleza,
+        nivel=1,
     )
 
 
@@ -292,8 +294,12 @@ def _mapeo_pago_cxp(empresa):
     debe = _cuenta(empresa, "2101", "CxP Proveedores", "PASIVO", "ACREEDORA")
     haber = _cuenta(empresa, "1101", "Banco", "ACTIVO", "DEUDORA")
     return MapeoContable.objects.create(
-        id_empresa=empresa, tipo_asiento="PAGO_CXP", cuenta_debe=debe,
-        cuenta_haber=haber, descripcion_plantilla="Pago CxP - {numero}", activo=True,
+        id_empresa=empresa,
+        tipo_asiento="PAGO_CXP",
+        cuenta_debe=debe,
+        cuenta_haber=haber,
+        descripcion_plantilla="Pago CxP - {numero}",
+        activo=True,
     )
 
 
@@ -372,12 +378,20 @@ def _mapeos_diferencia(empresa):
     gan_d = _cuenta(empresa, "2101b", "CxP Dif", "PASIVO", "ACREEDORA")
     gan_h = _cuenta(empresa, "4701", "Ganancia Cambiaria", "INGRESO", "ACREEDORA")
     MapeoContable.objects.create(
-        id_empresa=empresa, tipo_asiento="PERDIDA_CAMBIARIA", cuenta_debe=perd_d,
-        cuenta_haber=perd_h, descripcion_plantilla="Pérdida cambiaria", activo=True,
+        id_empresa=empresa,
+        tipo_asiento="PERDIDA_CAMBIARIA",
+        cuenta_debe=perd_d,
+        cuenta_haber=perd_h,
+        descripcion_plantilla="Pérdida cambiaria",
+        activo=True,
     )
     MapeoContable.objects.create(
-        id_empresa=empresa, tipo_asiento="GANANCIA_CAMBIARIA", cuenta_debe=gan_d,
-        cuenta_haber=gan_h, descripcion_plantilla="Ganancia cambiaria", activo=True,
+        id_empresa=empresa,
+        tipo_asiento="GANANCIA_CAMBIARIA",
+        cuenta_debe=gan_d,
+        cuenta_haber=gan_h,
+        descripcion_plantilla="Ganancia cambiaria",
+        activo=True,
     )
 
 
@@ -389,8 +403,11 @@ class TestDiferenciaCambiaria:
         _mapeos_diferencia(empresa_a)
         # CxP en divisa: pago de 100 a tasa 40 vs reconocida a 36 → pérdida 100*4=400
         registrar_abono_cxp(
-            cxp_pendiente, Decimal("100.00"), user_a,
-            tasa_original=Decimal("36"), tasa_pago=Decimal("40"),
+            cxp_pendiente,
+            Decimal("100.00"),
+            user_a,
+            tasa_original=Decimal("36"),
+            tasa_pago=Decimal("40"),
         )
         dif = DiferenciaCambiaria.objects.get(id_empresa=empresa_a)
         assert dif.tipo == "PERDIDA"
@@ -402,8 +419,11 @@ class TestDiferenciaCambiaria:
 
         _mapeos_diferencia(empresa_a)
         registrar_abono_cxp(
-            cxp_pendiente, Decimal("100.00"), user_a,
-            tasa_original=Decimal("40"), tasa_pago=Decimal("36"),
+            cxp_pendiente,
+            Decimal("100.00"),
+            user_a,
+            tasa_original=Decimal("40"),
+            tasa_pago=Decimal("36"),
         )
         dif = DiferenciaCambiaria.objects.get(id_empresa=empresa_a)
         assert dif.tipo == "GANANCIA"
@@ -415,8 +435,11 @@ class TestDiferenciaCambiaria:
 
         _mapeos_diferencia(empresa_a)
         registrar_abono_cxp(
-            cxp_pendiente, Decimal("100.00"), user_a,
-            tasa_original=Decimal("36"), tasa_pago=Decimal("40"),
+            cxp_pendiente,
+            Decimal("100.00"),
+            user_a,
+            tasa_original=Decimal("36"),
+            tasa_pago=Decimal("40"),
         )
         asiento = AsientoContable.objects.get(nombre_modelo_origen="DiferenciaCambiaria")
         detalles = list(asiento.detalleasiento_set.all())
@@ -428,8 +451,11 @@ class TestDiferenciaCambiaria:
 
         _mapeos_diferencia(empresa_a)
         registrar_abono_cxp(
-            cxp_pendiente, Decimal("100.00"), user_a,
-            tasa_original=Decimal("36"), tasa_pago=Decimal("36"),
+            cxp_pendiente,
+            Decimal("100.00"),
+            user_a,
+            tasa_original=Decimal("36"),
+            tasa_pago=Decimal("36"),
         )
         assert not DiferenciaCambiaria.objects.filter(id_empresa=empresa_a).exists()
 
@@ -449,9 +475,7 @@ class TestDiferenciaCambiaria:
             registrar_diferencia_cambiaria_cxp,
         )
 
-        abono = AbonoCxP.objects.create(
-            cuenta_por_pagar=cxp_pendiente, monto=Decimal("100.00"), usuario=user_a
-        )
+        abono = AbonoCxP.objects.create(cuenta_por_pagar=cxp_pendiente, monto=Decimal("100.00"), usuario=user_a)
         with pytest.raises(AbonoCxPError, match="mayores a cero"):
             registrar_diferencia_cambiaria_cxp(abono, Decimal("100"), Decimal("0"), Decimal("40"))
 
@@ -468,9 +492,7 @@ class TestDiferenciaCambiariaEndpoint:
     def test_abonar_con_tasas_devuelve_diferencia(self, db, cxp_pendiente, client_a, empresa_a):
         _mapeos_diferencia(empresa_a)
         url = f"/api/cuentas-por-pagar/cuentas-por-pagar/{cxp_pendiente.pk}/abonar/"
-        resp = client_a.post(
-            url, {"monto": "100.00", "tasa_original": "36", "tasa_pago": "40"}, format="json"
-        )
+        resp = client_a.post(url, {"monto": "100.00", "tasa_original": "36", "tasa_pago": "40"}, format="json")
         assert resp.status_code == 201
         assert resp.data["diferencia_cambiaria"]["tipo"] == "PERDIDA"
         assert resp.data["diferencia_cambiaria"]["monto"] == "400.0000"

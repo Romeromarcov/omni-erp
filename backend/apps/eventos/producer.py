@@ -4,11 +4,14 @@ OmniEventProducer — Publica eventos de dominio a Redpanda/Kafka.
 Si KAFKA_BROKER_URL no está configurado o el broker no responde,
 los eventos se registran en el log con level WARNING (degradación graceful).
 """
+
 import json
 import logging
 import uuid
 from datetime import datetime, timezone
 from typing import Any
+
+from apps.core.telemetry import inject_trace_headers, trazar_operacion
 
 logger = logging.getLogger("omni.eventos")
 
@@ -57,8 +60,7 @@ def _get_producer():
         return _producer_instance
     except Exception as exc:
         logger.warning(
-            "OmniEventProducer: no se pudo conectar al broker (%s). "
-            "Los eventos se registrarán en el log.",
+            "OmniEventProducer: no se pudo conectar al broker (%s). " "Los eventos se registrarán en el log.",
             exc,
         )
         return None
@@ -117,41 +119,53 @@ def publicar_evento(
     Returns:
         True si se publicó al broker, False si se degradó a log
     """
-    envelope = {
-        "event_id": str(uuid.uuid4()),
-        "event_type": tipo,
-        "timestamp": datetime.now(tz=timezone.utc).isoformat(),
-        "empresa_id": empresa_id,
-        "version": "1.0",
-        "payload": payload,
-    }
-
-    producer = _get_producer()
-    if producer is None:
-        logger.warning(
-            "OmniEventProducer [DEGRADADO] evento=%s empresa=%s data=%s",
-            tipo,
-            empresa_id,
-            json.dumps(payload, default=str, ensure_ascii=False),
-        )
-        return False
-
     topic = _derive_topic(tipo)
-    try:
-        producer.produce(
-            topic=topic,
-            key=empresa_id or envelope["event_id"],
-            value=json.dumps(envelope, default=str, ensure_ascii=False).encode("utf-8"),
-            on_delivery=_delivery_report,
-        )
-        producer.poll(0)  # trigger callbacks without blocking
-        return True
-    except Exception as exc:
-        logger.warning(
-            "OmniEventProducer: error al producir evento '%s': %s. "
-            "Evento guardado en log: %s",
-            tipo,
-            exc,
-            json.dumps(envelope, default=str, ensure_ascii=False),
-        )
-        return False
+    with trazar_operacion(
+        "eventos.publicar",
+        span_kind="producer",
+        event_type=tipo,
+        empresa_id=empresa_id,
+        messaging_system="kafka",
+        messaging_destination=topic,
+    ):
+        envelope = {
+            "event_id": str(uuid.uuid4()),
+            "event_type": tipo,
+            "timestamp": datetime.now(tz=timezone.utc).isoformat(),
+            "empresa_id": empresa_id,
+            "version": "1.0",
+            "payload": payload,
+        }
+
+        trace_headers = inject_trace_headers()
+
+        producer = _get_producer()
+        if producer is None:
+            logger.warning(
+                "OmniEventProducer [DEGRADADO] evento=%s empresa=%s data=%s",
+                tipo,
+                empresa_id,
+                json.dumps(payload, default=str, ensure_ascii=False),
+            )
+            return False
+
+        try:
+            produce_kwargs: dict[str, Any] = {
+                "topic": topic,
+                "key": empresa_id or envelope["event_id"],
+                "value": json.dumps(envelope, default=str, ensure_ascii=False).encode("utf-8"),
+                "on_delivery": _delivery_report,
+            }
+            if trace_headers:
+                produce_kwargs["headers"] = trace_headers
+            producer.produce(**produce_kwargs)
+            producer.poll(0)  # trigger callbacks without blocking
+            return True
+        except Exception as exc:
+            logger.warning(
+                "OmniEventProducer: error al producir evento '%s': %s. " "Evento guardado en log: %s",
+                tipo,
+                exc,
+                json.dumps(envelope, default=str, ensure_ascii=False),
+            )
+            return False

@@ -9,7 +9,11 @@ docs/audit/ que sirven de checklist de cobertura de auditoría:
 Uso:
     python manage.py mapa_superficie            # escribe los .md
     python manage.py mapa_superficie --check     # falla si están desactualizados (CI)
+
+Nota RLS: solo realiza introspección en memoria sobre el resolver URL y los
+modelos Django; no ejecuta consultas en BD (ni usa ``rls_bypass``/``rls_tenant_context``).
 """
+
 import io
 from pathlib import Path
 
@@ -64,9 +68,9 @@ def _matriz_endpoints() -> str:
         model = _model_de(cls)
         tenant = "✅" if _es_tenant(model) else "—"
         override = "✅" if "get_queryset" in cls.__dict__ else "—"
-        perms = ", ".join(
-            getattr(p, "__name__", str(p)) for p in (getattr(cls, "permission_classes", None) or [])
-        ) or "—"
+        perms = (
+            ", ".join(getattr(p, "__name__", str(p)) for p in (getattr(cls, "permission_classes", None) or [])) or "—"
+        )
         filas.append((pattern, cls.__name__, model.__name__ if model else "—", tenant, override, perms))
     for f in sorted(set(filas)):
         out.write(f"| `{f[0]}` | {f[1]} | {f[2]} | {f[3]} | {f[4]} | {f[5]} |\n")
@@ -89,12 +93,15 @@ def _matriz_modelos() -> str:
         es_uuid = pk.get_internal_type() == "UUIDField"
         ut = model._meta.unique_together
         ut_str = "; ".join("+".join(t) for t in ut) if ut else "—"
-        filas.append((
-            model._meta.app_label, model.__name__,
-            "✅" if _es_tenant(model) else "—",
-            "✅" if es_uuid else "—",
-            ut_str,
-        ))
+        filas.append(
+            (
+                model._meta.app_label,
+                model.__name__,
+                "✅" if _es_tenant(model) else "—",
+                "✅" if es_uuid else "—",
+                ut_str,
+            )
+        )
     for f in sorted(set(filas)):
         out.write(f"| {f[0]} | {f[1]} | {f[2]} | {f[3]} | {f[4]} |\n")
     out.write(f"\n_Total modelos: {len(set(filas))}_\n")
@@ -112,10 +119,8 @@ def _matriz_mcp_celery_commands() -> str:
     tools = []
     try:
         import apps.core.mcp_server as mcp_mod
-        tools = sorted(
-            n for n, o in vars(mcp_mod).items()
-            if n.startswith("omni_") and inspect.isfunction(o)
-        )
+
+        tools = sorted(n for n, o in vars(mcp_mod).items() if n.startswith("omni_") and inspect.isfunction(o))
     except Exception:  # noqa: BLE001 — introspección best-effort
         pass
     for t in tools:
@@ -128,6 +133,7 @@ def _matriz_mcp_celery_commands() -> str:
     try:
         import importlib
         from config.celery import app as celery_app
+
         # Forzar el registro importando cada apps.<app>.tasks (en un contexto sin
         # worker, autodiscover es perezoso y app.tasks no estaría poblado).
         for cfg in django_apps.get_app_configs():
@@ -152,10 +158,8 @@ def _matriz_mcp_celery_commands() -> str:
     cmd_filas = []
     try:
         from django.core.management import get_commands
-        cmd_filas = [
-            (name, app) for name, app in get_commands().items()
-            if str(app).startswith("apps.")
-        ]
+
+        cmd_filas = [(name, app) for name, app in get_commands().items() if str(app).startswith("apps.")]
     except Exception:  # noqa: BLE001
         pass
     for name, app in sorted(set(cmd_filas)):
@@ -168,8 +172,9 @@ class Command(BaseCommand):
     help = "Genera las matrices A1 (mapa de superficie) en docs/audit/."
 
     def add_arguments(self, parser):
-        parser.add_argument("--check", action="store_true",
-                            help="Falla si las matrices están desactualizadas (para CI).")
+        parser.add_argument(
+            "--check", action="store_true", help="Falla si las matrices están desactualizadas (para CI)."
+        )
 
     def handle(self, *args, **opts):
         DOCS.mkdir(parents=True, exist_ok=True)
@@ -180,12 +185,14 @@ class Command(BaseCommand):
         }
         if opts["check"]:
             desactualizados = [
-                p.name for p, contenido in artefactos.items()
+                p.name
+                for p, contenido in artefactos.items()
                 if not p.exists() or p.read_text(encoding="utf-8") != contenido
             ]
             if desactualizados:
                 self.stderr.write(
-                    "Matrices A1 desactualizadas: " + ", ".join(desactualizados)
+                    "Matrices A1 desactualizadas: "
+                    + ", ".join(desactualizados)
                     + ". Corré `python manage.py mapa_superficie` y commiteá."
                 )
                 raise SystemExit(1)

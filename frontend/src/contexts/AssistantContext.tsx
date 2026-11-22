@@ -1,4 +1,4 @@
-/* eslint-disable react-refresh/only-export-components */
+/* eslint-disable react-refresh/only-export-components -- Contexto exporta Provider y hook useAssistant (solo dev HMR) */
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useAssistantChat } from '../hooks/useAssistantChat';

@@ -12,6 +12,7 @@ Cubre:
 - SEC-B3: `monedas_info` valida el query param `?empresa=` contra
   `get_empresas_visible` (empresa ajena o malformada → 404).
 """
+
 import re
 from decimal import Decimal
 from pathlib import Path
@@ -55,9 +56,7 @@ class TestCreateInitialDataGate:
             call_command("create_initial_data")
         # No dejó rastro: ni el superusuario débil ni la empresa demo.
         assert not Usuarios.objects.filter(username="admin").exists()
-        assert not Empresa.objects.filter(
-            nombre_legal="Innova Systems C.A."
-        ).exists()
+        assert not Empresa.objects.filter(nombre_legal="Innova Systems C.A.").exists()
 
     def test_permitido_solo_en_debug(self, settings):
         from apps.core.models import Usuarios
@@ -82,16 +81,12 @@ class TestFiscalCalcularEmpresaVisible:
             "empresa_id": str(empresa_id),
         }
 
-    def test_empresa_propia_aplica_su_tasa_sin_fielderror(
-        self, client_a, empresa_a
-    ):
+    def test_empresa_propia_aplica_su_tasa_sin_fielderror(self, client_a, empresa_a):
         # Antes del fix, `id__in` sobre Empresa (pk = id_empresa) lanzaba
         # FieldError → 500. Ahora resuelve la empresa y usa su tasa configurada.
         from apps.fiscal.models import TasaIVAEmpresa
 
-        TasaIVAEmpresa.objects.create(
-            id_empresa=empresa_a, tipo="GENERAL", tasa=Decimal("0.08"), activo=True
-        )
+        TasaIVAEmpresa.objects.create(id_empresa=empresa_a, tipo="GENERAL", tasa=Decimal("0.08"), activo=True)
         resp = client_a.post(self.URL, self._body(empresa_a.id_empresa), format="json")
         assert resp.status_code == 200
         assert Decimal(resp.json()["iva_general"]) == Decimal("8.00")
@@ -101,9 +96,7 @@ class TestFiscalCalcularEmpresaVisible:
         # (cae al default SENIAT 16%).
         from apps.fiscal.models import TasaIVAEmpresa
 
-        TasaIVAEmpresa.objects.create(
-            id_empresa=empresa_b, tipo="GENERAL", tasa=Decimal("0.08"), activo=True
-        )
+        TasaIVAEmpresa.objects.create(id_empresa=empresa_b, tipo="GENERAL", tasa=Decimal("0.08"), activo=True)
         resp = client_a.post(self.URL, self._body(empresa_b.id_empresa), format="json")
         assert resp.status_code == 200
         assert Decimal(resp.json()["iva_general"]) == Decimal("16.00")
@@ -130,29 +123,21 @@ class TestMonedasInfoEmpresaValidada:
     def metodo(self, empresa_a, moneda_usd):
         from apps.finanzas.models import MetodoPago
 
-        m = MetodoPago.objects.create(
-            nombre_metodo="Efectivo P07", tipo_metodo="EFECTIVO", empresa=empresa_a
-        )
+        m = MetodoPago.objects.create(nombre_metodo="Efectivo P07", tipo_metodo="EFECTIVO", empresa=empresa_a)
         m.monedas.add(moneda_usd)
         return m
 
     def test_empresa_propia_200(self, user_a, empresa_a, metodo):
-        resp = self._viewset(metodo).monedas_info(
-            _stub_request(user_a, empresa=str(empresa_a.id_empresa))
-        )
+        resp = self._viewset(metodo).monedas_info(_stub_request(user_a, empresa=str(empresa_a.id_empresa)))
         assert resp.status_code == 200
         assert "asociadas" in resp.data
 
     def test_empresa_ajena_404(self, user_a, empresa_b, metodo):
-        resp = self._viewset(metodo).monedas_info(
-            _stub_request(user_a, empresa=str(empresa_b.id_empresa))
-        )
+        resp = self._viewset(metodo).monedas_info(_stub_request(user_a, empresa=str(empresa_b.id_empresa)))
         assert resp.status_code == 404
 
     def test_empresa_malformada_404(self, user_a, metodo):
-        resp = self._viewset(metodo).monedas_info(
-            _stub_request(user_a, empresa="no-es-un-uuid")
-        )
+        resp = self._viewset(metodo).monedas_info(_stub_request(user_a, empresa="no-es-un-uuid"))
         assert resp.status_code == 404
 
 
@@ -182,9 +167,7 @@ class TestRespuestasSinDetalleInterno:
         def _boom(_cotizacion):
             raise ImportError("detalle-interno-secreto: falta libbar 4.5.6")
 
-        monkeypatch.setattr(
-            "apps.ventas.pdf_cotizacion.generar_pdf_cotizacion", _boom
-        )
+        monkeypatch.setattr("apps.ventas.pdf_cotizacion.generar_pdf_cotizacion", _boom)
         vs = CotizacionViewSet()
         vs.get_object = lambda: SimpleNamespace(numero_cotizacion="C-00000001")
         resp = vs.pdf(_stub_request(user_a))
@@ -201,31 +184,21 @@ class TestRespuestasSinDetalleInterno:
             APPS_DIR / "cuentas_por_cobrar" / "views.py",
         ]
         # Línea que arma una Response/yield SSE con str(exc) o str(e).
-        patron = re.compile(
-            r"(Response\(|yield\s+f?[\"']data:).*str\((exc|e)\)"
-        )
+        patron = re.compile(r"(Response\(|yield\s+f?[\"']data:).*str\((exc|e)\)")
         violaciones = []
         for archivo in objetivos:
-            for n, linea in enumerate(
-                archivo.read_text(encoding="utf-8").splitlines(), start=1
-            ):
+            for n, linea in enumerate(archivo.read_text(encoding="utf-8").splitlines(), start=1):
                 if patron.search(linea):
                     violaciones.append(f"{archivo.name}:{n}: {linea.strip()}")
-        assert not violaciones, (
-            "str(exc) filtrado al cliente (R-CODE-8):\n" + "\n".join(violaciones)
-        )
+        assert not violaciones, "str(exc) filtrado al cliente (R-CODE-8):\n" + "\n".join(violaciones)
 
-    def test_test_connection_no_filtra_error_crudo(
-        self, user_a, empresa_a, monkeypatch
-    ):
+    def test_test_connection_no_filtra_error_crudo(self, user_a, empresa_a, monkeypatch):
         """integration_hub test_connection: error del conector → 502 con
         mensaje genérico y mensaje_estado sin el detalle crudo."""
         from apps.integration_hub.models import ConectorInstancia, ConectorProveedor
         from apps.integration_hub.views import ConectorInstanciaViewSet
 
-        proveedor = ConectorProveedor.objects.get_or_create(
-            codigo="odoo", defaults={"nombre": "Odoo"}
-        )[0]
+        proveedor = ConectorProveedor.objects.get_or_create(codigo="odoo", defaults={"nombre": "Odoo"})[0]
         instancia = ConectorInstancia.objects.create(
             id_empresa=empresa_a,
             id_proveedor=proveedor,
@@ -235,9 +208,7 @@ class TestRespuestasSinDetalleInterno:
         def _boom(_instancia):
             raise RuntimeError("password=supersecreta host=10.0.0.1")
 
-        monkeypatch.setattr(
-            "apps.integration_hub.views.registry.get_connector", _boom
-        )
+        monkeypatch.setattr("apps.integration_hub.views.registry.get_connector", _boom)
         vs = ConectorInstanciaViewSet()
         vs.get_object = lambda: instancia
         resp = vs.test_connection(_stub_request(user_a))

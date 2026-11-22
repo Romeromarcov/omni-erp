@@ -14,6 +14,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 
+from apps.core.exceptions import domain_error_response
 from apps.core.viewsets import (
     BaseModelViewSet,
     SoftDeleteModelMixin,
@@ -110,9 +111,7 @@ class ConciliacionLubrikcaViewSet(
         try:
             conciliacion = conciliar_pedido(pedido)
         except ConciliacionError as exc:
-            return Response(
-                {"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST
-            )
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail")
         return Response(
             ConciliacionLubrikcaSerializer(conciliacion).data,
             status=status.HTTP_201_CREATED,

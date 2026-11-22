@@ -116,10 +116,10 @@ vi.mock('../components/Pedidos/ModalBusquedaProducto', () => ({
     ) : null,
 }));
 
-interface PagoStub { id_metodo_pago: string; id_moneda: string; monto: number; tasa: number }
+interface PagoStub { id_metodo_pago: string; id_moneda: string; monto: string; tasa: string }
 interface NotaStub { id_nota_credito: string; monto_disponible: number }
-const PAGO: PagoStub = { id_metodo_pago: 'mp-1', id_moneda: 'mon-1', monto: 20, tasa: 1 };
-const VUELTO: PagoStub = { id_metodo_pago: 'mp-1', id_moneda: 'mon-1', monto: 2, tasa: 1 };
+const PAGO: PagoStub = { id_metodo_pago: 'mp-1', id_moneda: 'mon-1', monto: '20', tasa: '1' };
+const VUELTO: PagoStub = { id_metodo_pago: 'mp-1', id_moneda: 'mon-1', monto: '2', tasa: '1' };
 const NOTA: NotaStub = { id_nota_credito: 'nc-1', monto_disponible: 5 };
 
 vi.mock('../components/Pedidos/ModalPago', () => ({

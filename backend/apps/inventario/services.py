@@ -12,8 +12,9 @@ import logging
 from decimal import Decimal
 
 from django.db import transaction
+from django.db.models import F
 
-from .models import MovimientoInventario, StockActual
+from .models import LoteProducto, MovimientoInventario, MovimientoLote, StockActual
 
 logger = logging.getLogger(__name__)
 
@@ -26,9 +27,9 @@ TIPOS_AJUSTE = frozenset({"AJUSTE"})
 
 # Tipos informativos (S0.H): registran un evento sin alterar cantidad_disponible.
 # RESERVA_VENTA: creado en confirmar_pedido() como audit trail de la reserva.
-# El stock comprometido ya fue incrementado por reservar_stock(); este movimiento
-# es solo para trazabilidad y reportes.
-TIPOS_INFORMATIVO = frozenset({"RESERVA_VENTA"})
+# TRANSFERENCIA_UBICACION: creado en transferir_entre_ubicaciones() como audit
+# trail intra-almacén sin alterar StockActual ni disparar valoración/COGS.
+TIPOS_INFORMATIVO = frozenset({"RESERVA_VENTA", "TRANSFERENCIA_UBICACION"})
 
 ALL_TIPOS = TIPOS_ENTRADA | TIPOS_SALIDA | TIPOS_TRANSFERENCIA | TIPOS_AJUSTE | TIPOS_INFORMATIVO
 
@@ -63,10 +64,22 @@ class MovimientoInvalidoError(Exception):
 # ── Helpers internos ──────────────────────────────────────────────────────────
 
 
-def _actualizar_stock(empresa, producto, variante, almacen, delta: Decimal) -> StockActual:
+def _actualizar_stock(
+    empresa,
+    producto,
+    variante,
+    almacen,
+    delta: Decimal,
+    *,
+    permitir_negativo: bool = False,
+) -> StockActual:
     """
     Aplica `delta` a StockActual.cantidad_disponible dentro de una transacción activa.
     Usa get_or_create + select_for_update para evitar race conditions.
+
+    Por defecto ``permitir_negativo=False`` preserva la semántica estricta del ERP
+    (lanza ``StockInsuficienteError`` si el saldo resultante queda < 0). Solo flujos
+    opt-in autorizados por tenant (p. ej. POS offline) pasan ``permitir_negativo=True``.
     """
     stock, _ = StockActual.objects.get_or_create(
         id_producto=producto,
@@ -79,9 +92,21 @@ def _actualizar_stock(empresa, producto, variante, almacen, delta: Decimal) -> S
 
     nuevo = stock.cantidad_disponible + delta
     if nuevo < 0:
-        raise StockInsuficienteError(
-            f"Stock insuficiente en '{almacen}'. "
-            f"Disponible: {stock.cantidad_disponible}, solicitado: {abs(delta)}"
+        if not permitir_negativo:
+            raise StockInsuficienteError(
+                f"Stock insuficiente en '{almacen}'. "
+                f"Disponible: {stock.cantidad_disponible}, solicitado: {abs(delta)}"
+            )
+        logger.warning(
+            "Stock negativo permitido | empresa=%s producto=%s variante=%s almacen=%s "
+            "disponible_anterior=%s delta=%s disponible_nuevo=%s",
+            getattr(empresa, "pk", empresa),
+            getattr(producto, "pk", producto),
+            getattr(variante, "pk", variante),
+            getattr(almacen, "pk", almacen),
+            stock.cantidad_disponible,
+            delta,
+            nuevo,
         )
     stock.cantidad_disponible = nuevo
     stock.save(update_fields=["cantidad_disponible", "fecha_ultima_actualizacion"])
@@ -162,7 +187,8 @@ def liberar_reserva(empresa, producto, variante, almacen, cantidad: Decimal) -> 
         # (entregar_nota_venta) lo trate como "venta directa sin reserva previa".
         logger.warning(
             "liberar_reserva: no existe StockActual para producto=%s almacen=%s — nada que liberar.",
-            getattr(producto, "pk", producto), getattr(almacen, "pk", almacen),
+            getattr(producto, "pk", producto),
+            getattr(almacen, "pk", almacen),
         )
         raise ReservaInsuficienteError("No existe reserva para el producto/almacén indicado.") from exc
     if stock.cantidad_comprometida < cantidad:
@@ -173,6 +199,238 @@ def liberar_reserva(empresa, producto, variante, almacen, cantidad: Decimal) -> 
     stock.cantidad_comprometida -= cantidad
     stock.save(update_fields=["cantidad_comprometida", "fecha_ultima_actualizacion"])
     return stock
+
+
+def _resolver_y_acreditar_lote(
+    *,
+    empresa,
+    producto,
+    variante,
+    almacen_destino,
+    cantidad: Decimal,
+    lote,
+    fecha_fabricacion,
+    fecha_vencimiento,
+    movimiento: MovimientoInventario,
+) -> LoteProducto:
+    """Acredita `cantidad` al LoteProducto indicado (instancia o numero_lote) y registra MovimientoLote."""
+    if lote is None:
+        raise MovimientoInvalidoError(
+            "El producto maneja lotes: debe especificar 'lote' o 'numero_lote' para esta operación."
+        )
+    if fecha_fabricacion is not None and fecha_vencimiento is not None and fecha_vencimiento < fecha_fabricacion:
+        raise MovimientoInvalidoError("La fecha de vencimiento del lote no puede ser anterior a la de fabricación.")
+    if isinstance(lote, LoteProducto):
+        variante_id = variante.pk if variante is not None else None
+        if (
+            lote.id_empresa_id != empresa.pk
+            or lote.id_producto_id != producto.pk
+            or lote.id_variante_id != variante_id
+            or lote.id_almacen_id != almacen_destino.pk
+        ):
+            raise MovimientoInvalidoError(
+                "El lote indicado no corresponde a la empresa, producto, variante y almacén destino."
+            )
+        lote_obj = LoteProducto.objects.select_for_update().get(pk=lote.pk)
+    elif isinstance(lote, str):
+        lote_obj, _ = LoteProducto.objects.get_or_create(
+            id_empresa=empresa,
+            id_producto=producto,
+            id_variante=variante,
+            id_almacen=almacen_destino,
+            numero_lote=lote,
+            defaults={
+                "fecha_fabricacion": fecha_fabricacion,
+                "fecha_vencimiento": fecha_vencimiento,
+                "cantidad_disponible": Decimal("0"),
+                "cantidad_reservada": Decimal("0"),
+            },
+        )
+        lote_obj = LoteProducto.objects.select_for_update().get(pk=lote_obj.pk)
+    else:
+        raise MovimientoInvalidoError("Parámetro 'lote' inválido.")
+
+    if (
+        fecha_fabricacion is not None
+        and lote_obj.fecha_fabricacion is not None
+        and lote_obj.fecha_fabricacion != fecha_fabricacion
+    ):
+        raise MovimientoInvalidoError(
+            f"El lote '{lote_obj.numero_lote}' ya tiene fecha de fabricación "
+            f"{lote_obj.fecha_fabricacion} y no coincide con {fecha_fabricacion}."
+        )
+    if (
+        fecha_vencimiento is not None
+        and lote_obj.fecha_vencimiento is not None
+        and lote_obj.fecha_vencimiento != fecha_vencimiento
+    ):
+        raise MovimientoInvalidoError(
+            f"El lote '{lote_obj.numero_lote}' ya tiene fecha de vencimiento "
+            f"{lote_obj.fecha_vencimiento} y no coincide con {fecha_vencimiento}."
+        )
+    fab_final = lote_obj.fecha_fabricacion if lote_obj.fecha_fabricacion is not None else fecha_fabricacion
+    ven_final = lote_obj.fecha_vencimiento if lote_obj.fecha_vencimiento is not None else fecha_vencimiento
+    if fab_final is not None and ven_final is not None and ven_final < fab_final:
+        raise MovimientoInvalidoError("La fecha de vencimiento del lote no puede ser anterior a la de fabricación.")
+
+    lote_obj.cantidad_disponible += cantidad
+    update_fields = ["cantidad_disponible", "fecha_actualizacion"]
+    if not lote_obj.activo:
+        lote_obj.activo = True
+        update_fields.append("activo")
+    if lote_obj.fecha_fabricacion is None and fecha_fabricacion is not None:
+        lote_obj.fecha_fabricacion = fecha_fabricacion
+        update_fields.append("fecha_fabricacion")
+    if lote_obj.fecha_vencimiento is None and fecha_vencimiento is not None:
+        lote_obj.fecha_vencimiento = fecha_vencimiento
+        update_fields.append("fecha_vencimiento")
+    lote_obj.save(update_fields=update_fields)
+
+    MovimientoLote.objects.create(id_movimiento=movimiento, id_lote=lote_obj, cantidad=cantidad)
+    return lote_obj
+
+
+def _descontar_lotes(
+    *,
+    empresa,
+    producto,
+    variante,
+    almacen_origen,
+    cantidad: Decimal,
+    lote,
+    permitir_negativo: bool,
+    movimiento: MovimientoInventario,
+) -> list[tuple[LoteProducto, Decimal]]:
+    """Descuenta `cantidad` de un lote explícito o automáticamente vía FIFO/FEFO."""
+    variante_id = variante.pk if variante is not None else None
+    if lote is not None:
+        if isinstance(lote, LoteProducto):
+            if (
+                lote.id_empresa_id != empresa.pk
+                or lote.id_producto_id != producto.pk
+                or lote.id_variante_id != variante_id
+                or lote.id_almacen_id != almacen_origen.pk
+            ):
+                raise MovimientoInvalidoError(
+                    "El lote indicado no corresponde a la empresa, producto, variante y almacén origen."
+                )
+            lote_obj = LoteProducto.objects.select_for_update().get(pk=lote.pk)
+            if not lote_obj.activo:
+                raise MovimientoInvalidoError("El lote indicado está inactivo.")
+        elif isinstance(lote, str):
+            try:
+                lote_obj = LoteProducto.objects.select_for_update().get(
+                    id_empresa=empresa,
+                    id_producto=producto,
+                    id_variante=variante,
+                    id_almacen=almacen_origen,
+                    numero_lote=lote,
+                    activo=True,
+                )
+            except LoteProducto.DoesNotExist as exc:
+                if permitir_negativo:
+                    logger.warning(
+                        "Salida sin lote existente permitida | empresa=%s producto=%s lote=%s",
+                        getattr(empresa, "pk", empresa),
+                        getattr(producto, "pk", producto),
+                        lote,
+                    )
+                    return []
+                raise StockInsuficienteError(
+                    f"El lote '{lote}' no existe o no tiene stock en '{almacen_origen}'."
+                ) from exc
+        else:
+            raise MovimientoInvalidoError("Parámetro 'lote' inválido.")
+
+        libre = lote_obj.cantidad_disponible - lote_obj.cantidad_reservada
+        if libre < cantidad:
+            if not permitir_negativo:
+                raise StockInsuficienteError(
+                    f"Stock insuficiente en lote '{lote_obj.numero_lote}'. Libre: {libre}, solicitado: {cantidad}"
+                )
+            toma = min(max(Decimal("0"), libre), cantidad)
+            if toma <= 0:
+                return []
+        else:
+            toma = cantidad
+        lote_obj.cantidad_disponible -= toma
+        lote_obj.save(update_fields=["cantidad_disponible", "fecha_actualizacion"])
+        MovimientoLote.objects.create(id_movimiento=movimiento, id_lote=lote_obj, cantidad=toma)
+        return [(lote_obj, toma)]
+
+    qs = LoteProducto.objects.select_for_update().filter(
+        id_empresa=empresa,
+        id_producto=producto,
+        id_variante=variante,
+        id_almacen=almacen_origen,
+        activo=True,
+        cantidad_disponible__gt=F("cantidad_reservada"),
+    )
+    if getattr(producto, "estrategia_salida", "FIFO") == "FEFO":
+        qs = qs.order_by(F("fecha_vencimiento").asc(nulls_last=True), "fecha_creacion", "pk")
+    else:
+        qs = qs.order_by("fecha_creacion", "pk")
+    lotes = list(qs)
+    total_libre = sum((it.cantidad_disponible - it.cantidad_reservada for it in lotes), Decimal("0"))
+    if total_libre < cantidad and not permitir_negativo:
+        raise StockInsuficienteError(
+            f"Stock insuficiente en lotes de '{almacen_origen}'. Libre: {total_libre}, solicitado: {cantidad}"
+        )
+
+    pendiente = cantidad
+    consumidos: list[tuple[LoteProducto, Decimal]] = []
+    for lote_obj in lotes:
+        if pendiente <= 0:
+            break
+        libre = lote_obj.cantidad_disponible - lote_obj.cantidad_reservada
+        toma = min(libre, pendiente)
+        if toma <= 0:
+            continue
+        lote_obj.cantidad_disponible -= toma
+        lote_obj.save(update_fields=["cantidad_disponible", "fecha_actualizacion"])
+        MovimientoLote.objects.create(id_movimiento=movimiento, id_lote=lote_obj, cantidad=toma)
+        consumidos.append((lote_obj, toma))
+        pendiente -= toma
+    return consumidos
+
+
+def _acreditar_lote_destino_transferencia(
+    *,
+    empresa,
+    producto,
+    variante,
+    almacen_destino,
+    lote_origen: LoteProducto,
+    cantidad: Decimal,
+) -> LoteProducto:
+    """Acredita la cantidad transferida en el lote equivalente del almacén destino."""
+    lote_dest, _ = LoteProducto.objects.get_or_create(
+        id_empresa=empresa,
+        id_producto=producto,
+        id_variante=variante,
+        id_almacen=almacen_destino,
+        numero_lote=lote_origen.numero_lote,
+        defaults={
+            "fecha_fabricacion": lote_origen.fecha_fabricacion,
+            "fecha_vencimiento": lote_origen.fecha_vencimiento,
+            "cantidad_disponible": Decimal("0"),
+            "cantidad_reservada": Decimal("0"),
+        },
+    )
+    lote_dest = LoteProducto.objects.select_for_update().get(pk=lote_dest.pk)
+    lote_dest.cantidad_disponible += cantidad
+    update_fields = ["cantidad_disponible", "fecha_actualizacion"]
+    if not lote_dest.activo:
+        lote_dest.activo = True
+        update_fields.append("activo")
+    if lote_dest.fecha_fabricacion is None and lote_origen.fecha_fabricacion is not None:
+        lote_dest.fecha_fabricacion = lote_origen.fecha_fabricacion
+        update_fields.append("fecha_fabricacion")
+    if lote_dest.fecha_vencimiento is None and lote_origen.fecha_vencimiento is not None:
+        lote_dest.fecha_vencimiento = lote_origen.fecha_vencimiento
+        update_fields.append("fecha_vencimiento")
+    lote_dest.save(update_fields=update_fields)
+    return lote_dest
 
 
 # ── Función principal ─────────────────────────────────────────────────────────
@@ -194,6 +452,10 @@ def registrar_movimiento(
     nombre_modelo_origen=None,
     usuario,
     observaciones=None,
+    permitir_negativo: bool = False,
+    lote=None,
+    fecha_fabricacion=None,
+    fecha_vencimiento=None,
 ) -> MovimientoInventario:
     """
     Crea un MovimientoInventario y actualiza StockActual de forma atómica.
@@ -208,6 +470,8 @@ def registrar_movimiento(
     """
     tipo = tipo_movimiento
     cantidad = Decimal(str(cantidad))
+    if isinstance(lote, str):
+        lote = lote.strip() or None
 
     # ── Validaciones de presencia de almacén ─────────────────────────────────
     if tipo in TIPOS_ENTRADA:
@@ -236,17 +500,13 @@ def registrar_movimiento(
     # ── Validar documento origen para salidas controladas (M5) ───────────────
     if tipo in TIPOS_SALIDA_CONTROLADA:
         if not documento_origen_id:
-            raise MovimientoInvalidoError(
-                f"El tipo '{tipo}' requiere un documento_origen_id (RequisicionInterna)."
-            )
+            raise MovimientoInvalidoError(f"El tipo '{tipo}' requiere un documento_origen_id (RequisicionInterna).")
         from .models import RequisicionInterna
 
         try:
             req = RequisicionInterna.objects.get(id_requisicion=documento_origen_id, id_empresa=empresa)
         except RequisicionInterna.DoesNotExist:
-            raise MovimientoInvalidoError(
-                f"RequisicionInterna '{documento_origen_id}' no existe."
-            )
+            raise MovimientoInvalidoError(f"RequisicionInterna '{documento_origen_id}' no existe.")
         if req.estado != "APROBADA":
             raise MovimientoInvalidoError(
                 f"La requisición debe estar APROBADA para despachar. Estado actual: {req.estado}"
@@ -288,6 +548,7 @@ def registrar_movimiento(
     # ── M5-T3: Advertencia para AJUSTE sin justificante ──────────────────────
     if tipo in TIPOS_AJUSTE_CONTROLADO and not documento_origen_id:
         import logging as _logging
+
         _logging.getLogger(__name__).warning(
             "AJUSTE de inventario registrado sin documento_origen_id. "
             "Se recomienda referenciar una autorización o justificante. "
@@ -319,17 +580,120 @@ def registrar_movimiento(
         _actualizar_stock(empresa, producto, variante, almacen_destino, cantidad)
 
     elif tipo in TIPOS_SALIDA:
-        _actualizar_stock(empresa, producto, variante, almacen_origen, -cantidad)
+        _actualizar_stock(
+            empresa,
+            producto,
+            variante,
+            almacen_origen,
+            -cantidad,
+            permitir_negativo=permitir_negativo,
+        )
 
     elif tipo in TIPOS_TRANSFERENCIA:
-        _actualizar_stock(empresa, producto, variante, almacen_origen, -cantidad)
+        _actualizar_stock(
+            empresa,
+            producto,
+            variante,
+            almacen_origen,
+            -cantidad,
+            permitir_negativo=permitir_negativo,
+        )
         _actualizar_stock(empresa, producto, variante, almacen_destino, cantidad)
 
     elif tipo in TIPOS_AJUSTE:
-        _actualizar_stock(empresa, producto, variante, almacen_destino, cantidad)
+        _actualizar_stock(
+            empresa,
+            producto,
+            variante,
+            almacen_destino,
+            cantidad,
+            permitir_negativo=permitir_negativo,
+        )
 
-    # TIPOS_INFORMATIVO (RESERVA_VENTA): solo registra el evento, sin alterar StockActual.
-    # La reserva ya fue reflejada en cantidad_comprometida por reservar_stock().
+    # TIPOS_INFORMATIVO (RESERVA_VENTA, TRANSFERENCIA_UBICACION): solo registran el evento.
+
+    # ── Trazabilidad de Lotes opt-in (maneja_lotes=True) ──────────────────────
+    if getattr(producto, "maneja_lotes", False) and tipo not in TIPOS_INFORMATIVO:
+        if tipo in TIPOS_ENTRADA:
+            lote_obj = _resolver_y_acreditar_lote(
+                empresa=empresa,
+                producto=producto,
+                variante=variante,
+                almacen_destino=almacen_destino,
+                cantidad=cantidad,
+                lote=lote,
+                fecha_fabricacion=fecha_fabricacion,
+                fecha_vencimiento=fecha_vencimiento,
+                movimiento=movimiento,
+            )
+            movimiento.id_lote = lote_obj
+            movimiento.save(update_fields=["id_lote"])
+        elif tipo in TIPOS_SALIDA:
+            consumidos = _descontar_lotes(
+                empresa=empresa,
+                producto=producto,
+                variante=variante,
+                almacen_origen=almacen_origen,
+                cantidad=cantidad,
+                lote=lote,
+                permitir_negativo=permitir_negativo,
+                movimiento=movimiento,
+            )
+            if consumidos:
+                movimiento.id_lote = consumidos[0][0]
+                movimiento.save(update_fields=["id_lote"])
+        elif tipo in TIPOS_TRANSFERENCIA:
+            consumidos = _descontar_lotes(
+                empresa=empresa,
+                producto=producto,
+                variante=variante,
+                almacen_origen=almacen_origen,
+                cantidad=cantidad,
+                lote=lote,
+                permitir_negativo=permitir_negativo,
+                movimiento=movimiento,
+            )
+            for lote_orig, qty_lote in consumidos:
+                _acreditar_lote_destino_transferencia(
+                    empresa=empresa,
+                    producto=producto,
+                    variante=variante,
+                    almacen_destino=almacen_destino,
+                    lote_origen=lote_orig,
+                    cantidad=qty_lote,
+                )
+            if consumidos:
+                movimiento.id_lote = consumidos[0][0]
+                movimiento.save(update_fields=["id_lote"])
+        elif tipo in TIPOS_AJUSTE:
+            if cantidad > 0:
+                lote_obj = _resolver_y_acreditar_lote(
+                    empresa=empresa,
+                    producto=producto,
+                    variante=variante,
+                    almacen_destino=almacen_destino,
+                    cantidad=cantidad,
+                    lote=lote,
+                    fecha_fabricacion=fecha_fabricacion,
+                    fecha_vencimiento=fecha_vencimiento,
+                    movimiento=movimiento,
+                )
+                movimiento.id_lote = lote_obj
+                movimiento.save(update_fields=["id_lote"])
+            elif cantidad < 0:
+                consumidos = _descontar_lotes(
+                    empresa=empresa,
+                    producto=producto,
+                    variante=variante,
+                    almacen_origen=almacen_destino,
+                    cantidad=abs(cantidad),
+                    lote=lote,
+                    permitir_negativo=permitir_negativo,
+                    movimiento=movimiento,
+                )
+                if consumidos:
+                    movimiento.id_lote = consumidos[0][0]
+                    movimiento.save(update_fields=["id_lote"])
 
     # ── Valoración de inventario (FIFO / Promedio) ────────────────────────────
     # Crea los registros ValoracionInventario. Para las salidas sin costo
@@ -354,6 +718,7 @@ def registrar_movimiento(
         # activa y falta el mapeo, generar_asiento_o_fallar lanza AsientoError y la
         # transacción revierte; si no, loguea un warning y continúa sin asiento.
         from apps.contabilidad.services import generar_asiento_o_fallar
+
         generar_asiento_o_fallar("AJUSTE_INVENTARIO", movimiento, empresa, monto=monto_asiento, usuario=usuario)
 
     # ── Costo de ventas (COGS) al despachar una venta (R-CODE-11) ────────────
@@ -363,12 +728,9 @@ def registrar_movimiento(
     # Promedio). El asiento de ingresos (DR CxC / CR Ingresos) lo genera el flujo
     # de ventas por separado. Best-effort: si no hay mapeo COSTO_VENTA y la
     # empresa no exige contabilidad, se omite; si la exige, revierte la entrega.
-    if (
-        tipo in TIPOS_DESPACHO_VENTA
-        and valoracion_salida is not None
-        and valoracion_salida.valor_total > 0
-    ):
+    if tipo in TIPOS_DESPACHO_VENTA and valoracion_salida is not None and valoracion_salida.valor_total > 0:
         from apps.contabilidad.services import generar_asiento_o_fallar
+
         generar_asiento_o_fallar(
             "COSTO_VENTA", movimiento, empresa, monto=valoracion_salida.valor_total, usuario=usuario
         )
@@ -392,9 +754,7 @@ def aprobar_requisicion(requisicion, aprobado_por) -> None:
     from datetime import date
 
     if requisicion.estado != "BORRADOR":
-        raise RequisicionError(
-            f"Solo se aprueban requisiciones en BORRADOR. Estado: {requisicion.estado}"
-        )
+        raise RequisicionError(f"Solo se aprueban requisiciones en BORRADOR. Estado: {requisicion.estado}")
     requisicion.estado = "APROBADA"
     requisicion.aprobado_por = aprobado_por
     requisicion.fecha_aprobacion = date.today()
@@ -415,9 +775,7 @@ def despachar_requisicion_interna(requisicion, usuario) -> list:
     from django.utils import timezone
 
     if requisicion.estado != "APROBADA":
-        raise RequisicionError(
-            f"Solo se despachan requisiciones APROBADAS. Estado: {requisicion.estado}"
-        )
+        raise RequisicionError(f"Solo se despachan requisiciones APROBADAS. Estado: {requisicion.estado}")
 
     detalles = list(requisicion.detalles.select_related("id_producto", "id_variante"))
     if not detalles:

@@ -15,6 +15,7 @@ Cubre:
   UsuarioRoles, RegistroAuditoria, ClaveIdempotencia, Contacto (3 ramas),
   ConfiguracionFlujoDocumentos y Notificacion; ``Contacto.nombre_completo``.
 """
+
 import datetime
 
 import pytest
@@ -43,9 +44,7 @@ pytestmark = [pytest.mark.django_db, pytest.mark.integration]
 
 @pytest.fixture
 def sucursal_a(empresa_a):
-    return Sucursal.objects.create(
-        id_empresa=empresa_a, nombre="Sucursal Modelos", codigo_sucursal="SUC-M1"
-    )
+    return Sucursal.objects.create(id_empresa=empresa_a, nombre="Sucursal Modelos", codigo_sucursal="SUC-M1")
 
 
 # ── Dispositivo ───────────────────────────────────────────────────────────────
@@ -159,25 +158,19 @@ class TestCapabilityToken:
 
     def test_comodin_no_autorizado_para_usuario_normal(self, empresa_a, user_a):
         """M-SEC-9: un usuario normal no escala con '*'."""
-        t = CapabilityToken.objects.create(
-            empresa=empresa_a, nombre="t", scopes=["*"], creado_por=user_a
-        )
+        t = CapabilityToken.objects.create(empresa=empresa_a, nombre="t", scopes=["*"], creado_por=user_a)
         assert t.comodin_autorizado is False
         assert t.has_scope("ventas:write") is False
 
     def test_comodin_autorizado_para_superusuario(self, empresa_a, user_a):
         user_a.es_superusuario_omni = True
         user_a.save(update_fields=["es_superusuario_omni"])
-        t = CapabilityToken.objects.create(
-            empresa=empresa_a, nombre="t", scopes=["*"], creado_por=user_a
-        )
+        t = CapabilityToken.objects.create(empresa=empresa_a, nombre="t", scopes=["*"], creado_por=user_a)
         assert t.comodin_autorizado is True
         assert t.has_scope("cxc:write") is True
 
     def test_has_scope_explicito(self, empresa_a, user_a):
-        t = CapabilityToken.objects.create(
-            empresa=empresa_a, nombre="t", scopes=["crm:read"], creado_por=user_a
-        )
+        t = CapabilityToken.objects.create(empresa=empresa_a, nombre="t", scopes=["crm:read"], creado_por=user_a)
         assert t.has_scope("crm:read") is True
         assert t.has_scope("crm:write") is False
 
@@ -212,40 +205,44 @@ class TestUsuariosModelo:
         assert list(user_a.get_cajas_virtuales_disponibles()) == []
 
     def test_cajas_virtuales_disponibles_por_tipo(self, user_a, empresa_a, empresa_b, moneda_usd):
-        cf_a = CajaFisica.objects.create(
-            empresa=empresa_a, nombre="CF-A", identificador_dispositivo="cv-a"
-        )
-        cf_b = CajaFisica.objects.create(
-            empresa=empresa_b, nombre="CF-B", identificador_dispositivo="cv-b"
-        )
+        cf_a = CajaFisica.objects.create(empresa=empresa_a, nombre="CF-A", identificador_dispositivo="cv-a")
+        cf_b = CajaFisica.objects.create(empresa=empresa_b, nombre="CF-B", identificador_dispositivo="cv-b")
         CajaFisicaUsuario.objects.create(usuario=user_a, caja_fisica=cf_a)
         CajaFisicaUsuario.objects.create(usuario=user_a, caja_fisica=cf_b)
         reg = Caja.objects.create(
-            empresa=empresa_a, nombre="Registradora", tipo_caja="REGISTRADORA",
-            moneda=moneda_usd, caja_fisica=cf_a,
+            empresa=empresa_a,
+            nombre="Registradora",
+            tipo_caja="REGISTRADORA",
+            moneda=moneda_usd,
+            caja_fisica=cf_a,
         )
         ger = Caja.objects.create(
-            empresa=empresa_a, nombre="Gerencia", tipo_caja="GERENCIA",
-            moneda=moneda_usd, caja_fisica=cf_a,
+            empresa=empresa_a,
+            nombre="Gerencia",
+            tipo_caja="GERENCIA",
+            moneda=moneda_usd,
+            caja_fisica=cf_a,
         )
         otra = Caja.objects.create(
-            empresa=empresa_a, nombre="Otra", tipo_caja="OTRO",
-            moneda=moneda_usd, caja_fisica=cf_a,
+            empresa=empresa_a,
+            nombre="Otra",
+            tipo_caja="OTRO",
+            moneda=moneda_usd,
+            caja_fisica=cf_a,
         )
         caja_b = Caja.objects.create(
-            empresa=empresa_b, nombre="Caja B", tipo_caja="REGISTRADORA",
-            moneda=moneda_usd, caja_fisica=cf_b,
+            empresa=empresa_b,
+            nombre="Caja B",
+            tipo_caja="REGISTRADORA",
+            moneda=moneda_usd,
+            caja_fisica=cf_b,
         )
         # Sin asignación a caja física no aparece
-        Caja.objects.create(
-            empresa=empresa_a, nombre="Huérfana", tipo_caja="REGISTRADORA", moneda=moneda_usd
-        )
+        Caja.objects.create(empresa=empresa_a, nombre="Huérfana", tipo_caja="REGISTRADORA", moneda=moneda_usd)
         todas = set(user_a.get_cajas_virtuales_disponibles().values_list("nombre", flat=True))
         assert todas == {"Registradora", "Gerencia", "Otra", "Caja B"}
         # Filtro por empresa
-        solo_a = set(
-            user_a.get_cajas_virtuales_disponibles(empresa=empresa_a).values_list("nombre", flat=True)
-        )
+        solo_a = set(user_a.get_cajas_virtuales_disponibles(empresa=empresa_a).values_list("nombre", flat=True))
         assert solo_a == {"Registradora", "Gerencia", "Otra"}
         assert caja_b.nombre not in solo_a
 
@@ -308,14 +305,10 @@ class TestStrs:
         assert str(clave).startswith("cxc:abonar:abcdef0123456789…")
 
     def test_contacto_str_y_nombre_completo(self, empresa_a):
-        juridica = Contacto.objects.create(
-            id_empresa=empresa_a, tipo_persona="JURIDICA", nombre="Acme C.A."
-        )
+        juridica = Contacto.objects.create(id_empresa=empresa_a, tipo_persona="JURIDICA", nombre="Acme C.A.")
         assert str(juridica) == "Acme C.A."
         assert juridica.nombre_completo == "Acme C.A."
-        natural = Contacto.objects.create(
-            id_empresa=empresa_a, tipo_persona="NATURAL", nombre="Ana", apellido="Pérez"
-        )
+        natural = Contacto.objects.create(id_empresa=empresa_a, tipo_persona="NATURAL", nombre="Ana", apellido="Pérez")
         assert str(natural) == "Ana Pérez"
         assert natural.nombre_completo == "Ana Pérez"
         comercial = Contacto.objects.create(

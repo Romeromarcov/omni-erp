@@ -91,10 +91,7 @@ class TestBuildEvent:
     def test_event_ids_son_unicos(self):
         from apps.core.events import build_event
 
-        ids = {
-            build_event(event_type="omni.test.a.b", tenant_id="t", payload={})["event_id"]
-            for _ in range(50)
-        }
+        ids = {build_event(event_type="omni.test.a.b", tenant_id="t", payload={})["event_id"] for _ in range(50)}
         assert len(ids) == 50
 
     def test_payload_se_preserva(self):

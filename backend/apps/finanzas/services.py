@@ -23,7 +23,15 @@ class TasaCambioError(Exception):
 _TIPO_TASA_PRIORIDAD = ["ESPECIAL_USUARIO", "FIJA", "PROMEDIO_MERCADO", "OFICIAL_BCV"]
 
 
-def obtener_tasa_cambio(moneda_origen, moneda_destino, empresa=None, fecha=None):
+def obtener_tasa_cambio(
+    moneda_origen,
+    moneda_destino,
+    empresa=None,
+    fecha=None,
+    *,
+    codigo_tipo_tasa: str | None = None,
+    solo_oficial_fiscal: bool = False,
+):
     """
     Busca la tasa de cambio más adecuada entre dos monedas para una fecha.
 
@@ -32,13 +40,17 @@ def obtener_tasa_cambio(moneda_origen, moneda_destino, empresa=None, fecha=None)
     2. Tasa global OFICIAL_BCV (id_empresa=None) para la fecha exacta.
     3. Tasa más reciente disponible (empresa-específica o global) dentro de los últimos 30 días.
 
+    Si se pasa ``codigo_tipo_tasa`` o ``solo_oficial_fiscal=True``, delega en
+    ``services_trimonetario.obtener_tasa_por_tipo`` (soporta tipos extensibles y par inverso).
     Si moneda_origen == moneda_destino devuelve tasa 1.0.
 
     Args:
-        moneda_origen:  Instancia Moneda o código ISO (str).
-        moneda_destino: Instancia Moneda o código ISO (str).
-        empresa:        Instancia Empresa o UUID; puede ser None para buscar solo tasas globales.
-        fecha:          date — fecha de referencia; default hoy (timezone.localdate()).
+        moneda_origen:       Instancia Moneda o código ISO (str).
+        moneda_destino:      Instancia Moneda o código ISO (str).
+        empresa:             Instancia Empresa o UUID; puede ser None para buscar solo tasas globales.
+        fecha:               date — fecha de referencia; default hoy (timezone.localdate()).
+        codigo_tipo_tasa:    Código del ``TipoTasaCambio`` deseado (opcional).
+        solo_oficial_fiscal: Fuerza el uso exclusivo de tasa oficial/fiscal (ej. BCV).
 
     Returns:
         TasaCambio — instancia con la mejor tasa disponible.
@@ -46,19 +58,34 @@ def obtener_tasa_cambio(moneda_origen, moneda_destino, empresa=None, fecha=None)
     Raises:
         TasaCambioError si no se encuentra ninguna tasa.
     """
-    from .models import Moneda, TasaCambio
+    if codigo_tipo_tasa or solo_oficial_fiscal:
+        from .services_trimonetario import obtener_tasa_por_tipo
 
-    # Resolver monedas por ISO si se pasan como strings
+        return obtener_tasa_por_tipo(
+            moneda_origen,
+            moneda_destino,
+            empresa=empresa,
+            fecha=fecha,
+            codigo_tipo_tasa=codigo_tipo_tasa,
+            solo_oficial_fiscal=solo_oficial_fiscal,
+        )
+
+    from .cache import normalizar_empresa_uuid, obtener_moneda_por_iso, obtener_tasa_cambio_cacheada
+    from .models import TasaCambio
+
+    empresa_id = normalizar_empresa_uuid(empresa)
+
+    # Resolver monedas por ISO si se pasan como strings (con caché por scope/empresa)
     if isinstance(moneda_origen, str):
-        try:
-            moneda_origen = Moneda.objects.get(codigo_iso=moneda_origen)
-        except Moneda.DoesNotExist:
+        moneda_origen_resuelta = obtener_moneda_por_iso(moneda_origen, empresa_id=empresa_id)
+        if moneda_origen_resuelta is None:
             raise TasaCambioError(f"Moneda '{moneda_origen}' no encontrada.")
+        moneda_origen = moneda_origen_resuelta
     if isinstance(moneda_destino, str):
-        try:
-            moneda_destino = Moneda.objects.get(codigo_iso=moneda_destino)
-        except Moneda.DoesNotExist:
+        moneda_destino_resuelta = obtener_moneda_por_iso(moneda_destino, empresa_id=empresa_id)
+        if moneda_destino_resuelta is None:
             raise TasaCambioError(f"Moneda '{moneda_destino}' no encontrada.")
+        moneda_destino = moneda_destino_resuelta
 
     # Misma moneda — tasa identidad (usamos un stub no persistente)
     if moneda_origen.pk == moneda_destino.pk:
@@ -77,44 +104,14 @@ def obtener_tasa_cambio(moneda_origen, moneda_destino, empresa=None, fecha=None)
         # 20:00 Caracas (= 00:00 UTC) y podía no encontrar tasa para "hoy".
         fecha = timezone.localdate()
 
-    base_qs = TasaCambio.objects.filter(
-        id_moneda_origen=moneda_origen,
-        id_moneda_destino=moneda_destino,
-        fecha_tasa=fecha,
+    tasa_cacheada = obtener_tasa_cambio_cacheada(
+        moneda_origen,
+        moneda_destino,
+        empresa_id=empresa_id,
+        fecha=fecha,
     )
-
-    # 1. Tasa empresa-específica (fecha exacta)
-    if empresa is not None:
-        empresa_qs = base_qs.filter(id_empresa=empresa)
-        for tipo in _TIPO_TASA_PRIORIDAD:
-            tasa = empresa_qs.filter(tipo_tasa=tipo).order_by("-fecha_creacion").first()
-            if tasa:
-                return tasa
-
-    # 2. Tasa global OFICIAL_BCV (fecha exacta)
-    tasa = base_qs.filter(id_empresa=None, tipo_tasa="OFICIAL_BCV").order_by("-fecha_creacion").first()
-    if tasa:
-        return tasa
-
-    # 3. Tasa más reciente disponible (últimos 30 días)
-    from datetime import timedelta
-
-    fecha_limite = fecha - timedelta(days=30)
-    recientes_qs = TasaCambio.objects.filter(
-        id_moneda_origen=moneda_origen,
-        id_moneda_destino=moneda_destino,
-        fecha_tasa__gte=fecha_limite,
-        fecha_tasa__lte=fecha,
-    ).order_by("-fecha_tasa", "-fecha_creacion")
-
-    if empresa is not None:
-        tasa = recientes_qs.filter(id_empresa=empresa).first()
-        if tasa:
-            return tasa
-
-    tasa = recientes_qs.filter(id_empresa=None).first()
-    if tasa:
-        return tasa
+    if tasa_cacheada is not None:
+        return tasa_cacheada
 
     raise TasaCambioError(
         f"No hay tasa de cambio disponible entre {moneda_origen.codigo_iso} "
@@ -122,16 +119,27 @@ def obtener_tasa_cambio(moneda_origen, moneda_destino, empresa=None, fecha=None)
     )
 
 
-def convertir_monto(monto: Decimal, moneda_origen, moneda_destino, empresa=None, fecha=None) -> Decimal:
+def convertir_monto(
+    monto: Decimal,
+    moneda_origen,
+    moneda_destino,
+    empresa=None,
+    fecha=None,
+    *,
+    codigo_tipo_tasa: str | None = None,
+    solo_oficial_fiscal: bool = False,
+) -> Decimal:
     """
     Convierte un monto de moneda_origen a moneda_destino.
 
     Args:
-        monto:          Monto a convertir (Decimal o numérico).
-        moneda_origen:  Instancia Moneda o código ISO.
-        moneda_destino: Instancia Moneda o código ISO.
-        empresa:        Instancia Empresa o UUID; None para tasas globales.
-        fecha:          date; default hoy.
+        monto:               Monto a convertir (Decimal o numérico).
+        moneda_origen:       Instancia Moneda o código ISO.
+        moneda_destino:      Instancia Moneda o código ISO.
+        empresa:             Instancia Empresa o UUID; None para tasas globales.
+        fecha:               date; default hoy.
+        codigo_tipo_tasa:    Código del ``TipoTasaCambio`` deseado (opcional).
+        solo_oficial_fiscal: Fuerza tasa oficial/fiscal (ej. BCV).
 
     Returns:
         Decimal — monto convertido, redondeado a 4 decimales.
@@ -144,7 +152,14 @@ def convertir_monto(monto: Decimal, moneda_origen, moneda_destino, empresa=None,
     if monto < 0:
         raise ValueError("El monto a convertir no puede ser negativo.")
 
-    tasa = obtener_tasa_cambio(moneda_origen, moneda_destino, empresa=empresa, fecha=fecha)
+    tasa = obtener_tasa_cambio(
+        moneda_origen,
+        moneda_destino,
+        empresa=empresa,
+        fecha=fecha,
+        codigo_tipo_tasa=codigo_tipo_tasa,
+        solo_oficial_fiscal=solo_oficial_fiscal,
+    )
     resultado = monto * tasa.valor_tasa
     return resultado.quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
 
@@ -207,7 +222,7 @@ def registrar_efectos_pago(pago):
         referencia_pago=pago.referencia,
         descripcion=f"Pago {pago.tipo_operacion.lower()} - {pago.get_tipo_documento_display()}",
         tipo_documento_asociado=pago.tipo_documento,
-        nro_documento_asociado=str(pago.id_documento),
+        nro_documento_asociado=str(pago.id_documento or pago.id_pago),
         id_caja=pago.id_caja_virtual,
         id_cuenta_bancaria=pago.id_cuenta_bancaria,
         id_usuario_registro=pago.id_usuario_registro,
@@ -231,9 +246,7 @@ def registrar_efectos_pago(pago):
         if pago.id_caja_virtual_id:
             contenedor = Caja.objects.select_for_update().get(pk=pago.id_caja_virtual_id)
         else:
-            contenedor = CuentaBancariaEmpresa.objects.select_for_update().get(
-                pk=pago.id_cuenta_bancaria_id
-            )
+            contenedor = CuentaBancariaEmpresa.objects.select_for_update().get(pk=pago.id_cuenta_bancaria_id)
 
         tipo_movimiento = "INGRESO" if pago.tipo_operacion == "INGRESO" else "EGRESO"
         saldo_anterior = contenedor.saldo_actual
@@ -348,8 +361,7 @@ def realizar_cierre_caja(caja, saldo_real, usuario=None, hasta=None):
             movimientos = caja.movimientos.all()
         # Hasta el límite del cierre, inclusive
         movimientos = movimientos.filter(
-            Q(fecha_movimiento__lt=fecha_limite)
-            | Q(fecha_movimiento=fecha_limite, hora_movimiento__lte=hora_limite)
+            Q(fecha_movimiento__lt=fecha_limite) | Q(fecha_movimiento=fecha_limite, hora_movimiento__lte=hora_limite)
         )
         ingresos = sum(
             (m.monto for m in movimientos.filter(tipo_movimiento__in=tipos_ingreso)),
@@ -429,8 +441,6 @@ def realizar_cierre_caja(caja, saldo_real, usuario=None, hasta=None):
         "movimiento_ajuste_id": movimiento_ajuste.id_movimiento if movimiento_ajuste else None,
         "fecha_cierre": limite,
         "mensaje": (
-            f"Cierre de {etiqueta} realizado."
-            if descuadre == 0
-            else f"Cierre de {etiqueta} realizado con ajuste."
+            f"Cierre de {etiqueta} realizado." if descuadre == 0 else f"Cierre de {etiqueta} realizado con ajuste."
         ),
     }

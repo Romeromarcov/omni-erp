@@ -28,6 +28,7 @@ _TIPO_POR_EVENTO = {
     "PAGO_RECIBIDO": "EXITO",
     "STOCK_BAJO": "ALERTA",
     "FACTURA_VENCIDA": "ALERTA",
+    "CONNECT_LEAD_CAPTURADO": "EXITO",
 }
 
 # Títulos por defecto para notificaciones in-app
@@ -36,25 +37,24 @@ _TITULO_POR_EVENTO = {
     "PAGO_RECIBIDO": "Pago registrado",
     "STOCK_BAJO": "Alerta de stock bajo",
     "FACTURA_VENCIDA": "Factura por vencer",
+    "CONNECT_LEAD_CAPTURADO": "Nuevo lead desde Omni Connect",
 }
 
 # Templates de mensaje in-app por evento (Django template syntax)
 _MENSAJE_TEMPLATES = {
     "PEDIDO_CONFIRMADO": (
-        "El pedido #{{ numero_pedido }} del cliente {{ nombre_cliente }} "
-        "ha sido confirmado exitosamente."
+        "El pedido #{{ numero_pedido }} del cliente {{ nombre_cliente }} " "ha sido confirmado exitosamente."
     ),
-    "PAGO_RECIBIDO": (
-        "Se registró un pago de {{ monto }} {{ moneda }} "
-        "para la factura #{{ numero_factura }}."
-    ),
+    "PAGO_RECIBIDO": ("Se registró un pago de {{ monto }} {{ moneda }} " "para la factura #{{ numero_factura }}."),
     "STOCK_BAJO": (
         "El producto {{ nombre_producto }} tiene stock bajo: "
         "{{ cantidad_actual }} unidades (mínimo: {{ cantidad_minima }})."
     ),
     "FACTURA_VENCIDA": (
-        "La factura #{{ numero_factura }} de {{ nombre_cliente }} "
-        "venció el {{ fecha_vencimiento }}."
+        "La factura #{{ numero_factura }} de {{ nombre_cliente }} " "venció el {{ fecha_vencimiento }}."
+    ),
+    "CONNECT_LEAD_CAPTURADO": (
+        "{{ nombre_lead }} compartió sus datos vía {{ fuente }} en tu tarjeta {{ perfil_slug }}."
     ),
 }
 
@@ -140,6 +140,7 @@ def _encolar_email(codigo_evento: str, usuario, contexto: dict) -> None:
             estado="PENDIENTE",
         )
         from apps.notificaciones.tasks import enviar_notificacion_email
+
         enviar_notificacion_email.delay(
             str(plantilla.id_plantilla),
             email,

@@ -86,7 +86,7 @@ const DETALLE = {
   comentarios: '',
 };
 
-const PAGO: Pago = { id_metodo_pago: 'mp-1', id_moneda: 'mon-1', monto: 20, tasa: 1 };
+const PAGO: Pago = { id_metodo_pago: 'mp-1', id_moneda: 'mon-1', monto: '20', tasa: '1' };
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -280,18 +280,24 @@ describe('useNotaVentaForm.submitNotaVenta', () => {
     detalles: [DETALLE],
   };
 
-  it('crea la nota con detalles numéricos e id_cliente anidado', async () => {
+  it('crea la nota con detalles como string decimal exacto e id_cliente anidado', async () => {
     const { result } = renderHook(() => useNotaVentaForm(), { wrapper: createWrapper() });
 
     let numero: string | null = null;
     await act(async () => {
-      numero = await result.current.submitNotaVenta(values, [PAGO]);
+      numero = await result.current.submitNotaVenta(
+        {
+          ...values,
+          detalles: [{ ...DETALLE, cantidad: '3', precio_unitario: '0.1' }],
+        },
+        [PAGO],
+      );
     });
     expect(numero).toBe('NV-1');
     const [payload] = notaVentaCreateMock.mock.calls[0] as [Record<string, unknown>];
     expect(payload.id_cliente).toEqual({ id_cliente: 'cli-1' });
     const detalles = payload.detalles as Array<Record<string, unknown>>;
-    expect(detalles[0]).toMatchObject({ cantidad: 2, precio_unitario: 10, subtotal: 20 });
+    expect(detalles[0]).toMatchObject({ cantidad: '3', precio_unitario: '0.1', subtotal: '0.30' });
     expect(createPagoDocumentoMock).toHaveBeenCalledWith('NOTA_VENTA', 'nv-1', PAGO);
     expect(result.current.numeroNotaVentaCreado).toBe('NV-1');
   });

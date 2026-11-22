@@ -7,6 +7,7 @@ activo de la empresa. Nunca escribe a Odoo ni a las tablas de trabajo humano.
 Uso:
     python manage.py sincronizar_cxc_lubrikca --empresa <id_o_rif> [--desde "2026-06-01 00:00:00"]
 """
+
 from __future__ import annotations
 
 from django.core.management.base import BaseCommand, CommandError
@@ -16,9 +17,7 @@ class Command(BaseCommand):
     help = "Sincroniza el espejo CxC Lubrikca desde Odoo (solo lectura)."
 
     def add_arguments(self, parser):
-        parser.add_argument(
-            "--empresa", required=True, help="id_empresa (UUID) o RIF del tenant."
-        )
+        parser.add_argument("--empresa", required=True, help="id_empresa (UUID) o RIF del tenant.")
         parser.add_argument(
             "--desde",
             default=None,
@@ -26,6 +25,7 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **opts):
+        from apps.core import rls
         from apps.core.models import Empresa
         from apps.cxc_lubrikca.services.sync import SyncError, sincronizar_empresa
         from django.core.exceptions import ValidationError
@@ -34,7 +34,8 @@ class Command(BaseCommand):
 
         self.stdout.write(f"Sincronizando empresa {empresa.pk} desde Odoo…")
         try:
-            counts = sincronizar_empresa(empresa, desde=opts.get("desde"))
+            with rls.rls_tenant_context([empresa.pk]):
+                counts = sincronizar_empresa(empresa, desde=opts.get("desde"))
         except SyncError as exc:
             raise CommandError(str(exc)) from exc
 

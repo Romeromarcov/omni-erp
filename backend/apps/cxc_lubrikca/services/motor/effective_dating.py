@@ -88,11 +88,7 @@ def promocion_primera_compra_vigente(
     fecha: date,
 ) -> PromocionPrimeraCompra | None:
     """Promoción de primera compra vigente a ``fecha`` (la más reciente)."""
-    candidatas = [
-        p
-        for p in promos
-        if _vigente(p.vigencia_desde, p.vigencia_hasta, p.activo, fecha)
-    ]
+    candidatas = [p for p in promos if _vigente(p.vigencia_desde, p.vigencia_hasta, p.activo, fecha)]
     if not candidatas:
         return None
     return max(candidatas, key=lambda p: p.vigencia_desde)
@@ -109,11 +105,7 @@ def tasa_bcv_completo_vigente(
     (conservador). None si no hay tasa configurada → el motor no otorga el
     descuento (no se regala sin instrucción explícita).
     """
-    candidatas = [
-        r
-        for r in reglas
-        if _vigente(r.vigencia_desde, r.vigencia_hasta, r.activo, fecha)
-    ]
+    candidatas = [r for r in reglas if _vigente(r.vigencia_desde, r.vigencia_hasta, r.activo, fecha)]
     if not candidatas:
         return None
     elegida = max(candidatas, key=lambda r: (r.vigencia_desde, -r.porcentaje))
@@ -132,10 +124,7 @@ def regla_recurrencia_vigente(
     aplicable), luego menor ``valor`` por conservadurismo.
     """
     candidatas = [
-        r
-        for r in reglas
-        if r.condicion == condicion
-        and _vigente(r.vigencia_desde, r.vigencia_hasta, r.activo, fecha)
+        r for r in reglas if r.condicion == condicion and _vigente(r.vigencia_desde, r.vigencia_hasta, r.activo, fecha)
     ]
     if not candidatas:
         return None

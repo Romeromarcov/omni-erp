@@ -33,9 +33,9 @@ import { mensajeDeError } from '../../utils/api';
 import { useSnackbar } from '../../contexts/feedbackTypes';
 import { PageContainer, PageHeader, DataTable, StatusChip, KpiCard } from '../../components/ui';
 import type { Column } from '../../components/ui';
+import { formatoDecimal, type DecimalInput } from '../../lib/decimal';
 
-const money = (v: string | number) =>
-  `$${parseFloat(String(v)).toLocaleString('es-VE', { minimumFractionDigits: 2 })}`;
+const money = (v: DecimalInput) => `$${formatoDecimal(v, 2, 2)}`;
 
 const RESULTADO_COLOR: Record<string, 'success' | 'warning' | 'error'> = {
   verde: 'success',

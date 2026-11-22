@@ -9,6 +9,7 @@ duplicar la venta ni sus efectos.
 
 Estos tests fijan esa garantía (antes solo estaba cubierta para Pago y Abono).
 """
+
 import pytest
 
 pytestmark = pytest.mark.django_db
@@ -20,9 +21,7 @@ URL = "/api/ventas/notas-venta/"
 def cliente_a(db, empresa_a):
     from apps.crm.models import Cliente
 
-    return Cliente.objects.create(
-        id_empresa=empresa_a, razon_social="Consumidor Final", rif="V-00000000-0"
-    )
+    return Cliente.objects.create(id_empresa=empresa_a, razon_social="Consumidor Final", rif="V-00000000-0")
 
 
 def _payload(cliente, numero="NV-SYNC-1"):
@@ -76,9 +75,7 @@ def test_replay_aislado_por_tenant(client_a, client_b, empresa_a, empresa_b, cli
     """La misma clave en otra empresa NO colisiona (scope multi-tenant)."""
     from apps.crm.models import Cliente
 
-    cliente_b = Cliente.objects.create(
-        id_empresa=empresa_b, razon_social="Consumidor B", rif="V-11111111-1"
-    )
+    cliente_b = Cliente.objects.create(id_empresa=empresa_b, razon_social="Consumidor B", rif="V-11111111-1")
     headers = {"HTTP_IDEMPOTENCY_KEY": "misma-clave"}
     ra = client_a.post(URL, _payload(cliente_a, "NV-A"), format="json", **headers)
     rb = client_b.post(URL, _payload(cliente_b, "NV-B"), format="json", **headers)

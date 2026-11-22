@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './helpers/test';
 import { formatoMonedaDashboard, iniciarSesion } from './helpers/sesion';
 import {
   carteraDashboard,

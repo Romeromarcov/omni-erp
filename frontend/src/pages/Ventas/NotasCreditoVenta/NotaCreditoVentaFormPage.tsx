@@ -16,7 +16,7 @@ import type { Producto } from '../../../services/productosService';
 import { Alert, Box, Button, Card, IconButton, MenuItem, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
-import { D, sumDecimals } from '../../../lib/decimal';
+import { D, formatoMoneda, sumDecimals } from '../../../lib/decimal';
 import { PageContainer, PageHeader, SectionTitle } from '../../../components/ui';
 
 const defaultValues: NotaCreditoVentaInput = {
@@ -81,12 +81,12 @@ const NotaCreditoVentaFormPage: React.FC = () => {
         observaciones: notaCreditoData.observaciones || '',
         detalles: (notaCreditoData.detalles || []).map((d) => ({
           id_producto: d.id_producto || '',
-          cantidad: Number(d.cantidad ?? 0),
-          precio_unitario: Number(d.precio_unitario ?? 0),
+          cantidad: String(d.cantidad ?? '0'),
+          precio_unitario: String(d.precio_unitario ?? '0'),
         })),
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intencional: solo rehidratar al cargar notaCreditoData, sin disparar por isDirty/reset
   }, [notaCreditoData]);
 
   // Total en vivo calculado con decimal.js sobre los detalles observados.
@@ -120,12 +120,12 @@ const NotaCreditoVentaFormPage: React.FC = () => {
         id_producto: d.id_producto,
         cantidad: d.cantidad,
         precio_unitario: d.precio_unitario,
-        subtotal: subtotal.toNumber(),
-        monto_impuesto: 0,
-        total_linea: subtotal.toNumber(),
+        subtotal: subtotal.toFixed(),
+        monto_impuesto: '0',
+        total_linea: subtotal.toFixed(),
       };
     });
-    const total = sumDecimals(detallesPayload.map((d) => d.total_linea)).toNumber();
+    const total = sumDecimals(detallesPayload.map((d) => d.total_linea)).toFixed();
     const payload: Partial<NotaCreditoVenta> = {
       fecha_emision: values.fecha_emision,
       estado: values.estado,
@@ -251,7 +251,7 @@ const NotaCreditoVentaFormPage: React.FC = () => {
               variant="contained"
               color="secondary"
               size="small"
-              onClick={() => append({ id_producto: '', cantidad: 1, precio_unitario: 0 })}
+              onClick={() => append({ id_producto: '', cantidad: '1', precio_unitario: '0' })}
             >
               <AddIcon fontSize="small" /> Agregar
             </Button>
@@ -279,7 +279,7 @@ const NotaCreditoVentaFormPage: React.FC = () => {
                       const linea = detalles?.at(index);
                       // eslint-disable-next-line security/detect-object-injection -- FP: `index` es el índice entero que emite fields.map (array de RHF), no una clave arbitraria
                       const erroresLinea = errors.detalles?.[index];
-                      const subtotal = D(linea?.cantidad || 0).times(D(linea?.precio_unitario || 0)).toNumber();
+                      const subtotal = D(linea?.cantidad || 0).times(D(linea?.precio_unitario || 0));
                       return (
                         <TableRow key={fieldItem.id}>
                           <TableCell>
@@ -325,7 +325,7 @@ const NotaCreditoVentaFormPage: React.FC = () => {
                             />
                           </TableCell>
                           <TableCell align="right">
-                            {subtotal.toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
+                            {formatoMoneda(subtotal)}
                           </TableCell>
                           <TableCell align="right">
                             <IconButton onClick={() => remove(index)} color="error" size="small">
@@ -347,7 +347,7 @@ const NotaCreditoVentaFormPage: React.FC = () => {
 
           {fields.length > 0 && (
             <Box sx={{ mt: 3, p: 2, bgcolor: 'grey.100', borderRadius: 1, textAlign: 'right', fontWeight: 700 }}>
-              Total: {montoTotal.toNumber().toLocaleString('es-VE', { style: 'currency', currency: 'VES' })}
+              Total: {formatoMoneda(montoTotal)}
             </Box>
           )}
         </Card>

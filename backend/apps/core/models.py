@@ -1,5 +1,4 @@
 # apps/core/models.py
-import uuid
 from apps.core.uuid import uuid7
 
 from django.contrib.auth.models import AbstractUser
@@ -7,6 +6,7 @@ from django.db import models
 from django.utils import timezone
 
 from .base_models import IntegrationFieldsMixin, OmniBaseModel
+from .validators import normalizar_email, normalizar_telefono
 
 
 class Empresa(OmniBaseModel, IntegrationFieldsMixin):
@@ -153,9 +153,7 @@ class Usuarios(AbstractUser):
     documento_json = models.JSONField(null=True, blank=True)
     # Hereda campos como username, email, first_name, last_name, is_staff, is_active, date_joined, etc.
     # Sobreescribimos el campo id para usar UUIDField como PK
-    id = models.UUIDField(
-        primary_key=True, default=uuid7, editable=False
-    )  # Usamos 'id' como PK para AbstractUser
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)  # Usamos 'id' como PK para AbstractUser
     empresas = models.ManyToManyField(Empresa, related_name="usuarios")
     # Eliminamos el campo 'id_rol' directo aquí, ya que se maneja con la tabla intermedia UsuarioRoles
     sucursales = models.ManyToManyField(Sucursal, related_name="usuarios")
@@ -873,7 +871,15 @@ class Contacto(OmniBaseModel):
     # Contacto
     email = models.EmailField(blank=True, default="")
     telefono = models.CharField(max_length=50, blank=True, default="")
+    email_normalizado = models.CharField(max_length=254, blank=True, default="")
+    telefono_normalizado = models.CharField(max_length=20, blank=True, default="")
     direccion_fiscal = models.TextField(blank=True, default="")
+
+    # Geolocalización (capturada p. ej. desde el bot de Telegram) para ubicar al cliente en mapa/rutas.
+    latitud = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitud = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    gps_precision_m = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    gps_capturado_en = models.DateTimeField(null=True, blank=True)
 
     # Roles booleanos
     es_cliente = models.BooleanField(default=False)
@@ -916,8 +922,36 @@ class Contacto(OmniBaseModel):
         indexes = [
             models.Index(fields=["id_empresa", "es_cliente"]),
             models.Index(fields=["id_empresa", "es_proveedor"]),
+            models.Index(fields=["id_empresa", "email_normalizado"]),
+            models.Index(fields=["id_empresa", "telefono_normalizado"]),
             models.Index(fields=["rif"]),
         ]
+
+    def _sincronizar_normalizados(self) -> None:
+        self.email_normalizado = normalizar_email(self.email)
+        self.telefono_normalizado = normalizar_telefono(self.telefono)
+
+    def clean_fields(self, exclude=None):
+        if isinstance(self.email, str):
+            self.email = self.email.strip()
+        self._sincronizar_normalizados()
+        super().clean_fields(exclude=exclude)
+
+    def clean(self):
+        super().clean()
+        self._sincronizar_normalizados()
+
+    def save(self, *args, **kwargs):
+        self._sincronizar_normalizados()
+        update_fields = kwargs.get("update_fields")
+        if update_fields is not None:
+            uf = set(update_fields)
+            if "email" in uf:
+                uf.add("email_normalizado")
+            if "telefono" in uf:
+                uf.add("telefono_normalizado")
+            kwargs["update_fields"] = list(uf)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         if self.nombre_comercial:
@@ -1080,6 +1114,7 @@ class Notificacion(models.Model):
 
     def marcar_leida(self):
         from django.utils import timezone
+
         self.leida = True
         self.fecha_lectura = timezone.now()
         self.save(update_fields=["leida", "fecha_lectura"])

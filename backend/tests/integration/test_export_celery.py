@@ -99,9 +99,7 @@ def test_ejecutar_export_instancia_delega_en_export_engine(empresa_a):
         "apps.integration_hub.services.export_engine.ExportEngine.exportar",
         return_value=[fake_job],
     ) as mock_exportar:
-        resultado = tasks.ejecutar_export_instancia(
-            str(destino.pk), ["contactos"], incremental=True
-        )
+        resultado = tasks.ejecutar_export_instancia(str(destino.pk), ["contactos"], incremental=True)
 
     mock_exportar.assert_called_once()
     _, kwargs = mock_exportar.call_args
@@ -113,9 +111,7 @@ def test_ejecutar_export_instancia_delega_en_export_engine(empresa_a):
 
 
 def test_ejecutar_export_instancia_instancia_inexistente():
-    resultado = tasks.ejecutar_export_instancia(
-        "00000000-0000-0000-0000-000000000000", None
-    )
+    resultado = tasks.ejecutar_export_instancia("00000000-0000-0000-0000-000000000000", None)
     assert "error" in resultado
 
 
@@ -124,9 +120,7 @@ def test_ejecutar_export_instancia_inactiva_no_exporta(empresa_a):
     destino.activo = False
     destino.save(update_fields=["activo"])
 
-    with patch(
-        "apps.integration_hub.services.export_engine.ExportEngine.exportar"
-    ) as mock_exportar:
+    with patch("apps.integration_hub.services.export_engine.ExportEngine.exportar") as mock_exportar:
         resultado = tasks.ejecutar_export_instancia(str(destino.pk), None)
 
     mock_exportar.assert_not_called()
@@ -138,9 +132,7 @@ def test_ejecutar_export_instancia_inactiva_no_exporta(empresa_a):
 
 def test_export_automatico_dispara_instancia_sheets_vencida(empresa_a):
     # ultimo_sync hace 1h, intervalo 15 min → vencida.
-    destino = _instancia_sheets(
-        empresa_a, ultimo_sync=timezone.now() - timedelta(hours=1)
-    )
+    destino = _instancia_sheets(empresa_a, ultimo_sync=timezone.now() - timedelta(hours=1))
     with patch.object(tasks.ejecutar_export_instancia, "delay") as mock_delay:
         resultado = tasks.export_automatico_todos()
 
@@ -185,9 +177,7 @@ def test_export_automatico_omite_proveedor_no_sheets(empresa_a):
 
 
 def test_export_automatico_omite_intervalo_cero(empresa_a):
-    _instancia_sheets(
-        empresa_a, intervalo=0, ultimo_sync=timezone.now() - timedelta(hours=1)
-    )
+    _instancia_sheets(empresa_a, intervalo=0, ultimo_sync=timezone.now() - timedelta(hours=1))
     with patch.object(tasks.ejecutar_export_instancia, "delay") as mock_delay:
         resultado = tasks.export_automatico_todos()
     assert resultado == {"exports_encolados": 0}
@@ -195,9 +185,7 @@ def test_export_automatico_omite_intervalo_cero(empresa_a):
 
 
 def test_export_automatico_omite_si_job_outbound_en_progreso(empresa_a):
-    destino = _instancia_sheets(
-        empresa_a, ultimo_sync=timezone.now() - timedelta(hours=1)
-    )
+    destino = _instancia_sheets(empresa_a, ultimo_sync=timezone.now() - timedelta(hours=1))
     JobSincronizacion.objects.create(
         id_instancia=destino,
         tipo_entidad="contactos",
@@ -224,16 +212,12 @@ def test_endpoint_exportar_encola_y_responde_202(empresa_a, user_a):
 
     with patch.object(tasks.ejecutar_export_instancia, "delay") as mock_delay:
         mock_delay.return_value = MagicMock(id="task-123")
-        resp = client.post(
-            _url(destino), {"tipos": ["contactos"], "full": True}, format="json"
-        )
+        resp = client.post(_url(destino), {"tipos": ["contactos"], "full": True}, format="json")
 
     assert resp.status_code == 202
     assert resp.data["task_id"] == "task-123"
     assert "mensaje" in resp.data
-    mock_delay.assert_called_once_with(
-        str(destino.pk), ["contactos"], incremental=False
-    )
+    mock_delay.assert_called_once_with(str(destino.pk), ["contactos"], incremental=False)
 
 
 def test_endpoint_exportar_default_incremental_true(empresa_a, user_a):
@@ -339,9 +323,7 @@ def test_crear_instancia_sheets_sin_origen_400(empresa_a, user_a):
         {
             "id_proveedor": str(prov_sheets.pk),
             "nombre": "Sheets sin origen",
-            "configuracion": {
-                "service_account": {"client_email": "svc@p.iam.gserviceaccount.com"}
-            },
+            "configuracion": {"service_account": {"client_email": "svc@p.iam.gserviceaccount.com"}},
         },
     )
     assert resp.status_code == 400

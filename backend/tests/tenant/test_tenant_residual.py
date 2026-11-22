@@ -90,9 +90,7 @@ def test_no_puedo_marcar_asistencia_de_empleado_otro_tenant(user_a, empleado_b):
 def test_balance_comprobacion_empresa_ajena_404(user_a, empresa_b):
     client = APIClient()
     client.force_authenticate(user=user_a)
-    resp = client.get(
-        f"/api/contabilidad/asientos-contables/balance_comprobacion/?empresa_id={empresa_b.id_empresa}"
-    )
+    resp = client.get(f"/api/contabilidad/asientos-contables/balance_comprobacion/?empresa_id={empresa_b.id_empresa}")
     assert resp.status_code == 404
 
 

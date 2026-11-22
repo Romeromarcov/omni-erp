@@ -166,8 +166,14 @@ def _dummy_value(f):
         return f"t{n}@test.local"
     if t == "URLField":
         return f"https://test.local/{n}"
-    if t in ("IntegerField", "BigIntegerField", "SmallIntegerField",
-             "PositiveIntegerField", "PositiveSmallIntegerField", "PositiveBigIntegerField"):
+    if t in (
+        "IntegerField",
+        "BigIntegerField",
+        "SmallIntegerField",
+        "PositiveIntegerField",
+        "PositiveSmallIntegerField",
+        "PositiveBigIntegerField",
+    ):
         return 1
     if t == "DecimalField":
         return Decimal("1")
@@ -286,8 +292,7 @@ def test_post_con_fk_ajena_rechazada(dotted, cls, url, campo, modelo, user_a, em
         # comportamiento de este mecanismo ya se prueba con los modelos sí
         # construibles; aquí garantizamos que el ViewSet no quedó fuera).
         assert issubclass(cls, TenantFKScopeMixin), (
-            f"No se pudo construir {modelo.__name__} ({exc}) y {dotted} no hereda "
-            "TenantFKScopeMixin."
+            f"No se pudo construir {modelo.__name__} ({exc}) y {dotted} no hereda " "TenantFKScopeMixin."
         )
         return
 
@@ -296,8 +301,7 @@ def test_post_con_fk_ajena_rechazada(dotted, cls, url, campo, modelo, user_a, em
     resp = client.post(url, {campo: str(ajeno.pk)}, format="json")
 
     assert 400 <= resp.status_code < 500, (
-        f"{dotted} ({url}): POST con {campo} de Empresa B devolvió "
-        f"{resp.status_code}; se esperaba 4xx (rechazo)."
+        f"{dotted} ({url}): POST con {campo} de Empresa B devolvió " f"{resp.status_code}; se esperaba 4xx (rechazo)."
     )
     if resp.status_code == 400 and isinstance(resp.data, dict):
         # Si la validación de serializer corrió, el campo ajeno DEBE estar entre

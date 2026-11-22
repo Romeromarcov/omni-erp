@@ -62,29 +62,44 @@ def producto(empresa_a, moneda_usd):
     unidad = UnidadMedida.objects.create(id_empresa=empresa_a, nombre="U", abreviatura="U-OP", tipo="CANTIDAD")
     cat = CategoriaProducto.objects.create(id_empresa=empresa_a, nombre_categoria="Cat OP")
     return Producto.objects.create(
-        id_empresa=empresa_a, id_categoria=cat, id_unidad_medida_base=unidad,
-        id_moneda_precio=moneda_usd, nombre_producto="Prod OP", metodo_valoracion="PROMEDIO",
+        id_empresa=empresa_a,
+        id_categoria=cat,
+        id_unidad_medida_base=unidad,
+        id_moneda_precio=moneda_usd,
+        nombre_producto="Prod OP",
+        metodo_valoracion="PROMEDIO",
     )
 
 
 def _pasos(empresa, almacen, tipo, nombres):
     for i, nombre in enumerate(nombres, start=1):
         PasoOperacion.objects.create(
-            id_empresa=empresa, id_almacen=almacen, tipo_operacion=tipo,
-            nombre_paso=nombre, secuencia=i,
+            id_empresa=empresa,
+            id_almacen=almacen,
+            tipo_operacion=tipo,
+            nombre_paso=nombre,
+            secuencia=i,
         )
 
 
 def _cuenta(empresa, codigo, nombre, tipo="ACTIVO", nat="DEUDORA"):
     return PlanCuentas.objects.create(
-        id_empresa=empresa, codigo_cuenta=codigo, nombre_cuenta=nombre,
-        tipo_cuenta=tipo, naturaleza=nat, nivel=1,
+        id_empresa=empresa,
+        codigo_cuenta=codigo,
+        nombre_cuenta=nombre,
+        tipo_cuenta=tipo,
+        naturaleza=nat,
+        nivel=1,
     )
 
 
 def _mapeo(empresa, tipo, debe, haber):
     return MapeoContable.objects.create(
-        id_empresa=empresa, tipo_asiento=tipo, cuenta_debe=debe, cuenta_haber=haber, activo=True,
+        id_empresa=empresa,
+        tipo_asiento=tipo,
+        cuenta_debe=debe,
+        cuenta_haber=haber,
+        activo=True,
     )
 
 
@@ -107,7 +122,8 @@ def test_recepcion_sube_stock_y_genera_asiento(client_a, empresa_a, almacen, pro
     _mapeo(empresa_a, "RECEPCION_MERCANCIA", inv, cxp)
 
     payload = {
-        "almacen": str(almacen.id_almacen), "origen_tipo": "PURCHASE",
+        "almacen": str(almacen.id_almacen),
+        "origen_tipo": "PURCHASE",
         "lineas": [{"producto": str(producto.id_producto), "cantidad": "10", "costo_unitario": "7.00"}],
     }
     resp = client_a.post(REC, payload, format="json")
@@ -129,9 +145,9 @@ def test_recepcion_sube_stock_y_genera_asiento(client_a, empresa_a, almacen, pro
     detalles = DetalleAsiento.objects.filter(id_asiento=asiento)
     debe = next(d for d in detalles if d.debe > 0)
     haber = next(d for d in detalles if d.haber > 0)
-    assert debe.id_cuenta_contable_id == inv.pk   # DR Inventario
-    assert haber.id_cuenta_contable_id == cxp.pk    # CR CxP
-    assert debe.debe == Decimal("70.00")            # 10 × 7.00
+    assert debe.id_cuenta_contable_id == inv.pk  # DR Inventario
+    assert haber.id_cuenta_contable_id == cxp.pk  # CR CxP
+    assert debe.debe == Decimal("70.00")  # 10 × 7.00
     assert debe.debe == haber.haber
 
 
@@ -141,7 +157,8 @@ def test_recepcion_sube_stock_y_genera_asiento(client_a, empresa_a, almacen, pro
 def test_confirmar_paso_fuera_de_orden_devuelve_400(client_a, empresa_a, almacen, producto):
     _pasos(empresa_a, almacen, "RECEPCION", ["Confirmación", "Calidad"])
     payload = {
-        "almacen": str(almacen.id_almacen), "origen_tipo": "PURCHASE",
+        "almacen": str(almacen.id_almacen),
+        "origen_tipo": "PURCHASE",
         "lineas": [{"producto": str(producto.id_producto), "cantidad": "5", "costo_unitario": "3.00"}],
     }
     op = client_a.post(REC, payload, format="json").json()
@@ -161,14 +178,20 @@ def test_entrega_transferencia_mueve_stock_entre_almacenes(
     client_a, empresa_a, almacen, almacen_dest, producto, user_a
 ):
     registrar_movimiento(
-        empresa=empresa_a, fecha_hora_movimiento=timezone.now(), tipo_movimiento="ENTRADA",
-        producto=producto, cantidad=Decimal("20"), almacen_destino=almacen,
-        costo_unitario=Decimal("5.00"), usuario=user_a,
+        empresa=empresa_a,
+        fecha_hora_movimiento=timezone.now(),
+        tipo_movimiento="ENTRADA",
+        producto=producto,
+        cantidad=Decimal("20"),
+        almacen_destino=almacen,
+        costo_unitario=Decimal("5.00"),
+        usuario=user_a,
     )
     _pasos(empresa_a, almacen, "ENTREGA", ["Picking", "Despacho"])
 
     payload = {
-        "almacen": str(almacen.id_almacen), "origen_tipo": "TRANSFER",
+        "almacen": str(almacen.id_almacen),
+        "origen_tipo": "TRANSFER",
         "almacen_contraparte": str(almacen_dest.id_almacen),
         "lineas": [{"producto": str(producto.id_producto), "cantidad": "8"}],
     }
@@ -177,7 +200,9 @@ def test_entrega_transferencia_mueve_stock_entre_almacenes(
     _confirmar_todos_en_orden(client_a, ENT, op["id_operacion"], op["pasos"])
 
     assert StockActual.objects.get(id_producto=producto, id_almacen=almacen).cantidad_disponible == Decimal("12.0000")
-    assert StockActual.objects.get(id_producto=producto, id_almacen=almacen_dest).cantidad_disponible == Decimal("8.0000")
+    assert StockActual.objects.get(id_producto=producto, id_almacen=almacen_dest).cantidad_disponible == Decimal(
+        "8.0000"
+    )
 
 
 # ── T04 — Entrega de venta (COGS + ingresos) ──────────────────────────────────
@@ -188,9 +213,14 @@ def test_entrega_venta_genera_cogs_e_ingresos(client_a, empresa_a, almacen, prod
     from apps.ventas.models import DetalleNotaVenta, NotaVenta
 
     registrar_movimiento(
-        empresa=empresa_a, fecha_hora_movimiento=timezone.now(), tipo_movimiento="ENTRADA",
-        producto=producto, cantidad=Decimal("10"), almacen_destino=almacen,
-        costo_unitario=Decimal("6.00"), usuario=user_a,
+        empresa=empresa_a,
+        fecha_hora_movimiento=timezone.now(),
+        tipo_movimiento="ENTRADA",
+        producto=producto,
+        cantidad=Decimal("10"),
+        almacen_destino=almacen,
+        costo_unitario=Decimal("6.00"),
+        usuario=user_a,
     )
     _pasos(empresa_a, almacen, "ENTREGA", ["Picking", "Empaque", "Despacho"])
 
@@ -202,20 +232,25 @@ def test_entrega_venta_genera_cogs_e_ingresos(client_a, empresa_a, almacen, prod
     _mapeo(empresa_a, "COSTO_VENTA", costo, inv)
     _mapeo(empresa_a, "NOTA_VENTA", cxc, ingresos)
 
-    cliente = Cliente.objects.create(
-        id_empresa=empresa_a, razon_social="Cliente", rif="V-1-0", tipo_cliente="CONTADO"
-    )
+    cliente = Cliente.objects.create(id_empresa=empresa_a, razon_social="Cliente", rif="V-1-0", tipo_cliente="CONTADO")
     nota = NotaVenta.objects.create(
-        id_empresa=empresa_a, id_cliente=cliente, numero_nota="NV-OP-1",
-        fecha_nota=timezone.now().date(), estado="BORRADOR",
+        id_empresa=empresa_a,
+        id_cliente=cliente,
+        numero_nota="NV-OP-1",
+        fecha_nota=timezone.now().date(),
+        estado="BORRADOR",
     )
     DetalleNotaVenta.objects.create(
-        id_nota_venta=nota, id_producto=producto, cantidad=Decimal("4"),
-        precio_unitario=Decimal("15.00"), subtotal=Decimal("60.00"),
+        id_nota_venta=nota,
+        id_producto=producto,
+        cantidad=Decimal("4"),
+        precio_unitario=Decimal("15.00"),
+        subtotal=Decimal("60.00"),
     )
 
     payload = {
-        "almacen": str(almacen.id_almacen), "origen_tipo": "SALE",
+        "almacen": str(almacen.id_almacen),
+        "origen_tipo": "SALE",
         "origen_id": str(nota.id_nota_venta),
         "lineas": [{"producto": str(producto.id_producto), "cantidad": "4"}],
     }
@@ -245,8 +280,12 @@ def test_entrega_venta_genera_cogs_e_ingresos(client_a, empresa_a, almacen, prod
 def test_aislamiento_tenant_operaciones(client_b, empresa_a, almacen, producto):
     _pasos(empresa_a, almacen, "RECEPCION", ["Confirmación"])
     OperacionInventario.objects.create(
-        id_empresa=empresa_a, numero="REC-000001", tipo_operacion="RECEPCION",
-        origen_tipo="PURCHASE", id_almacen=almacen, fecha=timezone.now(),
+        id_empresa=empresa_a,
+        numero="REC-000001",
+        tipo_operacion="RECEPCION",
+        origen_tipo="PURCHASE",
+        id_almacen=almacen,
+        fecha=timezone.now(),
     )
     resp = client_b.get(REC)
     assert resp.status_code == 200
@@ -276,8 +315,11 @@ def test_crear_operacion_validaciones(empresa_a, almacen, almacen_dest, producto
         ops.crear_operacion(tipo_operacion="ENTREGA", origen_tipo="TRANSFER", lineas=ln, **base)
     with pytest.raises(ops.OperacionError):  # transfer mismo almacén
         ops.crear_operacion(
-            tipo_operacion="ENTREGA", origen_tipo="TRANSFER", lineas=ln,
-            almacen_contraparte=almacen, **base,
+            tipo_operacion="ENTREGA",
+            origen_tipo="TRANSFER",
+            lineas=ln,
+            almacen_contraparte=almacen,
+            **base,
         )
     with pytest.raises(ops.OperacionError):  # venta sin origen_id
         ops.crear_operacion(tipo_operacion="ENTREGA", origen_tipo="SALE", lineas=ln, **base)
@@ -288,8 +330,10 @@ def test_crear_operacion_validaciones(empresa_a, almacen, almacen_dest, producto
     _pasos(empresa_a, almacen, "RECEPCION", ["P1"])
     with pytest.raises(ops.OperacionError):
         ops.crear_operacion(
-            tipo_operacion="RECEPCION", origen_tipo="PURCHASE",
-            lineas=[{"producto": producto, "cantidad": "0"}], **base,
+            tipo_operacion="RECEPCION",
+            origen_tipo="PURCHASE",
+            lineas=[{"producto": producto, "cantidad": "0"}],
+            **base,
         )
 
 
@@ -298,8 +342,12 @@ def test_confirmar_paso_ramas_error(empresa_a, almacen, producto, user_a):
 
     _pasos(empresa_a, almacen, "RECEPCION", ["P1", "P2"])
     op = ops.crear_operacion(
-        empresa=empresa_a, almacen=almacen, tipo_operacion="RECEPCION", origen_tipo="PURCHASE",
-        lineas=[{"producto": producto, "cantidad": "2", "costo_unitario": "3"}], usuario=user_a,
+        empresa=empresa_a,
+        almacen=almacen,
+        tipo_operacion="RECEPCION",
+        origen_tipo="PURCHASE",
+        lineas=[{"producto": producto, "cantidad": "2", "costo_unitario": "3"}],
+        usuario=user_a,
     )
     p1, p2 = list(op.pasos.order_by("secuencia"))
 
@@ -308,8 +356,12 @@ def test_confirmar_paso_ramas_error(empresa_a, almacen, producto, user_a):
         ops.confirmar_paso(operacion=op, paso=p1, usuario=user_a)
 
     op2 = ops.crear_operacion(
-        empresa=empresa_a, almacen=almacen, tipo_operacion="RECEPCION", origen_tipo="PURCHASE",
-        lineas=[{"producto": producto, "cantidad": "1", "costo_unitario": "1"}], usuario=user_a,
+        empresa=empresa_a,
+        almacen=almacen,
+        tipo_operacion="RECEPCION",
+        origen_tipo="PURCHASE",
+        lineas=[{"producto": producto, "cantidad": "1", "costo_unitario": "1"}],
+        usuario=user_a,
     )
     ajeno = op2.pasos.first()
     with pytest.raises(ops.OperacionError):  # paso no pertenece
@@ -324,23 +376,39 @@ def test_confirmar_paso_ramas_error(empresa_a, almacen, producto, user_a):
 
 def test_str_de_modelos(empresa_a, almacen, producto, user_a):
     from apps.inventario.models import (
-        OperacionInventario, OperacionInventarioLinea, OperacionInventarioPaso,
-        PasoOperacion, ValoracionInventario,
+        OperacionInventario,
+        OperacionInventarioLinea,
+        OperacionInventarioPaso,
+        PasoOperacion,
+        ValoracionInventario,
     )
 
     registrar_movimiento(
-        empresa=empresa_a, fecha_hora_movimiento=timezone.now(), tipo_movimiento="ENTRADA",
-        producto=producto, cantidad=Decimal("2"), almacen_destino=almacen,
-        costo_unitario=Decimal("4"), usuario=user_a,
+        empresa=empresa_a,
+        fecha_hora_movimiento=timezone.now(),
+        tipo_movimiento="ENTRADA",
+        producto=producto,
+        cantidad=Decimal("2"),
+        almacen_destino=almacen,
+        costo_unitario=Decimal("4"),
+        usuario=user_a,
     )
     assert str(ValoracionInventario.objects.first())
     paso = PasoOperacion.objects.create(
-        id_empresa=empresa_a, id_almacen=almacen, tipo_operacion="RECEPCION", nombre_paso="P", secuencia=1,
+        id_empresa=empresa_a,
+        id_almacen=almacen,
+        tipo_operacion="RECEPCION",
+        nombre_paso="P",
+        secuencia=1,
     )
     assert str(paso)
     op = OperacionInventario.objects.create(
-        id_empresa=empresa_a, numero="REC-X", tipo_operacion="RECEPCION",
-        origen_tipo="PURCHASE", id_almacen=almacen, fecha=timezone.now(),
+        id_empresa=empresa_a,
+        numero="REC-X",
+        tipo_operacion="RECEPCION",
+        origen_tipo="PURCHASE",
+        id_almacen=almacen,
+        fecha=timezone.now(),
     )
     assert str(op)
     assert str(OperacionInventarioPaso.objects.create(id_operacion=op, secuencia=1, nombre_paso="P"))
@@ -349,30 +417,72 @@ def test_str_de_modelos(empresa_a, almacen, producto, user_a):
 
 def test_api_create_ramas_error(client_a, empresa_a, almacen, producto):
     bogus = "00000000-0000-0000-0000-000000000000"
-    r = client_a.post(REC, {"almacen": bogus, "origen_tipo": "PURCHASE",
-                            "lineas": [{"producto": str(producto.id_producto), "cantidad": "1"}]}, format="json")
+    r = client_a.post(
+        REC,
+        {
+            "almacen": bogus,
+            "origen_tipo": "PURCHASE",
+            "lineas": [{"producto": str(producto.id_producto), "cantidad": "1"}],
+        },
+        format="json",
+    )
     assert r.status_code == 400
-    r = client_a.post(ENT, {"almacen": str(almacen.id_almacen), "origen_tipo": "TRANSFER", "almacen_contraparte": bogus,
-                            "lineas": [{"producto": str(producto.id_producto), "cantidad": "1"}]}, format="json")
+    r = client_a.post(
+        ENT,
+        {
+            "almacen": str(almacen.id_almacen),
+            "origen_tipo": "TRANSFER",
+            "almacen_contraparte": bogus,
+            "lineas": [{"producto": str(producto.id_producto), "cantidad": "1"}],
+        },
+        format="json",
+    )
     assert r.status_code == 400
-    r = client_a.post(REC, {"almacen": str(almacen.id_almacen), "origen_tipo": "PURCHASE",
-                            "lineas": [{"producto": bogus, "cantidad": "1"}]}, format="json")
+    r = client_a.post(
+        REC,
+        {
+            "almacen": str(almacen.id_almacen),
+            "origen_tipo": "PURCHASE",
+            "lineas": [{"producto": bogus, "cantidad": "1"}],
+        },
+        format="json",
+    )
     assert r.status_code == 400
-    r = client_a.post(REC, {"almacen": str(almacen.id_almacen), "origen_tipo": "PURCHASE",
-                            "lineas": [{"producto": str(producto.id_producto), "cantidad": "1", "variante": bogus}]}, format="json")
+    r = client_a.post(
+        REC,
+        {
+            "almacen": str(almacen.id_almacen),
+            "origen_tipo": "PURCHASE",
+            "lineas": [{"producto": str(producto.id_producto), "cantidad": "1", "variante": bogus}],
+        },
+        format="json",
+    )
     assert r.status_code == 400
     # OperacionError (sin pasos) → 400.
-    r = client_a.post(REC, {"almacen": str(almacen.id_almacen), "origen_tipo": "PURCHASE",
-                            "lineas": [{"producto": str(producto.id_producto), "cantidad": "1"}]}, format="json")
+    r = client_a.post(
+        REC,
+        {
+            "almacen": str(almacen.id_almacen),
+            "origen_tipo": "PURCHASE",
+            "lineas": [{"producto": str(producto.id_producto), "cantidad": "1"}],
+        },
+        format="json",
+    )
     assert r.status_code == 400
 
 
 def test_api_confirm_ramas_error(client_a, empresa_a, almacen, producto):
     bogus = "00000000-0000-0000-0000-000000000000"
     _pasos(empresa_a, almacen, "RECEPCION", ["P1"])
-    op = client_a.post(REC, {"almacen": str(almacen.id_almacen), "origen_tipo": "PURCHASE",
-                             "lineas": [{"producto": str(producto.id_producto), "cantidad": "1", "costo_unitario": "2"}]},
-                       format="json").json()
+    op = client_a.post(
+        REC,
+        {
+            "almacen": str(almacen.id_almacen),
+            "origen_tipo": "PURCHASE",
+            "lineas": [{"producto": str(producto.id_producto), "cantidad": "1", "costo_unitario": "2"}],
+        },
+        format="json",
+    ).json()
     r = client_a.post(f"{REC}{op['id_operacion']}/step/{bogus}/confirm/")
     assert r.status_code == 400
     paso = op["pasos"][0]
@@ -384,8 +494,16 @@ def test_api_confirm_ramas_error(client_a, empresa_a, almacen, producto):
 def test_api_completar_venta_nota_inexistente(client_a, empresa_a, almacen, producto):
     bogus = "00000000-0000-0000-0000-000000000000"
     _pasos(empresa_a, almacen, "ENTREGA", ["P1"])
-    op = client_a.post(ENT, {"almacen": str(almacen.id_almacen), "origen_tipo": "SALE", "origen_id": bogus,
-                             "lineas": [{"producto": str(producto.id_producto), "cantidad": "1"}]}, format="json").json()
+    op = client_a.post(
+        ENT,
+        {
+            "almacen": str(almacen.id_almacen),
+            "origen_tipo": "SALE",
+            "origen_id": bogus,
+            "lineas": [{"producto": str(producto.id_producto), "cantidad": "1"}],
+        },
+        format="json",
+    ).json()
     paso = op["pasos"][0]
     r = client_a.post(f"{ENT}{op['id_operacion']}/step/{paso['id_operacion_paso']}/confirm/")
     assert r.status_code == 400

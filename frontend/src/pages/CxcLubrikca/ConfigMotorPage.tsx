@@ -8,7 +8,7 @@
  */
 import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Alert,
@@ -31,6 +31,8 @@ import EditOutlined from '@mui/icons-material/EditOutlined';
 import DeleteOutline from '@mui/icons-material/DeleteOutline';
 import { cxcLubrikcaService } from '../../services/cxcLubrikcaService';
 import { cxcLubrikcaKeys } from '../../lib/queryKeys';
+import { formatoDecimal } from '../../lib/decimal';
+import { parseDecimalSeguro } from '../../schemas/decimal.schemas';
 import {
   descuentoMarcaSchema,
   descuentoBcvSchema,
@@ -101,9 +103,10 @@ const TIPO_TASA_OPTS = [
 const str = (v: unknown): string => (v == null ? '—' : String(v));
 // Fracción string → "%": 0.03 → "3%".
 const pct = (v: unknown): string => {
-  const n = parseFloat(String(v ?? '0'));
-  if (Number.isNaN(n)) return '—';
-  return `${(n * 100).toLocaleString('es-VE', { maximumFractionDigits: 4 })}%`;
+  const raw = v ?? '0';
+  const d = typeof raw === 'string' || typeof raw === 'number' ? parseDecimalSeguro(raw) : null;
+  if (!d) return '—';
+  return `${formatoDecimal(d.times(100), 0, 4)}%`;
 };
 const boolChip = (v: unknown) => <StatusChip value={Boolean(v)} />;
 
@@ -322,7 +325,8 @@ function ConfigTab({ def }: { def: TabDef }) {
     control,
     formState: { errors },
   } = useForm<Record<string, unknown>>({
-    resolver: zodResolver(def.schema),
+    // zod 4: el esquema llega con el tipo borrado (ZodTypeAny); el resolver se tipa a mano.
+    resolver: zodResolver(def.schema as never) as unknown as Resolver<Record<string, unknown>>,
     defaultValues: def.defaults,
   });
 

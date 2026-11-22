@@ -14,19 +14,29 @@ Endpoints:
 """
 
 import logging
+from datetime import timedelta
 
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
-from rest_framework import status
+from django.utils.decorators import method_decorator
+from drf_yasg.utils import no_body, swagger_auto_schema
+from rest_framework import filters, status
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
+from apps.core.exceptions import domain_error_response
 from apps.core.viewsets import (
     BaseModelViewSet,
+    NulSafeFilterMixin,
     SuperuserWriteMixin,
     get_empresas_visible,
+    validar_uuid_param,
 )
 
 from .connectors.registry import registry
@@ -34,20 +44,36 @@ from .models import (
     ConectorInstancia,
     ConectorProveedor,
     EntidadSincronizada,
+    EventoOutbox,
     JobSincronizacion,
     LogDetalleSincronizacion,
 )
+from .outbox import OutboxError, reintentar_evento_outbox
 from .serializers import (
     ConectorInstanciaCreateSerializer,
     ConectorInstanciaSerializer,
     ConectorProveedorSerializer,
     EntidadSincronizadaSerializer,
+    EventoOutboxSerializer,
     JobSincronizacionSerializer,
     JobSincronizacionTriggerSerializer,
     LogDetalleSincronizacionSerializer,
+    PushCobranzaInputSerializer,
+    PushCobranzaResponseSerializer,
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _leer_idempotency_key(request) -> str | None:
+    """Lee y valida la cabecera ``Idempotency-Key`` (máx 255 chars, sin NUL)."""
+    raw = request.META.get("HTTP_IDEMPOTENCY_KEY") or request.headers.get("Idempotency-Key")
+    if raw is None:
+        return None
+    clave = str(raw).strip()
+    if "\x00" in clave or not clave or len(clave) > 255:
+        raise ValidationError({"Idempotency-Key": "Cabecera Idempotency-Key inválida."})
+    return clave
 
 
 def _empresa(request):
@@ -62,7 +88,7 @@ def _empresa(request):
 # ── Catálogo de proveedores ───────────────────────────────────────────────────
 
 
-class ConectorProveedorViewSet(SuperuserWriteMixin, BaseModelViewSet):
+class ConectorProveedorViewSet(NulSafeFilterMixin, SuperuserWriteMixin, BaseModelViewSet):
     """Catálogo global de proveedores de integración.
 
     - **Lectura** (GET list/detail): cualquier usuario autenticado. Por defecto
@@ -77,6 +103,7 @@ class ConectorProveedorViewSet(SuperuserWriteMixin, BaseModelViewSet):
     serializer_class = ConectorProveedorSerializer
     permission_classes = [IsAuthenticated]
     pagination_class = None  # Lista pequeña; contrato de array plano (modal Nuevo conector)
+    lookup_value_regex = "[0-9a-fA-F-]{36}"
     search_fields = ["nombre", "codigo"]
     ordering_fields = ["orden", "nombre", "estado", "codigo"]
 
@@ -98,13 +125,35 @@ class ConectorProveedorViewSet(SuperuserWriteMixin, BaseModelViewSet):
 # ── Instancias de conectores ─────────────────────────────────────────────────
 
 
-class ConectorInstanciaViewSet(BaseModelViewSet):
+@method_decorator(
+    name="create",
+    decorator=swagger_auto_schema(responses={201: ConectorInstanciaSerializer}),
+)
+@method_decorator(
+    name="update",
+    decorator=swagger_auto_schema(responses={200: ConectorInstanciaSerializer}),
+)
+@method_decorator(
+    name="partial_update",
+    decorator=swagger_auto_schema(responses={200: ConectorInstanciaSerializer}),
+)
+class ConectorInstanciaViewSet(NulSafeFilterMixin, BaseModelViewSet):
     """
     CRUD de conectores configurados por empresa.
-    Acciones adicionales: test, sync, jobs, entidades.
+    Acciones adicionales: test, sync, push-cobranza, jobs, entidades.
     """
 
     permission_classes = [IsAuthenticated]
+    lookup_value_regex = "[0-9a-fA-F-]{36}"
+    search_fields = ["nombre", "estado", "version_detectada", "id_proveedor__nombre", "id_proveedor__codigo"]
+    ordering_fields = [
+        "nombre",
+        "estado",
+        "ultimo_sync",
+        "fecha_creacion",
+        "fecha_actualizacion",
+        "intervalo_sync_minutos",
+    ]
 
     def get_queryset(self):
         # R-CODE-1: solo empresa del usuario
@@ -120,8 +169,13 @@ class ConectorInstanciaViewSet(BaseModelViewSet):
         return ConectorInstanciaSerializer
 
     def perform_create(self, serializer):
+        empresa = serializer.validated_data.get("id_empresa") or _empresa(self.request)
+        if empresa is None:
+            from rest_framework.exceptions import PermissionDenied
+
+            raise PermissionDenied("El usuario no tiene empresa asignada.")
         serializer.save(
-            id_empresa=_empresa(self.request),
+            id_empresa=empresa,
             estado="configurando",
         )
 
@@ -144,9 +198,7 @@ class ConectorInstanciaViewSet(BaseModelViewSet):
             instancia.estado = "error"
             instancia.mensaje_estado = mensaje
             instancia.ultimo_test_conexion = timezone.now()
-            instancia.save(
-                update_fields=["estado", "mensaje_estado", "ultimo_test_conexion"]
-            )
+            instancia.save(update_fields=["estado", "mensaje_estado", "ultimo_test_conexion"])
             return Response(
                 {"success": False, "message": mensaje},
                 status=status.HTTP_502_BAD_GATEWAY,
@@ -179,6 +231,10 @@ class ConectorInstanciaViewSet(BaseModelViewSet):
             }
         )
 
+    @swagger_auto_schema(
+        request_body=JobSincronizacionTriggerSerializer,
+        responses={202: JobSincronizacionSerializer},
+    )
     @action(detail=True, methods=["post"], url_path="sync")
     def trigger_sync(self, request, pk=None):
         """
@@ -205,11 +261,15 @@ class ConectorInstanciaViewSet(BaseModelViewSet):
         sync_completo = params.get("sync_completo", False)
         desde_fecha = params.get("desde")
 
+        # Guardia opt-in para push outbound / bidireccional
+        if direccion in ("outbound", "bidireccional") and not instancia.get_config().get("push_habilitado", False):
+            return Response(
+                {"error": "Push outbound deshabilitado en este conector (push_habilitado=False)."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         # Verificar que la entidad esté activa en la instancia
-        if (
-            tipo_entidad not in instancia.entidades_activas
-            and instancia.entidades_activas
-        ):
+        if tipo_entidad not in instancia.entidades_activas and instancia.entidades_activas:
             return Response(
                 {
                     "error": f"La entidad '{tipo_entidad}' no está habilitada en este conector. "
@@ -218,21 +278,51 @@ class ConectorInstanciaViewSet(BaseModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Crear el job
-        parametros = {}
+        idem_key = _leer_idempotency_key(request)
+
+        # Crear el job (con deduplicación atómica si viene Idempotency-Key)
+        parametros: dict = {}
         if sync_completo:
             parametros["sync_completo"] = True
         if desde_fecha:
             parametros["desde"] = str(desde_fecha)
+        if idem_key:
+            parametros["idempotency_key"] = idem_key
 
-        job = JobSincronizacion.objects.create(
-            id_instancia=instancia,
-            tipo_entidad=tipo_entidad,
-            direccion=direccion,
-            estado="pendiente",
-            iniciado_por=request.user,
-            parametros=parametros,
-        )
+        with transaction.atomic():
+            if idem_key:
+                ConectorInstancia.objects.select_for_update().get(pk=instancia.pk)
+                ventana = timezone.now() - timedelta(hours=24)
+                existente = (
+                    JobSincronizacion.objects.filter(
+                        id_instancia=instancia,
+                        id_instancia__id_empresa=instancia.id_empresa_id,
+                        parametros__idempotency_key=idem_key,
+                    )
+                    .filter(Q(estado__in=["pendiente", "en_progreso"]) | Q(iniciado_en__gte=ventana))
+                    .exclude(estado="fallido")
+                    .order_by("-iniciado_en", "-id_job")
+                    .first()
+                )
+                if existente is not None:
+                    if existente.tipo_entidad != tipo_entidad or existente.direccion != direccion:
+                        return Response(
+                            {"error": "La Idempotency-Key ya fue usada con otro tipo o dirección de sincronización."},
+                            status=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                        )
+                    return Response(
+                        JobSincronizacionSerializer(existente).data,
+                        status=status.HTTP_202_ACCEPTED,
+                    )
+
+            job = JobSincronizacion.objects.create(
+                id_instancia=instancia,
+                tipo_entidad=tipo_entidad,
+                direccion=direccion,
+                estado="pendiente",
+                iniciado_por=request.user,
+                parametros=parametros,
+            )
 
         # Encolar en Celery
         try:
@@ -255,6 +345,130 @@ class ConectorInstanciaViewSet(BaseModelViewSet):
 
         return Response(
             JobSincronizacionSerializer(job).data,
+            status=status.HTTP_202_ACCEPTED,
+        )
+
+    @swagger_auto_schema(
+        request_body=PushCobranzaInputSerializer,
+        responses={202: PushCobranzaResponseSerializer},
+    )
+    @action(detail=True, methods=["post"], url_path="push-cobranza")
+    def push_cobranza(self, request, pk=None):
+        """
+        Dispara un push outbound de cobranza (pagos y/o gestiones de cobranza)
+        hacia el sistema externo. Requiere ``push_habilitado=True``.
+        Soporta cabecera ``Idempotency-Key`` para evitar ejecuciones duplicadas.
+        """
+        instancia = self.get_object()
+
+        if instancia.estado == "error":
+            return Response(
+                {
+                    "error": "La instancia está en estado de error. "
+                    "Realice un test de conexión antes de sincronizar."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not instancia.get_config().get("push_habilitado", False):
+            return Response(
+                {"error": "Push outbound deshabilitado en este conector (push_habilitado=False)."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = PushCobranzaInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        tipo = data.get("tipo", "todos")
+        tipos = ["pagos", "gestiones_cobranza"] if tipo == "todos" else [tipo]
+        ids_str = [str(uid) for uid in (data.get("ids") or [])]
+        push_modo_pago = data.get("push_modo_pago")
+        journal_id = data.get("journal_id")
+        sync_completo = bool(data.get("sync_completo", False))
+
+        idem_key = _leer_idempotency_key(request)
+        firma_op = f"{tipo}:{','.join(sorted(ids_str))}:{push_modo_pago or ''}:{journal_id or ''}:{sync_completo}"
+
+        base_params: dict = {}
+        if ids_str:
+            base_params["ids"] = ids_str
+        if push_modo_pago:
+            base_params["push_modo_pago"] = push_modo_pago
+        if journal_id:
+            base_params["journal_id"] = journal_id
+        if sync_completo:
+            base_params["sync_completo"] = True
+        if idem_key:
+            base_params["push_cobranza_key"] = idem_key
+            base_params["push_cobranza_sig"] = firma_op
+
+        jobs_creados: list[JobSincronizacion] = []
+        with transaction.atomic():
+            if idem_key:
+                ConectorInstancia.objects.select_for_update().get(pk=instancia.pk)
+                ventana = timezone.now() - timedelta(hours=24)
+                previos = list(
+                    JobSincronizacion.objects.filter(
+                        id_instancia=instancia,
+                        id_instancia__id_empresa=instancia.id_empresa_id,
+                        parametros__push_cobranza_key=idem_key,
+                    )
+                    .filter(Q(estado__in=["pendiente", "en_progreso"]) | Q(iniciado_en__gte=ventana))
+                    .exclude(estado="fallido")
+                    .order_by("tipo_entidad", "-id_job")
+                )
+                if previos:
+                    sig_previa = (previos[0].parametros or {}).get("push_cobranza_sig")
+                    if sig_previa != firma_op:
+                        return Response(
+                            {"error": "La Idempotency-Key ya fue usada con otros parámetros."},
+                            status=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                        )
+                    return Response(
+                        {
+                            "mensaje": "Push de cobranza ya encolado/procesado para esta Idempotency-Key.",
+                            "job_id": str(previos[0].id_job),
+                            "jobs": JobSincronizacionSerializer(previos, many=True).data,
+                        },
+                        status=status.HTTP_202_ACCEPTED,
+                    )
+
+            for entidad in tipos:
+                jobs_creados.append(
+                    JobSincronizacion.objects.create(
+                        id_instancia=instancia,
+                        tipo_entidad=entidad,
+                        direccion="outbound",
+                        estado="pendiente",
+                        iniciado_por=request.user,
+                        parametros=dict(base_params),
+                    )
+                )
+
+        for job in jobs_creados:
+            try:
+                from .tasks import ejecutar_job_sincronizacion
+
+                task = ejecutar_job_sincronizacion.delay(str(job.id_job))
+                job.celery_task_id = task.id
+                job.save(update_fields=["celery_task_id"])
+            except Exception as exc:
+                logger.warning(
+                    "No se pudo encolar push-cobranza en Celery — ejecutando sincrónicamente. Error: %s",
+                    exc,
+                )
+                from .services.sync_engine import SyncEngine
+
+                SyncEngine().ejecutar_job(job)
+                job.refresh_from_db()
+
+        return Response(
+            {
+                "mensaje": f"Push outbound de cobranza iniciado ({', '.join(tipos)}).",
+                "job_id": str(jobs_creados[0].id_job) if jobs_creados else None,
+                "jobs": JobSincronizacionSerializer(jobs_creados, many=True).data,
+            },
             status=status.HTTP_202_ACCEPTED,
         )
 
@@ -286,14 +500,11 @@ class ConectorInstanciaViewSet(BaseModelViewSet):
 
         from .tasks import ejecutar_export_instancia
 
-        task = ejecutar_export_instancia.delay(
-            str(instancia.pk), tipos, incremental=not full
-        )
+        task = ejecutar_export_instancia.delay(str(instancia.pk), tipos, incremental=not full)
 
         return Response(
             {
-                "mensaje": "Exportación encolada. Consulta el historial de jobs "
-                "para ver el progreso.",
+                "mensaje": "Exportación encolada. Consulta el historial de jobs " "para ver el progreso.",
                 "task_id": task.id,
             },
             status=status.HTTP_202_ACCEPTED,
@@ -303,14 +514,14 @@ class ConectorInstanciaViewSet(BaseModelViewSet):
     def list_jobs(self, request, pk=None):
         """Lista el historial de jobs de sincronización de esta instancia."""
         instancia = self.get_object()
-        jobs = JobSincronizacion.objects.filter(id_instancia=instancia).order_by(
-            "-iniciado_en"
-        )[:50]
+        jobs = JobSincronizacion.objects.filter(id_instancia=instancia).order_by("-iniciado_en")[:50]
         return Response(JobSincronizacionSerializer(jobs, many=True).data)
 
     @action(detail=True, methods=["get"], url_path="entidades/(?P<tipo_entidad>[^/.]+)")
     def list_entidades(self, request, pk=None, tipo_entidad=None):
         """Lista las entidades sincronizadas de un tipo específico."""
+        if "\x00" in str(tipo_entidad or ""):
+            raise ValidationError({"tipo_entidad": "Parámetro inválido."})
         instancia = self.get_object()
         entidades = EntidadSincronizada.objects.filter(
             id_instancia=instancia,
@@ -325,6 +536,8 @@ class ConectorInstanciaViewSet(BaseModelViewSet):
         Previsualiza datos del sistema externo sin sincronizar.
         Útil para validar la conexión y ver qué datos se recibirán.
         """
+        if "\x00" in str(tipo_entidad or ""):
+            raise ValidationError({"tipo_entidad": "Parámetro inválido."})
         instancia = self.get_object()
 
         try:
@@ -366,9 +579,7 @@ class ConectorInstanciaViewSet(BaseModelViewSet):
             )
         except Exception:
             # SEC-M4 (R-CODE-8): no filtrar el detalle interno al cliente.
-            logger.exception(
-                "preview_data error [%s / %s]", instancia.nombre, tipo_entidad
-            )
+            logger.exception("preview_data error [%s / %s]", instancia.nombre, tipo_entidad)
             return Response(
                 {"error": "Error consultando datos del sistema externo."},
                 status=status.HTTP_502_BAD_GATEWAY,
@@ -378,27 +589,50 @@ class ConectorInstanciaViewSet(BaseModelViewSet):
 # ── Jobs de sincronización ────────────────────────────────────────────────────
 
 
-class JobSincronizacionViewSet(ReadOnlyModelViewSet):
+class JobSincronizacionViewSet(NulSafeFilterMixin, ReadOnlyModelViewSet):
     """Vista de solo lectura para jobs de sincronización."""
 
     serializer_class = JobSincronizacionSerializer
     permission_classes = [IsAuthenticated]
+    lookup_value_regex = "[0-9a-fA-F-]{36}"
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ["tipo_entidad", "direccion", "estado", "id_instancia__nombre"]
+    ordering_fields = [
+        "iniciado_en",
+        "completado_en",
+        "estado",
+        "tipo_entidad",
+        "direccion",
+        "total_registros",
+    ]
 
     def get_queryset(self):
         empresas = get_empresas_visible(self.request.user)
-        return (
+        qs = (
             JobSincronizacion.objects.filter(id_instancia__id_empresa__in=empresas)
             .select_related("id_instancia", "iniciado_por")
             .order_by("-iniciado_en")
         )
+        instancia_id = self.request.query_params.get("instancia")
+        if instancia_id:
+            qs = qs.filter(id_instancia_id=validar_uuid_param(instancia_id, "instancia"))
+        for param_name, field_name in (
+            ("estado", "estado"),
+            ("tipo_entidad", "tipo_entidad"),
+            ("direccion", "direccion"),
+        ):
+            val = self.request.query_params.get(param_name)
+            if val:
+                if "\x00" in val:
+                    raise ValidationError({param_name: "Parámetro de consulta inválido."})
+                qs = qs.filter(**{field_name: val.strip()})
+        return qs
 
     @action(detail=True, methods=["get"], url_path="logs")
     def list_logs(self, request, pk=None):
         """Logs detallados de un job específico."""
         job = self.get_object()
-        logs = LogDetalleSincronizacion.objects.filter(id_job=job).order_by(
-            "-creado_en"
-        )[:500]
+        logs = LogDetalleSincronizacion.objects.filter(id_job=job).order_by("-creado_en")[:500]
         return Response(LogDetalleSincronizacionSerializer(logs, many=True).data)
 
     @action(detail=True, methods=["post"], url_path="cancelar")
@@ -426,6 +660,95 @@ class JobSincronizacionViewSet(ReadOnlyModelViewSet):
         return Response(JobSincronizacionSerializer(job).data)
 
 
+# ── Cola Outbox multi-tenant (Omni Connect S7–S9) ─────────────────────────────
+
+
+class EventoOutboxViewSet(NulSafeFilterMixin, ReadOnlyModelViewSet):
+    """Consulta multi-tenant de la cola Outbox y acción controlada de reintento (FALLIDO/DLQ)."""
+
+    serializer_class = EventoOutboxSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_value_regex = "[0-9a-fA-F-]{36}"
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ["tipo_evento", "entidad_tipo", "clave_idempotencia", "estado"]
+    ordering_fields = [
+        "fecha_creacion",
+        "fecha_actualizacion",
+        "proximo_intento_en",
+        "procesado_en",
+        "estado",
+        "tipo_evento",
+        "intentos",
+    ]
+    ordering = ["-fecha_creacion"]
+
+    def initial(self, request, *args, **kwargs):
+        super().initial(request, *args, **kwargs)
+        for key, values in request.query_params.lists():
+            if "\x00" in str(key):
+                raise ValidationError({"error": "Parámetro de consulta inválido."})
+            for val in values:
+                if isinstance(val, str) and "\x00" in val:
+                    raise ValidationError({str(key): "Parámetro de consulta inválido."})
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return EventoOutbox.objects.none()
+        empresas = get_empresas_visible(self.request.user)
+        qs = EventoOutbox.objects.filter(id_empresa__in=empresas, activo=True).order_by("-fecha_creacion")
+
+        estado_param = self.request.query_params.get("estado")
+        if estado_param:
+            estado_norm = estado_param.strip().upper()
+            estados_validos = set(EventoOutbox.Estado.values)
+            if estado_norm not in estados_validos:
+                raise ValidationError(
+                    {"estado": f"Estado inválido. Valores permitidos: {', '.join(sorted(estados_validos))}."}
+                )
+            qs = qs.filter(estado=estado_norm)
+
+        tipo_param = self.request.query_params.get("tipo_evento")
+        if tipo_param:
+            qs = qs.filter(tipo_evento=tipo_param.strip())
+
+        entidad_id_param = self.request.query_params.get("entidad_id")
+        if entidad_id_param:
+            qs = qs.filter(entidad_id=validar_uuid_param(entidad_id_param, "entidad_id"))
+
+        return qs
+
+    def get_object(self):
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        if lookup_url_kwarg in self.kwargs:
+            validar_uuid_param(self.kwargs[lookup_url_kwarg], self.lookup_field)
+        return super().get_object()
+
+    @swagger_auto_schema(
+        method="post",
+        operation_summary="Reintenta un evento Outbox en estado FALLIDO o DLQ",
+        request_body=no_body,
+        responses={
+            200: EventoOutboxSerializer,
+            400: "El evento no está en estado reintentable (FALLIDO o DLQ)",
+            404: "Evento outbox no encontrado",
+        },
+    )
+    @action(detail=True, methods=["post"], url_path="reintentar")
+    def reintentar(self, request, pk=None):
+        """Reencola un evento Outbox en ``FALLIDO`` o ``DLQ`` hacia ``PENDIENTE``."""
+        evento = self.get_object()
+        empresa_ids = list(get_empresas_visible(request.user).values_list("pk", flat=True))
+        try:
+            actualizado = reintentar_evento_outbox(evento.pk, empresa_ids=empresa_ids)
+        except (OutboxError, DjangoValidationError) as exc:
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST, key="error")
+
+        return Response(
+            EventoOutboxSerializer(actualizado, context=self.get_serializer_context()).data,
+            status=status.HTTP_200_OK,
+        )
+
+
 # ── Estado general del hub ────────────────────────────────────────────────────
 
 
@@ -436,9 +759,7 @@ class IntegrationHubStatusView(APIView):
 
     def get(self, request):
         empresa = _empresa(request)
-        conectores = ConectorInstancia.objects.filter(
-            id_empresa=empresa, activo=True
-        ).select_related("id_proveedor")
+        conectores = ConectorInstancia.objects.filter(id_empresa=empresa, activo=True).select_related("id_proveedor")
 
         activos = conectores.filter(estado="activo").count()
         con_error = conectores.filter(estado="error").count()
@@ -465,9 +786,7 @@ class IntegrationHubStatusView(APIView):
                 "jobs_24h": {
                     "total": jobs_recientes.count(),
                     "completados": jobs_recientes.filter(estado="completado").count(),
-                    "con_errores": jobs_recientes.filter(
-                        estado="completado_con_errores"
-                    ).count(),
+                    "con_errores": jobs_recientes.filter(estado="completado_con_errores").count(),
                     "fallidos": jobs_recientes.filter(estado="fallido").count(),
                     "en_progreso": jobs_recientes.filter(estado="en_progreso").count(),
                 },

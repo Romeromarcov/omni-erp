@@ -3,7 +3,8 @@
  * Used with react-hook-form + @hookform/resolvers/zod.
  */
 import { z } from 'zod';
-import { subtotalLinea, sumDecimals } from '../lib/decimal';
+import { D, subtotalLinea, sumDecimals } from '../lib/decimal';
+import { decimalEntre, decimalNoNegativo, decimalPositivo, parseDecimalSeguro } from './decimal.schemas';
 
 /** Tolerancia de redondeo para comparaciones monetarias (1 céntimo). */
 const MONTO_EPSILON = 0.01;
@@ -20,19 +21,23 @@ export const detalleVentaSchema = z.object({
   cantidad: z
     .string()
     .min(1, 'La cantidad es obligatoria')
-    .refine((v) => !isNaN(Number(v)) && Number(v) > 0, {
+    .refine((v) => parseDecimalSeguro(v)?.gt(0) ?? false, {
       message: 'La cantidad debe ser mayor a 0',
     }),
   precio_unitario: z
     .string()
     .min(1, 'El precio unitario es obligatorio')
-    .refine((v) => !isNaN(Number(v)) && Number(v) >= 0, {
+    .refine((v) => parseDecimalSeguro(v)?.gte(0) ?? false, {
       message: 'El precio unitario no puede ser negativo',
     }),
   descuento_porcentaje: z
     .string()
     .optional()
-    .refine((v) => v === undefined || v === '' || (!isNaN(Number(v)) && Number(v) >= 0 && Number(v) <= 100), {
+    .refine((v) => {
+      if (v === undefined || v === '') return true;
+      const d = parseDecimalSeguro(v);
+      return d !== null && d.gte(0) && d.lte(100);
+    }, {
       message: 'El descuento debe estar entre 0 y 100',
     }),
 });
@@ -178,7 +183,7 @@ export const facturaFiscalSchema = z.object({
   id_empresa: requiredUUID('Empresa'),
   id_cliente: requiredUUID('Cliente'),
   condicion_pago: z.enum(['CONTADO', 'CREDITO'], {
-    errorMap: () => ({ message: 'La condición de pago debe ser CONTADO o CREDITO' }),
+    error: () => 'La condición de pago debe ser CONTADO o CREDITO',
   }),
   dias_credito: z
     .number()
@@ -189,7 +194,7 @@ export const facturaFiscalSchema = z.object({
   monto_total: z
     .union([z.string(), z.number()])
     .optional()
-    .refine((v) => v === undefined || v === '' || !isNaN(Number(v)), {
+    .refine((v) => v === undefined || v === '' || parseDecimalSeguro(v) !== null, {
       message: 'El monto total debe ser un número válido',
     }),
   observaciones: z.string().max(1000).optional(),
@@ -208,12 +213,13 @@ export const facturaFiscalSchema = z.object({
   // suma de los subtotales de las líneas (calculada con decimal.js).
   .superRefine((data, ctx) => {
     if (data.monto_total === undefined || data.monto_total === '') return;
+    if (parseDecimalSeguro(data.monto_total) === null) return;
     const sumaDetalles = sumDecimals(
       data.detalles.map((d) =>
         subtotalLinea(d.cantidad, d.precio_unitario, d.descuento_porcentaje),
       ),
     );
-    const declarado = Number(data.monto_total);
+    const declarado = D(data.monto_total);
     if (sumaDetalles.minus(declarado).abs().greaterThan(MONTO_EPSILON)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -239,18 +245,21 @@ const estadoNotaCredito = ['BORRADOR', 'EMITIDA', 'APLICADA', 'ANULADA'] as cons
 
 export const detalleNotaCreditoVentaSchema = z.object({
   id_producto: requiredUUID('Producto'),
-  cantidad: z.coerce.number().positive('La cantidad debe ser mayor a 0'),
-  precio_unitario: z.coerce.number().nonnegative('El precio unitario no puede ser negativo'),
+  cantidad: decimalPositivo('La cantidad es obligatoria', 'La cantidad debe ser mayor a 0'),
+  precio_unitario: decimalNoNegativo(
+    'El precio unitario es obligatorio',
+    'El precio unitario no puede ser negativo',
+  ),
 });
 
 export const notaCreditoVentaSchema = z.object({
   id_cliente: requiredUUID('Cliente'),
   fecha_emision: z.string().min(1, 'La fecha de emisión es obligatoria'),
   motivo: z.enum(motivoNotaCredito, {
-    errorMap: () => ({ message: 'El motivo no es válido' }),
+    error: () => 'El motivo no es válido',
   }),
   estado: z.enum(estadoNotaCredito, {
-    errorMap: () => ({ message: 'El estado no es válido' }),
+    error: () => 'El estado no es válido',
   }),
   observaciones: z.string().max(1000).optional(),
   detalles: z
@@ -273,12 +282,17 @@ const motivoNotaCreditoFiscal = [
 
 export const detalleNotaCreditoFiscalSchema = z.object({
   id_producto: requiredUUID('Producto'),
-  cantidad: z.coerce.number().positive('La cantidad debe ser mayor a 0'),
-  precio_unitario: z.coerce.number().nonnegative('El precio unitario no puede ser negativo'),
-  descuento_porcentaje: z.coerce
-    .number()
-    .min(0, 'El descuento no puede ser negativo')
-    .max(100, 'El descuento no puede superar 100'),
+  cantidad: decimalPositivo('La cantidad es obligatoria', 'La cantidad debe ser mayor a 0'),
+  precio_unitario: decimalNoNegativo(
+    'El precio unitario es obligatorio',
+    'El precio unitario no puede ser negativo',
+  ),
+  descuento_porcentaje: decimalEntre(0, 100, {
+    requerido: 'El descuento es obligatorio',
+    invalido: 'El descuento debe ser un número',
+    bajoElMinimo: 'El descuento no puede ser negativo',
+    sobreElMaximo: 'El descuento no puede superar 100',
+  }),
 });
 
 export const notaCreditoFiscalSchema = z.object({
@@ -287,10 +301,10 @@ export const notaCreditoFiscalSchema = z.object({
   numero_control: z.string().min(1, 'El número de control es obligatorio'),
   fecha_emision: z.string().min(1, 'La fecha de emisión es obligatoria'),
   motivo: z.enum(motivoNotaCreditoFiscal, {
-    errorMap: () => ({ message: 'El motivo no es válido' }),
+    error: () => 'El motivo no es válido',
   }),
   estado: z.enum(estadoNotaCredito, {
-    errorMap: () => ({ message: 'El estado no es válido' }),
+    error: () => 'El estado no es válido',
   }),
   afecta_inventario_fiscal: z.boolean(),
   observaciones: z.string().max(1000).optional(),
@@ -318,8 +332,11 @@ const accionInventario = ['REINTEGRAR', 'CUARENTENA', 'DESCARTAR', 'REPARAR'] as
 
 export const detalleDevolucionVentaSchema = z.object({
   id_producto: requiredUUID('Producto'),
-  cantidad_devuelta: z.coerce.number().positive('La cantidad debe ser mayor a 0'),
-  precio_unitario: z.coerce.number().nonnegative('El precio unitario no puede ser negativo'),
+  cantidad_devuelta: decimalPositivo('La cantidad es obligatoria', 'La cantidad debe ser mayor a 0'),
+  precio_unitario: decimalNoNegativo(
+    'El precio unitario es obligatorio',
+    'El precio unitario no puede ser negativo',
+  ),
   estado_producto: z.enum(estadoProducto),
   accion_inventario: z.enum(accionInventario),
   observaciones: z.string().optional(),
@@ -330,10 +347,10 @@ export const devolucionVentaSchema = z.object({
   id_factura_origen: z.string().optional(),
   fecha_devolucion: z.string().min(1, 'La fecha de devolución es obligatoria'),
   motivo_devolucion: z.enum(motivoDevolucion, {
-    errorMap: () => ({ message: 'El motivo no es válido' }),
+    error: () => 'El motivo no es válido',
   }),
   estado: z.enum(estadoDevolucion, {
-    errorMap: () => ({ message: 'El estado no es válido' }),
+    error: () => 'El estado no es válido',
   }),
   generar_nota_credito: z.boolean(),
   observaciones: z.string().max(1000).optional(),

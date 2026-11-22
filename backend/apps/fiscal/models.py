@@ -1,4 +1,3 @@
-import uuid
 from apps.core.uuid import uuid7
 
 from django.db import models
@@ -303,29 +302,21 @@ class PagoContribucionParafiscal(TenantModel, IntegrationFieldsMixin):
     ]
 
     id_pago_parafiscal = models.UUIDField(primary_key=True, default=uuid7, editable=False)
-    id_empresa = models.ForeignKey(
-        "core.Empresa", on_delete=models.CASCADE, related_name="pagos_parafiscales"
-    )
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="pagos_parafiscales")
     contribucion = models.ForeignKey(
         "ContribucionParafiscal",
         on_delete=models.PROTECT,
         related_name="pagos_parafiscales",
         help_text="Contribución parafiscal que se paga (IVSS, FAOV, INCES…).",
     )
-    periodo_año = models.PositiveSmallIntegerField(
-        help_text="Año del período declarado (ej. 2026)."
-    )
-    periodo_mes = models.PositiveSmallIntegerField(
-        help_text="Mes del período declarado (1–12)."
-    )
+    periodo_año = models.PositiveSmallIntegerField(help_text="Año del período declarado (ej. 2026).")
+    periodo_mes = models.PositiveSmallIntegerField(help_text="Mes del período declarado (1–12).")
     monto = models.DecimalField(
         max_digits=18,
         decimal_places=2,
         help_text="Monto a pagar de la contribución para el período (R-CODE-4).",
     )
-    id_moneda = models.ForeignKey(
-        "finanzas.Moneda", on_delete=models.PROTECT, related_name="pagos_parafiscales"
-    )
+    id_moneda = models.ForeignKey("finanzas.Moneda", on_delete=models.PROTECT, related_name="pagos_parafiscales")
     referencia = models.CharField(
         max_length=100,
         blank=True,
@@ -340,9 +331,7 @@ class PagoContribucionParafiscal(TenantModel, IntegrationFieldsMixin):
         related_name="pagos_parafiscales",
         help_text="Proceso de nómina del que proviene el cálculo (trazabilidad, opcional).",
     )
-    estado = models.CharField(
-        max_length=15, choices=ESTADO_CHOICES, default="pendiente", db_index=True
-    )
+    estado = models.CharField(max_length=15, choices=ESTADO_CHOICES, default="pendiente", db_index=True)
     fecha_pago = models.DateField(
         null=True, blank=True, help_text="Fecha en que se ejecutó el pago (se fija al pagar)."
     )
@@ -437,6 +426,4 @@ class PeriodoFiscal(models.Model):
     @classmethod
     def esta_cerrado(cls, empresa, año: int, mes: int) -> bool:
         """Retorna True si el período (año, mes) está cerrado para la empresa."""
-        return cls.objects.filter(
-            id_empresa=empresa, año=año, mes=mes, cerrado=True
-        ).exists()
+        return cls.objects.filter(id_empresa=empresa, año=año, mes=mes, cerrado=True).exists()

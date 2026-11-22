@@ -5,10 +5,12 @@ from .views import (
     CategoriaProductoViewSet,
     ConversionUnidadMedidaViewSet,
     EntregaViewSet,
+    LoteProductoViewSet,
     MovimientoInventarioViewSet,
     PasoOperacionViewSet,
     ProductoViewSet,
     RecepcionViewSet,
+    ReglaReabastecimientoViewSet,
     ReportesInventarioViewSet,
     StockActualViewSet,
     StockConsignacionClienteViewSet,
@@ -31,6 +33,8 @@ router.register(r"pasos-operacion", PasoOperacionViewSet)
 router.register(r"recepciones", RecepcionViewSet, basename="recepcion")
 router.register(r"entregas", EntregaViewSet, basename="entrega")
 router.register(r"reportes", ReportesInventarioViewSet, basename="reportes-inventario")
+router.register(r"reglas-reabastecimiento", ReglaReabastecimientoViewSet)
+router.register(r"lotes-producto", LoteProductoViewSet)
 
 urlpatterns = [
     path("", include(router.urls)),

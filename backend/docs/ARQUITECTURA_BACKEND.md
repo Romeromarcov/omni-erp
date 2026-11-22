@@ -103,7 +103,7 @@ Cada fila enlaza al README de la app. El prefijo es el que monta `config/urls.py
 |---|---|---|
 | [`finanzas`](../apps/finanzas/README.md) | `/api/finanzas/` | Monedas, tasas de cambio, métodos de pago, cajas (físicas/virtuales), datáfonos, transacciones, pagos. |
 | [`tesoreria`](../apps/tesoreria/README.md) | `/api/tesoreria/` | Movimientos internos, cambio de divisa, movimientos bancarios, conciliación. |
-| [`banca_electronica`](../apps/banca_electronica/README.md) | `/api/banca-electronica/` | Cuentas bancarias de empresa para banca electrónica. |
+| [`banca_electronica`](../apps/banca_electronica/README.md) | `/api/banca-electronica/` | Lotes de pago bancario VE (proveedores/nómina) y validadores SUDEBAN/referencias sobre `finanzas.CuentaBancariaEmpresa`. |
 | [`contabilidad`](../apps/contabilidad/README.md) | `/api/contabilidad/` | Plan de cuentas, asientos contables, mapeo contable automático. |
 | [`gastos`](../apps/gastos/README.md) | `/api/gastos/` | Categorías de gasto, gastos, reembolsos. |
 | [`fiscal`](../apps/fiscal/README.md) | `/api/fiscal/` | Impuestos, IVA, IGTF, retenciones, parafiscales, libros de ventas/compras, períodos fiscales (localización VE). |

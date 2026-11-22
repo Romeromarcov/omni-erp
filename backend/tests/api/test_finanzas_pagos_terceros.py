@@ -139,9 +139,7 @@ def client_b(user_b):
 
 
 def _asiento_de(pago):
-    return AsientoContable.objects.filter(
-        id_documento_origen=pago.pk, nombre_modelo_origen="PagoTercero"
-    )
+    return AsientoContable.objects.filter(id_documento_origen=pago.pk, nombre_modelo_origen="PagoTercero")
 
 
 # ─────────────────────────────────────────────
@@ -237,9 +235,7 @@ class TestCrearPagoTercero:
 
 
 class TestAbonar:
-    def test_ciclo_abonar_completo(
-        self, client_a, pago_tercero_a, cxp_proveedor_a, mapeo_pago_tercero, user_a
-    ):
+    def test_ciclo_abonar_completo(self, client_a, pago_tercero_a, cxp_proveedor_a, mapeo_pago_tercero, user_a):
         url = f"{BASE_URL}{pago_tercero_a.pk}/abonar/"
         resp = client_a.post(url, {"cxp": str(cxp_proveedor_a.pk)}, format="json")
         assert resp.status_code == 200, resp.data
@@ -308,19 +304,13 @@ class TestAbonar:
             referencia_zelle="ZELLE-SINPROV",
             fecha=_today(),
         )
-        resp = client_a.post(
-            f"{BASE_URL}{pago.pk}/abonar/", {"cxp": str(cxp_proveedor_a.pk)}, format="json"
-        )
+        resp = client_a.post(f"{BASE_URL}{pago.pk}/abonar/", {"cxp": str(cxp_proveedor_a.pk)}, format="json")
         assert resp.status_code == 400
 
-    def test_abonar_cxp_de_otro_proveedor_retorna_400(
-        self, client_a, empresa_a, pago_tercero_a, mapeo_pago_tercero
-    ):
+    def test_abonar_cxp_de_otro_proveedor_retorna_400(self, client_a, empresa_a, pago_tercero_a, mapeo_pago_tercero):
         from apps.proveedores.models import Proveedor
 
-        otro = Proveedor.objects.create(
-            razon_social="Otro Proveedor C.A.", rif="J-44444444-4", id_empresa=empresa_a
-        )
+        otro = Proveedor.objects.create(razon_social="Otro Proveedor C.A.", rif="J-44444444-4", id_empresa=empresa_a)
         cxp_otro = CuentaPorPagar.objects.create(
             id_empresa=empresa_a,
             id_proveedor=otro,
@@ -330,9 +320,7 @@ class TestAbonar:
             fecha_vencimiento=_today() + timedelta(days=30),
             estado="PENDIENTE",
         )
-        resp = client_a.post(
-            f"{BASE_URL}{pago_tercero_a.pk}/abonar/", {"cxp": str(cxp_otro.pk)}, format="json"
-        )
+        resp = client_a.post(f"{BASE_URL}{pago_tercero_a.pk}/abonar/", {"cxp": str(cxp_otro.pk)}, format="json")
         assert resp.status_code == 400
 
     def test_abonar_sin_cxp_retorna_400(self, client_a, pago_tercero_a):
@@ -386,9 +374,7 @@ class TestSolicitarReintegro:
         assert cxc.monto == Decimal("750.50")
         assert pago_tercero_a.comision == Decimal("0.00")
 
-    def test_reintegro_comision_mayor_al_monto_retorna_400(
-        self, client_a, pago_tercero_a, mapeo_pago_tercero
-    ):
+    def test_reintegro_comision_mayor_al_monto_retorna_400(self, client_a, pago_tercero_a, mapeo_pago_tercero):
         url = f"{BASE_URL}{pago_tercero_a.pk}/solicitar-reintegro/"
         resp = client_a.post(url, {"comision": "750.50"}, format="json")
         assert resp.status_code == 400
@@ -396,9 +382,7 @@ class TestSolicitarReintegro:
         assert pago_tercero_a.estado == "pendiente"
         assert CuentaPorCobrar.objects.count() == 0
 
-    def test_reintegro_comision_negativa_retorna_400(
-        self, client_a, pago_tercero_a, mapeo_pago_tercero
-    ):
+    def test_reintegro_comision_negativa_retorna_400(self, client_a, pago_tercero_a, mapeo_pago_tercero):
         url = f"{BASE_URL}{pago_tercero_a.pk}/solicitar-reintegro/"
         resp = client_a.post(url, {"comision": "-5.00"}, format="json")
         assert resp.status_code == 400
@@ -412,9 +396,7 @@ class TestSolicitarReintegro:
         cxc = CuentaPorCobrar.objects.get(pk=pago_tercero_a.id_cxc_reintegro_id)
         assert cxc.fecha_vencimiento == vence
 
-    def test_reintegro_fecha_emision_usa_localdate_caracas(
-        self, client_a, pago_tercero_a, mapeo_pago_tercero
-    ):
+    def test_reintegro_fecha_emision_usa_localdate_caracas(self, client_a, pago_tercero_a, mapeo_pago_tercero):
         # Hallazgo BAJO (auditoría 2026-06-10): la fecha del documento usaba UTC.
         # Con now()=02:00 UTC (= 22:00 Caracas del 14), la CxC de reintegro debe
         # emitirse con la fecha LOCAL (Caracas, 06-14), no la UTC (06-15).
@@ -459,9 +441,7 @@ class TestRollbackSinMapeo:
         assert AbonoCxP.objects.count() == 0
         assert _asiento_de(pago_tercero_a).count() == 0
 
-    def test_reintegro_sin_mapeo_contabilidad_activa_422_y_rollback(
-        self, client_a, empresa_a, pago_tercero_a
-    ):
+    def test_reintegro_sin_mapeo_contabilidad_activa_422_y_rollback(self, client_a, empresa_a, pago_tercero_a):
         empresa_a.contabilidad_activa = True
         empresa_a.save(update_fields=["contabilidad_activa"])
 
@@ -495,9 +475,7 @@ class TestRollbackSinMapeo:
 
 
 class TestTransicionesInvalidas:
-    def test_abonar_dos_veces_retorna_400(
-        self, client_a, pago_tercero_a, cxp_proveedor_a, mapeo_pago_tercero
-    ):
+    def test_abonar_dos_veces_retorna_400(self, client_a, pago_tercero_a, cxp_proveedor_a, mapeo_pago_tercero):
         url = f"{BASE_URL}{pago_tercero_a.pk}/abonar/"
         assert client_a.post(url, {"cxp": str(cxp_proveedor_a.pk)}, format="json").status_code == 200
         resp = client_a.post(url, {"cxp": str(cxp_proveedor_a.pk)}, format="json")
@@ -505,24 +483,16 @@ class TestTransicionesInvalidas:
         # Solo un abono quedó registrado
         assert AbonoCxP.objects.count() == 1
 
-    def test_reintegro_sobre_abonado_retorna_400(
-        self, client_a, pago_tercero_a, cxp_proveedor_a, mapeo_pago_tercero
-    ):
-        client_a.post(
-            f"{BASE_URL}{pago_tercero_a.pk}/abonar/", {"cxp": str(cxp_proveedor_a.pk)}, format="json"
-        )
-        resp = client_a.post(
-            f"{BASE_URL}{pago_tercero_a.pk}/solicitar-reintegro/", {}, format="json"
-        )
+    def test_reintegro_sobre_abonado_retorna_400(self, client_a, pago_tercero_a, cxp_proveedor_a, mapeo_pago_tercero):
+        client_a.post(f"{BASE_URL}{pago_tercero_a.pk}/abonar/", {"cxp": str(cxp_proveedor_a.pk)}, format="json")
+        resp = client_a.post(f"{BASE_URL}{pago_tercero_a.pk}/solicitar-reintegro/", {}, format="json")
         assert resp.status_code == 400
 
     def test_marcar_reintegrado_sobre_pendiente_retorna_400(self, client_a, pago_tercero_a):
         resp = client_a.post(f"{BASE_URL}{pago_tercero_a.pk}/marcar-reintegrado/", {}, format="json")
         assert resp.status_code == 400
 
-    def test_marcar_reintegrado_tras_reintegro_ok(
-        self, client_a, pago_tercero_a, mapeo_pago_tercero
-    ):
+    def test_marcar_reintegrado_tras_reintegro_ok(self, client_a, pago_tercero_a, mapeo_pago_tercero):
         client_a.post(f"{BASE_URL}{pago_tercero_a.pk}/solicitar-reintegro/", {"comision": "1.00"}, format="json")
         resp = client_a.post(f"{BASE_URL}{pago_tercero_a.pk}/marcar-reintegrado/", {}, format="json")
         assert resp.status_code == 200
@@ -532,9 +502,7 @@ class TestTransicionesInvalidas:
     def test_asociar_proveedor_tras_abonar_retorna_400(
         self, client_a, pago_tercero_a, cxp_proveedor_a, proveedor_a, mapeo_pago_tercero
     ):
-        client_a.post(
-            f"{BASE_URL}{pago_tercero_a.pk}/abonar/", {"cxp": str(cxp_proveedor_a.pk)}, format="json"
-        )
+        client_a.post(f"{BASE_URL}{pago_tercero_a.pk}/abonar/", {"cxp": str(cxp_proveedor_a.pk)}, format="json")
         resp = client_a.post(
             f"{BASE_URL}{pago_tercero_a.pk}/asociar-proveedor/",
             {"proveedor": str(proveedor_a.id_proveedor)},
@@ -555,24 +523,16 @@ class TestTransicionesInvalidas:
         resp = client_a.post(f"{BASE_URL}{pago_tercero_a.pk}/anular/", {}, format="json")
         assert resp.status_code == 400
 
-    def test_patch_sobre_abonado_retorna_400(
-        self, client_a, pago_tercero_a, cxp_proveedor_a, mapeo_pago_tercero
-    ):
+    def test_patch_sobre_abonado_retorna_400(self, client_a, pago_tercero_a, cxp_proveedor_a, mapeo_pago_tercero):
         """La historia financiera es inmutable: PATCH tras mover dinero → 400."""
-        client_a.post(
-            f"{BASE_URL}{pago_tercero_a.pk}/abonar/", {"cxp": str(cxp_proveedor_a.pk)}, format="json"
-        )
-        resp = client_a.patch(
-            f"{BASE_URL}{pago_tercero_a.pk}/", {"monto": "1.00"}, format="json"
-        )
+        client_a.post(f"{BASE_URL}{pago_tercero_a.pk}/abonar/", {"cxp": str(cxp_proveedor_a.pk)}, format="json")
+        resp = client_a.patch(f"{BASE_URL}{pago_tercero_a.pk}/", {"monto": "1.00"}, format="json")
         assert resp.status_code == 400
         pago_tercero_a.refresh_from_db()
         assert pago_tercero_a.monto == Decimal("750.50")
 
     def test_patch_sobre_pendiente_si_es_editable(self, client_a, pago_tercero_a):
-        resp = client_a.patch(
-            f"{BASE_URL}{pago_tercero_a.pk}/", {"concepto": "corregido"}, format="json"
-        )
+        resp = client_a.patch(f"{BASE_URL}{pago_tercero_a.pk}/", {"concepto": "corregido"}, format="json")
         assert resp.status_code == 200
         pago_tercero_a.refresh_from_db()
         assert pago_tercero_a.concepto == "corregido"
@@ -614,9 +574,7 @@ class TestAsociarProveedor:
         cxp_proveedor_a.refresh_from_db()
         assert cxp_proveedor_a.monto_pendiente == Decimal("700.00")
 
-    def test_asociar_proveedor_de_otra_empresa_retorna_404(
-        self, client_a, empresa_a, moneda_usd, proveedor_b
-    ):
+    def test_asociar_proveedor_de_otra_empresa_retorna_404(self, client_a, empresa_a, moneda_usd, proveedor_b):
         pago = PagoTercero.objects.create(
             id_empresa=empresa_a,
             id_moneda=moneda_usd,
@@ -646,12 +604,8 @@ class TestAislamientoTenant:
         resp = client_b.get(f"{BASE_URL}{pago_tercero_a.pk}/")
         assert resp.status_code == 404
 
-    def test_usuario_b_no_puede_abonar_pago_de_empresa_a(
-        self, client_b, pago_tercero_a, cxp_proveedor_a
-    ):
-        resp = client_b.post(
-            f"{BASE_URL}{pago_tercero_a.pk}/abonar/", {"cxp": str(cxp_proveedor_a.pk)}, format="json"
-        )
+    def test_usuario_b_no_puede_abonar_pago_de_empresa_a(self, client_b, pago_tercero_a, cxp_proveedor_a):
+        resp = client_b.post(f"{BASE_URL}{pago_tercero_a.pk}/abonar/", {"cxp": str(cxp_proveedor_a.pk)}, format="json")
         assert resp.status_code == 404
         pago_tercero_a.refresh_from_db()
         assert pago_tercero_a.estado == "pendiente"
@@ -678,9 +632,7 @@ class TestAislamientoTenant:
             fecha_vencimiento=_today() + timedelta(days=30),
             estado="PENDIENTE",
         )
-        resp = client_a.post(
-            f"{BASE_URL}{pago_tercero_a.pk}/abonar/", {"cxp": str(cxp_ajena.pk)}, format="json"
-        )
+        resp = client_a.post(f"{BASE_URL}{pago_tercero_a.pk}/abonar/", {"cxp": str(cxp_ajena.pk)}, format="json")
         assert resp.status_code == 404
         cxp_ajena.refresh_from_db()
         assert cxp_ajena.monto_pendiente == Decimal("800.00")
@@ -715,9 +667,7 @@ class TestIdempotencia:
         self, client_a, pago_tercero_a, cxp_proveedor_a, empresa_a, proveedor_a, mapeo_pago_tercero
     ):
         url = f"{BASE_URL}{pago_tercero_a.pk}/abonar/"
-        r1 = client_a.post(
-            url, {"cxp": str(cxp_proveedor_a.pk)}, format="json", HTTP_IDEMPOTENCY_KEY="clave-x"
-        )
+        r1 = client_a.post(url, {"cxp": str(cxp_proveedor_a.pk)}, format="json", HTTP_IDEMPOTENCY_KEY="clave-x")
         assert r1.status_code == 200
         r2 = client_a.post(
             url,
@@ -727,9 +677,7 @@ class TestIdempotencia:
         )
         assert r2.status_code == 422
 
-    def test_reintegro_reintento_con_misma_clave_no_duplica(
-        self, client_a, pago_tercero_a, mapeo_pago_tercero
-    ):
+    def test_reintegro_reintento_con_misma_clave_no_duplica(self, client_a, pago_tercero_a, mapeo_pago_tercero):
         url = f"{BASE_URL}{pago_tercero_a.pk}/solicitar-reintegro/"
         body = {"comision": "25.75"}
         r1 = client_a.post(url, body, format="json", HTTP_IDEMPOTENCY_KEY="zelle-reintegro-001")
@@ -744,9 +692,7 @@ class TestIdempotencia:
         url = f"{BASE_URL}{pago_tercero_a.pk}/abonar/"
         r1 = client_a.post(url, {}, format="json", HTTP_IDEMPOTENCY_KEY="clave-y")
         assert r1.status_code == 400
-        r2 = client_a.post(
-            url, {"cxp": str(cxp_proveedor_a.pk)}, format="json", HTTP_IDEMPOTENCY_KEY="clave-y"
-        )
+        r2 = client_a.post(url, {"cxp": str(cxp_proveedor_a.pk)}, format="json", HTTP_IDEMPOTENCY_KEY="clave-y")
         assert r2.status_code == 200, r2.data
 
 
@@ -756,9 +702,7 @@ class TestIdempotencia:
 
 
 class TestServiceDirecto:
-    def test_abonar_cxp_de_otra_empresa_falla_en_service(
-        self, empresa_b, proveedor_b, pago_tercero_a, user_a
-    ):
+    def test_abonar_cxp_de_otra_empresa_falla_en_service(self, empresa_b, proveedor_b, pago_tercero_a, user_a):
         """Defensa en profundidad: aunque una vista no filtre, el service exige tenant."""
         from apps.finanzas.services_pagos_terceros import PagoTerceroError, abonar_pago_tercero
 
@@ -774,9 +718,7 @@ class TestServiceDirecto:
         with pytest.raises(PagoTerceroError):
             abonar_pago_tercero(pago=pago_tercero_a, cxp=cxp_ajena, usuario=user_a)
 
-    def test_asociar_proveedor_de_otra_empresa_falla_en_service(
-        self, pago_tercero_a, proveedor_b
-    ):
+    def test_asociar_proveedor_de_otra_empresa_falla_en_service(self, pago_tercero_a, proveedor_b):
         from apps.finanzas.services_pagos_terceros import PagoTerceroError, asociar_proveedor
 
         with pytest.raises(PagoTerceroError):
@@ -800,9 +742,7 @@ class TestMCPPagosTercerosPendientes:
             activo=True,
         )
 
-    def test_lista_solo_pendientes_y_reintegros(
-        self, token_a, empresa_a, proveedor_a, moneda_usd, pago_tercero_a
-    ):
+    def test_lista_solo_pendientes_y_reintegros(self, token_a, empresa_a, proveedor_a, moneda_usd, pago_tercero_a):
         from apps.finanzas.mcp import finanzas_pagos_terceros_pendientes
 
         # Uno abonado (cerrado) que NO debe aparecer
@@ -827,9 +767,7 @@ class TestMCPPagosTercerosPendientes:
             estado="reintegro_pendiente",
         )
 
-        resultado = finanzas_pagos_terceros_pendientes(
-            str(token_a.token), str(empresa_a.id_empresa)
-        )
+        resultado = finanzas_pagos_terceros_pendientes(str(token_a.token), str(empresa_a.id_empresa))
         estados = {r["estado"] for r in resultado}
         refs = {r["referencia_zelle"] for r in resultado}
         assert estados == {"pendiente", "reintegro_pendiente"}
@@ -847,8 +785,6 @@ class TestMCPPagosTercerosPendientes:
         from apps.core.models import CapabilityToken
         from apps.finanzas.mcp import finanzas_pagos_terceros_pendientes
 
-        token = CapabilityToken.objects.create(
-            empresa=empresa_a, nombre="tok-crm", scopes=["crm:read"], activo=True
-        )
+        token = CapabilityToken.objects.create(empresa=empresa_a, nombre="tok-crm", scopes=["crm:read"], activo=True)
         with pytest.raises(PermissionError):
             finanzas_pagos_terceros_pendientes(str(token.token), str(empresa_a.id_empresa))

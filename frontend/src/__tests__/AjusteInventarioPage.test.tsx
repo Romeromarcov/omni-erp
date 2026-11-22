@@ -204,4 +204,54 @@ describe('AjusteInventarioPage', () => {
       expect(screen.getByText(/error de servidor/i)).toBeInTheDocument();
     });
   });
+
+  it('rechaza costo_unitario inválido o negativo y no envía payload', async () => {
+    vi.mocked(stockActualService.getAll).mockResolvedValue(mockStock);
+    vi.mocked(productoInventarioService.getAll).mockResolvedValue(mockProductos as never[]);
+
+    renderPage();
+    await waitFor(() => screen.getByRole('combobox', { name: /producto/i }));
+
+    await userEvent.click(screen.getByRole('combobox', { name: /producto/i }));
+    await userEvent.click(await screen.findByRole('option', { name: /Producto A \(SKU-A\)/ }));
+    await userEvent.click(screen.getByRole('combobox', { name: /almacén/i }));
+    await userEvent.click(await screen.findByRole('option', { name: 'Almacén Principal' }));
+    fireEvent.change(screen.getByPlaceholderText(/ej: 50/i), { target: { value: '5' } });
+    fireEvent.change(screen.getByLabelText(/costo unitario/i), { target: { value: '-1.5' } });
+
+    const form = screen.getByRole('button', { name: /registrar ajuste/i }).closest('form')!;
+    fireEvent.submit(form);
+
+    await waitFor(() => {
+      expect(screen.getByText(/el costo unitario debe ser un número válido mayor o igual a 0/i)).toBeInTheDocument();
+    });
+    expect(movimientoService.registrarAjuste).not.toHaveBeenCalled();
+  });
+
+  it('envía cantidad y costo_unitario como strings decimales exactos', async () => {
+    vi.mocked(stockActualService.getAll).mockResolvedValue(mockStock);
+    vi.mocked(productoInventarioService.getAll).mockResolvedValue(mockProductos as never[]);
+    vi.mocked(movimientoService.registrarAjuste).mockResolvedValue({ id_movimiento_inventario: 'new-002' } as never);
+
+    renderPage();
+    await waitFor(() => screen.getByRole('combobox', { name: /producto/i }));
+
+    await userEvent.click(screen.getByRole('combobox', { name: /producto/i }));
+    await userEvent.click(await screen.findByRole('option', { name: /Producto A \(SKU-A\)/ }));
+    await userEvent.click(screen.getByRole('combobox', { name: /almacén/i }));
+    await userEvent.click(await screen.findByRole('option', { name: 'Almacén Principal' }));
+    fireEvent.change(screen.getByPlaceholderText(/ej: 50/i), { target: { value: '2.5' } });
+    fireEvent.change(screen.getByLabelText(/costo unitario/i), { target: { value: '10.1234' } });
+
+    fireEvent.click(screen.getByRole('button', { name: /registrar ajuste/i }));
+
+    await waitFor(() => {
+      expect(movimientoService.registrarAjuste).toHaveBeenCalledWith(
+        expect.objectContaining({
+          cantidad: '2.5',
+          costo_unitario_movimiento: '10.1234',
+        }),
+      );
+    });
+  });
 });

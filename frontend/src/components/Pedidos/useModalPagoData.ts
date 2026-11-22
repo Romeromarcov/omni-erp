@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { get, getAccessToken } from '../../services/api';
 import { getSesionActiva } from '../../services/sesionService';
+import { parseDecimalSeguro } from '../../schemas/decimal.schemas';
 import type {
   MetodoPago,
   MetodoPagoEmpresaActiva,
@@ -25,8 +26,8 @@ interface UseModalPagoDataReturn {
   metodos: MetodoPago[];
   monedas: Moneda[];
   cajas: CajaVirtual[];
-  tasaBCV: number;
-  toleranciaPositiva: number;
+  tasaBCV: string;
+  toleranciaPositiva: string;
   permitirNegativas: boolean;
   notasCredito: NotaCredito[];
   cuentasBancarias: CuentaBancaria[];
@@ -132,16 +133,16 @@ export function useModalPagoData({
   });
 
   // ── Tasa BCV ───────────────────────────────────────────────────────────────
-  const tasaBCVQuery = useQuery<number>({
+  const tasaBCVQuery = useQuery<string>({
     queryKey: ['tasaBCV', 'USD', 'VES'],
     queryFn: async () => {
       const data = await get<TasaOficial>('/finanzas/tasa-oficial-bcv/?moneda_origen=USD&moneda_destino=VES');
-      return data?.valor_tasa !== undefined ? Number(data.valor_tasa) : 1;
+      return data?.valor_tasa !== undefined && data.valor_tasa !== null ? String(data.valor_tasa) : '1';
     },
   });
 
   // ── Parámetros de tolerancia ─────────────────────────────────────────────────
-  const parametrosQuery = useQuery<{ toleranciaPositiva: number; permitirNegativas: boolean }>({
+  const parametrosQuery = useQuery<{ toleranciaPositiva: string; permitirNegativas: boolean }>({
     queryKey: ['parametrosSistema', 'tolerancia', empresaId ?? null],
     enabled: !!empresaId,
     queryFn: async () => {
@@ -149,8 +150,9 @@ export function useModalPagoData({
       const params = toList<ParametroSistema>(response);
       const pos = params.find(p => p.codigo_parametro === 'TOLERANCIA_DIFERENCIA_POSITIVA_PAGOS');
       const neg = params.find(p => p.codigo_parametro === 'PERMITIR_DIFERENCIAS_NEGATIVAS_PAGOS');
+      const tolParsed = pos ? parseDecimalSeguro(pos.valor_parametro) : null;
       return {
-        toleranciaPositiva: pos ? (parseFloat(pos.valor_parametro) || 0.5) : 0.5,
+        toleranciaPositiva: tolParsed && tolParsed.gt(0) ? tolParsed.toString() : '0.5',
         permitirNegativas: neg ? neg.valor_parametro.toLowerCase() === 'true' : true,
       };
     },
@@ -231,8 +233,8 @@ export function useModalPagoData({
     metodos: metodosQuery.data ?? [],
     monedas: monedasQuery.data ?? [],
     cajas: cajasQuery.data ?? [],
-    tasaBCV: tasaBCVQuery.data ?? 1,
-    toleranciaPositiva: parametrosQuery.data?.toleranciaPositiva ?? 0.5,
+    tasaBCV: tasaBCVQuery.data ?? '1',
+    toleranciaPositiva: parametrosQuery.data?.toleranciaPositiva ?? '0.5',
     permitirNegativas: parametrosQuery.data?.permitirNegativas ?? true,
     notasCredito: notasCreditoQuery.data ?? [],
     cuentasBancarias: cuentasBancariasQuery.data ?? [],

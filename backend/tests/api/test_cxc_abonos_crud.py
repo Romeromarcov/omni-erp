@@ -109,55 +109,39 @@ class TestAbonoCxCCreate:
         assert _saldo(cxc_a) == Decimal("0.00")
 
     def test_abono_registra_usuario_autenticado(self, db, cxc_a, client_a, user_a):
-        client_a.post(
-            URL_ABONOS, {"cuenta_por_cobrar": cxc_a.pk, "monto": "100.00"}, format="json"
-        )
+        client_a.post(URL_ABONOS, {"cuenta_por_cobrar": cxc_a.pk, "monto": "100.00"}, format="json")
         abono = cxc_a.abonos.get()
         assert abono.usuario_id == user_a.pk
 
     def test_abono_monto_cero_retorna_400(self, db, cxc_a, client_a):
-        resp = client_a.post(
-            URL_ABONOS, {"cuenta_por_cobrar": cxc_a.pk, "monto": "0"}, format="json"
-        )
+        resp = client_a.post(URL_ABONOS, {"cuenta_por_cobrar": cxc_a.pk, "monto": "0"}, format="json")
         assert resp.status_code == 400
         assert cxc_a.abonos.count() == 0
 
     def test_abono_monto_negativo_retorna_400(self, db, cxc_a, client_a):
-        resp = client_a.post(
-            URL_ABONOS, {"cuenta_por_cobrar": cxc_a.pk, "monto": "-50.00"}, format="json"
-        )
+        resp = client_a.post(URL_ABONOS, {"cuenta_por_cobrar": cxc_a.pk, "monto": "-50.00"}, format="json")
         assert resp.status_code == 400
         assert cxc_a.abonos.count() == 0
 
     def test_abono_excede_saldo_retorna_400(self, db, cxc_a, client_a):
-        resp = client_a.post(
-            URL_ABONOS, {"cuenta_por_cobrar": cxc_a.pk, "monto": "1000.01"}, format="json"
-        )
+        resp = client_a.post(URL_ABONOS, {"cuenta_por_cobrar": cxc_a.pk, "monto": "1000.01"}, format="json")
         assert resp.status_code == 400
         cxc_a.refresh_from_db()
         assert cxc_a.estado == "pendiente"
         assert cxc_a.abonos.count() == 0
 
     def test_abono_sobre_cxc_pagada_retorna_400(self, db, cxc_a, client_a):
-        client_a.post(
-            URL_ABONOS, {"cuenta_por_cobrar": cxc_a.pk, "monto": "1000.00"}, format="json"
-        )
-        resp = client_a.post(
-            URL_ABONOS, {"cuenta_por_cobrar": cxc_a.pk, "monto": "1.00"}, format="json"
-        )
+        client_a.post(URL_ABONOS, {"cuenta_por_cobrar": cxc_a.pk, "monto": "1000.00"}, format="json")
+        resp = client_a.post(URL_ABONOS, {"cuenta_por_cobrar": cxc_a.pk, "monto": "1.00"}, format="json")
         assert resp.status_code == 400
         assert cxc_a.abonos.count() == 1
 
     def test_abono_sin_monto_retorna_400(self, db, cxc_a, client_a):
-        resp = client_a.post(
-            URL_ABONOS, {"cuenta_por_cobrar": cxc_a.pk}, format="json"
-        )
+        resp = client_a.post(URL_ABONOS, {"cuenta_por_cobrar": cxc_a.pk}, format="json")
         assert resp.status_code == 400
 
     def test_abono_monto_invalido_retorna_400(self, db, cxc_a, client_a):
-        resp = client_a.post(
-            URL_ABONOS, {"cuenta_por_cobrar": cxc_a.pk, "monto": "no-es-numero"}, format="json"
-        )
+        resp = client_a.post(URL_ABONOS, {"cuenta_por_cobrar": cxc_a.pk, "monto": "no-es-numero"}, format="json")
         assert resp.status_code == 400
 
     def test_abono_sin_cxc_retorna_400(self, db, client_a):
@@ -173,18 +157,14 @@ class TestAbonoCxCCreate:
 class TestAbonoCxCAislamiento:
     def test_abonar_cxc_de_otra_empresa_retorna_404(self, db, cxc_a, client_b):
         """user_b (Empresa B) no puede abonar a una CxC de Empresa A."""
-        resp = client_b.post(
-            URL_ABONOS, {"cuenta_por_cobrar": cxc_a.pk, "monto": "100.00"}, format="json"
-        )
+        resp = client_b.post(URL_ABONOS, {"cuenta_por_cobrar": cxc_a.pk, "monto": "100.00"}, format="json")
         assert resp.status_code == 404
         assert cxc_a.abonos.count() == 0
         cxc_a.refresh_from_db()
         assert cxc_a.estado == "pendiente"
 
     def test_abonar_cxc_inexistente_retorna_404(self, db, client_a):
-        resp = client_a.post(
-            URL_ABONOS, {"cuenta_por_cobrar": 999999, "monto": "100.00"}, format="json"
-        )
+        resp = client_a.post(URL_ABONOS, {"cuenta_por_cobrar": 999999, "monto": "100.00"}, format="json")
         assert resp.status_code == 404
 
     def test_list_no_expone_abonos_de_otra_empresa(self, db, cxc_a, cxc_b, user_a, user_b, client_a):
@@ -205,9 +185,7 @@ class TestAbonoCxCAislamiento:
 class TestAbonoCxCMetodosBloqueados:
     @pytest.fixture
     def abono_a(self, db, cxc_a, user_a):
-        return AbonoCxC.objects.create(
-            cuenta_por_cobrar=cxc_a, monto=Decimal("200.00"), usuario=user_a
-        )
+        return AbonoCxC.objects.create(cuenta_por_cobrar=cxc_a, monto=Decimal("200.00"), usuario=user_a)
 
     def test_delete_retorna_405_y_no_borra(self, db, abono_a, client_a):
         resp = client_a.delete(f"{URL_ABONOS}{abono_a.pk}/")
@@ -225,9 +203,7 @@ class TestAbonoCxCMetodosBloqueados:
         assert abono_a.monto == Decimal("200.00")
 
     def test_patch_retorna_405(self, db, abono_a, client_a):
-        resp = client_a.patch(
-            f"{URL_ABONOS}{abono_a.pk}/", {"monto": "999.00"}, format="json"
-        )
+        resp = client_a.patch(f"{URL_ABONOS}{abono_a.pk}/", {"monto": "999.00"}, format="json")
         assert resp.status_code == 405
         abono_a.refresh_from_db()
         assert abono_a.monto == Decimal("200.00")

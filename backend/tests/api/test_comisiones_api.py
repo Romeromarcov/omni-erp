@@ -42,23 +42,17 @@ def _cliente(empresa):
     from apps.crm.models import Cliente
 
     n = next(_SEQ)
-    return Cliente.objects.create(
-        id_empresa=empresa, razon_social=f"Cliente API {n}", rif=f"J-88{n:06d}-0"
-    )
+    return Cliente.objects.create(id_empresa=empresa, razon_social=f"Cliente API {n}", rif=f"J-88{n:06d}-0")
 
 
 def _categoria(empresa, nombre=None):
     from apps.inventario.models import CategoriaProducto
 
-    return CategoriaProducto.objects.create(
-        id_empresa=empresa, nombre_categoria=nombre or f"Cat API {next(_SEQ)}"
-    )
+    return CategoriaProducto.objects.create(id_empresa=empresa, nombre_categoria=nombre or f"Cat API {next(_SEQ)}")
 
 
 def _esquema(empresa, vendedor, porcentaje="5.0000"):
-    return EsquemaComision.objects.create(
-        id_empresa=empresa, vendedor=vendedor, porcentaje_base=Decimal(porcentaje)
-    )
+    return EsquemaComision.objects.create(id_empresa=empresa, vendedor=vendedor, porcentaje_base=Decimal(porcentaje))
 
 
 def _comision(empresa, vendedor, monto="10.0000", fecha=None, estado="DEVENGADA", esquema=None):
@@ -159,10 +153,7 @@ def test_esquemas_aislados_entre_empresas(client_a, empresa_a, empresa_b):
 
     assert client_a.get(f"{BASE_ESQUEMAS}{ajeno.pk}/").status_code == 404
     assert (
-        client_a.patch(
-            f"{BASE_ESQUEMAS}{ajeno.pk}/", {"porcentaje_base": "1.0000"}, format="json"
-        ).status_code
-        == 404
+        client_a.patch(f"{BASE_ESQUEMAS}{ajeno.pk}/", {"porcentaje_base": "1.0000"}, format="json").status_code == 404
     )
     assert client_a.delete(f"{BASE_ESQUEMAS}{ajeno.pk}/").status_code == 404
     ajeno.refresh_from_db()
@@ -237,9 +228,7 @@ def test_overrides_aislados(client_a, empresa_a, empresa_b):
         porcentaje=Decimal("9.0000"),
     )
     resp = client_a.get(BASE_OVERRIDES)
-    assert str(ajeno.pk) not in {
-        r["id_esquema_comision_categoria"] for r in _resultados(resp.data)
-    }
+    assert str(ajeno.pk) not in {r["id_esquema_comision_categoria"] for r in _resultados(resp.data)}
     assert client_a.get(f"{BASE_OVERRIDES}{ajeno.pk}/").status_code == 404
 
 
@@ -262,10 +251,7 @@ def test_comisiones_listado_aislado_y_solo_lectura(client_a, empresa_a, empresa_
     assert client_a.get(f"{BASE_COMISIONES}{ajena.pk}/").status_code == 404
     # ReadOnly: no hay escritura directa
     assert client_a.post(BASE_COMISIONES, {}, format="json").status_code == 405
-    assert (
-        client_a.patch(f"{BASE_COMISIONES}{propia.pk}/", {"estado": "LIQUIDADA"}, format="json").status_code
-        == 405
-    )
+    assert client_a.patch(f"{BASE_COMISIONES}{propia.pk}/", {"estado": "LIQUIDADA"}, format="json").status_code == 405
     assert client_a.delete(f"{BASE_COMISIONES}{propia.pk}/").status_code == 405
 
 
@@ -395,8 +381,7 @@ def test_liquidar_validaciones_400(client_a, empresa_a):
     assert resp.status_code == 400
     # body incompleto
     assert (
-        client_a.post(f"{BASE_COMISIONES}liquidar/", {"vendedor": str(vendedor.pk)}, format="json").status_code
-        == 400
+        client_a.post(f"{BASE_COMISIONES}liquidar/", {"vendedor": str(vendedor.pk)}, format="json").status_code == 400
     )
 
 
@@ -407,9 +392,7 @@ def test_patch_nota_anulada_anula_comision(client_a, empresa_a):
     comision = _comision(empresa_a, _vendedor(empresa_a))
     nota = comision.nota_venta
 
-    resp = client_a.patch(
-        f"/api/ventas/notas-venta/{nota.pk}/", {"estado": "ANULADA"}, format="json"
-    )
+    resp = client_a.patch(f"/api/ventas/notas-venta/{nota.pk}/", {"estado": "ANULADA"}, format="json")
     assert resp.status_code == 200, resp.data
     comision.refresh_from_db()
     assert comision.estado == "ANULADA"
@@ -420,9 +403,7 @@ def test_patch_nota_anulada_con_comision_liquidada_400_y_rollback(client_a, empr
     comision = _comision(empresa_a, _vendedor(empresa_a), estado="LIQUIDADA")
     nota = comision.nota_venta
 
-    resp = client_a.patch(
-        f"/api/ventas/notas-venta/{nota.pk}/", {"estado": "ANULADA"}, format="json"
-    )
+    resp = client_a.patch(f"/api/ventas/notas-venta/{nota.pk}/", {"estado": "ANULADA"}, format="json")
     assert resp.status_code == 400
     assert "liquidada" in str(resp.data).lower()
     nota.refresh_from_db()
@@ -436,9 +417,7 @@ def test_patch_nota_otro_campo_no_toca_comision(client_a, empresa_a):
     comision = _comision(empresa_a, _vendedor(empresa_a))
     nota = comision.nota_venta
 
-    resp = client_a.patch(
-        f"/api/ventas/notas-venta/{nota.pk}/", {"observaciones": "ajuste"}, format="json"
-    )
+    resp = client_a.patch(f"/api/ventas/notas-venta/{nota.pk}/", {"observaciones": "ajuste"}, format="json")
     assert resp.status_code == 200, resp.data
     comision.refresh_from_db()
     assert comision.estado == "DEVENGADA"
@@ -458,12 +437,8 @@ def _nota_borrador_con_stock(empresa, usuario, vendedor):
     almacen = Almacen.objects.create(
         id_empresa=empresa, nombre_almacen=f"Almacén E2E {n}", codigo_almacen=f"ALM-E2E-{n}"
     )
-    unidad = UnidadMedida.objects.create(
-        id_empresa=empresa, nombre="Unidad", abreviatura=f"UN-{n}", tipo="CANTIDAD"
-    )
-    categoria = CategoriaProducto.objects.create(
-        id_empresa=empresa, nombre_categoria=f"Cat E2E {n}"
-    )
+    unidad = UnidadMedida.objects.create(id_empresa=empresa, nombre="Unidad", abreviatura=f"UN-{n}", tipo="CANTIDAD")
+    categoria = CategoriaProducto.objects.create(id_empresa=empresa, nombre_categoria=f"Cat E2E {n}")
     producto = Producto.objects.create(
         id_empresa=empresa,
         nombre_producto=f"Producto E2E {n}",
@@ -532,9 +507,7 @@ def test_entregar_validaciones(client_a, client_b, empresa_a, empresa_b, user_a)
     # Almacén de otra empresa → 400 (no se filtra su existencia)
     from apps.almacenes.models import Almacen
 
-    almacen_b = Almacen.objects.create(
-        id_empresa=empresa_b, nombre_almacen="Almacén B", codigo_almacen="ALM-B-E2E"
-    )
+    almacen_b = Almacen.objects.create(id_empresa=empresa_b, nombre_almacen="Almacén B", codigo_almacen="ALM-B-E2E")
     cruzado = client_a.post(
         f"/api/ventas/notas-venta/{nota.pk}/entregar/",
         {"almacen_id": str(almacen_b.pk)},

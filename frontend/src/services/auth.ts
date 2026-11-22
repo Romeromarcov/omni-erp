@@ -2,6 +2,7 @@ import { post, get, fetcher, setAccessToken, clearAccessToken } from './api';
 import type { Usuario } from './users';
 import type { LoginResponse, DispositivoInfo } from '../types/dispositivos';
 import { getDeviceInfo } from '../utils/deviceFingerprint';
+import { statusDeError } from '../utils/api';
 import {
   setSessionUser,
   setSessionRoles,
@@ -79,13 +80,26 @@ export async function loginAndFetchUser(username: string, password: string): Pro
   };
 }
 
+export type HydrateSessionResult =
+  | { status: 'ok'; usuario: Usuario }
+  | { status: 'rejected' }
+  | { status: 'transient_error' };
+
+function esRechazoAutenticacion(err: unknown, aceptar400: boolean): boolean {
+  const status = statusDeError(err);
+  if (status === 401 || status === 403 || (aceptar400 && status === 400)) {
+    return true;
+  }
+  return err instanceof Error && err.message.startsWith('Sesión expirada');
+}
+
 /**
- * Rebuilds the session after a full page reload. Uses the httpOnly refresh
- * cookie to obtain a fresh access token, then hydrates the user via the
- * lightweight auth profile endpoint. Returns the user on success, null if the
- * user is unauthenticated (no/expired cookie).
+ * Rebuilds the session after a full page reload distinguishing confirmed auth
+ * rejections (401/403, 400 on refresh without cookie, or 200 without access
+ * token) from transient network/offline/5xx errors so offline outbox sales
+ * survive F5 reloads while disconnected.
  */
-export async function hydrateSession(): Promise<Usuario | null> {
+export async function hydrateSessionResult(): Promise<HydrateSessionResult> {
   try {
     const refresh = await fetcher<{ access?: string }>('/auth/token/refresh/', {
       method: 'POST',
@@ -93,25 +107,38 @@ export async function hydrateSession(): Promise<Usuario | null> {
       timeoutMs: 15000,
     });
     if (!refresh.access) {
-      return null;
+      clearAccessToken();
+      clearSession();
+      return { status: 'rejected' };
     }
     setAccessToken(refresh.access);
-  } catch {
+  } catch (err) {
     clearAccessToken();
     clearSession();
-    return null;
+    return { status: esRechazoAutenticacion(err, true) ? 'rejected' : 'transient_error' };
   }
 
   try {
     const usuario = await get<Usuario>('/auth/profile/');
     setSessionUser(usuario);
     await loadRolesYPermisos(usuario.id);
-    return usuario;
-  } catch {
+    return { status: 'ok', usuario };
+  } catch (err) {
     clearAccessToken();
     clearSession();
-    return null;
+    return { status: esRechazoAutenticacion(err, false) ? 'rejected' : 'transient_error' };
   }
+}
+
+/**
+ * Rebuilds the session after a full page reload. Uses the httpOnly refresh
+ * cookie to obtain a fresh access token, then hydrates the user via the
+ * lightweight auth profile endpoint. Returns the user on success, null if the
+ * user is unauthenticated or offline.
+ */
+export async function hydrateSession(): Promise<Usuario | null> {
+  const res = await hydrateSessionResult();
+  return res.status === 'ok' ? res.usuario : null;
 }
 
 /**

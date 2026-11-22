@@ -28,6 +28,8 @@ import {
   Typography,
 } from '@mui/material';
 import PaymentsOutlined from '@mui/icons-material/PaymentsOutlined';
+import LinkOutlined from '@mui/icons-material/LinkOutlined';
+import ConciliacionContactoDialog from '../../components/Finanzas/ConciliacionContactoDialog';
 import { cuentasPorPagarService } from '../../services/cuentasPorPagarService';
 import type { AgingCxPResponse, CuentaPorPagar } from '../../services/cuentasPorPagarService';
 import { abonoCxpSchema, type AbonoCxpInput } from '../../schemas/cxp.schemas';
@@ -71,6 +73,7 @@ export default function CuentasPorPagarPage() {
   const [page, setPage] = useState(1);
   const [estado, setEstado] = useState('');
   const [cxpSeleccionada, setCxpSeleccionada] = useState<CuentaPorPagar | null>(null);
+  const [contactoConciliar, setContactoConciliar] = useState<string | null>(null);
   const [errorGeneral, setErrorGeneral] = useState('');
   const empresaId = getEmpresaId() || '';
 
@@ -194,15 +197,27 @@ export default function CuentasPorPagarPage() {
       header: t('common.actions'),
       align: 'right',
       render: (c) => (
-        <Button
-          size="small"
-          variant="contained"
-          startIcon={<PaymentsOutlined />}
-          disabled={c.estado === 'PAGADA' || c.estado === 'ANULADA' || !D(c.monto_pendiente).greaterThan(0)}
-          onClick={() => abrirModal(c)}
-        >
-          {t('cxp.abono.abonar')}
-        </Button>
+        <Stack direction="row" spacing={1} justifyContent="flex-end">
+          {c.contacto_id && (
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<LinkOutlined />}
+              onClick={() => setContactoConciliar(c.contacto_id ?? null)}
+            >
+              Conciliar
+            </Button>
+          )}
+          <Button
+            size="small"
+            variant="contained"
+            startIcon={<PaymentsOutlined />}
+            disabled={c.estado === 'PAGADA' || c.estado === 'ANULADA' || !D(c.monto_pendiente).greaterThan(0)}
+            onClick={() => abrirModal(c)}
+          >
+            {t('cxp.abono.abonar')}
+          </Button>
+        </Stack>
       ),
     },
   ];
@@ -306,6 +321,13 @@ export default function CuentasPorPagarPage() {
           </DialogActions>
         </form>
       </Dialog>
+
+      <ConciliacionContactoDialog
+        open={Boolean(contactoConciliar)}
+        contactoId={contactoConciliar}
+        tipoOperacionFiltro="EGRESO"
+        onClose={() => setContactoConciliar(null)}
+      />
     </PageContainer>
   );
 }

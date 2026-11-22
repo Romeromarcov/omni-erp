@@ -10,6 +10,8 @@ Herramientas expuestas:
 
 import logging
 import uuid
+from collections.abc import Iterator
+from contextlib import contextmanager
 from typing import Any, Dict, List
 
 logger = logging.getLogger("omni.mcp.nomina")
@@ -22,14 +24,14 @@ _SCOPE = "nomina"
 # Helpers internos
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _ctx(capability_token: str, scope: str) -> dict:
-    """Resuelve y valida token + scope. Lanza PermissionError si falla."""
-    from apps.core.mcp_server import _require_scope, _resolve_token  # noqa: PLC0415
 
-    context = _resolve_token(capability_token)
-    _require_scope(context, scope)
-    assert context is not None  # noqa: S101
-    return context
+@contextmanager
+def _ctx(capability_token: str, scope: str, *, empresa_id: str | None = None) -> Iterator[dict[str, Any]]:
+    """Resuelve y valida token/scope/tenant abriendo ``rls_tenant_context``."""
+    from apps.core.mcp_server import mcp_tenant_context  # noqa: PLC0415
+
+    with mcp_tenant_context(capability_token, scope, empresa_id=empresa_id) as context:
+        yield context
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -61,35 +63,34 @@ def nomina_procesar_proceso(
     from apps.nomina.models import ProcesoNomina  # noqa: PLC0415
     from apps.nomina.services import NominaProcesoError, procesar_proceso_nomina  # noqa: PLC0415
 
-    ctx = _ctx(capability_token, f"{_SCOPE}:write")
-    if empresa_id != ctx["empresa_id"]:
-        raise PermissionError("empresa_id no coincide con el tenant del token.")
+    with _ctx(capability_token, f"{_SCOPE}:write", empresa_id=empresa_id) as ctx:
+        try:
+            proceso = ProcesoNomina.objects.get(pk=proceso_id, id_empresa=uuid.UUID(empresa_id))
+        except (ProcesoNomina.DoesNotExist, ValueError):
+            return {"error": f"Proceso de nómina {proceso_id} no encontrado."}
 
-    try:
-        proceso = ProcesoNomina.objects.get(pk=proceso_id, id_empresa=uuid.UUID(empresa_id))
-    except (ProcesoNomina.DoesNotExist, ValueError):
-        return {"error": f"Proceso de nómina {proceso_id} no encontrado."}
+        try:
+            proceso, asiento, advertencia = procesar_proceso_nomina(proceso)
+        except (NominaProcesoError, AsientoError) as exc:
+            return {"error": str(exc)}
 
-    try:
-        proceso, asiento, advertencia = procesar_proceso_nomina(proceso)
-    except (NominaProcesoError, AsientoError) as exc:
-        return {"error": str(exc)}
-
-    logger.info(
-        "nomina_procesar_proceso | actor=%s | tenant=%s | proceso=%s",
-        ctx["actor_id"], ctx["tenant_id"], proceso_id,
-    )
-    return {
-        "id_proceso_nomina": str(proceso.id_proceso_nomina),
-        "numero_proceso": proceso.numero_proceso,
-        "estado": proceso.estado,
-        "total_empleados": proceso.total_empleados,
-        "total_devengado": str(proceso.total_devengado),
-        "total_deducciones": str(proceso.total_deducciones),
-        "total_neto": str(proceso.total_neto),
-        "asiento_contable": str(asiento.id_asiento) if asiento else None,
-        "advertencia_asiento": advertencia,
-    }
+        logger.info(
+            "nomina_procesar_proceso | actor=%s | tenant=%s | proceso=%s",
+            ctx["actor_id"],
+            ctx["tenant_id"],
+            proceso_id,
+        )
+        return {
+            "id_proceso_nomina": str(proceso.id_proceso_nomina),
+            "numero_proceso": proceso.numero_proceso,
+            "estado": proceso.estado,
+            "total_empleados": proceso.total_empleados,
+            "total_devengado": str(proceso.total_devengado),
+            "total_deducciones": str(proceso.total_deducciones),
+            "total_neto": str(proceso.total_neto),
+            "asiento_contable": str(asiento.id_asiento) if asiento else None,
+            "advertencia_asiento": advertencia,
+        }
 
 
 def nomina_resumen_proceso(
@@ -112,43 +113,42 @@ def nomina_resumen_proceso(
     """
     from apps.nomina.models import ProcesoNomina  # noqa: PLC0415
 
-    ctx = _ctx(capability_token, f"{_SCOPE}:read")
-    if empresa_id != ctx["empresa_id"]:
-        raise PermissionError("empresa_id no coincide con el tenant del token.")
+    with _ctx(capability_token, f"{_SCOPE}:read", empresa_id=empresa_id) as ctx:
+        try:
+            proceso = ProcesoNomina.objects.prefetch_related("nominas__id_empleado").get(
+                pk=proceso_id, id_empresa=uuid.UUID(empresa_id)
+            )
+        except (ProcesoNomina.DoesNotExist, ValueError):
+            return {"error": f"Proceso de nómina {proceso_id} no encontrado."}
 
-    try:
-        proceso = ProcesoNomina.objects.prefetch_related("nominas__id_empleado").get(
-            pk=proceso_id, id_empresa=uuid.UUID(empresa_id)
+        logger.info(
+            "nomina_resumen_proceso | actor=%s | tenant=%s | proceso=%s",
+            ctx["actor_id"],
+            ctx["tenant_id"],
+            proceso_id,
         )
-    except (ProcesoNomina.DoesNotExist, ValueError):
-        return {"error": f"Proceso de nómina {proceso_id} no encontrado."}
-
-    logger.info(
-        "nomina_resumen_proceso | actor=%s | tenant=%s | proceso=%s",
-        ctx["actor_id"], ctx["tenant_id"], proceso_id,
-    )
-    return {
-        "id_proceso_nomina": str(proceso.id_proceso_nomina),
-        "numero_proceso": proceso.numero_proceso,
-        "estado": proceso.estado,
-        "total_empleados": proceso.total_empleados,
-        "total_devengado": str(proceso.total_devengado),
-        "total_deducciones": str(proceso.total_deducciones),
-        "total_neto": str(proceso.total_neto),
-        "recibos": [
-            {
-                "id_nomina": str(n.id_nomina),
-                "empleado": f"{n.id_empleado.nombre} {n.id_empleado.apellido}",
-                "cedula": n.id_empleado.cedula,
-                "sueldo_base": str(n.sueldo_base),
-                "total_devengado": str(n.total_devengado),
-                "total_deducciones": str(n.total_deducciones),
-                "total_neto": str(n.total_neto),
-                "estado": n.estado,
-            }
-            for n in proceso.nominas.all()
-        ],
-    }
+        return {
+            "id_proceso_nomina": str(proceso.id_proceso_nomina),
+            "numero_proceso": proceso.numero_proceso,
+            "estado": proceso.estado,
+            "total_empleados": proceso.total_empleados,
+            "total_devengado": str(proceso.total_devengado),
+            "total_deducciones": str(proceso.total_deducciones),
+            "total_neto": str(proceso.total_neto),
+            "recibos": [
+                {
+                    "id_nomina": str(n.id_nomina),
+                    "empleado": f"{n.id_empleado.nombre} {n.id_empleado.apellido}",
+                    "cedula": n.id_empleado.cedula,
+                    "sueldo_base": str(n.sueldo_base),
+                    "total_devengado": str(n.total_devengado),
+                    "total_deducciones": str(n.total_deducciones),
+                    "total_neto": str(n.total_neto),
+                    "estado": n.estado,
+                }
+                for n in proceso.nominas.all()
+            ],
+        }
 
 
 # ─────────────────────────────────────────────────────────────────────────────

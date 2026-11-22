@@ -37,9 +37,7 @@ def almacen(db, empresa_a):
 def unidad(db, empresa_a):
     from apps.inventario.models import UnidadMedida
 
-    return UnidadMedida.objects.create(
-        id_empresa=empresa_a, nombre="Unidad M5", abreviatura="UN-M5", tipo="CANTIDAD"
-    )
+    return UnidadMedida.objects.create(id_empresa=empresa_a, nombre="Unidad M5", abreviatura="UN-M5", tipo="CANTIDAD")
 
 
 @pytest.fixture
@@ -129,9 +127,7 @@ def factura_emitida(db, empresa_a, cliente_legacy, moneda_usd):
 
 
 @pytest.mark.django_db
-def test_despacho_venta_sin_nota_venta_falla(
-    empresa_a, producto, almacen, stock_disponible, user_a
-):
+def test_despacho_venta_sin_nota_venta_falla(empresa_a, producto, almacen, stock_disponible, user_a):
     """
     DESPACHO_VENTA sin documento_origen_id lanza MovimientoInvalidoError.
     """
@@ -212,9 +208,7 @@ def test_despacho_venta_con_nota_venta_valida_ok(
 
 
 @pytest.mark.django_db
-def test_despacho_venta_con_uuid_inexistente_falla(
-    empresa_a, producto, almacen, stock_disponible, user_a
-):
+def test_despacho_venta_con_uuid_inexistente_falla(empresa_a, producto, almacen, stock_disponible, user_a):
     """
     DESPACHO_VENTA con documento_origen_id que no existe en BD lanza
     MovimientoInvalidoError.
@@ -243,9 +237,7 @@ def test_despacho_venta_con_uuid_inexistente_falla(
 
 
 @pytest.mark.django_db
-def test_ajuste_sin_justificante_genera_warning(
-    empresa_a, producto, almacen, stock_disponible, user_a, capsys
-):
+def test_ajuste_sin_justificante_genera_warning(empresa_a, producto, almacen, stock_disponible, user_a, capsys):
     """
     AJUSTE sin documento_origen_id se registra correctamente pero emite un
     WARNING en el logger de inventario.services (visible en stderr).
@@ -273,9 +265,7 @@ def test_ajuste_sin_justificante_genera_warning(
 
 
 @pytest.mark.django_db
-def test_ajuste_con_justificante_no_genera_warning(
-    empresa_a, producto, almacen, stock_disponible, user_a, caplog
-):
+def test_ajuste_con_justificante_no_genera_warning(empresa_a, producto, almacen, stock_disponible, user_a, caplog):
     """
     AJUSTE con documento_origen_id presente no emite el warning.
     """
@@ -300,12 +290,9 @@ def test_ajuste_con_justificante_no_genera_warning(
         )
 
     assert mov.tipo_movimiento == "AJUSTE"
-    warning_messages = [
-        r.message for r in caplog.records if r.levelno == logging.WARNING
-    ]
+    warning_messages = [r.message for r in caplog.records if r.levelno == logging.WARNING]
     assert not any(
-        "sin documento_origen_id" in m.lower() or "justificante" in m.lower()
-        for m in warning_messages
+        "sin documento_origen_id" in m.lower() or "justificante" in m.lower() for m in warning_messages
     ), f"No se esperaba warning. Mensajes: {warning_messages}"
 
 
@@ -344,3 +331,50 @@ def test_requisicion_interna_existe_y_despacha(empresa_a, almacen, user_a, produ
 
     stock_disponible.refresh_from_db()
     assert stock_disponible.cantidad_disponible == Decimal("95")
+
+
+@pytest.mark.django_db
+def test_transferencia_mantiene_politica_estricta_y_soporta_permitir_negativo(
+    empresa_a, almacen, user_a, producto, stock_disponible
+):
+    from unittest.mock import patch
+
+    from django.utils import timezone
+
+    from apps.almacenes.models import Almacen
+    from apps.inventario import services as inv_services
+    from apps.inventario.models import StockActual
+    from apps.inventario.services import StockInsuficienteError, registrar_movimiento
+
+    destino = Almacen.objects.create(id_empresa=empresa_a, nombre_almacen="Destino M5", codigo_almacen="DEST-M5")
+
+    # Sin permitir_negativo: la transferencia falla si supera el disponible (100).
+    with pytest.raises(StockInsuficienteError):
+        registrar_movimiento(
+            empresa=empresa_a,
+            fecha_hora_movimiento=timezone.now(),
+            tipo_movimiento="TRANSFERENCIA",
+            producto=producto,
+            cantidad=Decimal("105"),
+            almacen_origen=almacen,
+            almacen_destino=destino,
+            usuario=user_a,
+        )
+
+    # Con permitir_negativo=True explícito: mueve stock y emite warning estructurado.
+    with patch.object(inv_services.logger, "warning", wraps=inv_services.logger.warning) as warn_spy:
+        registrar_movimiento(
+            empresa=empresa_a,
+            fecha_hora_movimiento=timezone.now(),
+            tipo_movimiento="TRANSFERENCIA",
+            producto=producto,
+            cantidad=Decimal("105"),
+            almacen_origen=almacen,
+            almacen_destino=destino,
+            usuario=user_a,
+            permitir_negativo=True,
+        )
+    stock_disponible.refresh_from_db()
+    assert stock_disponible.cantidad_disponible == Decimal("-5")
+    assert StockActual.objects.get(id_producto=producto, id_almacen=destino).cantidad_disponible == Decimal("105")
+    assert any("Stock negativo permitido" in str(call.args[0]) for call in warn_spy.call_args_list)

@@ -21,6 +21,7 @@ Uso:
 Las credenciales pueden venir de variables de entorno si se omiten los flags:
     ODOO_HOST, ODOO_DB, ODOO_USER, ODOO_API_KEY
 """
+
 import os
 
 from django.core.management.base import BaseCommand, CommandError
@@ -40,11 +41,15 @@ class Command(BaseCommand):
         parser.add_argument("--nombre", default="Odoo Lubrikca")
         parser.add_argument("--entidades", default="pagos", help="Lista separada por comas.")
         parser.add_argument("--intervalo", type=int, default=60, help="Minutos entre syncs (0 = manual).")
-        parser.add_argument("--datasource-odoo", action="store_true",
-                            help="Fija cxc.datasource=odoo para el tenant (la cartera se lee de Odoo).")
+        parser.add_argument(
+            "--datasource-odoo",
+            action="store_true",
+            help="Fija cxc.datasource=odoo para el tenant (la cartera se lee de Odoo).",
+        )
         parser.add_argument("--test", action="store_true", help="Prueba la conexión tras crear.")
 
     def handle(self, *args, **opts):
+        from apps.core import rls
         from apps.core.models import Empresa
         from apps.integration_hub.models import ConectorInstancia, ConectorProveedor
 
@@ -56,36 +61,40 @@ class Command(BaseCommand):
             )
 
         empresa = self._resolver_empresa(Empresa, opts["empresa"])
-        proveedor = self._proveedor_odoo(ConectorProveedor)
         entidades = [e.strip() for e in opts["entidades"].split(",") if e.strip()]
 
         configuracion = {"host": host, "db": opts["db"], "user": user, "api_key": api_key}
 
-        with transaction.atomic():
-            instancia, creada = ConectorInstancia.objects.update_or_create(
-                id_empresa=empresa,
-                nombre=opts["nombre"],
-                defaults={
-                    "id_proveedor": proveedor,
-                    "configuracion": configuracion,
-                    "estado": "configurando",
-                    "intervalo_sync_minutos": opts["intervalo"],
-                    "entidades_activas": entidades,
-                    "activo": True,
-                },
-            )
-            if opts["datasource_odoo"]:
-                self._set_datasource_odoo(empresa)
+        with rls.rls_tenant_context([empresa.pk]):
+            proveedor = self._proveedor_odoo(ConectorProveedor)
+            with transaction.atomic():
+                instancia, creada = ConectorInstancia.objects.update_or_create(
+                    id_empresa=empresa,
+                    nombre=opts["nombre"],
+                    defaults={
+                        "id_proveedor": proveedor,
+                        "configuracion": configuracion,
+                        "estado": "configurando",
+                        "intervalo_sync_minutos": opts["intervalo"],
+                        "entidades_activas": entidades,
+                        "activo": True,
+                    },
+                )
+                if opts["datasource_odoo"]:
+                    self._set_datasource_odoo(empresa)
 
         verbo = "creado" if creada else "actualizado"
         # NUNCA imprimir configuracion (contiene api_key).
-        self.stdout.write(self.style.SUCCESS(
-            f"Conector Odoo {verbo}: {instancia.nombre} (empresa={empresa.pk}); "
-            f"entidades={entidades}; intervalo={opts['intervalo']}min."
-        ))
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"Conector Odoo {verbo}: {instancia.nombre} (empresa={empresa.pk}); "
+                f"entidades={entidades}; intervalo={opts['intervalo']}min."
+            )
+        )
 
         if opts["test"]:
-            self._probar(instancia)
+            with rls.rls_tenant_context([empresa.pk]):
+                self._probar(instancia)
 
     def _resolver_empresa(self, Empresa, valor):
         from django.core.exceptions import ValidationError

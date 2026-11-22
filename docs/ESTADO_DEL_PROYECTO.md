@@ -92,7 +92,9 @@ Tomado de `PLAN_MAESTRO_UNICO.md` §5.2. Ordenado por lo que habilita el piloto.
 
 - **Gate de cierre** obligatorio antes de cada "listo":
   [`DEFINITION_OF_DONE.md`](DEFINITION_OF_DONE.md).
-- **Flujo**: rama desde `develop` → PR (autoaprobable con CI verde + gate) →
-  staging → PR `develop`→`main` (revisión humana del owner) → prod.
+- **Flujo**: rama desde `develop` → PR `draft` hacia `develop` (Gate DoD + dictamen
+  `APROBADO` de revisor independiente distinto del autor en comentario del PR → `ready` →
+  CI 100 % verde → merge a `develop`) → staging → PR `develop`→`main` (revisión y
+  aprobación humana obligatoria del owner) → prod.
 - **Deuda técnica fechada**: ver [`ctf/`](ctf/) y [`tech-debt/`](tech-debt/).
 - Mapas de superficie autogenerados en [`audit/`](audit/) (`manage.py mapa_superficie`).

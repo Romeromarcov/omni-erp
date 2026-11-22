@@ -72,14 +72,8 @@ class TestMapeoContableViewSet:
             id_empresa=empresa_b, tipo_asiento="NOMINA", cuenta_debe=debe, cuenta_haber=haber
         )
         # B sí lo ve; A no lo lista ni lo recupera (R-CODE-1).
-        assert any(
-            m["id_mapeo"] == str(mapeo.id_mapeo)
-            for m in client_b.get(BASE).data["results"]
-        )
-        assert all(
-            m["id_mapeo"] != str(mapeo.id_mapeo)
-            for m in client_a.get(BASE).data["results"]
-        )
+        assert any(m["id_mapeo"] == str(mapeo.id_mapeo) for m in client_b.get(BASE).data["results"])
+        assert all(m["id_mapeo"] != str(mapeo.id_mapeo) for m in client_a.get(BASE).data["results"])
         assert client_a.get(f"{BASE}{mapeo.id_mapeo}/").status_code == 404
 
     def test_cuenta_de_otra_empresa_400(self, client_a, empresa_a, cuentas_a, cuentas_b):

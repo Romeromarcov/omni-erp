@@ -19,11 +19,12 @@ logger = logging.getLogger(__name__)
 
 # ── helpers ────────────────────────────────────────────────────────────────────
 
+
 def _periodo_a_rango(periodo: str) -> tuple[date, date]:
     """Convierte 'YYYY-MM' en (date_inicio, date_fin) del mes completo."""
     try:
-        año, mes = periodo.split("-")
-        año, mes = int(año), int(mes)
+        año_str, mes_str = periodo.split("-")
+        año, mes = int(año_str), int(mes_str)
     except (ValueError, AttributeError) as exc:
         raise ValueError(f"Formato de período inválido: '{periodo}'. Use YYYY-MM.") from exc
     ultimo_dia = calendar.monthrange(año, mes)[1]
@@ -40,6 +41,7 @@ def _rif(obj, *campos) -> str:
 
 
 # ── TXT ventas ─────────────────────────────────────────────────────────────────
+
 
 def generar_libro_ventas_txt(empresa, fecha_inicio: date, fecha_fin: date) -> str:
     """
@@ -92,6 +94,7 @@ def generar_libro_ventas_txt(empresa, fecha_inicio: date, fecha_fin: date) -> st
 
 # ── TXT compras ────────────────────────────────────────────────────────────────
 
+
 def generar_libro_compras_txt(empresa, fecha_inicio: date, fecha_fin: date) -> str:
     """
     Genera el libro de compras en formato SENIAT TXT (pipe-delimited).
@@ -142,6 +145,7 @@ def generar_libro_compras_txt(empresa, fecha_inicio: date, fecha_fin: date) -> s
 
 
 # ── PDF helpers ────────────────────────────────────────────────────────────────
+
 
 def _build_libro_pdf(
     *,
@@ -252,7 +256,8 @@ def _build_libro_pdf(
                 # que Sentry lo capture (event_level=ERROR en prod).
                 logger.error(
                     "libro SENIAT: fila con cifras inválidas, excluida del total: %r (%s)",
-                    fila, exc,
+                    fila,
+                    exc,
                 )
 
         elementos.append(Spacer(1, 0.4 * cm))
@@ -289,6 +294,7 @@ def _build_libro_pdf(
 
 
 # ── PDF ventas ─────────────────────────────────────────────────────────────────
+
 
 def generar_libro_ventas_pdf(empresa, fecha_inicio: date, fecha_fin: date) -> bytes:
     """Genera el PDF del libro de ventas SENIAT."""
@@ -333,6 +339,7 @@ def generar_libro_ventas_pdf(empresa, fecha_inicio: date, fecha_fin: date) -> by
 
 
 # ── PDF compras ────────────────────────────────────────────────────────────────
+
 
 def generar_libro_compras_pdf(empresa, fecha_inicio: date, fecha_fin: date) -> bytes:
     """Genera el PDF del libro de compras SENIAT."""

@@ -19,6 +19,7 @@ from rest_framework.test import APIClient
 # Helpers / Fixtures locales
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture
 def client_a(user_a):
     """APIClient autenticado como usuario de empresa A."""
@@ -38,6 +39,7 @@ def client_b(user_b):
 @pytest.fixture
 def plan_free(db):
     from apps.saas.models import Plan
+
     return Plan.objects.create(
         nombre="Free",
         nivel="FREE",
@@ -54,6 +56,7 @@ def plan_free(db):
 @pytest.fixture
 def plan_pro(db):
     from apps.saas.models import Plan
+
     return Plan.objects.create(
         nombre="Pro",
         nivel="PRO",
@@ -71,6 +74,7 @@ def plan_pro(db):
 def suscripcion_a(db, empresa_a, plan_pro):
     """Suscripción activa para empresa A."""
     from apps.saas.models import Suscripcion
+
     hoy = date.today()
     return Suscripcion.objects.create(
         id_empresa=empresa_a,
@@ -87,6 +91,7 @@ def suscripcion_a(db, empresa_a, plan_pro):
 def suscripcion_b(db, empresa_b, plan_free):
     """Suscripción de empresa B."""
     from apps.saas.models import Suscripcion
+
     hoy = date.today()
     return Suscripcion.objects.create(
         id_empresa=empresa_b,
@@ -102,6 +107,7 @@ def suscripcion_b(db, empresa_b, plan_free):
 def prediccion_a(db, empresa_a):
     """PrediccionAgente de empresa A."""
     from apps.agentes.models import PrediccionAgente
+
     return PrediccionAgente.objects.create(
         id_empresa=empresa_a,
         agente="clasificador_gastos",
@@ -117,6 +123,7 @@ def prediccion_a(db, empresa_a):
 def prediccion_b(db, empresa_b):
     """PrediccionAgente de empresa B."""
     from apps.agentes.models import PrediccionAgente
+
     return PrediccionAgente.objects.create(
         id_empresa=empresa_b,
         agente="cobranza_estratega",
@@ -131,6 +138,7 @@ def prediccion_b(db, empresa_b):
 # ─────────────────────────────────────────────────────────────────────────────
 # SaaS — PlanViewSet
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 @pytest.mark.django_db
 class TestPlanViewSet:
@@ -151,8 +159,10 @@ class TestPlanViewSet:
 
     def test_plan_no_activo_oculto(self, client_a, db):
         from apps.saas.models import Plan
+
         inactivo = Plan.objects.create(
-            nombre="Legacy", nivel="STARTER",
+            nombre="Legacy",
+            nivel="STARTER",
             precio_mensual=Decimal("9.00"),
             activo=False,
         )
@@ -172,6 +182,7 @@ class TestPlanViewSet:
 
     def test_listado_sin_autenticar(self):
         from rest_framework.test import APIClient
+
         c = APIClient()
         r = c.get(self.BASE)
         assert r.status_code == 401
@@ -180,6 +191,7 @@ class TestPlanViewSet:
 # ─────────────────────────────────────────────────────────────────────────────
 # SaaS — SuscripcionViewSet
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 @pytest.mark.django_db
 class TestSuscripcionViewSet:
@@ -283,6 +295,7 @@ class TestSuscripcionViewSet:
 # Agentes — PrediccionAgenteViewSet
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 @pytest.mark.django_db
 class TestPrediccionAgenteViewSet:
     BASE = "/api/agentes/predicciones/"
@@ -368,37 +381,59 @@ class TestPrediccionAgenteViewSet:
 # Agentes — Acciones analizar (requieren datos en BD)
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 @pytest.mark.django_db
 class TestAgentesAccionesAnalizar:
     """
-    Las acciones analizar-* consultan tablas de negocio (CxC, StockActual, etc.).
-    Sin datos de negocio retornan listas vacías — suficiente para probar que
-    el endpoint funciona correctamente y aplica aislamiento multi-tenant.
+    Las acciones analizar-* encolan la ejecución en Celery (HTTP 202 Accepted)
+    y en modo eager tras commit ejecutan contra tablas de negocio con aislamiento multi-tenant.
     """
 
-    def test_analizar_cobranza_sin_datos_retorna_lista_vacia(self, client_a, empresa_a):
-        r = client_a.post("/api/agentes/predicciones/analizar-cobranza/", {"persistir": False}, format="json")
-        assert r.status_code == 200
-        assert "sugerencias" in r.data
-        assert isinstance(r.data["sugerencias"], list)
-        assert r.data["total"] == len(r.data["sugerencias"])
+    def test_analizar_cobranza_sin_datos_retorna_lista_vacia(
+        self, client_a, empresa_a, django_capture_on_commit_callbacks
+    ):
+        from apps.agentes.models import EjecucionAgente
 
-    def test_analizar_reorden_sin_datos_retorna_lista_vacia(self, client_a, empresa_a):
-        r = client_a.post(
-            "/api/agentes/predicciones/analizar-reorden/",
-            {"solo_alertas": True, "persistir": False},
-            format="json",
-        )
-        assert r.status_code == 200
-        assert "sugerencias" in r.data
-        assert isinstance(r.data["sugerencias"], list)
+        with django_capture_on_commit_callbacks(execute=True):
+            r = client_a.post("/api/agentes/predicciones/analizar-cobranza/", {"persistir": False}, format="json")
+        assert r.status_code == 202
+        assert r.data["agente"] == "cobranza_estratega"
+        ej = EjecucionAgente.objects.get(pk=r.data["id_ejecucion"])
+        assert ej.estado == "completado"
+        assert "sugerencias" in ej.resultado
+        assert isinstance(ej.resultado["sugerencias"], list)
+        assert ej.resultado["total"] == len(ej.resultado["sugerencias"])
 
-    def test_analizar_personalizacion_sin_datos_ok(self, client_a, empresa_a):
-        r = client_a.post("/api/agentes/predicciones/analizar-personalizacion/", format="json")
-        assert r.status_code == 200
-        assert "flujo_documentos" in r.data
-        assert "listas_precios" in r.data
-        assert "credito_clientes" in r.data
+    def test_analizar_reorden_sin_datos_retorna_lista_vacia(
+        self, client_a, empresa_a, django_capture_on_commit_callbacks
+    ):
+        from apps.agentes.models import EjecucionAgente
+
+        with django_capture_on_commit_callbacks(execute=True):
+            r = client_a.post(
+                "/api/agentes/predicciones/analizar-reorden/",
+                {"solo_alertas": True, "persistir": False},
+                format="json",
+            )
+        assert r.status_code == 202
+        assert r.data["agente"] == "reorden_sugeridor"
+        ej = EjecucionAgente.objects.get(pk=r.data["id_ejecucion"])
+        assert ej.estado == "completado"
+        assert "sugerencias" in ej.resultado
+        assert isinstance(ej.resultado["sugerencias"], list)
+
+    def test_analizar_personalizacion_sin_datos_ok(self, client_a, empresa_a, django_capture_on_commit_callbacks):
+        from apps.agentes.models import EjecucionAgente
+
+        with django_capture_on_commit_callbacks(execute=True):
+            r = client_a.post("/api/agentes/predicciones/analizar-personalizacion/", format="json")
+        assert r.status_code == 202
+        assert r.data["agente"] == "personalizacion_capa2"
+        ej = EjecucionAgente.objects.get(pk=r.data["id_ejecucion"])
+        assert ej.estado == "completado"
+        assert "flujo_documentos" in ej.resultado
+        assert "listas_precios" in ej.resultado
+        assert "credito_clientes" in ej.resultado
 
     def test_analizar_cobranza_requiere_autenticacion(self):
         c = APIClient()
@@ -415,29 +450,35 @@ class TestAgentesAccionesAnalizar:
 # SaaS — helpers de modelo (suscripcion_activa, tiene_feature)
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 @pytest.mark.django_db
 class TestSaasHelpers:
     def test_suscripcion_activa_retorna_correcta(self, suscripcion_a, empresa_a):
         from apps.saas.models import suscripcion_activa
+
         sus = suscripcion_activa(empresa_a)
         assert sus is not None
         assert sus.id_suscripcion == suscripcion_a.id_suscripcion
 
     def test_suscripcion_activa_retorna_none_sin_suscripcion(self, empresa_a):
         from apps.saas.models import suscripcion_activa
+
         sus = suscripcion_activa(empresa_a)
         assert sus is None
 
     def test_tiene_feature_ia_con_plan_pro(self, suscripcion_a, empresa_a):
         from apps.saas.models import tiene_feature
+
         assert tiene_feature(empresa_a, "permite_ia") is True
 
     def test_tiene_feature_ia_sin_suscripcion(self, empresa_a):
         from apps.saas.models import tiene_feature
+
         assert tiene_feature(empresa_a, "permite_ia") is False
 
     def test_suscripcion_vencida_no_activa(self, db, empresa_a, plan_free):
         from apps.saas.models import Suscripcion, suscripcion_activa
+
         hoy = date.today()
         Suscripcion.objects.create(
             id_empresa=empresa_a,

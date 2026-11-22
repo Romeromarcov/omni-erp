@@ -16,6 +16,7 @@ Cubre:
 
 Dinero como Decimal con aserciones exactas.
 """
+
 import datetime
 from decimal import Decimal
 
@@ -127,9 +128,7 @@ def gestion_a(empresa_a, user_a, plantilla_a):
 
 
 class TestAutenticacionRequerida:
-    @pytest.mark.parametrize(
-        "route", ["gestiones", "plantillas", "lotes", "ventas-fraccionadas"]
-    )
+    @pytest.mark.parametrize("route", ["gestiones", "plantillas", "lotes", "ventas-fraccionadas"])
     def test_401_sin_token(self, route):
         resp = APIClient().get(f"{BASE}{route}/")
         assert resp.status_code == 401
@@ -168,8 +167,7 @@ class TestLoteFraccionado:
         assert resp.status_code == 403
         assert LoteFraccionado.objects.count() == 0
 
-    def test_create_inicializa_cantidad_actual(self, client_a, flag_fraccionamiento_a,
-                                                empresa_a):
+    def test_create_inicializa_cantidad_actual(self, client_a, flag_fraccionamiento_a, empresa_a):
         resp = client_a.post(
             f"{BASE}lotes/",
             {
@@ -230,8 +228,7 @@ class TestVentaFraccionada:
         resp = client_a.post(f"{BASE}ventas-fraccionadas/", self._payload(lote_a))
         assert resp.status_code == 403
 
-    def test_create_ok_reserva_stock(self, client_a, flag_fraccionamiento_a, lote_a,
-                                      empresa_a):
+    def test_create_ok_reserva_stock(self, client_a, flag_fraccionamiento_a, lote_a, empresa_a):
         resp = client_a.post(f"{BASE}ventas-fraccionadas/", self._payload(lote_a))
         assert resp.status_code == 201
         venta = VentaFraccionada.objects.get(cliente_id="CLI-002")
@@ -241,12 +238,9 @@ class TestVentaFraccionada:
         lote_a.refresh_from_db()
         assert lote_a.cantidad_actual == Decimal("10.0000")
 
-    def test_create_sobreventa_400(self, client_a, flag_fraccionamiento_a, lote_a,
-                                    venta_pendiente_a):
+    def test_create_sobreventa_400(self, client_a, flag_fraccionamiento_a, lote_a, venta_pendiente_a):
         # Pendiente reserva 4; pedir 7 sobrevende el lote de 10 (M-BUG-8)
-        resp = client_a.post(
-            f"{BASE}ventas-fraccionadas/", self._payload(lote_a, cantidad="7.0000")
-        )
+        resp = client_a.post(f"{BASE}ventas-fraccionadas/", self._payload(lote_a, cantidad="7.0000"))
         assert resp.status_code == 400
         assert "Stock insuficiente para reservar" in str(resp.json())
         assert VentaFraccionada.objects.filter(lote=lote_a).count() == 1
@@ -392,9 +386,7 @@ class TestGestionCobranza:
             def get_partidas(self, solo_vencidas=False):
                 return [partida]
 
-        monkeypatch.setattr(
-            provider_mod, "get_cartera_provider", lambda empresa: _FakeProvider()
-        )
+        monkeypatch.setattr(provider_mod, "get_cartera_provider", lambda empresa: _FakeProvider())
         resp = client_a.post(
             f"{BASE}gestiones/",
             {
@@ -494,9 +486,7 @@ class TestGestionCobranza:
         assert resp.status_code == 200
         data = resp.json()
         assert data["asunto"] == "Pago pendiente"
-        assert data["preview"] == (
-            "Hola Cliente Uno, su orden ORD-77 por 150.00 vence el 2026-06-15 (5 días)."
-        )
+        assert data["preview"] == ("Hola Cliente Uno, su orden ORD-77 por 150.00 vence el 2026-06-15 (5 días).")
 
 
 class _FakeAgent:
@@ -523,9 +513,7 @@ class TestCobranzaAgente:
         import apps.cxc.agents.cobranza_agent as agent_mod
 
         monkeypatch.setattr(agent_mod, "CobranzaAgent", _FakeAgent)
-        resp = client_a.post(
-            f"{BASE}agente/", {"accion": "analizar_cartera", "top_n": "3"}
-        )
+        resp = client_a.post(f"{BASE}agente/", {"accion": "analizar_cartera", "top_n": "3"})
         assert resp.status_code == 200
         assert resp["Content-Type"] == "text/event-stream"
         body = b"".join(resp.streaming_content).decode()
@@ -549,8 +537,7 @@ class TestCobranzaAgente:
         assert "gestion CLI-007: tono amable" in body
         assert "data: [DONE]" in body
 
-    def test_error_del_agente_emite_evento_sse_de_error(self, client_a, empresa_a,
-                                                         monkeypatch):
+    def test_error_del_agente_emite_evento_sse_de_error(self, client_a, empresa_a, monkeypatch):
         import apps.cxc.agents.cobranza_agent as agent_mod
 
         class _BrokenAgent:

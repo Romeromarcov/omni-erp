@@ -23,6 +23,8 @@ import {
   Typography,
 } from '@mui/material';
 import PaymentsOutlined from '@mui/icons-material/PaymentsOutlined';
+import LinkOutlined from '@mui/icons-material/LinkOutlined';
+import ConciliacionContactoDialog from '../../components/Finanzas/ConciliacionContactoDialog';
 import { cuentasPorCobrarService } from '../../services/cuentasPorCobrarService';
 import type { CuentaPorCobrar } from '../../services/cuentasPorCobrarService';
 import { abonoCxcSchema, type AbonoCxcInput } from '../../schemas/cxc.schemas';
@@ -32,17 +34,18 @@ import { useSnackbar } from '../../contexts/feedbackTypes';
 import Pagination from '../../components/Pagination';
 import { PageContainer, PageHeader, DataTable, StatusChip } from '../../components/ui';
 import type { Column } from '../../components/ui';
+import { D, formatoDecimal, type DecimalInput } from '../../lib/decimal';
 
 const PAGE_SIZE = 20;
 
-const money = (v: string | number) =>
-  `$${parseFloat(String(v)).toLocaleString('es-VE', { minimumFractionDigits: 2 })}`;
+const money = (v: DecimalInput) => `$${formatoDecimal(v, 2, 2)}`;
 
 export default function CuentasPorCobrarPage() {
   const queryClient = useQueryClient();
   const snackbar = useSnackbar();
   const [page, setPage] = useState(1);
   const [cxcSeleccionada, setCxcSeleccionada] = useState<CuentaPorCobrar | null>(null);
+  const [contactoConciliar, setContactoConciliar] = useState<string | null>(null);
   const [errorGeneral, setErrorGeneral] = useState('');
 
   const { data, isLoading } = useQuery({
@@ -141,15 +144,27 @@ export default function CuentasPorCobrarPage() {
       header: 'Acciones',
       align: 'right',
       render: (c) => (
-        <Button
-          size="small"
-          variant="contained"
-          startIcon={<PaymentsOutlined />}
-          disabled={c.estado === 'pagada' || parseFloat(c.saldo_pendiente) <= 0}
-          onClick={() => abrirModal(c)}
-        >
-          Abonar
-        </Button>
+        <Stack direction="row" spacing={1} justifyContent="flex-end">
+          {c.contacto_id && (
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<LinkOutlined />}
+              onClick={() => setContactoConciliar(c.contacto_id ?? null)}
+            >
+              Conciliar
+            </Button>
+          )}
+          <Button
+            size="small"
+            variant="contained"
+            startIcon={<PaymentsOutlined />}
+            disabled={c.estado === 'pagada' || D(c.saldo_pendiente).lte(0)}
+            onClick={() => abrirModal(c)}
+          >
+            Abonar
+          </Button>
+        </Stack>
       ),
     },
   ];
@@ -220,6 +235,13 @@ export default function CuentasPorCobrarPage() {
           </DialogActions>
         </form>
       </Dialog>
+
+      <ConciliacionContactoDialog
+        open={Boolean(contactoConciliar)}
+        contactoId={contactoConciliar}
+        tipoOperacionFiltro="INGRESO"
+        onClose={() => setContactoConciliar(null)}
+      />
     </PageContainer>
   );
 }

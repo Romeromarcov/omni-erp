@@ -25,6 +25,7 @@ pytestmark = pytest.mark.integration
 @pytest.fixture
 def moneda_usd_m10(db):
     from apps.finanzas.models import Moneda
+
     return Moneda.objects.create(
         nombre="Dólar M10 Test",
         codigo_iso="USD",
@@ -37,6 +38,7 @@ def moneda_usd_m10(db):
 @pytest.fixture
 def empresa_m10(db, moneda_usd_m10):
     from apps.core.models import Empresa
+
     return Empresa.objects.create(
         nombre_legal="Empresa M10 Infrastructure C.A.",
         identificador_fiscal="J-66666666-6",
@@ -47,6 +49,7 @@ def empresa_m10(db, moneda_usd_m10):
 @pytest.fixture
 def empresa_m10_b(db, moneda_usd_m10):
     from apps.core.models import Empresa
+
     return Empresa.objects.create(
         nombre_legal="Empresa M10 B C.A.",
         identificador_fiscal="J-77777777-7",
@@ -57,6 +60,7 @@ def empresa_m10_b(db, moneda_usd_m10):
 @pytest.fixture
 def user_m10(db, empresa_m10):
     from django.contrib.auth import get_user_model
+
     User = get_user_model()
     user = User.objects.create_user(
         username="user_m10_infra",
@@ -71,6 +75,7 @@ def user_m10(db, empresa_m10):
 @pytest.fixture
 def user_m10_b(db, empresa_m10_b):
     from django.contrib.auth import get_user_model
+
     User = get_user_model()
     user = User.objects.create_user(
         username="user_m10_infra_b",
@@ -89,9 +94,7 @@ def user_m10_b(db, empresa_m10_b):
 class TestNotificacionAislamiento:
     """Verifica que las notificaciones son visibles solo para el usuario/empresa propios."""
 
-    def test_notificacion_solo_visible_para_usuario_propio(
-        self, empresa_m10, empresa_m10_b, user_m10, user_m10_b
-    ):
+    def test_notificacion_solo_visible_para_usuario_propio(self, empresa_m10, empresa_m10_b, user_m10, user_m10_b):
         """
         Notificación creada para user_m10/empresa_m10 NO debe aparecer
         en el queryset de user_m10_b/empresa_m10_b.
@@ -120,9 +123,7 @@ class TestNotificacionAislamiento:
         pk_str = str(n.pk)
         ids_en_qs_b = [str(obj.pk) for obj in qs_b]
 
-        assert pk_str not in ids_en_qs_b, (
-            "La notificación de user_m10 no debe ser visible para user_m10_b"
-        )
+        assert pk_str not in ids_en_qs_b, "La notificación de user_m10 no debe ser visible para user_m10_b"
 
     def test_notificacion_visible_para_usuario_correcto(self, empresa_m10, user_m10):
         """
@@ -151,13 +152,9 @@ class TestNotificacionAislamiento:
         qs = viewset.get_queryset()
         ids_en_qs = [str(obj.pk) for obj in qs]
 
-        assert str(n.pk) in ids_en_qs, (
-            "La notificación de user_m10 debe ser visible en su propio queryset"
-        )
+        assert str(n.pk) in ids_en_qs, "La notificación de user_m10 debe ser visible en su propio queryset"
 
-    def test_notificacion_broadcast_visible_para_todos_en_empresa(
-        self, empresa_m10, user_m10
-    ):
+    def test_notificacion_broadcast_visible_para_todos_en_empresa(self, empresa_m10, user_m10):
         """
         Notificación broadcast (id_usuario=None) debe ser visible para
         todos los usuarios de la empresa.
@@ -186,9 +183,7 @@ class TestNotificacionAislamiento:
         ids = [str(obj.pk) for obj in qs]
         assert str(n.pk) in ids, "Notificación broadcast debe ser visible para usuarios de la empresa"
 
-    def test_broadcast_no_visible_para_empresa_diferente(
-        self, empresa_m10, empresa_m10_b, user_m10_b
-    ):
+    def test_broadcast_no_visible_para_empresa_diferente(self, empresa_m10, empresa_m10_b, user_m10_b):
         """
         Notificación broadcast de empresa_m10 NO debe ser visible para user_m10_b
         (que pertenece a empresa_m10_b).
@@ -213,9 +208,9 @@ class TestNotificacionAislamiento:
 
         qs = viewset.get_queryset()
         ids = [str(obj.pk) for obj in qs]
-        assert str(n.pk) not in ids, (
-            "Notificación broadcast de empresa A no debe ser visible para usuario de empresa B"
-        )
+        assert (
+            str(n.pk) not in ids
+        ), "Notificación broadcast de empresa A no debe ser visible para usuario de empresa B"
 
 
 # ── TestMarcarNotificacionLeida ───────────────────────────────────────────────
@@ -246,9 +241,7 @@ class TestMarcarNotificacionLeida:
         url = f"/api/core/notificaciones/{n.pk}/marcar_leida/"
         response = client.post(url, content_type="application/json")
 
-        assert response.status_code == 200, (
-            f"Esperado 200, se obtuvo {response.status_code}: {response.content}"
-        )
+        assert response.status_code == 200, f"Esperado 200, se obtuvo {response.status_code}: {response.content}"
 
         n.refresh_from_db()
         assert n.leida is True, "La notificación debe estar marcada como leída"
@@ -276,9 +269,9 @@ class TestMarcarNotificacionLeida:
         url = f"/api/core/notificaciones/{n.pk}/marcar_leida/"
         response = client.post(url, content_type="application/json")
 
-        assert response.status_code == 200, (
-            f"Marcar leída una ya-leída debe retornar 200, se obtuvo {response.status_code}"
-        )
+        assert (
+            response.status_code == 200
+        ), f"Marcar leída una ya-leída debe retornar 200, se obtuvo {response.status_code}"
 
     def test_usuario_no_puede_marcar_notificacion_de_otro_usuario(
         self, client, empresa_m10, user_m10, user_m10_b, empresa_m10_b
@@ -338,9 +331,7 @@ class TestMarcarNotificacionLeida:
         n1 = crear_notificacion(empresa_m10, "No leída 1", "Msg 1", usuario=user_m10)
         n2 = crear_notificacion(empresa_m10, "No leída 2", "Msg 2", usuario=user_m10)
 
-        no_leidas_antes = Notificacion.objects.filter(
-            id_empresa=empresa_m10, id_usuario=user_m10, leida=False
-        ).count()
+        no_leidas_antes = Notificacion.objects.filter(id_empresa=empresa_m10, id_usuario=user_m10, leida=False).count()
 
         n1.marcar_leida()
 
@@ -349,8 +340,7 @@ class TestMarcarNotificacionLeida:
         ).count()
 
         assert no_leidas_despues == no_leidas_antes - 1, (
-            f"El conteo de no leídas debe decrecer en 1, "
-            f"era {no_leidas_antes}, ahora {no_leidas_despues}"
+            f"El conteo de no leídas debe decrecer en 1, " f"era {no_leidas_antes}, ahora {no_leidas_despues}"
         )
 
 
@@ -364,6 +354,7 @@ class TestSaasMiddlewareInfrastructure:
     def _make_middleware(self, settings_override=None):
         """Helper: crea el middleware con settings opcionales."""
         from apps.saas.middleware import SuscripcionActivaMiddleware
+
         get_response = MagicMock(return_value=MagicMock(status_code=200))
         return SuscripcionActivaMiddleware(get_response), get_response
 
@@ -381,6 +372,7 @@ class TestSaasMiddlewareInfrastructure:
     def test_middleware_excluye_rutas_admin(self):
         """Las rutas de admin y auth siempre están excluidas."""
         from apps.saas.middleware import RUTAS_EXCLUIDAS_DEFAULT
+
         assert "/admin/" in RUTAS_EXCLUIDAS_DEFAULT
         assert "/api/auth/" in RUTAS_EXCLUIDAS_DEFAULT
         assert "/api/saas/" in RUTAS_EXCLUIDAS_DEFAULT
@@ -390,6 +382,7 @@ class TestSaasMiddlewareInfrastructure:
         settings.SAAS_VERIFICAR_SUSCRIPCION = True
 
         from apps.saas.middleware import SuscripcionActivaMiddleware
+
         get_response = MagicMock(return_value=MagicMock(status_code=200))
         middleware = SuscripcionActivaMiddleware(get_response)
 
@@ -403,13 +396,13 @@ class TestSaasMiddlewareInfrastructure:
 
         response = middleware(request)
         assert response.status_code == 402, (
-            f"Sin suscripción activa, el middleware debe retornar 402, "
-            f"se obtuvo {response.status_code}"
+            f"Sin suscripción activa, el middleware debe retornar 402, " f"se obtuvo {response.status_code}"
         )
 
     def test_middleware_activo_permite_con_suscripcion(self, settings, empresa_m10, moneda_usd_m10):
         """Con SAAS_VERIFICAR_SUSCRIPCION=True y suscripción activa, el middleware permite."""
         from apps.saas.models import Plan, Suscripcion
+
         settings.SAAS_VERIFICAR_SUSCRIPCION = True
 
         plan = Plan.objects.create(
@@ -427,6 +420,7 @@ class TestSaasMiddlewareInfrastructure:
         )
 
         from apps.saas.middleware import SuscripcionActivaMiddleware
+
         get_response = MagicMock(return_value=MagicMock(status_code=200))
         middleware = SuscripcionActivaMiddleware(get_response)
 
@@ -438,17 +432,15 @@ class TestSaasMiddlewareInfrastructure:
 
         response = middleware(request)
         assert response.status_code == 200, (
-            f"Con suscripción activa, el middleware debe permitir (200), "
-            f"se obtuvo {response.status_code}"
+            f"Con suscripción activa, el middleware debe permitir (200), " f"se obtuvo {response.status_code}"
         )
 
-    def test_middleware_permite_rutas_excluidas_sin_suscripcion(
-        self, settings, empresa_m10
-    ):
+    def test_middleware_permite_rutas_excluidas_sin_suscripcion(self, settings, empresa_m10):
         """Rutas excluidas no son verificadas, incluso sin suscripción."""
         settings.SAAS_VERIFICAR_SUSCRIPCION = True
 
         from apps.saas.middleware import SuscripcionActivaMiddleware
+
         get_response = MagicMock(return_value=MagicMock(status_code=200))
         middleware = SuscripcionActivaMiddleware(get_response)
 
@@ -461,15 +453,16 @@ class TestSaasMiddlewareInfrastructure:
         )
 
         response = middleware(request)
-        assert response.status_code == 200, (
-            f"Rutas excluidas siempre deben pasar (200), se obtuvo {response.status_code}"
-        )
+        assert (
+            response.status_code == 200
+        ), f"Rutas excluidas siempre deben pasar (200), se obtuvo {response.status_code}"
 
     def test_middleware_permite_usuarios_anonimos(self, settings, empresa_m10):
         """Usuarios anónimos no son verificados."""
         settings.SAAS_VERIFICAR_SUSCRIPCION = True
 
         from apps.saas.middleware import SuscripcionActivaMiddleware
+
         get_response = MagicMock(return_value=MagicMock(status_code=200))
         middleware = SuscripcionActivaMiddleware(get_response)
 
@@ -478,6 +471,6 @@ class TestSaasMiddlewareInfrastructure:
         request.user = MagicMock(is_authenticated=False)
 
         response = middleware(request)
-        assert response.status_code == 200, (
-            f"Usuarios anónimos siempre deben pasar (200), se obtuvo {response.status_code}"
-        )
+        assert (
+            response.status_code == 200
+        ), f"Usuarios anónimos siempre deben pasar (200), se obtuvo {response.status_code}"

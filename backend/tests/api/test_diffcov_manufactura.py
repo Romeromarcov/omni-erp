@@ -16,6 +16,7 @@ Cada test cita en su docstring las líneas objetivo (rama develop d19403a):
 - models.py: 267, 316, 340 (__str__ de EtapaProduccion, EtapaOrdenProduccion
   y ConfiguracionManufactura).
 """
+
 import uuid
 from decimal import Decimal
 
@@ -64,12 +65,8 @@ def escenario(db, empresa_a, moneda_usd):
         id_empresa=empresa_a, nombre="Unidad DC", abreviatura="UN-DC", tipo="CANTIDAD"
     )
     categoria = CategoriaProducto.objects.create(id_empresa=empresa_a, nombre_categoria="MFG-DC")
-    almacen1 = Almacen.objects.create(
-        id_empresa=empresa_a, nombre_almacen="Almacén DC-1", codigo_almacen="DC-1"
-    )
-    almacen2 = Almacen.objects.create(
-        id_empresa=empresa_a, nombre_almacen="Almacén DC-2", codigo_almacen="DC-2"
-    )
+    almacen1 = Almacen.objects.create(id_empresa=empresa_a, nombre_almacen="Almacén DC-1", codigo_almacen="DC-1")
+    almacen2 = Almacen.objects.create(id_empresa=empresa_a, nombre_almacen="Almacén DC-2", codigo_almacen="DC-2")
 
     def _producto(nombre, costo):
         return Producto.objects.create(
@@ -85,12 +82,18 @@ def escenario(db, empresa_a, moneda_usd):
     silla = _producto("Silla DC", "0")
     madera = _producto("Madera DC", "10.00")
     StockActual.objects.create(
-        id_empresa=empresa_a, id_producto=madera, id_almacen=almacen1,
-        cantidad_disponible=D("5"), cantidad_comprometida=D("0"),
+        id_empresa=empresa_a,
+        id_producto=madera,
+        id_almacen=almacen1,
+        cantidad_disponible=D("5"),
+        cantidad_comprometida=D("0"),
     )
     StockActual.objects.create(
-        id_empresa=empresa_a, id_producto=madera, id_almacen=almacen2,
-        cantidad_disponible=D("100"), cantidad_comprometida=D("0"),
+        id_empresa=empresa_a,
+        id_producto=madera,
+        id_almacen=almacen2,
+        cantidad_disponible=D("100"),
+        cantidad_comprometida=D("0"),
     )
 
     bom = ListaMateriales.objects.create(empresa=empresa_a, producto_final=silla, nombre="BOM Silla DC")
@@ -100,9 +103,13 @@ def escenario(db, empresa_a, moneda_usd):
 
     mfg.crear_etapas_estandar(empresa_a)
     return {
-        "silla": silla, "madera": madera, "bom": bom,
-        "almacen1": almacen1, "almacen2": almacen2,
-        "unidad": unidad, "categoria": categoria,
+        "silla": silla,
+        "madera": madera,
+        "bom": bom,
+        "almacen1": almacen1,
+        "almacen2": almacen2,
+        "unidad": unidad,
+        "categoria": categoria,
     }
 
 
@@ -150,9 +157,7 @@ class TestAccionesOrdenErrores:
         """views.py 94-95 + 182-183: payload no numérico → ValueError → 400
         con mensaje claro, y ninguna etapa se completa."""
         orden = _orden(empresa_a, escenario)
-        resp = client_a.post(
-            f"{BASE}/{orden.pk}/avanzar-etapa/", {"horas_trabajadas": "abc"}, format="json"
-        )
+        resp = client_a.post(f"{BASE}/{orden.pk}/avanzar-etapa/", {"horas_trabajadas": "abc"}, format="json")
         assert resp.status_code == 400
         assert resp.data["error"] == "El campo 'horas_trabajadas' no es un número válido."
         assert orden.etapas.filter(estado="pendiente").count() == len(ETAPAS_ESTANDAR)
@@ -183,9 +188,7 @@ class TestAccionesOrdenErrores:
         """services.py 235: horas/tarifa/destajo negativos → 400 y la etapa
         sigue pendiente."""
         orden = _orden(empresa_a, escenario)
-        resp = client_a.post(
-            f"{BASE}/{orden.pk}/avanzar-etapa/", {"horas_trabajadas": "-1"}, format="json"
-        )
+        resp = client_a.post(f"{BASE}/{orden.pk}/avanzar-etapa/", {"horas_trabajadas": "-1"}, format="json")
         assert resp.status_code == 400
         assert "no pueden ser negativas" in resp.data["error"]
         assert orden.etapas.filter(estado="pendiente").count() == len(ETAPAS_ESTANDAR)
@@ -222,9 +225,7 @@ class TestAccionesOrdenErrores:
         assert resp.status_code == 400
         assert resp.data["error"] == "La orden está cancelada; no admite consumo de materiales."
         assert not ConsumoMaterial.objects.filter(orden_produccion=orden).exists()
-        stock = StockActual.objects.get(
-            id_producto=escenario["madera"], id_almacen=escenario["almacen2"]
-        )
+        stock = StockActual.objects.get(id_producto=escenario["madera"], id_almacen=escenario["almacen2"])
         assert stock.cantidad_disponible == D("100")
 
     def test_completar_orden_cancelada_devuelve_400(self, client_a, empresa_a, escenario):
@@ -342,9 +343,7 @@ class TestMrpOrden:
         assert D(falt["disponible"]) == D("105")
         assert D(falt["a_comprar"]) == D("0")
 
-        resp = client_a.get(
-            f"{BASE}/{orden.pk}/mrp/", {"almacen_id": str(escenario["almacen1"].pk)}
-        )
+        resp = client_a.get(f"{BASE}/{orden.pk}/mrp/", {"almacen_id": str(escenario["almacen1"].pk)})
         assert resp.status_code == 200
         falt = resp.data["faltantes"][0]
         assert falt["producto"] == "Madera DC"
@@ -428,9 +427,7 @@ class TestConfiguracionManufacturaCreate:
 
     def test_crear_configuracion_usuario_sin_empresa_devuelve_403(self, client_sin_empresa):
         """views.py 391: usuario sin empresa → PermissionDenied (403)."""
-        resp = client_sin_empresa.post(
-            f"{CONFIG_BASE}/", {"porcentaje_overhead": "5"}, format="json"
-        )
+        resp = client_sin_empresa.post(f"{CONFIG_BASE}/", {"porcentaje_overhead": "5"}, format="json")
         assert resp.status_code == 403
         assert ConfiguracionManufactura.objects.count() == 0
 
@@ -468,9 +465,7 @@ class TestMcpManufactura:
         from apps.manufactura.mcp import manufactura_calcular_mrp
 
         with pytest.raises(ValueError, match="no es un número válido"):
-            manufactura_calcular_mrp(
-                _token(empresa_a), str(empresa_a.id_empresa), str(escenario["bom"].pk), "diez"
-            )
+            manufactura_calcular_mrp(_token(empresa_a), str(empresa_a.id_empresa), str(escenario["bom"].pk), "diez")
 
     def test_calcular_mrp_almacen_inexistente(self, empresa_a, escenario):
         """mcp.py 71-73: almacen_id que no pertenece al tenant → ValueError."""
@@ -508,9 +503,7 @@ class TestMcpManufactura:
 
         orden = _orden(empresa_a, escenario)
         with pytest.raises(PermissionError, match="no coincide"):
-            manufactura_get_costeo_orden(
-                _token(empresa_a), str(empresa_b.id_empresa), str(orden.pk)
-            )
+            manufactura_get_costeo_orden(_token(empresa_a), str(empresa_b.id_empresa), str(orden.pk))
 
     def test_costeo_orden_ajena_o_inexistente(self, empresa_a, empresa_b, escenario):
         """mcp.py 118-120: la OF de la empresa A no existe para el token de la
@@ -519,13 +512,9 @@ class TestMcpManufactura:
 
         orden_a = _orden(empresa_a, escenario)
         with pytest.raises(ValueError, match="no encontrada"):
-            manufactura_get_costeo_orden(
-                _token(empresa_b), str(empresa_b.id_empresa), str(orden_a.pk)
-            )
+            manufactura_get_costeo_orden(_token(empresa_b), str(empresa_b.id_empresa), str(orden_a.pk))
         with pytest.raises(ValueError, match="no encontrada"):
-            manufactura_get_costeo_orden(
-                _token(empresa_a), str(empresa_a.id_empresa), str(uuid.uuid4())
-            )
+            manufactura_get_costeo_orden(_token(empresa_a), str(empresa_a.id_empresa), str(uuid.uuid4()))
 
 
 # ── models.py — representaciones ──────────────────────────────────────────────
@@ -534,9 +523,7 @@ class TestMcpManufactura:
 class TestModelosStr:
     def test_str_etapa_produccion(self, empresa_a):
         """models.py 267: '<orden>. <nombre>' (lo que ve el admin)."""
-        etapa = EtapaProduccion.objects.create(
-            empresa=empresa_a, codigo="CORTE_DC", nombre="Corte", orden=3
-        )
+        etapa = EtapaProduccion.objects.create(empresa=empresa_a, codigo="CORTE_DC", nombre="Corte", orden=3)
         assert str(etapa) == "3. Corte"
 
     def test_str_etapa_orden_produccion(self, empresa_a, escenario):
@@ -547,9 +534,7 @@ class TestModelosStr:
 
     def test_str_configuracion_manufactura(self, empresa_a):
         """models.py 340: identifica la empresa y el % de overhead."""
-        config = ConfiguracionManufactura.objects.create(
-            empresa=empresa_a, porcentaje_overhead=D("10")
-        )
+        config = ConfiguracionManufactura.objects.create(empresa=empresa_a, porcentaje_overhead=D("10"))
         s = str(config)
         assert s.startswith("Config manufactura ")
         assert "(OH 10%)" in s

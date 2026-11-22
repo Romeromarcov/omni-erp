@@ -24,13 +24,14 @@ pytestmark = pytest.mark.unit
 
 
 class TestColumnas:
-    def test_entidades_soportadas_cubre_las_siete(self):
+    def test_entidades_soportadas_cubre_las_ocho(self):
         assert set(columns.entidades_soportadas()) == {
             "contactos",
             "productos",
             "pedidos_venta",
             "pedidos_compra",
             "facturas_venta",
+            "facturas_compra",
             "pagos",
             "inventario",
         }
@@ -115,9 +116,7 @@ class TestGoogleSheetsClientUpsert:
         client = self._client()
         ws = MagicMock()
         ws.get_all_values.return_value = []
-        creados, act, omit = client.upsert(
-            ws, ["ID Externo", "Nombre"], [["1", "A"], ["2", "B"]], key_index=0
-        )
+        creados, act, omit = client.upsert(ws, ["ID Externo", "Nombre"], [["1", "A"], ["2", "B"]], key_index=0)
         assert (creados, act, omit) == (2, 0, 0)
         ws.update.assert_called_once()
         ws.append_rows.assert_not_called()
@@ -136,14 +135,10 @@ class TestGoogleSheetsClientUpsert:
             ["2", "B2"],  # cambió → actualizado
             ["3", "C"],  # nuevo → creado
         ]
-        creados, act, omit = client.upsert(
-            ws, ["ID Externo", "Nombre"], rows, key_index=0
-        )
+        creados, act, omit = client.upsert(ws, ["ID Externo", "Nombre"], rows, key_index=0)
         assert (creados, act, omit) == (1, 1, 1)
         ws.batch_update.assert_called_once()
-        ws.append_rows.assert_called_once_with(
-            [["3", "C"]], value_input_option="USER_ENTERED"
-        )
+        ws.append_rows.assert_called_once_with([["3", "C"]], value_input_option="USER_ENTERED")
 
     def test_fila_igual_rellena_celdas_truncadas(self):
         # Sheets recorta celdas vacías finales; deben considerarse iguales.
@@ -167,9 +162,7 @@ class TestGoogleSheetsClientUpsert:
             ["ID Externo", "Monto"],
             ["1", "100"],
         ]
-        creados, act, omit = client.upsert(
-            ws, ["ID Externo", "Monto"], [["1", "100.00"]], key_index=0
-        )
+        creados, act, omit = client.upsert(ws, ["ID Externo", "Monto"], [["1", "100.00"]], key_index=0)
         assert (creados, act, omit) == (0, 0, 1)
         ws.batch_update.assert_not_called()
 
@@ -178,13 +171,9 @@ class TestGoogleSheetsClientUpsert:
         client = self._client()
         ws = MagicMock()
         ws.get_all_values.return_value = [["ID Externo", "Nombre"], ["1", "A"]]
-        creados, act, omit = client.upsert(
-            ws, ["ID Externo", "Nombre"], [["", "Sin ID"], ["2", "B"]], key_index=0
-        )
+        creados, act, omit = client.upsert(ws, ["ID Externo", "Nombre"], [["", "Sin ID"], ["2", "B"]], key_index=0)
         assert (creados, act, omit) == (1, 0, 1)
-        ws.append_rows.assert_called_once_with(
-            [["2", "B"]], value_input_option="USER_ENTERED"
-        )
+        ws.append_rows.assert_called_once_with([["2", "B"]], value_input_option="USER_ENTERED")
 
 
 # ── GoogleSheetsConnector.push_entidades / test_connection ───────────────────
@@ -195,9 +184,7 @@ class TestGoogleSheetsConnector:
 
     def _connector(self, config=_SENTINEL):
         if config is self._SENTINEL:
-            config = {
-                "service_account": {"client_email": "svc@proj.iam.gserviceaccount.com"}
-            }
+            config = {"service_account": {"client_email": "svc@proj.iam.gserviceaccount.com"}}
         instancia = MagicMock()
         instancia.get_config.return_value = config
         instancia.id_proveedor.codigo = "google_sheets"

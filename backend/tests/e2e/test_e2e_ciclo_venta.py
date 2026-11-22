@@ -31,6 +31,7 @@ pytestmark = [pytest.mark.django_db, pytest.mark.e2e]
 
 def _cuenta(empresa, codigo, nombre, tipo="ACTIVO", naturaleza="DEUDORA"):
     from apps.contabilidad.models import PlanCuentas
+
     return PlanCuentas.objects.create(
         id_empresa=empresa,
         codigo_cuenta=codigo,
@@ -43,6 +44,7 @@ def _cuenta(empresa, codigo, nombre, tipo="ACTIVO", naturaleza="DEUDORA"):
 
 def _mapeo(empresa, tipo_asiento, debe, haber, plantilla=None):
     from apps.contabilidad.models import MapeoContable
+
     return MapeoContable.objects.create(
         id_empresa=empresa,
         tipo_asiento=tipo_asiento,
@@ -59,6 +61,7 @@ def _mapeo(empresa, tipo_asiento, debe, haber, plantilla=None):
 @pytest.fixture
 def cliente_e2e(db, empresa_a):
     from apps.crm.models import Cliente
+
     return Cliente.objects.create(
         id_empresa=empresa_a,
         razon_social="Cliente E2E Ciclo",
@@ -70,6 +73,7 @@ def cliente_e2e(db, empresa_a):
 @pytest.fixture
 def unidad_e2e(db, empresa_a):
     from apps.inventario.models import UnidadMedida
+
     return UnidadMedida.objects.create(
         id_empresa=empresa_a,
         nombre="Unidad",
@@ -81,6 +85,7 @@ def unidad_e2e(db, empresa_a):
 @pytest.fixture
 def categoria_e2e(db, empresa_a):
     from apps.inventario.models import CategoriaProducto
+
     return CategoriaProducto.objects.create(
         id_empresa=empresa_a,
         nombre_categoria="Cat E2E Ciclo",
@@ -90,6 +95,7 @@ def categoria_e2e(db, empresa_a):
 @pytest.fixture
 def producto_e2e(db, empresa_a, categoria_e2e, unidad_e2e, moneda_usd):
     from apps.inventario.models import Producto
+
     return Producto.objects.create(
         id_empresa=empresa_a,
         nombre_producto="Producto E2E Ciclo",
@@ -104,6 +110,7 @@ def producto_e2e(db, empresa_a, categoria_e2e, unidad_e2e, moneda_usd):
 @pytest.fixture
 def almacen_e2e(db, empresa_a):
     from apps.almacenes.models import Almacen
+
     return Almacen.objects.create(
         id_empresa=empresa_a,
         nombre_almacen="Almacén E2E Ciclo",
@@ -115,6 +122,7 @@ def almacen_e2e(db, empresa_a):
 def stock_e2e(db, empresa_a, producto_e2e, almacen_e2e, user_a):
     """Carga inicial de inventario para que la entrega pueda descontarlo."""
     from apps.inventario.services import registrar_movimiento
+
     registrar_movimiento(
         empresa=empresa_a,
         fecha_hora_movimiento=timezone.now(),
@@ -130,6 +138,7 @@ def stock_e2e(db, empresa_a, producto_e2e, almacen_e2e, user_a):
 def nota_borrador_e2e(db, empresa_a, cliente_e2e, producto_e2e, stock_e2e):
     """NotaVenta en BORRADOR con un detalle de 2 unidades × 500 = 1 000 de subtotal."""
     from apps.ventas.models import DetalleNotaVenta, NotaVenta
+
     nota = NotaVenta.objects.create(
         id_empresa=empresa_a,
         id_cliente=cliente_e2e,
@@ -151,6 +160,7 @@ def nota_borrador_e2e(db, empresa_a, cliente_e2e, producto_e2e, stock_e2e):
 def nota_entregada_e2e(db, empresa_a, cliente_e2e, producto_e2e, stock_e2e):
     """NotaVenta ya en ENTREGADA — para tests que sólo prueban emitir_factura_fiscal."""
     from apps.ventas.models import DetalleNotaVenta, NotaVenta
+
     nota = NotaVenta.objects.create(
         id_empresa=empresa_a,
         id_cliente=cliente_e2e,
@@ -217,9 +227,7 @@ class TestCicloVentaCompleto:
         # ── Paso 1: confirmar ─────────────────────────────────────────────────
         r1 = confirmar_nota_venta(nota_borrador_e2e, almacen_e2e, user_a)
         nota_borrador_e2e.refresh_from_db()
-        assert nota_borrador_e2e.estado == "ENTREGADA", (
-            f"Esperaba ENTREGADA, obtuvo {nota_borrador_e2e.estado}"
-        )
+        assert nota_borrador_e2e.estado == "ENTREGADA", f"Esperaba ENTREGADA, obtuvo {nota_borrador_e2e.estado}"
         assert r1["asiento"] is not None, "confirmar_nota_venta debe crear asiento NOTA_VENTA"
 
         # ── Paso 2: emitir ────────────────────────────────────────────────────
@@ -230,9 +238,7 @@ class TestCicloVentaCompleto:
             moneda=moneda_usd,
         )
         nota_borrador_e2e.refresh_from_db()
-        assert nota_borrador_e2e.estado == "FACTURADA", (
-            f"Esperaba FACTURADA, obtuvo {nota_borrador_e2e.estado}"
-        )
+        assert nota_borrador_e2e.estado == "FACTURADA", f"Esperaba FACTURADA, obtuvo {nota_borrador_e2e.estado}"
 
         factura = r2["factura"]
         assert factura.estado == "EMITIDA"
@@ -283,9 +289,7 @@ class TestIVACalculado:
         base = factura.base_imponible
         if factura.monto_iva > Decimal("0"):
             expected_iva = (base * Decimal("0.16")).quantize(factura.monto_iva)
-            assert factura.monto_iva == expected_iva, (
-                f"monto_iva esperado {expected_iva}, obtuvo {factura.monto_iva}"
-            )
+            assert factura.monto_iva == expected_iva, f"monto_iva esperado {expected_iva}, obtuvo {factura.monto_iva}"
 
     def test_factura_almacena_monto_igtf(
         self,
@@ -333,9 +337,9 @@ class TestIVACalculado:
         factura.refresh_from_db()
 
         expected_total = factura.base_imponible + factura.monto_iva + factura.monto_igtf
-        assert factura.monto_total == expected_total, (
-            f"monto_total {factura.monto_total} != base+iva+igtf {expected_total}"
-        )
+        assert (
+            factura.monto_total == expected_total
+        ), f"monto_total {factura.monto_total} != base+iva+igtf {expected_total}"
 
 
 # ── TEST-03c: AsientoContable creado ─────────────────────────────────────────
@@ -429,9 +433,9 @@ class TestCuentaPorCobrarCreada:
 
         assert cxc is not None, "emitir_factura_fiscal debe crear CxC (GAP-01)"
         # CxC.monto es DecimalField(max_digits=12, decimal_places=2) → comparar redondeado
-        assert cxc.monto == factura.monto_total.quantize(Decimal("0.01")), (
-            f"CxC.monto {cxc.monto} != factura.monto_total {factura.monto_total}"
-        )
+        assert cxc.monto == factura.monto_total.quantize(
+            Decimal("0.01")
+        ), f"CxC.monto {cxc.monto} != factura.monto_total {factura.monto_total}"
 
     def test_cxc_referencia_externa_igual_numero_factura(
         self,
@@ -489,9 +493,7 @@ class TestCuentaPorCobrarCreada:
             moneda=moneda_usd,
         )
         cxc = r["cxc"]
-        assert cxc.empresa_id == empresa_a.id_empresa, (
-            "La CxC debe pertenecer a la misma empresa que la factura"
-        )
+        assert cxc.empresa_id == empresa_a.id_empresa, "La CxC debe pertenecer a la misma empresa que la factura"
 
     def test_cxc_estado_pendiente_al_emitir(
         self,
@@ -510,9 +512,7 @@ class TestCuentaPorCobrarCreada:
             moneda=moneda_usd,
         )
         cxc = r["cxc"]
-        assert cxc.estado == "pendiente", (
-            f"CxC recién creada debe tener estado 'pendiente', obtuvo '{cxc.estado}'"
-        )
+        assert cxc.estado == "pendiente", f"CxC recién creada debe tener estado 'pendiente', obtuvo '{cxc.estado}'"
 
     def test_cxc_fecha_vencimiento_posterior_a_emision(
         self,
@@ -531,9 +531,7 @@ class TestCuentaPorCobrarCreada:
             moneda=moneda_usd,
         )
         cxc = r["cxc"]
-        assert cxc.fecha_vencimiento > cxc.fecha_emision, (
-            "fecha_vencimiento debe ser posterior a fecha_emision"
-        )
+        assert cxc.fecha_vencimiento > cxc.fecha_emision, "fecha_vencimiento debe ser posterior a fecha_emision"
 
     def test_cxc_persistida_en_base_de_datos(
         self,
@@ -554,6 +552,4 @@ class TestCuentaPorCobrarCreada:
         )
         cxc = r["cxc"]
         # Verificar que existe en la base de datos
-        assert CuentaPorCobrar.objects.filter(pk=cxc.pk).exists(), (
-            "La CxC debe estar persistida en la base de datos"
-        )
+        assert CuentaPorCobrar.objects.filter(pk=cxc.pk).exists(), "La CxC debe estar persistida en la base de datos"

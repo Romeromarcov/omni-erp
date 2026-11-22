@@ -5,6 +5,7 @@ modelos clave del ERP.
 Los imports se hacen con try/except porque algunos modelos pueden no existir
 en todas las configuraciones del proyecto.
 """
+
 import logging
 
 from django.db.models.signals import post_save
@@ -16,6 +17,7 @@ logger = logging.getLogger("omni.eventos")
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _empresa_id(instance) -> str | None:
     """Extrae el empresa_id del modelo como string, o None."""
@@ -139,9 +141,7 @@ try:
                 "producto_id": _safe_pk(getattr(instance, "id_producto", None)),
                 "cantidad": _safe_float(getattr(instance, "cantidad", None)),
                 "almacen_id": _safe_pk(almacen_origen),
-                "fecha_hora_movimiento": _safe_str(
-                    getattr(instance, "fecha_hora_movimiento", None)
-                ),
+                "fecha_hora_movimiento": _safe_str(getattr(instance, "fecha_hora_movimiento", None)),
             }
             publicar_evento(
                 tipo="inventario.movimiento.registrado",
@@ -149,14 +149,10 @@ try:
                 empresa_id=empresa_id,
             )
         except Exception as exc:
-            logger.warning(
-                "on_movimiento_inventario_saved: error al publicar evento: %s", exc
-            )
+            logger.warning("on_movimiento_inventario_saved: error al publicar evento: %s", exc)
 
 except ImportError:
-    logger.debug(
-        "omni.eventos: modelo MovimientoInventario no disponible, signal omitido."
-    )
+    logger.debug("omni.eventos: modelo MovimientoInventario no disponible, signal omitido.")
 
 
 # ── Finanzas: Pago ────────────────────────────────────────────────────────────

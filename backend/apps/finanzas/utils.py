@@ -2,8 +2,6 @@
 Utilidades para el manejo de cajas y sesiones en el sistema ERP venezolano.
 """
 
-from django.db import models
-
 
 def asignar_permisos_caja_fisica(usuario, caja_fisica, puede_abrir=True, puede_cerrar=True, es_predeterminada=False):
     """
@@ -45,11 +43,7 @@ def obtener_sesion_activa_usuario(usuario):
     """
     from .models import SesionCajaFisica
 
-    return (
-        SesionCajaFisica.objects.filter(usuario=usuario, estado="ABIERTA")
-        .select_related("caja_fisica")
-        .first()
-    )
+    return SesionCajaFisica.objects.filter(usuario=usuario, estado="ABIERTA").select_related("caja_fisica").first()
 
 
 def validar_acceso_caja_usuario(usuario, caja):

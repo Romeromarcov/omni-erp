@@ -84,7 +84,7 @@ const PlantillaMaestroFormPage: React.FC = () => {
         });
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intencional: solo rehidratar al cargar plantillasData, sin disparar por isDirty/reset
   }, [isEditing, id, plantillasData]);
 
   const saveMutation = useMutation({

@@ -14,6 +14,7 @@ El flujo completo de ``procesar`` (atomicidad, asiento NOMINA, parámetros) se
 cubre en ``tests/integration/test_nomina_proceso.py``.
 Dinero como Decimal con aserciones de valor exacto.
 """
+
 import datetime
 from decimal import Decimal
 
@@ -244,9 +245,7 @@ class TestAislamientoMultiTenant:
         )
         resp = client_a.get(f"{BASE}detalles-nomina/")
         assert resp.status_code == 200
-        assert str(detalle.id_detalle_nomina) in [
-            r["id_detalle_nomina"] for r in _results(resp)
-        ]
+        assert str(detalle.id_detalle_nomina) in [r["id_detalle_nomina"] for r in _results(resp)]
 
     def test_b_no_ve_extrasalariales_de_a(self, client_b, proceso_extra_a, nomina_extra_a):
         resp = client_b.get(f"{BASE}procesos-nomina-extrasalarial/")
@@ -322,23 +321,17 @@ class TestConceptoNominaActions:
     def test_por_tipo_con_filtro(self, client_a, concepto_devengado_a, concepto_deduccion_a):
         resp = client_a.get(f"{BASE}conceptos-nomina/por_tipo/", {"tipo": "DEDUCCION"})
         assert resp.status_code == 200
-        assert [r["id_concepto_nomina"] for r in resp.json()] == [
-            str(concepto_deduccion_a.id_concepto_nomina)
-        ]
+        assert [r["id_concepto_nomina"] for r in resp.json()] == [str(concepto_deduccion_a.id_concepto_nomina)]
 
     def test_devengados(self, client_a, concepto_devengado_a, concepto_deduccion_a):
         resp = client_a.get(f"{BASE}conceptos-nomina/devengados/")
         assert resp.status_code == 200
-        assert [r["id_concepto_nomina"] for r in resp.json()] == [
-            str(concepto_devengado_a.id_concepto_nomina)
-        ]
+        assert [r["id_concepto_nomina"] for r in resp.json()] == [str(concepto_devengado_a.id_concepto_nomina)]
 
     def test_deducciones(self, client_a, concepto_devengado_a, concepto_deduccion_a):
         resp = client_a.get(f"{BASE}conceptos-nomina/deducciones/")
         assert resp.status_code == 200
-        assert [r["id_concepto_nomina"] for r in resp.json()] == [
-            str(concepto_deduccion_a.id_concepto_nomina)
-        ]
+        assert [r["id_concepto_nomina"] for r in resp.json()] == [str(concepto_deduccion_a.id_concepto_nomina)]
 
 
 class TestProcesoNominaActions:
@@ -483,9 +476,7 @@ class TestProcesoExtrasalarialActions:
 
 class TestNominaExtrasalarialActions:
     def test_aprobar_ok(self, client_a, nomina_extra_a):
-        resp = client_a.post(
-            f"{BASE}nominas-extrasalarial/{nomina_extra_a.id_nomina_extrasalarial}/aprobar/"
-        )
+        resp = client_a.post(f"{BASE}nominas-extrasalarial/{nomina_extra_a.id_nomina_extrasalarial}/aprobar/")
         assert resp.status_code == 200
         nomina_extra_a.refresh_from_db()
         assert nomina_extra_a.estado == "APROBADA"
@@ -493,22 +484,16 @@ class TestNominaExtrasalarialActions:
     def test_aprobar_no_calculada_400(self, client_a, nomina_extra_a):
         nomina_extra_a.estado = "PAGADA"
         nomina_extra_a.save()
-        resp = client_a.post(
-            f"{BASE}nominas-extrasalarial/{nomina_extra_a.id_nomina_extrasalarial}/aprobar/"
-        )
+        resp = client_a.post(f"{BASE}nominas-extrasalarial/{nomina_extra_a.id_nomina_extrasalarial}/aprobar/")
         assert resp.status_code == 400
 
     def test_marcar_pagada_flujo(self, client_a, nomina_extra_a):
         # No aprobada aún → 400
-        resp = client_a.post(
-            f"{BASE}nominas-extrasalarial/{nomina_extra_a.id_nomina_extrasalarial}/marcar_pagada/"
-        )
+        resp = client_a.post(f"{BASE}nominas-extrasalarial/{nomina_extra_a.id_nomina_extrasalarial}/marcar_pagada/")
         assert resp.status_code == 400
         nomina_extra_a.estado = "APROBADA"
         nomina_extra_a.save()
-        resp2 = client_a.post(
-            f"{BASE}nominas-extrasalarial/{nomina_extra_a.id_nomina_extrasalarial}/marcar_pagada/"
-        )
+        resp2 = client_a.post(f"{BASE}nominas-extrasalarial/{nomina_extra_a.id_nomina_extrasalarial}/marcar_pagada/")
         assert resp2.status_code == 200
         nomina_extra_a.refresh_from_db()
         assert nomina_extra_a.estado == "PAGADA"

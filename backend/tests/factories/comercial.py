@@ -10,6 +10,7 @@ Uso:
     empresa = EmpresaFactory()
     producto = ProductoFactory(id_empresa=empresa)
 """
+
 from decimal import Decimal
 
 import factory
@@ -41,12 +42,8 @@ class ProductoFactory(factory.django.DjangoModelFactory):
 
     id_empresa = factory.SubFactory(EmpresaFactory)
     nombre_producto = factory.Sequence(lambda n: f"Producto {n}")
-    id_unidad_medida_base = factory.SubFactory(
-        UnidadMedidaFactory, id_empresa=factory.SelfAttribute("..id_empresa")
-    )
-    id_categoria = factory.SubFactory(
-        CategoriaProductoFactory, id_empresa=factory.SelfAttribute("..id_empresa")
-    )
+    id_unidad_medida_base = factory.SubFactory(UnidadMedidaFactory, id_empresa=factory.SelfAttribute("..id_empresa"))
+    id_categoria = factory.SubFactory(CategoriaProductoFactory, id_empresa=factory.SelfAttribute("..id_empresa"))
     id_moneda_precio = factory.SubFactory(MonedaFactory)
     precio_venta_sugerido = Decimal("10.00")
     costo_promedio = Decimal("5.00")

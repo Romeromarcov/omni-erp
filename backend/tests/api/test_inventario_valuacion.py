@@ -10,6 +10,7 @@ Cubre apps/inventario/valuation.py y su integración con registrar_movimiento():
   - AJUSTE negativo consume capas; el costo calculado fija costo_unitario_movimiento.
 """
 
+import datetime
 from decimal import Decimal
 
 import pytest
@@ -38,23 +39,17 @@ def categoria(empresa_a):
 
 @pytest.fixture
 def unidad(empresa_a):
-    return UnidadMedida.objects.create(
-        id_empresa=empresa_a, nombre="Unidad", abreviatura="UN", tipo="CANTIDAD"
-    )
+    return UnidadMedida.objects.create(id_empresa=empresa_a, nombre="Unidad", abreviatura="UN", tipo="CANTIDAD")
 
 
 @pytest.fixture
 def almacen_a(empresa_a):
-    return Almacen.objects.create(
-        id_empresa=empresa_a, nombre_almacen="Central", codigo_almacen="ALM-A"
-    )
+    return Almacen.objects.create(id_empresa=empresa_a, nombre_almacen="Central", codigo_almacen="ALM-A")
 
 
 @pytest.fixture
 def almacen_b(empresa_a):
-    return Almacen.objects.create(
-        id_empresa=empresa_a, nombre_almacen="Sucursal", codigo_almacen="ALM-B"
-    )
+    return Almacen.objects.create(id_empresa=empresa_a, nombre_almacen="Sucursal", codigo_almacen="ALM-B")
 
 
 def _producto(empresa_a, categoria, unidad, moneda_usd, metodo, costo_promedio="0.00"):
@@ -85,9 +80,7 @@ def _entrada(empresa_a, producto, almacen, user_a, cantidad, costo):
 # ── PROMEDIO ──────────────────────────────────────────────────────────────────
 
 
-def test_promedio_costea_salida_al_promedio_ponderado(
-    empresa_a, categoria, unidad, moneda_usd, almacen_a, user_a
-):
+def test_promedio_costea_salida_al_promedio_ponderado(empresa_a, categoria, unidad, moneda_usd, almacen_a, user_a):
     prod = _producto(empresa_a, categoria, unidad, moneda_usd, "PROMEDIO")
     _entrada(empresa_a, prod, almacen_a, user_a, 10, "10.00")
     _entrada(empresa_a, prod, almacen_a, user_a, 10, "20.00")
@@ -114,12 +107,19 @@ def test_promedio_costea_salida_al_promedio_ponderado(
 # ── FIFO ──────────────────────────────────────────────────────────────────────
 
 
-def test_fifo_consume_capas_antiguas_primero(
-    empresa_a, categoria, unidad, moneda_usd, almacen_a, user_a
-):
+def test_fifo_consume_capas_antiguas_primero(empresa_a, categoria, unidad, moneda_usd, almacen_a, user_a):
     prod = _producto(empresa_a, categoria, unidad, moneda_usd, "FIFO")
-    _entrada(empresa_a, prod, almacen_a, user_a, 10, "10.00")
-    _entrada(empresa_a, prod, almacen_a, user_a, 10, "20.00")
+    primera = _entrada(empresa_a, prod, almacen_a, user_a, 10, "10.00")
+    segunda = _entrada(empresa_a, prod, almacen_a, user_a, 10, "20.00")
+    # Antigüedad explícita de las capas: dos altas consecutivas pueden recibir el mismo
+    # fecha_creacion (reloj de ~15 ms en Windows) y el FIFO desempata por una PK UUIDv7
+    # que no es monótona dentro del mismo milisegundo. fecha_creacion es auto_now_add,
+    # por eso se fija con update().
+    ahora = timezone.now()
+    for movimiento, hace in ((primera, 2), (segunda, 1)):
+        ValoracionInventario.objects.filter(id_movimiento=movimiento, sentido="ENTRADA").update(
+            fecha_creacion=ahora - datetime.timedelta(minutes=hace)
+        )
 
     salida = registrar_movimiento(
         empresa=empresa_a,
@@ -138,11 +138,7 @@ def test_fifo_consume_capas_antiguas_primero(
     assert val.costo_unitario == Decimal("13.3333")
 
     # La primera capa quedó agotada; la segunda con 5 unidades restantes.
-    capas = list(
-        ValoracionInventario.objects.filter(
-            id_producto=prod, sentido="ENTRADA"
-        ).order_by("fecha_creacion")
-    )
+    capas = list(ValoracionInventario.objects.filter(id_producto=prod, sentido="ENTRADA").order_by("fecha_creacion"))
     assert capas[0].cantidad_restante == Decimal("0.0000")
     assert capas[1].cantidad_restante == Decimal("5.0000")
 
@@ -179,9 +175,7 @@ def test_transferencia_traslada_costo_a_destino(
 # ── Respaldo: salida sin capas costeadas ──────────────────────────────────────
 
 
-def test_salida_sin_capas_usa_costo_promedio_respaldo(
-    empresa_a, categoria, unidad, moneda_usd, almacen_a, user_a
-):
+def test_salida_sin_capas_usa_costo_promedio_respaldo(empresa_a, categoria, unidad, moneda_usd, almacen_a, user_a):
     prod = _producto(empresa_a, categoria, unidad, moneda_usd, "PROMEDIO", costo_promedio="7.00")
     # Stock existente sin capa de valoración (p. ej. saldo de apertura).
     StockActual.objects.create(
@@ -209,9 +203,7 @@ def test_salida_sin_capas_usa_costo_promedio_respaldo(
 # ── AJUSTE negativo ───────────────────────────────────────────────────────────
 
 
-def test_ajuste_negativo_consume_capas_y_fija_costo(
-    empresa_a, categoria, unidad, moneda_usd, almacen_a, user_a
-):
+def test_ajuste_negativo_consume_capas_y_fija_costo(empresa_a, categoria, unidad, moneda_usd, almacen_a, user_a):
     prod = _producto(empresa_a, categoria, unidad, moneda_usd, "FIFO")
     _entrada(empresa_a, prod, almacen_a, user_a, 10, "5.00")
 
@@ -233,25 +225,34 @@ def test_ajuste_negativo_consume_capas_y_fija_costo(
     assert ajuste.costo_unitario_movimiento == Decimal("5.0000")
 
 
-def test_ajuste_salida_asiento_monto_igual_valor_total(
-    empresa_a, categoria, unidad, moneda_usd, almacen_a, user_a
-):
+def test_ajuste_salida_asiento_monto_igual_valor_total(empresa_a, categoria, unidad, moneda_usd, almacen_a, user_a):
     """ACCOUNTING: el asiento de un AJUSTE de salida usa exactamente valor_total."""
     from apps.contabilidad.models import AsientoContable, DetalleAsiento, MapeoContable, PlanCuentas
 
     empresa_a.contabilidad_activa = True
     empresa_a.save(update_fields=["contabilidad_activa"])
     debe = PlanCuentas.objects.create(
-        id_empresa=empresa_a, codigo_cuenta="6105", nombre_cuenta="Pérdida Ajuste",
-        tipo_cuenta="GASTO", naturaleza="DEUDORA", nivel=1,
+        id_empresa=empresa_a,
+        codigo_cuenta="6105",
+        nombre_cuenta="Pérdida Ajuste",
+        tipo_cuenta="GASTO",
+        naturaleza="DEUDORA",
+        nivel=1,
     )
     haber = PlanCuentas.objects.create(
-        id_empresa=empresa_a, codigo_cuenta="1105", nombre_cuenta="Inventario",
-        tipo_cuenta="ACTIVO", naturaleza="DEUDORA", nivel=1,
+        id_empresa=empresa_a,
+        codigo_cuenta="1105",
+        nombre_cuenta="Inventario",
+        tipo_cuenta="ACTIVO",
+        naturaleza="DEUDORA",
+        nivel=1,
     )
     MapeoContable.objects.create(
-        id_empresa=empresa_a, tipo_asiento="AJUSTE_INVENTARIO",
-        cuenta_debe=debe, cuenta_haber=haber, activo=True,
+        id_empresa=empresa_a,
+        tipo_asiento="AJUSTE_INVENTARIO",
+        cuenta_debe=debe,
+        cuenta_haber=haber,
+        activo=True,
     )
 
     prod = _producto(empresa_a, categoria, unidad, moneda_usd, "FIFO")
@@ -279,9 +280,7 @@ def test_ajuste_salida_asiento_monto_igual_valor_total(
     assert total_debe == val.valor_total.quantize(Decimal("0.01"))
 
 
-def test_entrada_sin_costo_usa_costo_promedio(
-    empresa_a, categoria, unidad, moneda_usd, almacen_a, user_a
-):
+def test_entrada_sin_costo_usa_costo_promedio(empresa_a, categoria, unidad, moneda_usd, almacen_a, user_a):
     prod = _producto(empresa_a, categoria, unidad, moneda_usd, "PROMEDIO", costo_promedio="9.00")
     mov = registrar_movimiento(
         empresa=empresa_a,

@@ -73,9 +73,7 @@ class GenericRestConnector(BaseConnector):
     def _base_url(self) -> str:
         url = (self._config.get("base_url") or "").strip().rstrip("/")
         if not url:
-            raise ConnectorConnectionError(
-                "Falta 'base_url' en la configuración del conector genérico."
-            )
+            raise ConnectorConnectionError("Falta 'base_url' en la configuración del conector genérico.")
         return url
 
     def _request(self, endpoint: str) -> object:
@@ -96,15 +94,12 @@ class GenericRestConnector(BaseConnector):
             ) from exc
         except httpx.HTTPError as exc:
             raise ConnectorConnectionError(
-                f"Error de conexión al leer '{endpoint}' del sistema externo: "
-                f"{type(exc).__name__}."
+                f"Error de conexión al leer '{endpoint}' del sistema externo: " f"{type(exc).__name__}."
             ) from exc
         try:
             return resp.json()
         except (ValueError, json.JSONDecodeError) as exc:
-            raise ConnectorDataError(
-                f"Respuesta no-JSON al leer '{endpoint}'."
-            ) from exc
+            raise ConnectorDataError(f"Respuesta no-JSON al leer '{endpoint}'.") from exc
 
     @staticmethod
     def _extraer_lista(payload, raiz: str | None) -> list:
@@ -134,9 +129,7 @@ class GenericRestConnector(BaseConnector):
     def _pull_entidad(self, entidad: str, limite: int | None = None) -> list[dict]:
         conf = (self._config.get("entidades") or {}).get(entidad)
         if not conf:
-            raise ConnectorNotSupportedError(
-                f"El conector genérico no tiene configurada la entidad '{entidad}'."
-            )
+            raise ConnectorNotSupportedError(f"El conector genérico no tiene configurada la entidad '{entidad}'.")
         endpoint = conf.get("endpoint") or ""
         if not endpoint:
             raise ConnectorDataError(f"Falta 'endpoint' para la entidad '{entidad}'.")
@@ -173,9 +166,7 @@ class GenericRestConnector(BaseConnector):
         except ConnectorConnectionError as exc:
             return TestConnectionResult(success=False, message=str(exc))
         except httpx.HTTPError as exc:
-            return TestConnectionResult(
-                success=False, message=f"Fallo de conexión: {type(exc).__name__}."
-            )
+            return TestConnectionResult(success=False, message=f"Fallo de conexión: {type(exc).__name__}.")
 
     def get_version_info(self) -> dict:
         return {

@@ -54,9 +54,7 @@ def _run(user=None, auth_header=None):
     captured = {}
 
     def get_response(request):
-        captured["ids"] = set(
-            Sucursal.objects.values_list("id_empresa_id", flat=True)
-        )
+        captured["ids"] = set(Sucursal.objects.values_list("id_empresa_id", flat=True))
         return HttpResponse("ok")
 
     mw = RLSContextMiddleware(get_response)
@@ -78,8 +76,11 @@ def test_usuario_normal_solo_ve_su_empresa(sucursales, user_a, empresa_a):
 def test_superusuario_omni_ve_todas(sucursales, empresa_a, empresa_b):
     User = get_user_model()
     su = User.objects.create_user(
-        username="omni_root", password="x", email="root@omni.test",
-        is_active=True, es_superusuario_omni=True,
+        username="omni_root",
+        password="x",
+        email="root@omni.test",
+        is_active=True,
+        es_superusuario_omni=True,
     )
     assert _run(user=su) == {empresa_a.id_empresa, empresa_b.id_empresa}
 
@@ -95,9 +96,7 @@ def test_resuelve_usuario_por_jwt(sucursales, user_a, empresa_a):
 
     token = AccessToken.for_user(user_a)
     # request.user anónimo: el middleware debe resolver vía el header JWT.
-    assert _run(user=AnonymousUser(), auth_header=f"Bearer {token}") == {
-        empresa_a.id_empresa
-    }
+    assert _run(user=AnonymousUser(), auth_header=f"Bearer {token}") == {empresa_a.id_empresa}
 
 
 @override_settings(RLS_ENABLED=True)
@@ -133,3 +132,54 @@ def test_streaming_conserva_contexto_rls(sucursales, user_a, empresa_a):
 def test_middleware_se_descarta_si_rls_desactivado():
     with pytest.raises(MiddlewareNotUsed):
         RLSContextMiddleware(lambda request: HttpResponse())
+
+
+@override_settings(RLS_ENABLED=True)
+def test_resuelve_empresa_por_capability_token_y_fail_closed_si_invalido(sucursales, empresa_a, user_a):
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from apps.core.models import CapabilityToken
+
+    rls.apply_system_default()
+    with rls.rls_bypass():
+        tok = CapabilityToken.objects.create(
+            empresa=empresa_a,
+            nombre="Bot RLS",
+            scopes=["bots:heartbeat"],
+            creado_por=user_a,
+        )
+        tok_exp = CapabilityToken.objects.create(
+            empresa=empresa_a,
+            nombre="Bot Expirado",
+            scopes=["bots:heartbeat"],
+            expires_at=timezone.now() - timedelta(minutes=1),
+            creado_por=user_a,
+        )
+
+    captured = {}
+
+    def get_response(request):
+        captured["ids"] = set(Sucursal.objects.values_list("id_empresa_id", flat=True))
+        return HttpResponse("ok")
+
+    mw = RLSContextMiddleware(get_response)
+
+    req_ok = RequestFactory().get("/api/bots/heartbeat/")
+    req_ok.user = AnonymousUser()
+    req_ok.META["HTTP_X_CAPABILITY_TOKEN"] = str(tok.token)
+    mw(req_ok)
+    assert captured["ids"] == {empresa_a.id_empresa}
+
+    req_bad = RequestFactory().get("/api/bots/heartbeat/")
+    req_bad.user = AnonymousUser()
+    req_bad.META["HTTP_X_CAPABILITY_TOKEN"] = "token-invalido"
+    mw(req_bad)
+    assert captured["ids"] == set()
+
+    req_exp = RequestFactory().get("/api/bots/heartbeat/")
+    req_exp.user = AnonymousUser()
+    req_exp.META["HTTP_X_BOT_KEY"] = str(tok_exp.token)
+    mw(req_exp)
+    assert captured["ids"] == set()

@@ -60,9 +60,7 @@ def test_ves_abono_calcula_equivalentes_usd(empresa_a, user_a):
     # El abono VES con método tipo_tasa=BCV hace ruta BCV pura → el motor
     # reselecciona la lista BCV ("5"); hay que tener su precio sembrado.
     h.crear_precio(empresa_a, lista="5", precio="100")
-    pago = h.crear_pago(
-        empresa_a, pago_id="PG-VES", monto=Decimal("3600"), moneda="VES"
-    )
+    pago = h.crear_pago(empresa_a, pago_id="PG-VES", monto=Decimal("3600"), moneda="VES")
     h.crear_metodo(empresa_a, codigo="PAGO_MOVIL", moneda="VES", tipo_tasa="BCV")
     pago.metodo_pago = "PAGO_MOVIL"
     pago.save(update_fields=["metodo_pago"])
@@ -116,12 +114,8 @@ def test_solo_falta_tasa_binance(empresa_a, user_a):
     from apps.finanzas.models import Moneda as FinMoneda
     from apps.finanzas.models import TasaCambio
 
-    usd, _ = FinMoneda.objects.get_or_create(
-        codigo_iso="USD", defaults={"nombre": "Dólar", "simbolo": "$"}
-    )
-    ves, _ = FinMoneda.objects.get_or_create(
-        codigo_iso="VES", defaults={"nombre": "Bolívar", "simbolo": "Bs"}
-    )
+    usd, _ = FinMoneda.objects.get_or_create(codigo_iso="USD", defaults={"nombre": "Dólar", "simbolo": "$"})
+    ves, _ = FinMoneda.objects.get_or_create(codigo_iso="VES", defaults={"nombre": "Bolívar", "simbolo": "Bs"})
     TasaCambio.objects.create(
         id_empresa=None,
         id_moneda_origen=usd,

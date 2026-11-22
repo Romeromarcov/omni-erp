@@ -19,6 +19,7 @@ Verifica:
 - test_endpoint_conciliar_auto(): POST conciliar-auto → retorna stats
 - test_endpoint_sin_auth_401(): sin autenticación retorna 401
 """
+
 import datetime
 import io
 from decimal import Decimal
@@ -30,6 +31,7 @@ from apps.finanzas.models import CuentaBancariaEmpresa
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def client_a(user_a):
@@ -60,6 +62,7 @@ def cuenta_a(db, empresa_a, moneda_usd):
 @pytest.fixture
 def movimiento_pendiente(db, empresa_a, cuenta_a):
     from apps.tesoreria.models import MovimientoBancario
+
     return MovimientoBancario.objects.create(
         id_empresa=empresa_a,
         id_cuenta_bancaria=cuenta_a,
@@ -75,6 +78,7 @@ def movimiento_pendiente(db, empresa_a, cuenta_a):
 @pytest.fixture
 def conciliacion_a(db, empresa_a, cuenta_a):
     from apps.tesoreria.services import iniciar_conciliacion
+
     return iniciar_conciliacion(
         empresa=empresa_a,
         cuenta_bancaria=cuenta_a,
@@ -87,9 +91,11 @@ def conciliacion_a(db, empresa_a, cuenta_a):
 
 # ── Unit tests — Services ─────────────────────────────────────────────────────
 
+
 class TestRegistrarMovimientoBancario:
     def test_crea_movimiento(self, db, empresa_a, cuenta_a):
         from apps.tesoreria.services import registrar_movimiento_bancario
+
         mov = registrar_movimiento_bancario(
             empresa=empresa_a,
             cuenta_bancaria=cuenta_a,
@@ -106,6 +112,7 @@ class TestRegistrarMovimientoBancario:
 
     def test_tipo_invalido_lanza_error(self, db, empresa_a, cuenta_a):
         from apps.tesoreria.services import ConciliacionError, registrar_movimiento_bancario
+
         with pytest.raises(ConciliacionError, match="Tipo inválido"):
             registrar_movimiento_bancario(
                 empresa=empresa_a,
@@ -118,6 +125,7 @@ class TestRegistrarMovimientoBancario:
 
     def test_monto_cero_lanza_error(self, db, empresa_a, cuenta_a):
         from apps.tesoreria.services import ConciliacionError, registrar_movimiento_bancario
+
         with pytest.raises(ConciliacionError, match="mayor que cero"):
             registrar_movimiento_bancario(
                 empresa=empresa_a,
@@ -130,6 +138,7 @@ class TestRegistrarMovimientoBancario:
 
     def test_monto_negativo_lanza_error(self, db, empresa_a, cuenta_a):
         from apps.tesoreria.services import ConciliacionError, registrar_movimiento_bancario
+
         with pytest.raises(ConciliacionError):
             registrar_movimiento_bancario(
                 empresa=empresa_a,
@@ -149,20 +158,26 @@ class TestImportarExtractoCSV:
 
     def test_importa_filas_validas(self, db, empresa_a, cuenta_a):
         from apps.tesoreria.services import importar_extracto_csv
-        csv_io = self._csv([
-            ("2026-05-01", "Pago A", "CREDITO", "1000.00", "R1"),
-            ("2026-05-02", "Comision", "DEBITO", "25.00", ""),
-        ])
+
+        csv_io = self._csv(
+            [
+                ("2026-05-01", "Pago A", "CREDITO", "1000.00", "R1"),
+                ("2026-05-02", "Comision", "DEBITO", "25.00", ""),
+            ]
+        )
         resultado = importar_extracto_csv(empresa_a, cuenta_a, csv_io)
         assert resultado["importados"] == 2
         assert resultado["errores"] == 0
 
     def test_cuenta_filas_con_error(self, db, empresa_a, cuenta_a):
         from apps.tesoreria.services import importar_extracto_csv
-        csv_io = self._csv([
-            ("2026-05-01", "Valida", "CREDITO", "500.00", ""),
-            ("FECHA-MAL", "Invalida", "CREDITO", "abc", ""),  # fecha y monto malos
-        ])
+
+        csv_io = self._csv(
+            [
+                ("2026-05-01", "Valida", "CREDITO", "500.00", ""),
+                ("FECHA-MAL", "Invalida", "CREDITO", "abc", ""),  # fecha y monto malos
+            ]
+        )
         resultado = importar_extracto_csv(empresa_a, cuenta_a, csv_io)
         assert resultado["importados"] == 1
         assert resultado["errores"] == 1
@@ -170,6 +185,7 @@ class TestImportarExtractoCSV:
 
     def test_csv_vacio_importa_cero(self, db, empresa_a, cuenta_a):
         from apps.tesoreria.services import importar_extracto_csv
+
         csv_io = io.StringIO("fecha,descripcion,tipo,monto,referencia\n")
         resultado = importar_extracto_csv(empresa_a, cuenta_a, csv_io)
         assert resultado["importados"] == 0
@@ -179,6 +195,7 @@ class TestImportarExtractoCSV:
 class TestConciliarAutomatico:
     def test_sin_pagos_cero_conciliados(self, db, empresa_a, cuenta_a, movimiento_pendiente):
         from apps.tesoreria.services import conciliar_automatico
+
         resultado = conciliar_automatico(empresa_a, cuenta_a)
         assert resultado["conciliados"] == 0
         assert resultado["sin_match"] == 1
@@ -187,6 +204,7 @@ class TestConciliarAutomatico:
     def test_sin_movimientos_retorna_cero(self, db, empresa_a, cuenta_a):
         """Sin movimientos pendientes el resultado es cero en todos los contadores."""
         from apps.tesoreria.services import conciliar_automatico
+
         resultado = conciliar_automatico(empresa_a, cuenta_a)
         assert resultado["total_procesados"] == 0
         assert resultado["conciliados"] == 0
@@ -196,6 +214,7 @@ class TestConciliarAutomatico:
         """Los movimientos DEBITO (egresos del banco) no se intentan conciliar."""
         from apps.tesoreria.models import MovimientoBancario
         from apps.tesoreria.services import conciliar_automatico
+
         MovimientoBancario.objects.create(
             id_empresa=empresa_a,
             id_cuenta_bancaria=cuenta_a,
@@ -213,6 +232,7 @@ class TestConciliarAutomatico:
 class TestIniciarCerrarConciliacion:
     def test_iniciar_crea_conciliacion_abierta(self, db, empresa_a, cuenta_a):
         from apps.tesoreria.services import iniciar_conciliacion
+
         c = iniciar_conciliacion(
             empresa=empresa_a,
             cuenta_bancaria=cuenta_a,
@@ -227,6 +247,7 @@ class TestIniciarCerrarConciliacion:
 
     def test_cerrar_cambia_estado(self, db, conciliacion_a):
         from apps.tesoreria.services import cerrar_conciliacion
+
         cerrar_conciliacion(conciliacion_a)
         conciliacion_a.refresh_from_db()
         assert conciliacion_a.estado == "CERRADA"
@@ -246,7 +267,11 @@ class TestEndpointsMovimientosBancarios:
 
     def test_list_contiene_movimiento(self, client_a, movimiento_pendiente):
         resp = client_a.get(URL_MOVIMIENTOS)
-        ids = [m["id"] for m in resp.data["results"] if "id" in m] if "results" in resp.data else [m["id"] for m in resp.data]
+        ids = (
+            [m["id"] for m in resp.data["results"] if "id" in m]
+            if "results" in resp.data
+            else [m["id"] for m in resp.data]
+        )
         assert str(movimiento_pendiente.id) in ids
 
     def test_filtro_estado_pendiente(self, client_a, movimiento_pendiente):

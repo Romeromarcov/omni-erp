@@ -128,9 +128,7 @@ class TestObtenerTasaCambio:
         assert tasa.valor_tasa == Decimal("37.00000000")
         assert tasa.tipo_tasa == "ESPECIAL_USUARIO"
 
-    def test_bcv_global_si_empresa_sin_tasa_especifica(
-        self, db, tasa_usd_ves_bcv, moneda_usd, moneda_ves, empresa_a
-    ):
+    def test_bcv_global_si_empresa_sin_tasa_especifica(self, db, tasa_usd_ves_bcv, moneda_usd, moneda_ves, empresa_a):
         """empresa_a no tiene tasa específica → usa BCV global."""
         tasa = obtener_tasa_cambio(moneda_usd, moneda_ves, empresa=empresa_a)
         assert tasa.valor_tasa == Decimal("36.50000000")
@@ -164,9 +162,7 @@ class TestObtenerTasaCambio:
         tasa = obtener_tasa_cambio(moneda_usd, moneda_ves, fecha=fecha)
         assert tasa.valor_tasa == Decimal("35.00000000")
 
-    def test_fallback_reciente_empresa_tiene_prioridad(
-        self, db, empresa_a, moneda_usd, moneda_ves
-    ):
+    def test_fallback_reciente_empresa_tiene_prioridad(self, db, empresa_a, moneda_usd, moneda_ves):
         """Sin tasa de la fecha exacta, el fallback de 30 días prefiere la
         tasa empresa-específica sobre la global (cubre la rama empresa del
         bloque de recientes en services.obtener_tasa_cambio)."""

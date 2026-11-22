@@ -21,19 +21,27 @@ def enviar_notificacion_email(self, id_plantilla: str, destinatario: str, contex
 
     Reintentos automáticos con backoff en caso de fallo (máx. 3 intentos).
     """
+    from apps.core import rls
     from apps.notificaciones.models import LogNotificacion, PlantillaNotificacion
 
     log = None
+    empresa_id = None
     if id_log:
         try:
-            log = LogNotificacion.objects.get(id_log=id_log)
-            log.intentos += 1
-            log.save(update_fields=["intentos"])
+            with rls.rls_bypass():
+                log = LogNotificacion.objects.get(id_log=id_log)
+                empresa_id = getattr(log, "id_empresa_id", None)
+                log.intentos += 1
+                log.save(update_fields=["intentos"])
         except LogNotificacion.DoesNotExist:
             pass
 
+    def _log_ctx():
+        return rls.rls_tenant_context([empresa_id]) if empresa_id is not None else rls.rls_bypass()
+
     try:
-        plantilla = PlantillaNotificacion.objects.get(id_plantilla=id_plantilla)
+        with _log_ctx():
+            plantilla = PlantillaNotificacion.objects.get(id_plantilla=id_plantilla)
 
         asunto = Template(plantilla.asunto).render(Context(contexto))
         cuerpo_html = Template(plantilla.cuerpo_html).render(Context(contexto))
@@ -48,9 +56,10 @@ def enviar_notificacion_email(self, id_plantilla: str, destinatario: str, contex
         )
 
         if log:
-            log.estado = "ENVIADO"
-            log.error = ""
-            log.save(update_fields=["estado", "error"])
+            with _log_ctx():
+                log.estado = "ENVIADO"
+                log.error = ""
+                log.save(update_fields=["estado", "error"])
 
         logger.info("Email enviado: %s → %s", plantilla.codigo_plantilla, destinatario)
 
@@ -59,9 +68,10 @@ def enviar_notificacion_email(self, id_plantilla: str, destinatario: str, contex
         logger.error("Error enviando email a %s: %s", destinatario, error_msg)
 
         if log:
-            log.estado = "FALLIDO"
-            log.error = error_msg
-            log.save(update_fields=["estado", "error"])
+            with _log_ctx():
+                log.estado = "FALLIDO"
+                log.error = error_msg
+                log.save(update_fields=["estado", "error"])
 
         try:
             raise self.retry(exc=exc)

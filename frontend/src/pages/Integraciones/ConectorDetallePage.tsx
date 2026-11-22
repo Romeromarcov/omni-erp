@@ -19,13 +19,20 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
+import AssignmentOutlinedIcon from '@mui/icons-material/AssignmentOutlined';
+import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
+import SyncAltOutlinedIcon from '@mui/icons-material/SyncAltOutlined';
 import {
   getConector,
   testConector,
   triggerSync,
+  pushCobranza,
   exportarConector,
   getJobsDeConector,
+  etiquetaEntidad,
   type JobSincronizacion,
+  type PushCobranzaPayload,
+  type SyncDireccion,
 } from '../../services/integrationHubService';
 import { PageContainer, PageHeader, StatusChip, SectionTitle } from '../../components/ui';
 import EditarConectorModal from './EditarConectorModal';
@@ -42,10 +49,15 @@ const ESTADO_JOB_COLORS: Record<string, ChipColor> = {
   pendiente: 'default',
 };
 
-/** Etiqueta legible de la dirección de un job (los jobs Sheets son outbound). */
+/** Etiqueta legible de la dirección de un job. */
 function etiquetaDireccion(direccion: string): { label: string; outbound: boolean } {
-  const outbound = direccion === 'outbound';
-  return { label: outbound ? 'Exportación' : 'Importación', outbound };
+  if (direccion === 'outbound') {
+    return { label: 'Exportación', outbound: true };
+  }
+  if (direccion === 'bidireccional') {
+    return { label: 'Bidireccional', outbound: true };
+  }
+  return { label: 'Importación', outbound: false };
 }
 
 const JobRow: React.FC<{ job: JobSincronizacion }> = ({ job }) => {
@@ -66,7 +78,7 @@ const JobRow: React.FC<{ job: JobSincronizacion }> = ({ job }) => {
           variant="outlined"
         />
       </TableCell>
-      <TableCell>{job.tipo_entidad}</TableCell>
+      <TableCell>{etiquetaEntidad(job.tipo_entidad)}</TableCell>
       <TableCell>
         <Chip size="small" label={job.estado.replace(/_/g, ' ')} color={color} variant={color === 'default' ? 'outlined' : 'filled'} />
       </TableCell>
@@ -87,6 +99,8 @@ const ConectorDetallePage: React.FC = () => {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [syncEntidad, setSyncEntidad] = useState('');
+  const [syncDireccion, setSyncDireccion] = useState<SyncDireccion>('inbound');
+  const [pushTipo, setPushTipo] = useState<'todos' | 'pagos' | 'gestiones_cobranza'>('todos');
   const [editarAbierto, setEditarAbierto] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string; version?: string } | null>(null);
 
@@ -110,7 +124,15 @@ const ConectorDetallePage: React.FC = () => {
   });
 
   const syncMutation = useMutation({
-    mutationFn: () => triggerSync(id!, syncEntidad),
+    mutationFn: () => triggerSync(id!, syncEntidad, syncDireccion),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [`/integration-hub/instancias/${id}/jobs/`] });
+      qc.invalidateQueries({ queryKey: ['/integration-hub/status/'] });
+    },
+  });
+
+  const pushCobranzaMutation = useMutation({
+    mutationFn: (payload: PushCobranzaPayload) => pushCobranza(id!, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [`/integration-hub/instancias/${id}/jobs/`] });
       qc.invalidateQueries({ queryKey: ['/integration-hub/status/'] });
@@ -135,6 +157,9 @@ const ConectorDetallePage: React.FC = () => {
 
   const jobs = jobsData?.results ?? [];
   const esSheets = conector.proveedor_codigo === PROVEEDOR_SHEETS;
+  const cfg = conector.configuracion_publica ?? {};
+  const pushHabilitado = Boolean(cfg.push_habilitado);
+  const jobIdSync = syncMutation.data?.id_job || syncMutation.data?.job_id;
 
   return (
     <PageContainer>
@@ -179,16 +204,36 @@ const ConectorDetallePage: React.FC = () => {
       <Paper variant="outlined" sx={{ p: 2.5, mb: 3 }}>
         <SectionTitle>Configuración</SectionTitle>
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', rowGap: 0.75, columnGap: 3 }}>
-          {conector.configuracion_publica?.host && (
+          {cfg.host && (
             <>
               <Typography variant="body2" color="text.secondary">Host</Typography>
-              <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>{conector.configuracion_publica.host}</Typography>
+              <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>{cfg.host}</Typography>
             </>
           )}
-          {conector.configuracion_publica?.user && (
+          {cfg.user && (
             <>
               <Typography variant="body2" color="text.secondary">Usuario</Typography>
-              <Typography variant="body2">{conector.configuracion_publica.user}</Typography>
+              <Typography variant="body2">{cfg.user}</Typography>
+            </>
+          )}
+          {!esSheets && (
+            <>
+              <Typography variant="body2" color="text.secondary">Push outbound</Typography>
+              <Typography variant="body2">
+                {pushHabilitado ? `Habilitado (${cfg.push_modo_pago ?? 'borrador'})` : 'Deshabilitado'}
+              </Typography>
+              {cfg.write_user && (
+                <>
+                  <Typography variant="body2" color="text.secondary">Usuario escritura</Typography>
+                  <Typography variant="body2">{cfg.write_user}</Typography>
+                </>
+              )}
+              {cfg.diario_pagos_default_id != null && (
+                <>
+                  <Typography variant="body2" color="text.secondary">Diario pagos default</Typography>
+                  <Typography variant="body2">#{cfg.diario_pagos_default_id}</Typography>
+                </>
+              )}
             </>
           )}
           <Typography variant="body2" color="text.secondary">Intervalo sync</Typography>
@@ -201,7 +246,14 @@ const ConectorDetallePage: React.FC = () => {
           <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap mt={1.5} alignItems="center">
             <Typography variant="body2" color="text.secondary">Entidades:</Typography>
             {conector.entidades_activas.map(e => (
-              <Chip key={e} size="small" label={e} color="info" variant="outlined" />
+              <Chip
+                key={e}
+                size="small"
+                icon={e === 'gestiones_cobranza' ? <AssignmentOutlinedIcon /> : undefined}
+                label={etiquetaEntidad(e)}
+                color="info"
+                variant="outlined"
+              />
             ))}
           </Stack>
         )}
@@ -244,42 +296,111 @@ const ConectorDetallePage: React.FC = () => {
         </Paper>
       )}
 
-      {/* Disparar sync — solo conectores de entrada (no aplica a Google Sheets) */}
+      {/* Disparar sync — solo conectores de entrada/bidireccionales (no Google Sheets) */}
       {!esSheets && (
-      <Paper variant="outlined" sx={{ p: 2.5, mb: 3 }}>
-        <SectionTitle>Sincronización manual</SectionTitle>
-        <Stack direction="row" spacing={1}>
-          <TextField
-            select
-            size="small"
-            value={syncEntidad}
-            onChange={e => setSyncEntidad(e.target.value)}
-            sx={{ flex: 1 }}
-          >
-            <MenuItem value="">Seleccionar entidad…</MenuItem>
-            {conector.entidades_activas.map(e => (
-              <MenuItem key={e} value={e}>{e}</MenuItem>
-            ))}
-          </TextField>
-          <Button
-            variant="contained"
-            disabled={!syncEntidad || syncMutation.isPending}
-            onClick={() => syncMutation.mutate()}
-          >
-            {syncMutation.isPending ? 'Iniciando…' : 'Sincronizar'}
-          </Button>
-        </Stack>
-        {syncMutation.isSuccess && syncMutation.data?.job_id && (
-          <Typography variant="caption" color="success.main" sx={{ display: 'block', mt: 1 }}>
-            Job iniciado — {syncMutation.data.mensaje}
+        <Paper variant="outlined" sx={{ p: 2.5, mb: 3 }}>
+          <SectionTitle>Sincronización manual</SectionTitle>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+            <TextField
+              select
+              size="small"
+              label="Entidad"
+              value={syncEntidad}
+              onChange={e => setSyncEntidad(e.target.value)}
+              sx={{ flex: 1 }}
+            >
+              <MenuItem value="">Seleccionar entidad…</MenuItem>
+              {conector.entidades_activas.map(e => (
+                <MenuItem key={e} value={e}>
+                  {e === 'gestiones_cobranza' && <AssignmentOutlinedIcon fontSize="small" sx={{ mr: 1, verticalAlign: 'middle' }} />}
+                  {etiquetaEntidad(e)}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              select
+              size="small"
+              label="Dirección"
+              value={syncDireccion}
+              onChange={e => setSyncDireccion(e.target.value as SyncDireccion)}
+              sx={{ minWidth: 220 }}
+            >
+              <MenuItem value="inbound">Importación (Externo → Omni)</MenuItem>
+              <MenuItem value="outbound" disabled={!pushHabilitado}>
+                Exportación (Omni → Externo)
+              </MenuItem>
+              <MenuItem value="bidireccional" disabled={!pushHabilitado}>
+                <SyncAltOutlinedIcon fontSize="small" sx={{ mr: 0.75, verticalAlign: 'middle' }} />
+                Bidireccional
+              </MenuItem>
+            </TextField>
+            <Button
+              variant="contained"
+              disabled={!syncEntidad || syncMutation.isPending}
+              onClick={() => syncMutation.mutate()}
+            >
+              {syncMutation.isPending ? 'Iniciando…' : 'Sincronizar'}
+            </Button>
+          </Stack>
+          {!pushHabilitado && (
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+              Para usar direcciones outbound o bidireccional, habilita Push outbound en Editar.
+            </Typography>
+          )}
+          {syncMutation.isSuccess && jobIdSync && (
+            <Typography variant="caption" color="success.main" sx={{ display: 'block', mt: 1 }}>
+              Job iniciado ({jobIdSync}){syncMutation.data?.mensaje ? ` — ${syncMutation.data.mensaje}` : ''}
+            </Typography>
+          )}
+          {syncMutation.isError && (
+            <Typography variant="caption" color="error.main" sx={{ display: 'block', mt: 1 }}>
+              Error: {(syncMutation.error as Error).message}
+            </Typography>
+          )}
+        </Paper>
+      )}
+
+      {/* Acción rápida Push Cobranza cuando push_habilitado=true */}
+      {!esSheets && pushHabilitado && (
+        <Paper variant="outlined" sx={{ p: 2.5, mb: 3 }}>
+          <SectionTitle>Push Cobranza (Omni → {conector.proveedor_nombre})</SectionTitle>
+          <Typography variant="body2" color="text.secondary" mb={1.5}>
+            Envía pagos y gestiones de cobranza registrados en Omni hacia {conector.proveedor_nombre} de forma idempotente.
           </Typography>
-        )}
-        {syncMutation.isError && (
-          <Typography variant="caption" color="error.main" sx={{ display: 'block', mt: 1 }}>
-            Error: {(syncMutation.error as Error).message}
-          </Typography>
-        )}
-      </Paper>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }}>
+            <TextField
+              select
+              size="small"
+              label="Alcance cobranza"
+              value={pushTipo}
+              onChange={e => setPushTipo(e.target.value as 'todos' | 'pagos' | 'gestiones_cobranza')}
+              sx={{ minWidth: 240 }}
+            >
+              <MenuItem value="todos">Pagos y Gestiones de Cobranza</MenuItem>
+              <MenuItem value="pagos">Solo Pagos</MenuItem>
+              <MenuItem value="gestiones_cobranza">Solo Gestiones de Cobranza</MenuItem>
+            </TextField>
+            <Button
+              variant="contained"
+              color="secondary"
+              startIcon={<SendOutlinedIcon />}
+              disabled={pushCobranzaMutation.isPending}
+              onClick={() => pushCobranzaMutation.mutate({ tipo: pushTipo })}
+            >
+              {pushCobranzaMutation.isPending ? 'Enviando…' : 'Push Cobranza'}
+            </Button>
+          </Stack>
+          {pushCobranzaMutation.isSuccess && (
+            <Typography variant="caption" color="success.main" sx={{ display: 'block', mt: 1 }}>
+              {pushCobranzaMutation.data.mensaje}
+            </Typography>
+          )}
+          {pushCobranzaMutation.isError && (
+            <Typography variant="caption" color="error.main" sx={{ display: 'block', mt: 1 }}>
+              Error: {(pushCobranzaMutation.error as Error).message}
+            </Typography>
+          )}
+        </Paper>
       )}
 
       {/* Jobs recientes */}

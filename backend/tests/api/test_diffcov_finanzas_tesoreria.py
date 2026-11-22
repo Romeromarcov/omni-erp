@@ -22,6 +22,7 @@ Nota CTF-015.1: las líneas del flujo de transferencia (antes 152-159,
 documentadas como no-cubribles por el AttributeError fosilizado) quedaron
 cubiertas al reparar el endpoint — ver TestSesionCajaTransferirEntreCajas.
 """
+
 import datetime
 import uuid
 from decimal import Decimal
@@ -102,9 +103,7 @@ class TestSesionCajaCerrarValidaciones:
         sesion_abierta.refresh_from_db()
         assert sesion_abierta.estado == "ABIERTA"
 
-    def test_error_no_de_negocio_devuelve_400_generico(
-        self, client_a, sesion_abierta, caja_fisica_a
-    ):
+    def test_error_no_de_negocio_devuelve_400_generico(self, client_a, sesion_abierta, caja_fisica_a):
         """views.py:127-129 — excepción NO-ValueError durante el cierre
         (desborde numérico al persistir el corte) → 400 genérico sin detalles
         internos, y nada queda persistido."""
@@ -167,9 +166,7 @@ class TestSesionCajaTransferirEntreCajas:
         assert caja_gerencia_a.saldo_actual == Decimal("39.50")
         assert caja_virtual_a.saldo_actual == Decimal("10.50")
 
-    def test_caja_destino_inexistente_400_sin_efectos(
-        self, client_a, sesion_abierta, caja_gerencia_a
-    ):
+    def test_caja_destino_inexistente_400_sin_efectos(self, client_a, sesion_abierta, caja_gerencia_a):
         resp = client_a.post(
             URL_SESION_TRANSFERIR.format(sesion_abierta.id_sesion),
             {
@@ -232,9 +229,7 @@ class TestSesionCajaTransferirEntreCajas:
         assert resp.status_code == 400
         assert resp.data["error"] == "Caja origen o destino no pertenece a la sesión."
 
-    def test_monto_invalido_400_mensaje_de_negocio(
-        self, client_a, sesion_abierta, caja_virtual_a, caja_gerencia_a
-    ):
+    def test_monto_invalido_400_mensaje_de_negocio(self, client_a, sesion_abierta, caja_virtual_a, caja_gerencia_a):
         """Rama ValueError del helper: monto no numérico → 400 con mensaje de
         negocio, sin detalles internos y sin efectos en BD."""
         resp = client_a.post(
@@ -250,9 +245,7 @@ class TestSesionCajaTransferirEntreCajas:
         assert resp.data["error"] == "El monto de la transferencia no es un número válido."
         assert MovimientoCajaBanco.objects.count() == 0
 
-    def test_saldo_insuficiente_400_sin_efectos(
-        self, client_a, sesion_abierta, caja_virtual_a, caja_gerencia_a
-    ):
+    def test_saldo_insuficiente_400_sin_efectos(self, client_a, sesion_abierta, caja_virtual_a, caja_gerencia_a):
         resp = client_a.post(
             URL_SESION_TRANSFERIR.format(sesion_abierta.id_sesion),
             {
@@ -283,9 +276,7 @@ class TestSesionCajaFisicaCreacion:
     def caja_fisica_b(self, empresa_b):
         from apps.finanzas.models import CajaFisica
 
-        return CajaFisica.objects.create(
-            empresa=empresa_b, nombre="Caja B", identificador_dispositivo="dev-b-sesion"
-        )
+        return CajaFisica.objects.create(empresa=empresa_b, nombre="Caja B", identificador_dispositivo="dev-b-sesion")
 
     def test_creacion_feliz_201_con_sesion_abierta(self, client_a, caja_fisica_a, user_a, empresa_a):
         resp = client_a.post(
@@ -310,9 +301,7 @@ class TestSesionCajaFisicaCreacion:
     def test_sin_caja_fisica_principal_400(self, client_a):
         resp = client_a.post(URL_SESIONES, {}, format="json")
         assert resp.status_code == 400
-        assert resp.data["caja_fisica_principal"] == (
-            "Debe especificar la caja física para abrir la sesión"
-        )
+        assert resp.data["caja_fisica_principal"] == ("Debe especificar la caja física para abrir la sesión")
         assert SesionCajaFisica.objects.count() == 0
 
     def test_caja_de_otra_empresa_400_sin_filtrar_existencia(self, client_a, caja_fisica_b):
@@ -328,18 +317,14 @@ class TestSesionCajaFisicaCreacion:
         assert SesionCajaFisica.objects.count() == 0
 
     def test_caja_inexistente_400(self, client_a, empresa_a):
-        resp = client_a.post(
-            URL_SESIONES, {"caja_fisica_principal": str(uuid.uuid4())}, format="json"
-        )
+        resp = client_a.post(URL_SESIONES, {"caja_fisica_principal": str(uuid.uuid4())}, format="json")
         assert resp.status_code == 400
         assert resp.data["caja_fisica_principal"] == "Caja física no encontrada o no válida"
         assert SesionCajaFisica.objects.count() == 0
 
     def test_caja_malformada_400_controlado(self, client_a, empresa_a):
         """Un id no-UUID no revienta en 500: ValidationError del lookup → 400."""
-        resp = client_a.post(
-            URL_SESIONES, {"caja_fisica_principal": "no-es-un-uuid"}, format="json"
-        )
+        resp = client_a.post(URL_SESIONES, {"caja_fisica_principal": "no-es-un-uuid"}, format="json")
         assert resp.status_code == 400
         assert resp.data["caja_fisica_principal"] == "Caja física no encontrada o no válida"
         assert SesionCajaFisica.objects.count() == 0
@@ -376,9 +361,7 @@ class TestCajaMetodoPagoOverrideScopeTenant:
         from apps.core.models import Sucursal
         from apps.finanzas.models import CajaFisica
 
-        sucursal_b = Sucursal.objects.create(
-            id_empresa=empresa_b, nombre="Sucursal B", codigo_sucursal="SB-OV"
-        )
+        sucursal_b = Sucursal.objects.create(id_empresa=empresa_b, nombre="Sucursal B", codigo_sucursal="SB-OV")
         caja_fisica_b = CajaFisica.objects.create(
             empresa=empresa_b, nombre="Caja B Override", identificador_dispositivo="dev-b-override"
         )
@@ -413,15 +396,11 @@ class TestCajaMetodoPagoOverrideScopeTenant:
             assert "no existe" in str(resp.data[campo][0])
         assert CajaMetodoPagoOverride.objects.count() == 0
 
-    def test_post_same_tenant_201_con_creado_por_del_request(
-        self, client_a, user_a, empresa_a, caja_fisica_a
-    ):
+    def test_post_same_tenant_201_con_creado_por_del_request(self, client_a, user_a, empresa_a, caja_fisica_a):
         from apps.core.models import Sucursal
         from apps.finanzas.models import CajaMetodoPagoOverride
 
-        sucursal_a = Sucursal.objects.create(
-            id_empresa=empresa_a, nombre="Sucursal A", codigo_sucursal="SA-OV"
-        )
+        sucursal_a = Sucursal.objects.create(id_empresa=empresa_a, nombre="Sucursal A", codigo_sucursal="SA-OV")
         metodo_a = MetodoPago.objects.create(
             nombre_metodo="Efectivo A Override", tipo_metodo="EFECTIVO", empresa=empresa_a
         )
@@ -503,9 +482,7 @@ class TestCajaFisicaCierreYSesion:
         sesion_abierta.refresh_from_db()
         assert sesion_abierta.estado == "ABIERTA"
 
-    def test_cerrar_sesion_error_no_de_negocio_400_controlado(
-        self, client_a, caja_fisica_a, sesion_abierta
-    ):
+    def test_cerrar_sesion_error_no_de_negocio_400_controlado(self, client_a, caja_fisica_a, sesion_abierta):
         """views.py:1194-1196 — excepción NO-ValueError al cerrar (desborde
         numérico) → 400 genérico; sesión y cortes intactos (rollback)."""
         resp = client_a.post(
@@ -529,9 +506,7 @@ class TestMetodoPagoEmpresaActivaSinEmpresa:
         negocio y nada creado (la empresa se inyecta SIEMPRE del usuario)."""
         from django.contrib.auth import get_user_model
 
-        user = get_user_model().objects.create_user(
-            username="sin_empresa_dc95", password="x12345678", is_active=True
-        )
+        user = get_user_model().objects.create_user(username="sin_empresa_dc95", password="x12345678", is_active=True)
         metodo = MetodoPago.objects.create(nombre_metodo="Pago Móvil DC95", tipo_metodo="ELECTRONICO")
         client = APIClient()
         client.force_authenticate(user=user)
@@ -617,9 +592,7 @@ def moneda_ves(db):
 
 @pytest.fixture
 def moneda_eur(db):
-    return Moneda.objects.create(
-        nombre="Euro", codigo_iso="EUR", simbolo="€", tipo_moneda="fiat", es_generica=True
-    )
+    return Moneda.objects.create(nombre="Euro", codigo_iso="EUR", simbolo="€", tipo_moneda="fiat", es_generica=True)
 
 
 @pytest.fixture
@@ -781,9 +754,7 @@ class TestConciliarAutomaticoPorReferencia:
     así que solo un interleaving real entre transacciones puede activarlas.
     """
 
-    def test_prioriza_referencia_exacta_sobre_fecha(
-        self, empresa_a, moneda_usd, metodo_efectivo
-    ):
+    def test_prioriza_referencia_exacta_sobre_fecha(self, empresa_a, moneda_usd, metodo_efectivo):
         from apps.tesoreria.services import conciliar_automatico
 
         cuenta = CuentaBancariaEmpresa.objects.create(
@@ -830,9 +801,9 @@ class TestConciliarAutomaticoPorReferencia:
         assert resultado == {"conciliados": 1, "sin_match": 0, "total_procesados": 1}
         mov.refresh_from_db()
         assert mov.estado == "CONCILIADO"
-        assert mov.id_pago_conciliado == correcto, (
-            "Debe ganar el pago con referencia exacta, no el más cercano por fecha"
-        )
+        assert (
+            mov.id_pago_conciliado == correcto
+        ), "Debe ganar el pago con referencia exacta, no el más cercano por fecha"
         senuelo.refresh_from_db()
         assert not senuelo.movimientos_bancarios_conciliados.exists()
 
@@ -935,9 +906,7 @@ class TestEmitirFacturaFiscalCxCPagada:
         total_fiscal = calcular_impuestos(Decimal("200.00"), empresa_a, moneda_usd)["total"]
         AbonoCxC.objects.create(cuenta_por_cobrar=cxc, monto=total_fiscal, usuario=user_a)
 
-        r = emitir_factura_fiscal(
-            nota, numero_control="DC95-C1", numero_factura="DC95-F1", moneda=moneda_usd
-        )
+        r = emitir_factura_fiscal(nota, numero_control="DC95-C1", numero_factura="DC95-F1", moneda=moneda_usd)
 
         cxc_final = r["cxc"]
         assert cxc_final.pk == cxc.pk, "Debe reutilizar la CxC del flujo (BUG-A4)"

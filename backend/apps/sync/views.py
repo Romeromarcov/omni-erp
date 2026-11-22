@@ -10,6 +10,7 @@ paso no tiene riesgo de pérdida de datos.
 Reglas: autenticado, aislado por empresa (R-CODE-1), Decimal serializado como
 string para no perder precisión (R-CODE-4).
 """
+
 from __future__ import annotations
 
 import datetime
@@ -24,6 +25,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core.exceptions import domain_error_response
 from apps.core.idempotency import idempotent
 from apps.core.viewsets import get_empresa_primaria, get_empresas_visible
 
@@ -55,8 +57,7 @@ class SyncPullView(APIView):
         entidad = SYNC_ENTITIES.get(nombre)
         if entidad is None:
             return Response(
-                {"error": f"Entidad no sincronizable: {nombre!r}.",
-                 "entidades": sorted(SYNC_ENTITIES)},
+                {"error": f"Entidad no sincronizable: {nombre!r}.", "entidades": sorted(SYNC_ENTITIES)},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -102,14 +103,16 @@ class SyncPullView(APIView):
         filas = filas[:limite]
         resultados = [{k: _jsonificar(v) for k, v in fila.items()} for fila in filas]
 
-        return Response({
-            "entity": nombre,
-            # Cursor autoritativo para el próximo pull (reloj del servidor).
-            "server_time": timezone.now().isoformat(),
-            "count": len(resultados),
-            "has_more": hay_mas,
-            "results": resultados,
-        })
+        return Response(
+            {
+                "entity": nombre,
+                # Cursor autoritativo para el próximo pull (reloj del servidor).
+                "server_time": timezone.now().isoformat(),
+                "count": len(resultados),
+                "has_more": hay_mas,
+                "results": resultados,
+            }
+        )
 
 
 class SyncPushVentasView(APIView):
@@ -130,8 +133,10 @@ class SyncPushVentasView(APIView):
         clave = request.META.get("HTTP_IDEMPOTENCY_KEY") or request.headers.get("Idempotency-Key")
         if not clave:
             return Response(
-                {"error": "Esta operación requiere la cabecera 'Idempotency-Key' "
-                          "(client_uuid de la venta) para no duplicar dinero."},
+                {
+                    "error": "Esta operación requiere la cabecera 'Idempotency-Key' "
+                    "(client_uuid de la venta) para no duplicar dinero."
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -147,6 +152,12 @@ class SyncPushVentasView(APIView):
         except VentaPosError as exc:
             # 4xx de validación → la clave de idempotencia NO se consume; el cajero
             # corrige y reenvía (ADR-012 §5: no es transitorio, no se reintenta en bucle).
-            return Response({"error": str(exc)}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+            codigo = getattr(exc, "codigo", None)
+            extra = {"codigo": codigo} if codigo else None
+            return domain_error_response(
+                exc,
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                extra=extra,
+            )
 
         return Response(resultado, status=status.HTTP_201_CREATED)

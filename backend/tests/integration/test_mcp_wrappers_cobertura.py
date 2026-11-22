@@ -12,6 +12,7 @@ Nota: el BUG de ``inventario_get_alertas_stock`` (FieldError por
 ``punto_reorden`` inexistente) fue corregido agregando el campo al modelo;
 ``TestInventarioAlertasStock`` ahora fija el comportamiento funcional.
 """
+
 import uuid
 from datetime import timedelta
 from decimal import Decimal
@@ -43,6 +44,7 @@ def _token(empresa, scopes, *, activo=True, expires_at=None, creado_por=None):
 
 # ── Fixtures locales ──────────────────────────────────────────────────────────
 
+
 @pytest.fixture
 def proveedor(db):
     return ConectorProveedor.objects.create(codigo="odoo-test", nombre="Odoo Test")
@@ -62,22 +64,21 @@ def conector_a(db, empresa_a, proveedor):
 @pytest.fixture
 def unidad(db, empresa_a):
     from apps.inventario.models import UnidadMedida
-    return UnidadMedida.objects.create(
-        id_empresa=empresa_a, nombre="Unidad", abreviatura="UN"
-    )
+
+    return UnidadMedida.objects.create(id_empresa=empresa_a, nombre="Unidad", abreviatura="UN")
 
 
 @pytest.fixture
 def categoria(db, empresa_a):
     from apps.inventario.models import CategoriaProducto
-    return CategoriaProducto.objects.create(
-        id_empresa=empresa_a, nombre_categoria="Cat MCP"
-    )
+
+    return CategoriaProducto.objects.create(id_empresa=empresa_a, nombre_categoria="Cat MCP")
 
 
 @pytest.fixture
 def producto_a(db, empresa_a, unidad, categoria, moneda_usd):
     from apps.inventario.models import Producto
+
     return Producto.objects.create(
         id_empresa=empresa_a,
         nombre_producto="Aceite MCP 10W-40",
@@ -92,9 +93,8 @@ def producto_a(db, empresa_a, unidad, categoria, moneda_usd):
 @pytest.fixture
 def almacen_a(db, empresa_a):
     from apps.almacenes.models import Almacen
-    return Almacen.objects.create(
-        id_empresa=empresa_a, nombre_almacen="Principal MCP", codigo_almacen="ALM-MCP"
-    )
+
+    return Almacen.objects.create(id_empresa=empresa_a, nombre_almacen="Principal MCP", codigo_almacen="ALM-MCP")
 
 
 # ═══════════════════════════════ integration_hub.mcp ═════════════════════════
@@ -103,13 +103,9 @@ def almacen_a(db, empresa_a):
 class TestListarConectores:
     def test_lista_solo_activos_de_la_empresa(self, empresa_a, empresa_b, proveedor, conector_a):
         # Inactivo (no debe salir)
-        ConectorInstancia.objects.create(
-            id_empresa=empresa_a, id_proveedor=proveedor, nombre="Inactivo", activo=False
-        )
+        ConectorInstancia.objects.create(id_empresa=empresa_a, id_proveedor=proveedor, nombre="Inactivo", activo=False)
         # De otra empresa (no debe salir)
-        ConectorInstancia.objects.create(
-            id_empresa=empresa_b, id_proveedor=proveedor, nombre="Beta"
-        )
+        ConectorInstancia.objects.create(id_empresa=empresa_b, id_proveedor=proveedor, nombre="Beta")
 
         res = hub_mcp.listar_conectores(str(empresa_a.id_empresa))
         assert len(res) == 1
@@ -149,6 +145,7 @@ class TestTestConector:
         fake_connector.test_connection.return_value = resultado
 
         from apps.integration_hub.connectors.registry import registry
+
         with mock.patch.object(registry, "get_connector", return_value=fake_connector) as gc:
             res = hub_mcp.test_conector(str(empresa_a.id_empresa), str(conector_a.id_conector))
 
@@ -168,9 +165,7 @@ class TestSincronizar:
             "apps.integration_hub.tasks.ejecutar_job_sincronizacion.delay",
             return_value=fake_task,
         ):
-            res = hub_mcp.sincronizar(
-                str(empresa_a.id_empresa), str(conector_a.id_conector), "contactos"
-            )
+            res = hub_mcp.sincronizar(str(empresa_a.id_empresa), str(conector_a.id_conector), "contactos")
 
         assert res["success"] is True
         assert "contactos" in res["mensaje"]
@@ -185,9 +180,7 @@ class TestSincronizar:
             "apps.integration_hub.tasks.ejecutar_job_sincronizacion.delay",
             side_effect=ConnectionError("broker caído"),
         ):
-            res = hub_mcp.sincronizar(
-                str(empresa_a.id_empresa), str(conector_a.id_conector), "productos"
-            )
+            res = hub_mcp.sincronizar(str(empresa_a.id_empresa), str(conector_a.id_conector), "productos")
 
         assert res["success"] is False
         assert "procesador de tareas" in res["mensaje"]
@@ -259,6 +252,7 @@ class TestInventarioGetProductos:
 
     def test_filtro_buscar_y_activos_solo(self, empresa_a, producto_a, unidad, categoria, moneda_usd):
         from apps.inventario.models import Producto
+
         Producto.objects.create(
             id_empresa=empresa_a,
             nombre_producto="Grasa Inactiva",
@@ -275,30 +269,22 @@ class TestInventarioGetProductos:
         assert [p["sku"] for p in res] == ["MCP-001"]
 
         # activos_solo=False incluye ambos
-        res = inv_mcp.inventario_get_productos(
-            str(tok.token), str(empresa_a.id_empresa), activos_solo=False
-        )
+        res = inv_mcp.inventario_get_productos(str(tok.token), str(empresa_a.id_empresa), activos_solo=False)
         assert len(res) == 2
 
         # buscar filtra por nombre
-        res = inv_mcp.inventario_get_productos(
-            str(tok.token), str(empresa_a.id_empresa), buscar="aceite"
-        )
+        res = inv_mcp.inventario_get_productos(str(tok.token), str(empresa_a.id_empresa), buscar="aceite")
         assert len(res) == 1
         assert res[0]["nombre_producto"] == "Aceite MCP 10W-40"
 
         # buscar sin coincidencias
-        res = inv_mcp.inventario_get_productos(
-            str(tok.token), str(empresa_a.id_empresa), buscar="inexistente"
-        )
+        res = inv_mcp.inventario_get_productos(str(tok.token), str(empresa_a.id_empresa), buscar="inexistente")
         assert res == []
 
     def test_limit_se_acota_a_200(self, empresa_a, producto_a):
         tok = _token(empresa_a, ["inventario:read"])
         # No hay 200 productos; solo verificamos que limit gigante no rompe
-        res = inv_mcp.inventario_get_productos(
-            str(tok.token), str(empresa_a.id_empresa), limit=10_000
-        )
+        res = inv_mcp.inventario_get_productos(str(tok.token), str(empresa_a.id_empresa), limit=10_000)
         assert len(res) == 1
 
 
@@ -319,9 +305,7 @@ class TestInventarioStockResumen:
             cantidad_disponible=Decimal("100.0000"),
             cantidad_comprometida=Decimal("30.0000"),
         )
-        otro = Almacen.objects.create(
-            id_empresa=empresa_a, nombre_almacen="Secundario", codigo_almacen="ALM-2"
-        )
+        otro = Almacen.objects.create(id_empresa=empresa_a, nombre_almacen="Secundario", codigo_almacen="ALM-2")
         StockActual.objects.create(
             id_empresa=empresa_a,
             id_producto=producto_a,
@@ -352,9 +336,7 @@ class TestInventarioAlertasStock:
     cuando ``Producto`` no definía ese campo (FieldError en cada ejecución).
     El campo ``punto_reorden`` ya existe en el modelo y la herramienta funciona."""
 
-    def test_alerta_cuando_stock_bajo_punto_reorden(
-        self, empresa_a, producto_a, almacen_a
-    ):
+    def test_alerta_cuando_stock_bajo_punto_reorden(self, empresa_a, producto_a, almacen_a):
         from apps.inventario.models import StockActual
 
         producto_a.punto_reorden = Decimal("10.0000")
@@ -421,6 +403,8 @@ class TestMcpToolsRegistro:
             "inventario_get_productos",
             "inventario_get_stock_resumen",
             "inventario_get_alertas_stock",
+            "inventario_evaluar_reabastecimiento",
+            "inventario_consultar_lotes",
         }
         assert all(t["scope"] == "inventario:read" for t in inv_mcp.MCP_TOOLS)
 

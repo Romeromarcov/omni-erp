@@ -35,6 +35,8 @@ del proveedor sigue viniendo del entorno, p. ej. ``ANTHROPIC_API_KEY``):
     LLM_MAX_RETRIES      Reintentos con backoff exponencial del SDK (default: 2).
     LLM_CB_UMBRAL        Fallos consecutivos que abren el circuito (default: 5).
     LLM_CB_VENTANA       Segundos que el circuito permanece abierto (default: 60).
+    LLM_PRICING_JSON     Overrides de tarifas USD por 1M de tokens
+                         (ej. ``{"modelo": {"input": "3.00", "output": "15.00"}}``).
 
 Los defaults de modelo son los IDs que ya usaba el código antes del gateway.
 Si el modelo principal y el alterno coinciden (p. ej. uso "chat" con el
@@ -65,6 +67,7 @@ Registro de consumo por tenant (P2-3 básico):
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import sys
@@ -72,6 +75,7 @@ import threading
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass, field
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from typing import Any, Callable, Optional
 
 logger = logging.getLogger("omni.llm_gateway")
@@ -81,8 +85,8 @@ logger = logging.getLogger("omni.llm_gateway")
 PROVEEDOR_ANTHROPIC = "anthropic"
 
 #: Usos conocidos: cada uno resuelve su modelo principal desde una env distinta.
-USO_AGENTE = "agente"      # agentes shadow (clasificador, cobranza, reorden…)
-USO_CHAT = "chat"          # asistente conversacional (SSE)
+USO_AGENTE = "agente"  # agentes shadow (clasificador, cobranza, reorden…)
+USO_CHAT = "chat"  # asistente conversacional (SSE)
 USO_ANALISIS = "analisis"  # análisis profundos (agente CxC)
 
 _MODELOS_DEFAULT = {
@@ -147,6 +151,99 @@ def modelo_fallback() -> str:
     return os.environ.get("LLM_MODEL_FALLBACK") or _MODELO_FALLBACK_DEFAULT
 
 
+# ── Tarifas y cálculo de costo USD (P2-3) ─────────────────────────────────────
+
+_MILLON = Decimal("1000000")
+_COSTO_QUANT = Decimal("0.000001")
+
+#: Tarifas por defecto en USD por cada 1,000,000 de tokens (entrada / salida).
+#: Todo ID de modelo Anthropic vive exclusivamente en este módulo (guardia de superficie).
+DEFAULT_PRICING_PER_MILLION_USD: dict[str, dict[str, Decimal]] = {
+    "claude-haiku-4-5-20251001": {"input": Decimal("1.00"), "output": Decimal("5.00")},
+    "claude-sonnet-4-6": {"input": Decimal("3.00"), "output": Decimal("15.00")},
+    "claude-opus-4-5": {"input": Decimal("5.00"), "output": Decimal("25.00")},
+    # Familias (match por prefijo cuando se configuran snapshots nuevos por env)
+    "claude-haiku": {"input": Decimal("1.00"), "output": Decimal("5.00")},
+    "claude-sonnet": {"input": Decimal("3.00"), "output": Decimal("15.00")},
+    "claude-opus": {"input": Decimal("5.00"), "output": Decimal("25.00")},
+    "default": {"input": Decimal("3.00"), "output": Decimal("15.00")},
+}
+
+
+def _parse_decimal_tarifa(valor: Any) -> Decimal | None:
+    if isinstance(valor, bool):
+        return None
+    try:
+        d = Decimal(str(valor))
+    except (InvalidOperation, TypeError, ValueError):
+        return None
+    if not d.is_finite() or d < 0:
+        return None
+    return d
+
+
+def _cargar_tarifas_pricing() -> dict[str, dict[str, Decimal]]:
+    """Combina ``DEFAULT_PRICING_PER_MILLION_USD`` con overrides de ``LLM_PRICING_JSON``."""
+    tabla = {k.strip().lower(): dict(v) for k, v in DEFAULT_PRICING_PER_MILLION_USD.items()}
+    raw = (os.environ.get("LLM_PRICING_JSON") or "").strip()
+    if not raw:
+        return tabla
+    try:
+        data = json.loads(raw)
+    except (TypeError, ValueError):
+        logger.warning("LLM_PRICING_JSON inválido; usando tarifas por defecto")
+        return tabla
+    if not isinstance(data, dict):
+        logger.warning("LLM_PRICING_JSON debe ser un objeto JSON; usando tarifas por defecto")
+        return tabla
+
+    for modelo_key, entrada in data.items():
+        if not isinstance(modelo_key, str) or not modelo_key.strip() or not isinstance(entrada, dict):
+            continue
+        t_in = _parse_decimal_tarifa(entrada.get("input"))
+        t_out = _parse_decimal_tarifa(entrada.get("output"))
+        if t_in is None or t_out is None:
+            logger.warning("Tarifa inválida en LLM_PRICING_JSON para '%s'; ignorada", modelo_key)
+            continue
+        tabla[modelo_key.strip().lower()] = {"input": t_in, "output": t_out}
+    return tabla
+
+
+def _tarifa_para_modelo(modelo: str) -> dict[str, Decimal]:
+    tabla = _cargar_tarifas_pricing()
+    clave = (modelo or "").strip().lower()
+    if clave and clave != "default" and clave in tabla:
+        return tabla[clave]
+
+    prefijos = [k for k in tabla if k != "default" and clave.startswith(k)]
+    if prefijos:
+        mejor = max(prefijos, key=len)
+        return tabla[mejor]
+
+    return tabla.get("default", DEFAULT_PRICING_PER_MILLION_USD["default"])
+
+
+def _tokens_no_negativos(valor: Any) -> int:
+    if isinstance(valor, bool):
+        return 0
+    return max(0, _entero(valor))
+
+
+def calcular_costo_estimado_usd(modelo: str, tokens_entrada: int, tokens_salida: int) -> Decimal:
+    """Calcula el costo estimado en USD con aritmética exacta ``Decimal`` (R-CODE-4).
+
+    Redondea a 6 decimales (``0.000001`` USD, ``ROUND_HALF_UP``). Acepta overrides
+    de tarifas vía ``LLM_PRICING_JSON`` en formato ``{"modelo": {"input": "X", "output": "Y"}}``
+    expresados en USD por millón de tokens.
+    """
+    t_in = _tokens_no_negativos(tokens_entrada)
+    t_out = _tokens_no_negativos(tokens_salida)
+    tarifa = _tarifa_para_modelo(modelo)
+    costo_in = (Decimal(t_in) * tarifa["input"]) / _MILLON
+    costo_out = (Decimal(t_out) * tarifa["output"]) / _MILLON
+    return (costo_in + costo_out).quantize(_COSTO_QUANT, rounding=ROUND_HALF_UP)
+
+
 # ── Excepción y resultado tipados ────────────────────────────────────────────
 
 
@@ -157,7 +254,9 @@ class LLMUnavailable(Exception):
     ``causa`` conserva la excepción original (la última de la cascada).
     """
 
-    def __init__(self, mensaje: str, *, proveedor: str = "", modelos: tuple | list = (), causa: Exception | None = None):
+    def __init__(
+        self, mensaje: str, *, proveedor: str = "", modelos: tuple | list = (), causa: Exception | None = None
+    ):
         super().__init__(mensaje)
         self.proveedor = proveedor
         self.modelos = list(modelos)
@@ -266,6 +365,7 @@ class _CircuitBreaker:
             return None
         try:
             from django.core.cache import cache  # noqa: PLC0415 — perezoso: no exigir settings al importar
+
             return cache
         except Exception:  # noqa: BLE001 — sin cache utilizable → memoria local
             return None
@@ -334,7 +434,9 @@ class _CircuitBreaker:
             estado["abierto_hasta"] = self._reloj() + self._ventana()
             logger.warning(
                 "Circuito LLM ABIERTO | proveedor=%s | fallos_consecutivos=%d | reintento_en=%.0fs",
-                clave, fallos, self._ventana(),
+                clave,
+                fallos,
+                self._ventana(),
             )
             self._guardar(clave, estado)
 
@@ -378,7 +480,7 @@ def resetear_circuito() -> None:
 #: Si se asigna un callable, recibe por cada llamada un dict:
 #: {proveedor, uso, modelo, empresa_id, tokens_entrada, tokens_salida, latencia_ms}.
 #: Pensado para que P2-3 persista consumo por tenant sin tocar el gateway.
-registrar_consumo_hook: Optional[Callable[[dict], None]] = None
+registrar_consumo_hook: Optional[Callable[[dict[str, Any]], Any]] = None
 
 
 # ── Stream envuelto ──────────────────────────────────────────────────────────
@@ -465,9 +567,7 @@ class LLMGateway:
         if self._client is not None:
             return self._client
         if self.proveedor != PROVEEDOR_ANTHROPIC:
-            raise LLMUnavailable(
-                f"Proveedor LLM no soportado: {self.proveedor}", proveedor=self.proveedor
-            )
+            raise LLMUnavailable(f"Proveedor LLM no soportado: {self.proveedor}", proveedor=self.proveedor)
         sdk = _sdk()
         if sdk is None:
             raise LLMUnavailable("SDK de anthropic no instalado", proveedor=self.proveedor)
@@ -521,7 +621,9 @@ class LLMGateway:
         # Solo el tipo del error: el mensaje puede arrastrar payload (R-CODE-8).
         logger.warning(
             "llm_fallo | proveedor=%s | modelo=%s | error=%s",
-            self.proveedor, modelo, type(exc).__name__,
+            self.proveedor,
+            modelo,
+            type(exc).__name__,
         )
 
     # ── API pública ───────────────────────────────────────────────────────────
@@ -579,15 +681,12 @@ class LLMGateway:
                 content=_contenido_de(respuesta),
             )
             if indice > 0:
-                logger.warning(
-                    "llm_fallback_ok | proveedor=%s | modelo_alterno=%s", self.proveedor, modelo
-                )
+                logger.warning("llm_fallback_ok | proveedor=%s | modelo_alterno=%s", self.proveedor, modelo)
             self._registrar_consumo(resultado, empresa=empresa, uso=uso)
             return resultado
 
         raise LLMUnavailable(
-            f"Proveedor LLM no disponible ({self.proveedor}); "
-            f"modelos intentados: {', '.join(modelos)}",
+            f"Proveedor LLM no disponible ({self.proveedor}); " f"modelos intentados: {', '.join(modelos)}",
             proveedor=self.proveedor,
             modelos=modelos,
             causa=ultima_exc,
@@ -636,9 +735,7 @@ class LLMGateway:
 
             envuelto = _LLMStream(interno, model=modelo, provider=self.proveedor)
             if indice > 0:
-                logger.warning(
-                    "llm_fallback_ok | proveedor=%s | modelo_alterno=%s", self.proveedor, modelo
-                )
+                logger.warning("llm_fallback_ok | proveedor=%s | modelo_alterno=%s", self.proveedor, modelo)
             try:
                 yield envuelto
             except BaseException:
@@ -652,8 +749,7 @@ class LLMGateway:
             return
 
         raise LLMUnavailable(
-            f"Proveedor LLM no disponible ({self.proveedor}); "
-            f"modelos intentados: {', '.join(modelos)}",
+            f"Proveedor LLM no disponible ({self.proveedor}); " f"modelos intentados: {', '.join(modelos)}",
             proveedor=self.proveedor,
             modelos=modelos,
             causa=ultima_exc,
@@ -681,8 +777,7 @@ class LLMGateway:
     def _registrar_consumo(self, resultado: LLMResult, *, empresa: Any, uso: str) -> None:
         empresa_pk = _empresa_pk(empresa)
         logger.info(
-            "llm_consumo | proveedor=%s | uso=%s | modelo=%s | empresa=%s | "
-            "tokens_in=%d | tokens_out=%d | ms=%d",
+            "llm_consumo | proveedor=%s | uso=%s | modelo=%s | empresa=%s | " "tokens_in=%d | tokens_out=%d | ms=%d",
             resultado.provider,
             uso,
             resultado.model,
@@ -706,7 +801,7 @@ class LLMGateway:
                     "latencia_ms": resultado.latencia_ms,
                 }
             )
-        except Exception:  # noqa: BLE001 — el hook jamás tumba la llamada LLM
+        except Exception:  # el hook jamás tumba la llamada LLM
             logger.exception("registrar_consumo_hook falló; el consumo quedó solo en logs")
 
 

@@ -1,7 +1,8 @@
 """ViewSets para Fraccionamiento (feature-flagged)."""
+
 from django.db import transaction
 from apps.core.serializer_mixins import TenantFKScopeMixin
-from rest_framework import status, viewsets
+from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -13,16 +14,12 @@ from apps.core.viewsets import get_empresas_visible
 
 def _fraccionamiento_enabled(empresa) -> bool:
     """Verifica si el módulo de fraccionamiento está habilitado para el tenant."""
-    from apps.configuracion_motor.models import ParametroSistema
-    try:
-        param = ParametroSistema.objects.get(
-            id_empresa=empresa,
-            codigo_parametro="cxc.fraccionamiento.enabled",
-            activo=True,
-        )
-        return param.valor_parametro.strip().lower() in ("true", "1", "yes")
-    except ParametroSistema.DoesNotExist:
+    if empresa is None:
         return False
+    from apps.configuracion_motor.services import obtener_parametro
+
+    valor = obtener_parametro("cxc.fraccionamiento.enabled", empresa=empresa)
+    return (valor or "").lower() in ("true", "1", "yes")
 
 
 class LoteFraccionadoViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
@@ -44,6 +41,7 @@ class LoteFraccionadoViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
         empresa = get_empresas_visible(self.request.user).first()
         if not _fraccionamiento_enabled(empresa):
             from rest_framework.exceptions import PermissionDenied
+
             raise PermissionDenied("Módulo de fraccionamiento no habilitado.")
         lote = serializer.save(empresa=empresa)
         # Inicializar cantidad_actual = cantidad_inicial
@@ -60,15 +58,20 @@ class VentaFraccionadaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     serializer_class = VentaFraccionadaSerializer
 
     def get_queryset(self):
-        return VentaFraccionada.objects.filter(
-            empresa__in=get_empresas_visible(self.request.user),
-            deleted_at__isnull=True,
-        ).select_related("lote").order_by("-created_at")
+        return (
+            VentaFraccionada.objects.filter(
+                empresa__in=get_empresas_visible(self.request.user),
+                deleted_at__isnull=True,
+            )
+            .select_related("lote")
+            .order_by("-created_at")
+        )
 
     def perform_create(self, serializer):
         empresa = get_empresas_visible(self.request.user).first()
         if not _fraccionamiento_enabled(empresa):
             from rest_framework.exceptions import PermissionDenied
+
             raise PermissionDenied("Módulo de fraccionamiento no habilitado.")
 
         # M-BUG-8: reservar stock al crear la venta pendiente. Las ventas
@@ -149,9 +152,11 @@ class VentaFraccionadaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
             deleted_at__isnull=True,
         ).aggregate(total=Sum("monto_total"))
 
-        return Response({
-            "lotes_activos": lotes_activos,
-            "ventas_mes": ventas_mes["count"] or 0,
-            "ingresos_mes": str(ventas_mes["total"] or 0),
-            "pendiente_cobro": str(pendiente_cobro["total"] or 0),
-        })
+        return Response(
+            {
+                "lotes_activos": lotes_activos,
+                "ventas_mes": ventas_mes["count"] or 0,
+                "ingresos_mes": str(ventas_mes["total"] or 0),
+                "pendiente_cobro": str(pendiente_cobro["total"] or 0),
+            }
+        )

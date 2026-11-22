@@ -60,8 +60,7 @@ def _lock(pago: "PagoContribucionParafiscal") -> "PagoContribucionParafiscal":
 def _exigir_estado(pago: "PagoContribucionParafiscal", esperado: str, accion: str) -> None:
     if pago.estado != esperado:
         raise PagoParafiscalError(
-            f"No se puede {accion} un pago parafiscal en estado '{pago.estado}' "
-            f"(se requiere '{esperado}')."
+            f"No se puede {accion} un pago parafiscal en estado '{pago.estado}' " f"(se requiere '{esperado}')."
         )
 
 
@@ -84,9 +83,7 @@ def _validar_contenedor(pago, caja_virtual, cuenta_bancaria) -> None:
             )
     if cuenta_bancaria is not None:
         if str(cuenta_bancaria.id_empresa_id) != str(pago.id_empresa_id):
-            raise PagoParafiscalError(
-                "La cuenta bancaria no pertenece a la empresa del pago parafiscal."
-            )
+            raise PagoParafiscalError("La cuenta bancaria no pertenece a la empresa del pago parafiscal.")
         if not cuenta_bancaria.activo:
             raise PagoParafiscalError("La cuenta bancaria indicada está inactiva.")
         if str(cuenta_bancaria.id_moneda_id) != str(pago.id_moneda_id):
@@ -183,8 +180,7 @@ def pagar_contribucion_parafiscal(
             id_metodo_pago=metodo_pago,
             referencia=referencia_final or None,
             observaciones=(
-                f"Pago parafiscal {pago_parafiscal.contribucion.codigo} "
-                f"período {pago_parafiscal.periodo}"
+                f"Pago parafiscal {pago_parafiscal.contribucion.codigo} " f"período {pago_parafiscal.periodo}"
             ),
             id_caja_virtual=caja_virtual,
             id_cuenta_bancaria=cuenta_bancaria,
@@ -203,9 +199,7 @@ def pagar_contribucion_parafiscal(
     pago_parafiscal.referencia = referencia_final
     pago_parafiscal.fecha_pago = fecha_efectiva
     pago_parafiscal.id_pago = pago
-    pago_parafiscal.save(
-        update_fields=["estado", "referencia", "fecha_pago", "id_pago", "fecha_actualizacion"]
-    )
+    pago_parafiscal.save(update_fields=["estado", "referencia", "fecha_pago", "id_pago", "fecha_actualizacion"])
 
     # R-CODE-11: asiento en la MISMA transacción; si falla con contabilidad
     # activa, el Pago, el movimiento de caja y el cambio de estado se revierten.

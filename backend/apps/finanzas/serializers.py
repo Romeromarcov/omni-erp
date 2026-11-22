@@ -1,8 +1,14 @@
 from decimal import Decimal
+from typing import Any
 
 from rest_framework import serializers
 
 from apps.core.models import Sucursal
+from apps.core.serializer_mixins import (
+    empresa_efectiva_contexto,
+    empresas_visibles_contexto,
+    validar_fk_empresa,
+)
 
 # --- Sesión de Caja ---
 from .models import (
@@ -74,7 +80,11 @@ class MetodoPagoEmpresaActivaSerializer(serializers.ModelSerializer):
         read_only_fields = ["empresa"]
 
 
+from django.db import transaction
+from django.db.models import Q
 from rest_framework import serializers
+
+from apps.core.models import Empresa
 
 from .models import (
     CuentaBancariaEmpresa,
@@ -83,6 +93,7 @@ from .models import (
     MonedaEmpresaActiva,
     MovimientoCajaBanco,
     TasaCambio,
+    TipoTasaCambio,
     TransaccionFinanciera,
 )
 
@@ -165,10 +176,16 @@ class MonedaSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = self.context["request"].user if "request" in self.context else None
-        # Si no es superusuario, fuerza empresa y flags
+        # Si no es superusuario, fuerza empresa y flags (sin permitir empresa=None si no tiene empresas)
         if not getattr(user, "es_superusuario_omni", False):
-            empresas = user.empresas.all()
-            validated_data["empresa"] = empresas.first() if empresas.exists() else None
+            from rest_framework.exceptions import PermissionDenied
+
+            from apps.core.viewsets import get_empresas_visible
+
+            empresas = get_empresas_visible(user) if user is not None else None
+            if not empresas or not empresas.exists():
+                raise PermissionDenied("El usuario no tiene ninguna empresa visible asignada.")
+            validated_data["empresa"] = empresas.first()
             validated_data["es_generica"] = False
             validated_data["es_publica"] = False
         return super().create(validated_data)
@@ -183,10 +200,167 @@ class MonedaSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
 
+_TIPOS_TASA_LEGACY_VALIDOS = frozenset(
+    {"OFICIAL_BCV", "ESPECIAL_USUARIO", "PROMEDIO_MERCADO", "FIJA", "PERSONALIZADA"}
+)
+
+
+class TipoTasaCambioSerializer(serializers.ModelSerializer):
+    """Serializer para tipos de tasa de cambio extensibles por empresa o globales."""
+
+    id_empresa = serializers.PrimaryKeyRelatedField(
+        queryset=Empresa.objects.all(),
+        required=False,
+        allow_null=True,
+    )
+
+    class Meta:
+        model = TipoTasaCambio
+        fields = [
+            "id_tipo_tasa",
+            "id_empresa",
+            "codigo",
+            "nombre",
+            "descripcion",
+            "es_oficial_fiscal",
+            "prioridad",
+            "activo",
+            "fecha_creacion",
+            "fecha_actualizacion",
+        ]
+        read_only_fields = ("id_tipo_tasa", "fecha_creacion", "fecha_actualizacion")
+        validators = []
+
+    def validate_codigo(self, value: str) -> str:
+        codigo = (value or "").strip().upper()
+        if not codigo:
+            raise serializers.ValidationError("El código del tipo de tasa no puede estar vacío.")
+        return codigo
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        request = self.context.get("request")
+        user = getattr(request, "user", None) if request else None
+        es_super = bool(getattr(user, "es_superusuario_omni", False))
+        inst = self.instance if isinstance(self.instance, TipoTasaCambio) else None
+
+        if inst is not None and inst.id_empresa_id is None and not es_super:
+            raise serializers.ValidationError("No tiene permiso para modificar un tipo de tasa global del sistema.")
+
+        if not es_super and attrs.get("es_oficial_fiscal"):
+            raise serializers.ValidationError(
+                {"es_oficial_fiscal": "Solo un superusuario puede marcar un tipo de tasa como oficial/fiscal."}
+            )
+
+        if inst is not None:
+            empresa = inst.id_empresa
+            if es_super and "id_empresa" in attrs:
+                empresa = attrs["id_empresa"]
+        else:
+            if es_super:
+                empresa = attrs.get("id_empresa")
+            else:
+                from apps.core.viewsets import get_empresa_primaria
+
+                empresa = get_empresa_primaria(user) if user is not None else None
+                if empresa is None:
+                    raise serializers.ValidationError(
+                        {"id_empresa": "El usuario no tiene una empresa visible asignada."}
+                    )
+
+        codigo = attrs.get("codigo", inst.codigo if inst is not None else "")
+        codigo = (codigo or "").strip().upper()
+        if codigo:
+            qs = TipoTasaCambio.objects.filter(codigo=codigo, id_empresa=empresa)
+            if inst is not None:
+                qs = qs.exclude(pk=inst.pk)
+            if qs.exists():
+                raise serializers.ValidationError(
+                    {"codigo": f"Ya existe un tipo de tasa con el código '{codigo}' para este alcance."}
+                )
+        return attrs
+
+    def create(self, validated_data: dict[str, Any]) -> TipoTasaCambio:
+        request = self.context.get("request")
+        user = getattr(request, "user", None) if request else None
+        if not getattr(user, "es_superusuario_omni", False):
+            from apps.core.viewsets import get_empresa_primaria
+
+            empresa = get_empresa_primaria(user) if user is not None else None
+            if empresa is None:
+                raise serializers.ValidationError({"id_empresa": "El usuario no tiene una empresa visible asignada."})
+            validated_data["id_empresa"] = empresa
+        return super().create(validated_data)
+
+    def update(self, instance: TipoTasaCambio, validated_data: dict[str, Any]) -> TipoTasaCambio:
+        request = self.context.get("request")
+        user = getattr(request, "user", None) if request else None
+        if not getattr(user, "es_superusuario_omni", False):
+            validated_data.pop("id_empresa", None)
+        return super().update(instance, validated_data)
+
+
 class TasaCambioSerializer(serializers.ModelSerializer):
     moneda_origen_nombre = serializers.CharField(source="id_moneda_origen.nombre", read_only=True)
     moneda_destino_nombre = serializers.CharField(source="id_moneda_destino.nombre", read_only=True)
     usuario_registro_username = serializers.CharField(source="id_usuario_registro.username", read_only=True)
+    tipo_tasa_codigo = serializers.SerializerMethodField()
+    tipo_tasa_nombre = serializers.CharField(source="id_tipo_tasa.nombre", read_only=True)
+    tipo_tasa = serializers.ChoiceField(
+        choices=TasaCambio.TIPO_TASA_CHOICES,
+        required=False,
+        allow_blank=True,
+    )
+
+    def get_tipo_tasa_codigo(self, obj: TasaCambio) -> str:
+        if obj.id_tipo_tasa_id and obj.id_tipo_tasa is not None:
+            return obj.id_tipo_tasa.codigo
+        return obj.tipo_tasa
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        request = self.context.get("request")
+        user = getattr(request, "user", None) if request else None
+        inst = self.instance if isinstance(self.instance, TasaCambio) else None
+        tipo_obj = attrs.get("id_tipo_tasa", inst.id_tipo_tasa if inst is not None else None)
+        tasa_empresa = attrs.get("id_empresa", inst.id_empresa if inst is not None else None)
+
+        if tipo_obj is not None:
+            if user is not None and not getattr(user, "es_superusuario_omni", False):
+                from apps.core.viewsets import get_empresas_visible
+
+                if tipo_obj.id_empresa_id is not None and tipo_obj.id_empresa_id not in set(
+                    get_empresas_visible(user).values_list("id_empresa", flat=True)
+                ):
+                    raise serializers.ValidationError({"id_tipo_tasa": "El tipo de tasa no pertenece a su empresa."})
+            if (
+                tasa_empresa is not None
+                and tipo_obj.id_empresa_id is not None
+                and tipo_obj.id_empresa_id != tasa_empresa.pk
+            ):
+                raise serializers.ValidationError(
+                    {"id_tipo_tasa": "El tipo de tasa no pertenece a la empresa de la tasa de cambio."}
+                )
+
+        tipo_legacy_presente = "tipo_tasa" in attrs
+        tipo_legacy = attrs.get("tipo_tasa")
+        if tipo_obj is not None:
+            if tipo_legacy == "OFICIAL_BCV" and not tipo_obj.es_oficial_fiscal:
+                raise serializers.ValidationError(
+                    {"tipo_tasa": "Un tipo de tasa no oficial/fiscal no puede marcarse como OFICIAL_BCV."}
+                )
+            if not tipo_legacy:
+                codigo = (tipo_obj.codigo or "").strip().upper()
+                if codigo == "OFICIAL_BCV" and tipo_obj.es_oficial_fiscal:
+                    attrs["tipo_tasa"] = "OFICIAL_BCV"
+                elif codigo in _TIPOS_TASA_LEGACY_VALIDOS and codigo != "OFICIAL_BCV":
+                    attrs["tipo_tasa"] = codigo
+                else:
+                    attrs["tipo_tasa"] = "PERSONALIZADA"
+        else:
+            if tipo_legacy_presente and not tipo_legacy:
+                raise serializers.ValidationError({"tipo_tasa": "Debe especificar tipo_tasa o id_tipo_tasa."})
+            if inst is None and not tipo_legacy:
+                raise serializers.ValidationError({"tipo_tasa": "Debe especificar tipo_tasa o id_tipo_tasa."})
+        return attrs
 
     class Meta:
         model = TasaCambio
@@ -196,6 +370,9 @@ class TasaCambioSerializer(serializers.ModelSerializer):
             "moneda_origen_nombre",
             "moneda_destino_nombre",
             "usuario_registro_username",
+            "id_tipo_tasa",
+            "tipo_tasa_codigo",
+            "tipo_tasa_nombre",
             "tipo_tasa",
             "valor_tasa",
             "fecha_tasa",
@@ -210,7 +387,23 @@ class TasaCambioSerializer(serializers.ModelSerializer):
             "id_moneda_destino",
             "id_usuario_registro",
         ]
-        read_only_fields = ("moneda_origen_nombre", "moneda_destino_nombre", "usuario_registro_username")
+        read_only_fields = (
+            "moneda_origen_nombre",
+            "moneda_destino_nombre",
+            "usuario_registro_username",
+            "tipo_tasa_codigo",
+            "tipo_tasa_nombre",
+        )
+
+
+class EquivalenciasTrimonetariasInputSerializer(serializers.Serializer):
+    """Parámetros de entrada para el cálculo trimonetario simultáneo."""
+
+    monto = serializers.DecimalField(max_digits=18, decimal_places=4, min_value=Decimal("0"))
+    moneda_origen = serializers.CharField(max_length=40)
+    fecha = serializers.DateField(required=False, allow_null=True, default=None)
+    codigo_tipo_tasa_base = serializers.CharField(max_length=40, required=False, allow_blank=True, default="")
+    codigo_tipo_tasa_referencia = serializers.CharField(max_length=40, required=False, allow_blank=True, default="")
 
 
 from rest_framework.reverse import reverse
@@ -326,12 +519,19 @@ class MetodoPagoSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         request = self.context.get("request")
-        # Forzar empresa si no viene en el payload
-        if request and not validated_data.get("empresa"):
-            user = request.user
-            empresas = getattr(user, "empresas", None)
-            if empresas and empresas.exists():
-                validated_data["empresa"] = empresas.first()
+        user = getattr(request, "user", None) if request else None
+        # Si no es superusuario, fuerza empresa visible (incluye subsidiarias) y flags privadas
+        if not getattr(user, "es_superusuario_omni", False):
+            from rest_framework.exceptions import PermissionDenied
+
+            from apps.core.viewsets import get_empresas_visible
+
+            empresas = get_empresas_visible(user) if user is not None else None
+            if not empresas or not empresas.exists():
+                raise PermissionDenied("El usuario no tiene ninguna empresa visible asignada.")
+            validated_data["empresa"] = empresas.first()
+            validated_data["es_generico"] = False
+            validated_data["es_publico"] = False
         instance = super().create(validated_data)
         # Logging para depuración
         import logging
@@ -354,12 +554,11 @@ class MetodoPagoSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         request = self.context.get("request")
-        # Forzar empresa si no viene en el payload
-        if request and not validated_data.get("empresa"):
-            user = request.user
-            empresas = getattr(user, "empresas", None)
-            if empresas and empresas.exists():
-                validated_data["empresa"] = empresas.first()
+        user = getattr(request, "user", None) if request else None
+        if not getattr(user, "es_superusuario_omni", False):
+            validated_data.pop("empresa", None)
+            validated_data.pop("es_generico", None)
+            validated_data.pop("es_publico", None)
         instance = super().update(instance, validated_data)
         import logging
 
@@ -401,9 +600,15 @@ class MetodoPagoSerializer(serializers.ModelSerializer):
             return s
 
         nombre_actual = normalizar(obj.nombre_metodo)
-        metodos_empresa = MetodoPago.objects.filter(empresa=id_empresa_actual, tipo_metodo=obj.tipo_metodo)
-        for mp in metodos_empresa:
-            nombre_db = normalizar(mp.nombre_metodo)
+        metodos_por_tipo = self.context.get("metodos_empresa_por_tipo")
+        if metodos_por_tipo is not None:
+            nombres_empresa = metodos_por_tipo.get(obj.tipo_metodo, ())
+        else:
+            nombres_empresa = MetodoPago.objects.filter(
+                empresa=id_empresa_actual, tipo_metodo=obj.tipo_metodo
+            ).values_list("nombre_metodo", flat=True)
+        for nombre_metodo_db in nombres_empresa:
+            nombre_db = normalizar(nombre_metodo_db)
             sim = ratio(nombre_actual, nombre_db)
             dist = Levenshtein.distance(nombre_actual, nombre_db)
             if sim >= 55 or dist <= 3 or nombre_actual in nombre_db or nombre_db in nombre_actual:
@@ -546,7 +751,7 @@ class TransaccionFinancieraSerializer(serializers.ModelSerializer):
             if empresas and empresas.exists():
                 validated_data["id_empresa"] = empresas.first()
         # Convertir id_moneda_transaccion, id_moneda_base y id_metodo_pago a instancias si vienen como UUID
-        from .models import Caja, CuentaBancariaEmpresa, MetodoPago, Moneda, MovimientoCajaBanco, TasaCambio
+        from .models import MetodoPago, Moneda, MovimientoCajaBanco, TasaCambio
 
         for moneda_field in ["id_moneda_transaccion", "id_moneda_base"]:
             moneda_value = validated_data.get(moneda_field)
@@ -659,7 +864,7 @@ class MovimientoCajaBancoSerializer(serializers.ModelSerializer):
 
 class CuentaBancariaEmpresaSerializer(serializers.ModelSerializer):
     moneda_codigo_iso = serializers.CharField(source="id_moneda.codigo_iso", read_only=True)
-    metodos_pago = serializers.PrimaryKeyRelatedField(queryset=MetodoPago.objects.all(), many=True)
+    metodos_pago = serializers.PrimaryKeyRelatedField(queryset=MetodoPago.objects.all(), many=True, required=False)
     monedas = serializers.PrimaryKeyRelatedField(queryset=Moneda.objects.all(), many=True, required=False)
 
     class Meta:
@@ -682,6 +887,92 @@ class CuentaBancariaEmpresaSerializer(serializers.ModelSerializer):
         read_only_fields = ["moneda_codigo_iso"]
         ref_name = "CuentaBancariaEmpresaFinanzas"  # evita colisión OpenAPI con banca_electronica
 
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        attrs = super().validate(attrs)
+        instance = self.instance if isinstance(self.instance, CuentaBancariaEmpresa) else None
+        if instance is not None and "id_empresa" in attrs:
+            nueva_emp = attrs["id_empresa"]
+            if nueva_emp is None or nueva_emp.pk != instance.id_empresa_id:
+                raise serializers.ValidationError(
+                    {"id_empresa": "No se puede cambiar la empresa de una cuenta bancaria existente."}
+                )
+
+        emp = attrs["id_empresa"] if "id_empresa" in attrs else getattr(instance, "id_empresa", None)
+        empresa_ref = str(emp.pk) if emp is not None else empresa_efectiva_contexto(self)
+        visibles = empresas_visibles_contexto(self)
+        if emp is not None and visibles is not None and str(emp.pk) not in visibles:
+            raise serializers.ValidationError({"id_empresa": "No tiene permisos sobre la empresa indicada."})
+
+        moneda = attrs["id_moneda"] if "id_moneda" in attrs else getattr(instance, "id_moneda", None)
+        if moneda is not None and not (
+            getattr(moneda, "es_generica", False)
+            or getattr(moneda, "es_publica", False)
+            or getattr(moneda, "empresa_id", None) is None
+        ):
+            validar_fk_empresa(
+                moneda,
+                "id_moneda",
+                empresa_ref,
+                visibles,
+                etiqueta="Moneda",
+                empresa_attr="empresa_id",
+            )
+
+        metodos = attrs.get("metodos_pago")
+        if metodos:
+            for metodo in metodos:
+                if not (
+                    getattr(metodo, "es_generico", False)
+                    or getattr(metodo, "es_publico", False)
+                    or getattr(metodo, "empresa_id", None) is None
+                ):
+                    validar_fk_empresa(
+                        metodo,
+                        "metodos_pago",
+                        empresa_ref,
+                        visibles,
+                        etiqueta="Método de pago",
+                        empresa_attr="empresa_id",
+                    )
+
+        monedas_extra = attrs.get("monedas")
+        if monedas_extra:
+            for mon in monedas_extra:
+                if not (
+                    getattr(mon, "es_generica", False)
+                    or getattr(mon, "es_publica", False)
+                    or getattr(mon, "empresa_id", None) is None
+                ):
+                    validar_fk_empresa(
+                        mon,
+                        "monedas",
+                        empresa_ref,
+                        visibles,
+                        etiqueta="Moneda",
+                        empresa_attr="empresa_id",
+                    )
+
+        if "numero_cuenta" in attrs:
+            numero = str(attrs["numero_cuenta"] or "").replace("\x00", "").strip()
+            if not numero:
+                raise serializers.ValidationError({"numero_cuenta": "El número de cuenta no puede estar vacío."})
+            if numero != attrs["numero_cuenta"]:
+                qs = CuentaBancariaEmpresa.objects.filter(numero_cuenta=numero)
+                if instance is not None:
+                    qs = qs.exclude(pk=instance.pk)
+                if qs.exists():
+                    raise serializers.ValidationError(
+                        {"numero_cuenta": "Ya existe una cuenta bancaria con este número."}
+                    )
+            attrs["numero_cuenta"] = numero
+
+        if "saldo_actual" in attrs and attrs["saldo_actual"] is not None:
+            saldo = attrs["saldo_actual"]
+            if isinstance(saldo, Decimal) and not saldo.is_finite():
+                raise serializers.ValidationError({"saldo_actual": "El saldo actual debe ser finito."})
+
+        return attrs
+
 
 class MonedaEmpresaActivaSerializer(serializers.ModelSerializer):
     empresa_nombre = serializers.CharField(source="empresa.nombre_comercial", read_only=True)
@@ -692,13 +983,13 @@ class MonedaEmpresaActivaSerializer(serializers.ModelSerializer):
     es_pais = serializers.SerializerMethodField()
 
     def get_es_base(self, obj):
-        # Lógica: la moneda base de la empresa es la que está marcada como base en core
-        # Suponiendo que Empresa tiene un campo moneda_base (ForeignKey a Moneda)
+        # Lógica: la moneda base de la empresa está en Empresa.id_moneda_base
         empresa = getattr(obj, "empresa", None)
         moneda = getattr(obj, "moneda", None)
-        if empresa and moneda:
-            return getattr(empresa, "moneda_base_id", None) == getattr(moneda, "id_moneda", None)
-        return False
+        if not (empresa and moneda):
+            return False
+        base_id = getattr(empresa, "id_moneda_base_id", None) or getattr(empresa, "moneda_base_id", None)
+        return base_id == getattr(moneda, "id_moneda", None)
 
     def get_es_pais(self, obj):
         # Lógica: la moneda país de la empresa está en Empresa.id_moneda_pais
@@ -713,30 +1004,98 @@ class MonedaEmpresaActivaSerializer(serializers.ModelSerializer):
             moneda_pais_id = getattr(moneda_pais, "id_moneda", None)
         return moneda_pais_id == getattr(moneda, "id_moneda", None)
 
-    def create(self, validated_data):
-        # Asignar empresa si no viene en el payload (opcional, según tu lógica)
-        request = self.context.get("request")
-        if request and not validated_data.get("empresa"):
-            user = request.user
-            empresas = getattr(user, "empresas", None)
-            if empresas and empresas.exists():
-                validated_data["empresa"] = empresas.first()
+    @staticmethod
+    def _limpiar_otra_referencia(instancia: MonedaEmpresaActiva) -> None:
+        if instancia.es_moneda_referencia and instancia.activa:
+            MonedaEmpresaActiva.objects.filter(
+                empresa=instancia.empresa,
+                es_moneda_referencia=True,
+                activa=True,
+            ).exclude(pk=instancia.pk).update(es_moneda_referencia=False)
 
-        # Obtener la instancia de Moneda usando el UUID recibido
+    def _resolver_moneda_visible(self, moneda_uuid, empresa):
+        from .models import Moneda
+
+        request = self.context.get("request")
+        user = getattr(request, "user", None) if request else None
+        qs = Moneda.objects.filter(id_moneda=moneda_uuid)
+        if user is not None and getattr(user, "is_authenticated", False):
+            if not getattr(user, "es_superusuario_omni", False):
+                from apps.core.viewsets import get_empresas_visible
+
+                qs = qs.filter(
+                    Q(es_generica=True)
+                    | Q(es_publica=True)
+                    | Q(empresa__isnull=True)
+                    | Q(empresa__in=get_empresas_visible(user))
+                )
+        elif empresa is not None:
+            qs = qs.filter(Q(es_generica=True) | Q(es_publica=True) | Q(empresa__isnull=True) | Q(empresa=empresa))
+        else:
+            qs = qs.filter(Q(es_generica=True) | Q(es_publica=True) | Q(empresa__isnull=True))
+
+        moneda = qs.first()
+        if moneda is None:
+            raise serializers.ValidationError({"moneda": "Moneda no encontrada"})
+        return moneda
+
+    def create(self, validated_data):
+        # Asignar empresa si no viene en el payload (usando empresa primaria del usuario)
+        request = self.context.get("request")
+        user = getattr(request, "user", None) if request else None
+        if not validated_data.get("empresa") and user is not None and getattr(user, "is_authenticated", False):
+            from apps.core.viewsets import get_empresa_primaria
+
+            primaria = get_empresa_primaria(user)
+            if primaria is not None:
+                validated_data["empresa"] = primaria
+
+        empresa = validated_data.get("empresa")
+        if empresa is None:
+            raise serializers.ValidationError({"empresa": "Debe especificar una empresa válida."})
+
+        # Obtener la instancia de Moneda visible usando el UUID recibido
         moneda_value = validated_data.pop("moneda", None)
         if isinstance(moneda_value, dict) and "id_moneda" in moneda_value:
             moneda_uuid = moneda_value["id_moneda"]
         else:
             moneda_uuid = moneda_value
         if moneda_uuid:
-            from .models import Moneda
+            validated_data["moneda"] = self._resolver_moneda_visible(moneda_uuid, empresa)
 
-            try:
-                validated_data["moneda"] = Moneda.objects.get(id_moneda=moneda_uuid)
-            except Moneda.DoesNotExist:
-                raise serializers.ValidationError({"moneda": "Moneda no encontrada"})
+        with transaction.atomic():
+            if validated_data.get("es_moneda_referencia") and validated_data.get("activa", True):
+                MonedaEmpresaActiva.objects.filter(
+                    empresa=empresa,
+                    es_moneda_referencia=True,
+                    activa=True,
+                ).update(es_moneda_referencia=False)
+            instancia = super().create(validated_data)
+            self._limpiar_otra_referencia(instancia)
+            return instancia
 
-        return super().create(validated_data)
+    def update(self, instance, validated_data):
+        target_empresa = validated_data.get("empresa", instance.empresa)
+        moneda_value = validated_data.pop("moneda", None)
+        if isinstance(moneda_value, dict) and "id_moneda" in moneda_value:
+            moneda_uuid = moneda_value["id_moneda"]
+        else:
+            moneda_uuid = moneda_value
+        if moneda_uuid:
+            validated_data["moneda"] = self._resolver_moneda_visible(moneda_uuid, target_empresa)
+
+        with transaction.atomic():
+            nuevo_ref = validated_data.get("es_moneda_referencia", instance.es_moneda_referencia)
+            nuevo_activa = validated_data.get("activa", instance.activa)
+            if nuevo_ref and nuevo_activa:
+                MonedaEmpresaActiva.objects.filter(
+                    empresa=target_empresa,
+                    es_moneda_referencia=True,
+                    activa=True,
+                ).exclude(pk=instance.pk).update(es_moneda_referencia=False)
+            instancia = super().update(instance, validated_data)
+            self._limpiar_otra_referencia(instancia)
+            return instancia
 
     class Meta:
         model = MonedaEmpresaActiva
@@ -748,6 +1107,7 @@ class MonedaEmpresaActivaSerializer(serializers.ModelSerializer):
             "moneda_codigo_iso",
             "moneda_nombre",
             "activa",
+            "es_moneda_referencia",
             "es_base",
             "es_pais",
         ]
@@ -758,6 +1118,7 @@ class MonedaEmpresaActivaSerializer(serializers.ModelSerializer):
             "es_base",
             "es_pais",
         ]
+        validators = []
 
 
 class CajaUsuarioSerializer(serializers.ModelSerializer):
@@ -1104,6 +1465,9 @@ class SesionDatafonoSerializer(serializers.ModelSerializer):
     cantidad_transacciones = serializers.SerializerMethodField()
 
     def get_cantidad_transacciones(self, obj):
+        anotado = getattr(obj, "_cantidad_transacciones", None)
+        if anotado is not None:
+            return anotado
         return obj.transacciones_datafono.count()
 
     class Meta:
@@ -1197,6 +1561,9 @@ class DepositoDatafonoSerializer(serializers.ModelSerializer):
 class PagoSerializer(serializers.ModelSerializer):
     # Campos de solo lectura para mostrar información relacionada
     empresa_nombre = serializers.CharField(source="id_empresa.nombre_comercial", read_only=True)
+    contacto_nombre = serializers.CharField(
+        source="id_contacto.nombre_completo", read_only=True, allow_blank=True, default=""
+    )
     metodo_pago_nombre = serializers.CharField(source="id_metodo_pago.nombre_metodo", read_only=True)
     moneda_codigo = serializers.CharField(source="id_moneda.codigo_iso", read_only=True)
     caja_fisica_nombre = serializers.CharField(source="id_caja_fisica.nombre", read_only=True)
@@ -1247,14 +1614,128 @@ class PagoSerializer(serializers.ModelSerializer):
                 }
         return None
 
+    @staticmethod
+    def _derivar_contacto(validated_data):
+        for field_name, rel_name in (
+            ("id_factura", "id_cliente"),
+            ("id_pedido", "id_cliente"),
+            ("id_nota_venta", "id_cliente"),
+            ("id_cxp", "id_proveedor"),
+        ):
+            doc = validated_data.get(field_name)
+            if doc is None:
+                continue
+            tercero = getattr(doc, rel_name, None)
+            if tercero is None:
+                continue
+            contacto = getattr(tercero, "contacto", None)
+            if contacto is not None:
+                return contacto
+        return None
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        from apps.core.viewsets import get_empresas_visible
+
+        request = self.context.get("request")
+        user = getattr(request, "user", None) if request else None
+        es_super = bool(getattr(user, "es_superusuario_omni", False))
+        empresas_visibles = (
+            get_empresas_visible(user) if user is not None and getattr(user, "is_authenticated", False) else None
+        )
+
+        empresa_explicita = attrs.get("id_empresa")
+        if (
+            empresa_explicita is not None
+            and empresas_visibles is not None
+            and not es_super
+            and not empresas_visibles.filter(pk=empresa_explicita.pk).exists()
+        ):
+            raise serializers.ValidationError({"id_empresa": "No tiene permisos sobre la empresa indicada."})
+
+        empresa = empresa_explicita or getattr(self.instance, "id_empresa", None)
+        if empresa is None and empresas_visibles is not None:
+            empresa = empresas_visibles.first()
+        if empresa is None:
+            raise serializers.ValidationError(
+                {"id_empresa": "Debe especificar una empresa válida o el usuario debe tener una empresa asignada."}
+            )
+
+        contacto = attrs["id_contacto"] if "id_contacto" in attrs else getattr(self.instance, "id_contacto", None)
+        if contacto is not None:
+            if (
+                empresas_visibles is not None
+                and not es_super
+                and not empresas_visibles.filter(pk=contacto.id_empresa_id).exists()
+            ):
+                raise serializers.ValidationError(
+                    {"id_contacto": "El contacto no pertenece a una empresa visible para el usuario."}
+                )
+            if contacto.id_empresa_id != empresa.pk:
+                raise serializers.ValidationError(
+                    {"id_contacto": "El contacto debe pertenecer a la misma empresa del pago."}
+                )
+
+        if (
+            self.instance is not None
+            and "id_contacto" in attrs
+            and (contacto.pk if contacto is not None else None) != self.instance.id_contacto_id
+            and self.instance.asignaciones.filter(estado="ACTIVA", activo=True).exists()
+        ):
+            raise serializers.ValidationError(
+                {"id_contacto": "No se puede cambiar el contacto de un pago que ya tiene asignaciones activas."}
+            )
+
+        # R-CODE-1: toda FK documental poblada (o preservada en instance durante PATCH/PUT)
+        # debe pertenecer a la empresa resuelta del pago; evita ValueError -> HTTP 500
+        # cuando un usuario de matriz envía documentos de una subsidiaria visible.
+        for fk_field in ("id_pedido", "id_nota_venta", "id_factura", "id_cxp", "id_gasto", "id_reembolso_gasto"):
+            doc = attrs[fk_field] if fk_field in attrs else getattr(self.instance, fk_field, None)
+            if doc is not None and doc.id_empresa_id != empresa.pk:
+                raise serializers.ValidationError({fk_field: "El documento no pertenece a la empresa del pago."})
+
+        nomina = attrs["id_nomina"] if "id_nomina" in attrs else getattr(self.instance, "id_nomina", None)
+        if nomina is not None and nomina.id_proceso_nomina.id_empresa_id != empresa.pk:
+            raise serializers.ValidationError({"id_nomina": "La nómina no pertenece a la empresa del pago."})
+
+        contribucion = (
+            attrs["id_contribucion"] if "id_contribucion" in attrs else getattr(self.instance, "id_contribucion", None)
+        )
+        if (
+            contribucion is not None
+            and contribucion.empresa_id is not None
+            and not contribucion.es_publico
+            and contribucion.empresa_id != empresa.pk
+        ):
+            raise serializers.ValidationError(
+                {"id_contribucion": "La contribución parafiscal no pertenece a la empresa del pago."}
+            )
+
+        return attrs
+
     def create(self, validated_data):
+        from apps.core.viewsets import get_empresas_visible
+
         # Asignar empresa automáticamente si no viene en el payload
         request = self.context.get("request")
         if request and not validated_data.get("id_empresa"):
-            user = request.user
-            empresas = getattr(user, "empresas", None)
-            if empresas and hasattr(empresas, "first") and empresas.exists():
-                validated_data["id_empresa"] = empresas.first()
+            user = getattr(request, "user", None)
+            if user is not None:
+                empresa = get_empresas_visible(user).first()
+                if empresa is not None:
+                    validated_data["id_empresa"] = empresa
+
+        if not validated_data.get("id_empresa"):
+            raise serializers.ValidationError(
+                {"id_empresa": "Debe especificar una empresa válida o el usuario debe tener una empresa asignada."}
+            )
+
+        # Auto-derivar id_contacto desde el documento relacionado si no viene en el payload
+        if not validated_data.get("id_contacto"):
+            empresa_pago = validated_data.get("id_empresa")
+            candidato = self._derivar_contacto(validated_data)
+            if candidato is not None and empresa_pago is not None and candidato.id_empresa_id == empresa_pago.pk:
+                validated_data["id_contacto"] = candidato
 
         # Asignar usuario de registro
         if request and request.user.is_authenticated:
@@ -1268,6 +1749,7 @@ class PagoSerializer(serializers.ModelSerializer):
         fields = [
             "id_pago",
             "empresa_nombre",
+            "contacto_nombre",
             "metodo_pago_nombre",
             "moneda_codigo",
             "caja_fisica_nombre",
@@ -1289,6 +1771,7 @@ class PagoSerializer(serializers.ModelSerializer):
             "fecha_creacion",
             "fecha_actualizacion",
             "id_empresa",
+            "id_contacto",
             "id_moneda",
             "id_metodo_pago",
             "id_caja_fisica",
@@ -1312,6 +1795,7 @@ class PagoSerializer(serializers.ModelSerializer):
             "fecha_creacion",
             "fecha_actualizacion",
             "empresa_nombre",
+            "contacto_nombre",
             "metodo_pago_nombre",
             "moneda_codigo",
             "caja_fisica_nombre",

@@ -4,6 +4,7 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from apps.core.exceptions import domain_error_response
 from apps.core.viewsets import (
     ActiveFilterMixin,
     BaseModelViewSet,
@@ -60,6 +61,7 @@ class ListaMaterialesViewSet(BaseModelViewSet):
         empresa = _empresas(self.request).first()
         if not empresa:
             from rest_framework.exceptions import PermissionDenied
+
             raise PermissionDenied("El usuario no tiene empresa asignada.")
         serializer.save(empresa=empresa)
 
@@ -77,6 +79,7 @@ class RutaProduccionViewSet(BaseModelViewSet):
         empresa = _empresas(self.request).first()
         if not empresa:
             from rest_framework.exceptions import PermissionDenied
+
             raise PermissionDenied("El usuario no tiene empresa asignada.")
         serializer.save(empresa=empresa)
 
@@ -98,12 +101,12 @@ def _parse_decimal(valor, nombre, default=None):
 class OrdenProduccionViewSet(BaseModelViewSet):
     """CRUD de OF + acciones del ciclo 1.I (R-CODE-7):
 
-      POST /{pk}/consumir-materiales/  — explota BOM y descuenta inventario
-      POST /{pk}/avanzar-etapa/        — completa la siguiente etapa (quién/cuándo/MO)
-      GET  /{pk}/etapas/               — etapas de la OF con su estado y costo MO
-      POST /{pk}/completar/            — entrada de PT valorada al costo real
-      GET  /{pk}/costeo/               — costeo real (materiales + MO + overhead)
-      GET  /{pk}/mrp/                  — faltantes para producir la orden
+    POST /{pk}/consumir-materiales/  — explota BOM y descuenta inventario
+    POST /{pk}/avanzar-etapa/        — completa la siguiente etapa (quién/cuándo/MO)
+    GET  /{pk}/etapas/               — etapas de la OF con su estado y costo MO
+    POST /{pk}/completar/            — entrada de PT valorada al costo real
+    GET  /{pk}/costeo/               — costeo real (materiales + MO + overhead)
+    GET  /{pk}/mrp/                  — faltantes para producir la orden
     """
 
     queryset = OrdenProduccion.objects.all()
@@ -118,6 +121,7 @@ class OrdenProduccionViewSet(BaseModelViewSet):
         empresa = _empresas(self.request).first()
         if not empresa:
             from rest_framework.exceptions import PermissionDenied
+
             raise PermissionDenied("El usuario no tiene empresa asignada.")
         orden = serializer.save(empresa=empresa)
         # 1.I — materializar etapas del catálogo también al crear por API.
@@ -158,12 +162,14 @@ class OrdenProduccionViewSet(BaseModelViewSet):
                 incluir_opcionales=bool(request.data.get("incluir_opcionales", False)),
             )
         except (ValueError, services.ManufacturaError, StockInsuficienteError) as exc:
-            return _error(str(exc))
-        return Response({
-            "estado": orden.estado,
-            "consumos": ConsumoMaterialSerializer(resultado["consumos"], many=True).data,
-            "costo_materiales": str(resultado["costo_materiales"]),
-        })
+            return domain_error_response(exc)
+        return Response(
+            {
+                "estado": orden.estado,
+                "consumos": ConsumoMaterialSerializer(resultado["consumos"], many=True).data,
+                "costo_materiales": str(resultado["costo_materiales"]),
+            }
+        )
 
     @action(detail=True, methods=["post"], url_path="avanzar-etapa")
     def avanzar_etapa(self, request, pk=None):
@@ -174,19 +180,25 @@ class OrdenProduccionViewSet(BaseModelViewSet):
             etapa = services.avanzar_etapa_orden(
                 orden,
                 usuario=request.user,
-                horas_trabajadas=_parse_decimal(request.data.get("horas_trabajadas"), "horas_trabajadas", Decimal("0")),
+                horas_trabajadas=_parse_decimal(
+                    request.data.get("horas_trabajadas"), "horas_trabajadas", Decimal("0")
+                ),
                 tarifa_hora=_parse_decimal(request.data.get("tarifa_hora"), "tarifa_hora", Decimal("0")),
-                cantidad_destajo=_parse_decimal(request.data.get("cantidad_destajo"), "cantidad_destajo", Decimal("0")),
+                cantidad_destajo=_parse_decimal(
+                    request.data.get("cantidad_destajo"), "cantidad_destajo", Decimal("0")
+                ),
                 observaciones=str(request.data.get("observaciones", "")),
             )
         except (ValueError, services.ManufacturaError) as exc:
-            return _error(str(exc))
+            return domain_error_response(exc)
         orden.refresh_from_db()
-        return Response({
-            "estado_orden": orden.estado,
-            "etapa": EtapaOrdenProduccionSerializer(etapa).data,
-            "etapas_pendientes": orden.etapas.filter(estado="pendiente").count(),
-        })
+        return Response(
+            {
+                "estado_orden": orden.estado,
+                "etapa": EtapaOrdenProduccionSerializer(etapa).data,
+                "etapas_pendientes": orden.etapas.filter(estado="pendiente").count(),
+            }
+        )
 
     @action(detail=True, methods=["get"])
     def etapas(self, request, pk=None):
@@ -211,15 +223,17 @@ class OrdenProduccionViewSet(BaseModelViewSet):
                 costos_indirectos=_parse_decimal(request.data.get("costos_indirectos"), "costos_indirectos"),
             )
         except (ValueError, services.ManufacturaError) as exc:
-            return _error(str(exc))
+            return domain_error_response(exc)
         orden.refresh_from_db()
-        return Response({
-            "estado": orden.estado,
-            "produccion_id": str(resultado["produccion"].pk),
-            "costo": self._costo_json(resultado["costo"]),
-            # 1.I — nº de registros CostoProduccion materializados al cerrar la OF.
-            "costos_persistidos": len(resultado["costos_persistidos"]),
-        })
+        return Response(
+            {
+                "estado": orden.estado,
+                "produccion_id": str(resultado["produccion"].pk),
+                "costo": self._costo_json(resultado["costo"]),
+                # 1.I — nº de registros CostoProduccion materializados al cerrar la OF.
+                "costos_persistidos": len(resultado["costos_persistidos"]),
+            }
+        )
 
     @action(detail=True, methods=["get"])
     def costeo(self, request, pk=None):
@@ -229,14 +243,16 @@ class OrdenProduccionViewSet(BaseModelViewSet):
         try:
             costo = services.costeo_real_orden(orden)
         except services.ManufacturaError as exc:
-            return _error(str(exc))
+            return domain_error_response(exc)
         etapas = orden.etapas.select_related("etapa").order_by("orden")
-        return Response({
-            "orden_id": str(orden.pk),
-            "estado": orden.estado,
-            "costo": self._costo_json(costo),
-            "etapas": EtapaOrdenProduccionSerializer(etapas, many=True).data,
-        })
+        return Response(
+            {
+                "orden_id": str(orden.pk),
+                "estado": orden.estado,
+                "costo": self._costo_json(costo),
+                "etapas": EtapaOrdenProduccionSerializer(etapas, many=True).data,
+            }
+        )
 
     @action(detail=True, methods=["get"])
     def mrp(self, request, pk=None):
@@ -254,21 +270,23 @@ class OrdenProduccionViewSet(BaseModelViewSet):
                 incluir_opcionales=request.query_params.get("incluir_opcionales") in ("true", "1"),
             )
         except (ValueError, services.ManufacturaError) as exc:
-            return _error(str(exc))
-        return Response({
-            "orden_id": str(orden.pk),
-            "cantidad": str(orden.cantidad),
-            "faltantes": [
-                {
-                    "producto_id": f["producto_id"],
-                    "producto": f["producto"],
-                    "requerido": str(f["requerido"]),
-                    "disponible": str(f["disponible"]),
-                    "a_comprar": str(f["a_comprar"]),
-                }
-                for f in faltantes
-            ],
-        })
+            return domain_error_response(exc)
+        return Response(
+            {
+                "orden_id": str(orden.pk),
+                "cantidad": str(orden.cantidad),
+                "faltantes": [
+                    {
+                        "producto_id": f["producto_id"],
+                        "producto": f["producto"],
+                        "requerido": str(f["requerido"]),
+                        "disponible": str(f["disponible"]),
+                        "a_comprar": str(f["a_comprar"]),
+                    }
+                    for f in faltantes
+                ],
+            }
+        )
 
 
 class ConsumoMaterialViewSet(BaseModelViewSet):
@@ -356,6 +374,7 @@ class EtapaProduccionViewSet(SoftDeleteModelMixin, ActiveFilterMixin, BaseModelV
         empresa = _empresas(self.request).first()
         if not empresa:
             from rest_framework.exceptions import PermissionDenied
+
             raise PermissionDenied("El usuario no tiene empresa asignada.")
         serializer.save(empresa=empresa)
 

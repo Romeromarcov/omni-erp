@@ -24,13 +24,15 @@ def ejecutar_job_sincronizacion(self, job_id: str):
     Ejecuta un JobSincronizacion dado su ID.
     Se llama tanto desde triggers manuales (view) como desde el scheduler.
     """
+    from apps.core import rls
     from apps.integration_hub.models import JobSincronizacion
     from apps.integration_hub.services.sync_engine import SyncEngine
 
     try:
-        job = JobSincronizacion.objects.select_related(
-            "id_instancia__id_proveedor", "id_instancia__id_empresa"
-        ).get(pk=job_id)
+        with rls.rls_bypass():
+            job = JobSincronizacion.objects.select_related(
+                "id_instancia__id_proveedor", "id_instancia__id_empresa"
+            ).get(pk=job_id)
     except JobSincronizacion.DoesNotExist:
         logger.error("Job no encontrado: %s", job_id)
         return {"error": f"Job {job_id} no encontrado"}
@@ -46,8 +48,9 @@ def ejecutar_job_sincronizacion(self, job_id: str):
         job.id_instancia.nombre,
     )
 
-    engine = SyncEngine()
-    resultado = engine.ejecutar_job(job)
+    with rls.rls_tenant_context([job.id_instancia.id_empresa_id]):
+        engine = SyncEngine()
+        resultado = engine.ejecutar_job(job)
 
     return {
         "job_id": job_id,
@@ -68,50 +71,53 @@ def sync_automatico_todos():
     """
     from datetime import timedelta
 
+    from apps.core import rls
     from apps.integration_hub.models import ConectorInstancia, JobSincronizacion
 
     ahora = timezone.now()
-    conectores = ConectorInstancia.objects.filter(
-        activo=True,
-        estado="activo",
-        intervalo_sync_minutos__gt=0,
-    ).select_related("id_proveedor")
+    with rls.rls_bypass():
+        conectores = list(
+            ConectorInstancia.objects.filter(
+                activo=True,
+                estado="activo",
+                intervalo_sync_minutos__gt=0,
+            ).select_related("id_proveedor")
+        )
 
     disparados = 0
     for instancia in conectores:
         # Calcular si ya es hora del próximo sync
         if instancia.ultimo_sync:
-            proximo = instancia.ultimo_sync + timedelta(
-                minutes=instancia.intervalo_sync_minutos
-            )
+            proximo = instancia.ultimo_sync + timedelta(minutes=instancia.intervalo_sync_minutos)
             if ahora < proximo:
                 continue  # No es hora todavía
 
-        # Disparar job para cada entidad activa
-        for tipo_entidad in instancia.entidades_activas:
-            # Verificar que no haya un job en progreso para esta entidad
-            en_progreso = JobSincronizacion.objects.filter(
-                id_instancia=instancia,
-                tipo_entidad=tipo_entidad,
-                estado__in=["pendiente", "en_progreso"],
-            ).exists()
-            if en_progreso:
-                logger.info(
-                    "Sync automático omitido para %s/%s — ya hay un job en progreso",
-                    instancia.nombre,
-                    tipo_entidad,
-                )
-                continue
+        # Disparar job para cada entidad activa en contexto aislado por tenant
+        with rls.rls_tenant_context([instancia.id_empresa_id]):
+            for tipo_entidad in instancia.entidades_activas:
+                # Verificar que no haya un job en progreso para esta entidad
+                en_progreso = JobSincronizacion.objects.filter(
+                    id_instancia=instancia,
+                    tipo_entidad=tipo_entidad,
+                    estado__in=["pendiente", "en_progreso"],
+                ).exists()
+                if en_progreso:
+                    logger.info(
+                        "Sync automático omitido para %s/%s — ya hay un job en progreso",
+                        instancia.nombre,
+                        tipo_entidad,
+                    )
+                    continue
 
-            job = JobSincronizacion.objects.create(
-                id_instancia=instancia,
-                tipo_entidad=tipo_entidad,
-                direccion="inbound",
-                estado="pendiente",
-                # iniciado_por=None → automático
-            )
-            ejecutar_job_sincronizacion.delay(str(job.id_job))
-            disparados += 1
+                job = JobSincronizacion.objects.create(
+                    id_instancia=instancia,
+                    tipo_entidad=tipo_entidad,
+                    direccion="inbound",
+                    estado="pendiente",
+                    # iniciado_por=None → automático
+                )
+                ejecutar_job_sincronizacion.delay(str(job.id_job))
+                disparados += 1
 
     logger.info("sync_automatico_todos: %d jobs disparados", disparados)
     return {"jobs_disparados": disparados}
@@ -130,13 +136,15 @@ def ejecutar_export_instancia(instancia_id: str, tipos=None, incremental: bool =
         tipos: lista de tipos de entidad a exportar, o None → entidades_activas.
         incremental: si False, fuerza export completo (sin filtro 'desde').
     """
+    from apps.core import rls
     from apps.integration_hub.models import ConectorInstancia
     from apps.integration_hub.services.export_engine import ExportEngine
 
     try:
-        instancia = ConectorInstancia.objects.select_related(
-            "id_proveedor", "id_empresa"
-        ).get(pk=instancia_id, activo=True)
+        with rls.rls_bypass():
+            instancia = ConectorInstancia.objects.select_related("id_proveedor", "id_empresa").get(
+                pk=instancia_id, activo=True
+            )
     except ConectorInstancia.DoesNotExist:
         logger.error("Export: instancia no encontrada o inactiva: %s", instancia_id)
         return {"error": f"Instancia {instancia_id} no encontrada o inactiva"}
@@ -148,7 +156,8 @@ def ejecutar_export_instancia(instancia_id: str, tipos=None, incremental: bool =
         incremental,
     )
 
-    jobs = ExportEngine().exportar(instancia, tipos=tipos, incremental=incremental)
+    with rls.rls_tenant_context([instancia.id_empresa_id]):
+        jobs = ExportEngine().exportar(instancia, tipos=tipos, incremental=incremental)
 
     resultado = {
         "instancia_id": str(instancia.pk),
@@ -183,32 +192,35 @@ def export_automatico_todos():
     """
     from datetime import timedelta
 
+    from apps.core import rls
     from apps.integration_hub.models import ConectorInstancia, JobSincronizacion
 
     ahora = timezone.now()
-    instancias = ConectorInstancia.objects.filter(
-        activo=True,
-        estado="activo",
-        intervalo_sync_minutos__gt=0,
-        id_proveedor__codigo="google_sheets",
-    ).select_related("id_proveedor")
+    with rls.rls_bypass():
+        instancias = list(
+            ConectorInstancia.objects.filter(
+                activo=True,
+                estado="activo",
+                intervalo_sync_minutos__gt=0,
+                id_proveedor__codigo="google_sheets",
+            ).select_related("id_proveedor")
+        )
 
     encolados = 0
     for instancia in instancias:
         # ¿Ya venció el próximo export?
         if instancia.ultimo_sync:
-            proximo = instancia.ultimo_sync + timedelta(
-                minutes=instancia.intervalo_sync_minutos
-            )
+            proximo = instancia.ultimo_sync + timedelta(minutes=instancia.intervalo_sync_minutos)
             if ahora < proximo:
                 continue  # Aún no toca
 
         # Evitar solapamiento: si hay un job outbound en progreso, omitir.
-        en_progreso = JobSincronizacion.objects.filter(
-            id_instancia=instancia,
-            direccion="outbound",
-            estado__in=["pendiente", "en_progreso"],
-        ).exists()
+        with rls.rls_tenant_context([instancia.id_empresa_id]):
+            en_progreso = JobSincronizacion.objects.filter(
+                id_instancia=instancia,
+                direccion="outbound",
+                estado__in=["pendiente", "en_progreso"],
+            ).exists()
         if en_progreso:
             logger.info(
                 "Export automático omitido para %s — ya hay un job outbound en progreso",
@@ -232,17 +244,23 @@ def limpiar_logs_antiguos(dias: int = 30):
     """
     from datetime import timedelta
 
+    from apps.core import rls
     from apps.integration_hub.models import LogDetalleSincronizacion
 
     corte = timezone.now() - timedelta(days=dias)
-    eliminados, _ = LogDetalleSincronizacion.objects.filter(
-        creado_en__lt=corte
-    ).delete()
+    with rls.rls_bypass():
+        eliminados, _ = LogDetalleSincronizacion.objects.filter(creado_en__lt=corte).delete()
 
-    logger.info(
-        "limpiar_logs_antiguos: %d registros eliminados (>%d días)", eliminados, dias
-    )
+    logger.info("limpiar_logs_antiguos: %d registros eliminados (>%d días)", eliminados, dias)
     return {"eliminados": eliminados}
+
+
+class CatalogoMonedasIncompleto(RuntimeError):
+    """Faltan USD/VES en el catálogo global. No se arregla reintentando: hay que sembrarlo.
+
+    Se propaga sin reintentos para que Celery marque la tarea como FAILURE (visible en los
+    resultados y en Sentry) en lugar de terminar "con éxito" devolviendo un diccionario de error.
+    """
 
 
 @shared_task(
@@ -263,6 +281,7 @@ def sync_tasas_ve(self):
     from django.utils import timezone
 
     try:
+        from apps.core import rls
         from apps.finanzas.models import Moneda, TasaCambio
         from apps.integration_hub.connectors.tasas_ve.connector import TasasVeConnector
 
@@ -271,29 +290,33 @@ def sync_tasas_ve(self):
 
         # Obtener monedas base
         try:
-            usd = Moneda.objects.get(codigo_iso="USD")
-            ves = Moneda.objects.get(codigo_iso="VES")
-        except Moneda.DoesNotExist:
+            with rls.rls_bypass():
+                usd = Moneda.objects.get(codigo_iso="USD")
+                ves = Moneda.objects.get(codigo_iso="VES")
+        except Moneda.DoesNotExist as exc:
             logger.error("sync_tasas_ve: Monedas USD/VES no encontradas en BD")
-            return {"error": "Monedas no encontradas"}
+            raise CatalogoMonedasIncompleto(
+                "Monedas USD/VES no encontradas: ejecuta `python manage.py seed_catalogo_monedas`."
+            ) from exc
 
         resultados = {}
 
         # BCV
         tasa_bcv = connector.pull_tasa_bcv()
         if tasa_bcv is not None:
-            obj, created = TasaCambio.objects.update_or_create(
-                id_empresa=None,
-                id_moneda_origen=usd,
-                id_moneda_destino=ves,
-                tipo_tasa="OFICIAL_BCV",
-                fecha_tasa=hoy,
-                defaults={
-                    "valor_tasa": tasa_bcv,
-                    "hora_tasa": timezone.now().time(),
-                    "referencia_externa": "hub:sync_tasas_ve",
-                },
-            )
+            with rls.rls_bypass():
+                obj, created = TasaCambio.objects.update_or_create(
+                    id_empresa=None,
+                    id_moneda_origen=usd,
+                    id_moneda_destino=ves,
+                    tipo_tasa="OFICIAL_BCV",
+                    fecha_tasa=hoy,
+                    defaults={
+                        "valor_tasa": tasa_bcv,
+                        "hora_tasa": timezone.now().time(),
+                        "referencia_externa": "hub:sync_tasas_ve",
+                    },
+                )
             resultados["bcv"] = {"tasa": str(tasa_bcv), "created": created}
             logger.info("sync_tasas_ve BCV: tasa=%s created=%s", tasa_bcv, created)
         else:
@@ -303,31 +326,32 @@ def sync_tasas_ve(self):
         # Binance P2P
         tasa_binance = connector.pull_tasa_binance_p2p()
         if tasa_binance is not None:
-            obj_b, created_b = TasaCambio.objects.update_or_create(
-                id_empresa=None,
-                id_moneda_origen=usd,
-                id_moneda_destino=ves,
-                tipo_tasa="PROMEDIO_MERCADO",
-                fecha_tasa=hoy,
-                defaults={
-                    "valor_tasa": tasa_binance,
-                    "hora_tasa": timezone.now().time(),
-                    "referencia_externa": "hub:binance_p2p",
-                },
-            )
+            with rls.rls_bypass():
+                obj_b, created_b = TasaCambio.objects.update_or_create(
+                    id_empresa=None,
+                    id_moneda_origen=usd,
+                    id_moneda_destino=ves,
+                    tipo_tasa="PROMEDIO_MERCADO",
+                    fecha_tasa=hoy,
+                    defaults={
+                        "valor_tasa": tasa_binance,
+                        "hora_tasa": timezone.now().time(),
+                        "referencia_externa": "hub:binance_p2p",
+                    },
+                )
             resultados["binance_p2p"] = {
                 "tasa": str(tasa_binance),
                 "created": created_b,
             }
-            logger.info(
-                "sync_tasas_ve Binance: tasa=%s created=%s", tasa_binance, created_b
-            )
+            logger.info("sync_tasas_ve Binance: tasa=%s created=%s", tasa_binance, created_b)
 
         return resultados
 
     except self.MaxRetriesExceededError:
         logger.error("sync_tasas_ve: máximo de reintentos alcanzado")
         return {"error": "max_retries"}
+    except CatalogoMonedasIncompleto:
+        raise  # configuración, no un fallo transitorio: sin reintentos
     except Exception as exc:
         logger.exception("sync_tasas_ve error inesperado: %s", exc)
         raise self.retry(exc=exc, countdown=60)
@@ -340,12 +364,16 @@ def sync_cartera_odoo_todos():
     tenants Mode A (cxc.datasource='odoo'). Programado vía django-celery-beat.
     """
     from apps.configuracion_motor.models import ParametroSistema
+    from apps.core import rls
 
-    params = ParametroSistema.objects.filter(
-        codigo_parametro="cxc.datasource",
-        activo=True,
-        id_empresa__isnull=False,
-    )
+    with rls.rls_bypass():
+        params = list(
+            ParametroSistema.objects.filter(
+                codigo_parametro="cxc.datasource",
+                activo=True,
+                id_empresa__isnull=False,
+            )
+        )
     disparados = 0
     for p in params:
         if (p.valor_parametro or "").strip().lower() == "odoo":
@@ -365,16 +393,18 @@ def sync_cartera_odoo(empresa_id: str):
     from django.core.cache import cache
 
     try:
+        from apps.core import rls
         from apps.core.models import Empresa
         from apps.cuentas_por_cobrar.services_aging import calcular_aging
         from apps.cuentas_por_cobrar.services_cartera_provider import (
             get_cartera_provider,
         )
 
-        empresa = Empresa.objects.get(pk=empresa_id)
-        provider = get_cartera_provider(empresa)
-        partidas = provider.get_partidas()
-        resumen = calcular_aging(partidas)
+        with rls.rls_tenant_context([empresa_id]):
+            empresa = Empresa.objects.get(pk=empresa_id)
+            provider = get_cartera_provider(empresa)
+            partidas = provider.get_partidas()
+            resumen = calcular_aging(partidas)
 
         cache_key = f"cxc:aging:{empresa_id}"
         cache.set(cache_key, resumen, timeout=900)  # 15 min
@@ -389,3 +419,25 @@ def sync_cartera_odoo(empresa_id: str):
     except Exception as exc:
         logger.exception("sync_cartera_odoo error: %s", exc)
         return {"error": str(exc)}
+
+
+@shared_task(name="integration_hub.despachar_outbox")
+def despachar_outbox(limite: int = 50):
+    """Despacha un lote de eventos pendientes/fallidos del Outbox multi-tenant.
+
+    Internamente usa ``rls.rls_bypass()`` acotado al descubrimiento de IDs y
+    ``rls.rls_tenant_context([empresa_id])`` + ``select_for_update(skip_locked=True)``
+    para aislar y bloquear cada evento por empresa.
+    """
+    from apps.integration_hub.outbox import despachar_lote_outbox
+
+    resultado = despachar_lote_outbox(limite=limite)
+    logger.info(
+        "despachar_outbox: procesados=%d enviados=%d fallidos=%d dlq=%d sin_destino=%d",
+        resultado["procesados"],
+        resultado["enviados"],
+        resultado["fallidos"],
+        resultado["dlq"],
+        resultado["sin_destino"],
+    )
+    return resultado

@@ -27,9 +27,7 @@ SERVICE_ACCOUNT = {
 
 
 def _odoo_instancia(empresa, nombre="Odoo Origen"):
-    prov, _ = ConectorProveedor.objects.get_or_create(
-        codigo="odoo", defaults={"nombre": "Odoo", "estado": "activo"}
-    )
+    prov, _ = ConectorProveedor.objects.get_or_create(codigo="odoo", defaults={"nombre": "Odoo", "estado": "activo"})
     return ConectorInstancia.objects.create(
         id_empresa=empresa,
         id_proveedor=prov,
@@ -100,9 +98,7 @@ def test_configurar_con_test_marca_estado(tmp_path, empresa_a, monkeypatch):
     from apps.integration_hub.connectors import registry as registry_mod
 
     fake = MagicMock()
-    fake.test_connection.return_value = MagicMock(
-        success=True, version="google-sheets-v4", message="OK"
-    )
+    fake.test_connection.return_value = MagicMock(success=True, version="google-sheets-v4", message="OK")
     monkeypatch.setattr(registry_mod.registry, "get_connector", lambda inst: fake)
 
     call_command(
@@ -145,13 +141,9 @@ def test_exportar_invoca_engine_y_resuelve_destino(empresa_a, monkeypatch):
     )
     monkeypatch.setattr(ee.ExportEngine, "exportar", lambda self, *a, **k: [job])
 
-    call_command(
-        "exportar_a_sheets", "--empresa", str(empresa_a.pk), "--destino", destino.nombre
-    )
+    call_command("exportar_a_sheets", "--empresa", str(empresa_a.pk), "--destino", destino.nombre)
 
 
 def test_exportar_falla_si_destino_no_existe(empresa_a):
     with pytest.raises(CommandError, match="destino"):
-        call_command(
-            "exportar_a_sheets", "--empresa", str(empresa_a.pk), "--destino", "Nada"
-        )
+        call_command("exportar_a_sheets", "--empresa", str(empresa_a.pk), "--destino", "Nada")

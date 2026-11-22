@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from django.utils import timezone
 
-from apps.finanzas.models import Caja, CajaFisica, CuentaBancariaEmpresa, Moneda, MovimientoCajaBanco
+from apps.finanzas.models import MovimientoCajaBanco
 
 
 def crear_ajuste_caja_banco(

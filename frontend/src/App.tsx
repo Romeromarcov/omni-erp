@@ -5,7 +5,7 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { AuthProvider } from './contexts/AuthContext';
 import { FeedbackProvider } from './contexts/FeedbackContext';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
-import { queryClient } from './lib/queryClient';
+import { queryClient, handlePersistRestoreSuccess } from './lib/queryClient';
 import { idbPersister } from './lib/idbPersister';
 import theme from './theme/theme';
 
@@ -22,7 +22,11 @@ const persistOptions = {
 
 function App() {
   return (
-    <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={persistOptions}
+      onSuccess={handlePersistRestoreSuccess}
+    >
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <FeedbackProvider>

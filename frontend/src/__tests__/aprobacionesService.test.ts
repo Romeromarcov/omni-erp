@@ -267,6 +267,16 @@ describe('solicitudesAprobacionService', () => {
     });
   });
 
+  it('decidir postea la decisión aprobada/rechazada al endpoint /decidir/', async () => {
+    vi.mocked(post).mockResolvedValueOnce({ id_solicitud_aprobacion: 's1', estado_solicitud: 'APROBADA' });
+    const res = await solicitudesAprobacionService.decidir('s1', { aprobado: true, comentarios: 'OK' });
+    expect(post).toHaveBeenCalledWith('/gestion-aprobaciones/solicitudes-aprobacion/s1/decidir/', {
+      aprobado: true,
+      comentarios: 'OK',
+    });
+    expect(res.estado_solicitud).toBe('APROBADA');
+  });
+
   it('remove propaga el error del backend', async () => {
     vi.mocked(del).mockRejectedValueOnce(new Error('no encontrado'));
     await expect(solicitudesAprobacionService.remove('s1')).rejects.toThrow('no encontrado');

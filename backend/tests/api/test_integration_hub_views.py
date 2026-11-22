@@ -8,6 +8,7 @@ externo. Celery corre EAGER (conftest), pero las acciones se mockean para no
 depender del SyncEngine real.
 """
 
+import json
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -83,9 +84,7 @@ def test_test_connection_exitoso_marca_activo(empresa_a, user_a, monkeypatch):
 def test_test_connection_fallo_logico_marca_error(empresa_a, user_a, monkeypatch):
     inst = _instancia(empresa_a)
     fake = MagicMock()
-    fake.test_connection.return_value = _TestConnectionResult(
-        success=False, message="credenciales malas"
-    )
+    fake.test_connection.return_value = _TestConnectionResult(success=False, message="credenciales malas")
     monkeypatch.setattr(registry_mod.registry, "get_connector", lambda i: fake)
 
     resp = _client(user_a).post(f"/api/integration-hub/instancias/{inst.pk}/test/")
@@ -151,9 +150,7 @@ def test_crear_google_sheets_sin_source_instancia_400(empresa_a, user_a):
         {
             "id_proveedor": str(prov.pk),
             "nombre": "Export sin origen",
-            "configuracion": {
-                "service_account": {"client_email": "svc@x.iam.gserviceaccount.com"}
-            },
+            "configuracion": {"service_account": {"client_email": "svc@x.iam.gserviceaccount.com"}},
         },
         format="json",
     )
@@ -227,9 +224,7 @@ def test_patch_db_vacia_no_borra_db_si_no_se_envia(empresa_a, user_a):
 
 def test_trigger_sync_crea_job_y_encola(empresa_a, user_a):
     inst = _instancia(empresa_a, entidades=["contactos"])
-    with patch(
-        "apps.integration_hub.tasks.ejecutar_job_sincronizacion.delay"
-    ) as mock_delay:
+    with patch("apps.integration_hub.tasks.ejecutar_job_sincronizacion.delay") as mock_delay:
         mock_delay.return_value = MagicMock(id="task-xyz")
         resp = _client(user_a).post(
             f"/api/integration-hub/instancias/{inst.pk}/sync/",
@@ -264,12 +259,13 @@ def test_trigger_sync_entidad_no_habilitada_400(empresa_a, user_a):
 
 def test_trigger_sync_fallback_sincrono_si_celery_falla(empresa_a, user_a):
     inst = _instancia(empresa_a, entidades=["contactos"])
-    with patch(
-        "apps.integration_hub.tasks.ejecutar_job_sincronizacion.delay",
-        side_effect=RuntimeError("broker caído"),
-    ), patch(
-        "apps.integration_hub.services.sync_engine.SyncEngine.ejecutar_job"
-    ) as mock_run:
+    with (
+        patch(
+            "apps.integration_hub.tasks.ejecutar_job_sincronizacion.delay",
+            side_effect=RuntimeError("broker caído"),
+        ),
+        patch("apps.integration_hub.services.sync_engine.SyncEngine.ejecutar_job") as mock_run,
+    ):
         resp = _client(user_a).post(
             f"/api/integration-hub/instancias/{inst.pk}/sync/",
             {"tipo_entidad": "contactos"},
@@ -285,7 +281,9 @@ def test_trigger_sync_fallback_sincrono_si_celery_falla(empresa_a, user_a):
 def test_list_jobs_devuelve_historial(empresa_a, user_a):
     inst = _instancia(empresa_a)
     JobSincronizacion.objects.create(
-        id_instancia=inst, tipo_entidad="contactos", estado="completado",
+        id_instancia=inst,
+        tipo_entidad="contactos",
+        estado="completado",
         iniciado_en=timezone.now(),
     )
     resp = _client(user_a).get(f"/api/integration-hub/instancias/{inst.pk}/jobs/")
@@ -298,15 +296,9 @@ def test_list_jobs_devuelve_historial(empresa_a, user_a):
 
 def test_list_entidades_filtra_por_tipo(empresa_a, user_a):
     inst = _instancia(empresa_a)
-    EntidadSincronizada.objects.create(
-        id_instancia=inst, tipo_entidad="contactos", id_externo="1", id_omni="u1"
-    )
-    EntidadSincronizada.objects.create(
-        id_instancia=inst, tipo_entidad="productos", id_externo="2", id_omni="u2"
-    )
-    resp = _client(user_a).get(
-        f"/api/integration-hub/instancias/{inst.pk}/entidades/contactos/"
-    )
+    EntidadSincronizada.objects.create(id_instancia=inst, tipo_entidad="contactos", id_externo="1", id_omni="u1")
+    EntidadSincronizada.objects.create(id_instancia=inst, tipo_entidad="productos", id_externo="2", id_omni="u2")
+    resp = _client(user_a).get(f"/api/integration-hub/instancias/{inst.pk}/entidades/contactos/")
     assert resp.status_code == 200
     assert len(resp.data) == 1
     assert resp.data[0]["id_externo"] == "1"
@@ -322,9 +314,7 @@ def test_preview_data_devuelve_muestra(empresa_a, user_a, monkeypatch):
     fake.pull_contactos.return_value = [{"id_externo": "1"}] * 20
     monkeypatch.setattr(registry_mod.registry, "get_connector", lambda i: fake)
 
-    resp = _client(user_a).get(
-        f"/api/integration-hub/instancias/{inst.pk}/preview/contactos/"
-    )
+    resp = _client(user_a).get(f"/api/integration-hub/instancias/{inst.pk}/preview/contactos/")
     assert resp.status_code == 200
     assert len(resp.data["muestra"]) == 10  # preview máximo 10
 
@@ -334,9 +324,7 @@ def test_preview_data_entidad_no_soportada_400(empresa_a, user_a, monkeypatch):
     fake = MagicMock()
     fake.supports.return_value = False
     monkeypatch.setattr(registry_mod.registry, "get_connector", lambda i: fake)
-    resp = _client(user_a).get(
-        f"/api/integration-hub/instancias/{inst.pk}/preview/contactos/"
-    )
+    resp = _client(user_a).get(f"/api/integration-hub/instancias/{inst.pk}/preview/contactos/")
     assert resp.status_code == 400
 
 
@@ -347,9 +335,7 @@ def test_preview_data_get_connector_falla_502(empresa_a, user_a, monkeypatch):
         "get_connector",
         MagicMock(side_effect=RuntimeError("x")),
     )
-    resp = _client(user_a).get(
-        f"/api/integration-hub/instancias/{inst.pk}/preview/contactos/"
-    )
+    resp = _client(user_a).get(f"/api/integration-hub/instancias/{inst.pk}/preview/contactos/")
     assert resp.status_code == 502
 
 
@@ -359,9 +345,7 @@ def test_preview_data_pull_revienta_502(empresa_a, user_a, monkeypatch):
     fake.supports.return_value = True
     fake.pull_contactos.side_effect = RuntimeError("odoo caído")
     monkeypatch.setattr(registry_mod.registry, "get_connector", lambda i: fake)
-    resp = _client(user_a).get(
-        f"/api/integration-hub/instancias/{inst.pk}/preview/contactos/"
-    )
+    resp = _client(user_a).get(f"/api/integration-hub/instancias/{inst.pk}/preview/contactos/")
     assert resp.status_code == 502
 
 
@@ -375,9 +359,7 @@ def test_preview_data_sin_metodo_pull_400(empresa_a, user_a, monkeypatch):
         "apps.integration_hub.services.sync_engine.SyncEngine.PULL_METHODS",
         {"contactos": "pull_contactos"},
     ):
-        resp = _client(user_a).get(
-            f"/api/integration-hub/instancias/{inst.pk}/preview/productos/"
-        )
+        resp = _client(user_a).get(f"/api/integration-hub/instancias/{inst.pk}/preview/productos/")
     assert resp.status_code == 400
 
 
@@ -386,12 +368,8 @@ def test_preview_data_sin_metodo_pull_400(empresa_a, user_a, monkeypatch):
 
 def test_job_logs(empresa_a, user_a):
     inst = _instancia(empresa_a)
-    job = JobSincronizacion.objects.create(
-        id_instancia=inst, tipo_entidad="contactos", estado="completado"
-    )
-    LogDetalleSincronizacion.objects.create(
-        id_job=job, id_externo="1", operacion="crear"
-    )
+    job = JobSincronizacion.objects.create(id_instancia=inst, tipo_entidad="contactos", estado="completado")
+    LogDetalleSincronizacion.objects.create(id_job=job, id_externo="1", operacion="crear")
     resp = _client(user_a).get(f"/api/integration-hub/jobs/{job.pk}/logs/")
     assert resp.status_code == 200
     assert len(resp.data) == 1
@@ -400,7 +378,9 @@ def test_job_logs(empresa_a, user_a):
 def test_job_cancelar_pendiente(empresa_a, user_a):
     inst = _instancia(empresa_a)
     job = JobSincronizacion.objects.create(
-        id_instancia=inst, tipo_entidad="contactos", estado="pendiente",
+        id_instancia=inst,
+        tipo_entidad="contactos",
+        estado="pendiente",
         celery_task_id="t1",
     )
     with patch("config.celery.app.control.revoke") as mock_revoke:
@@ -413,18 +393,14 @@ def test_job_cancelar_pendiente(empresa_a, user_a):
 
 def test_job_cancelar_completado_400(empresa_a, user_a):
     inst = _instancia(empresa_a)
-    job = JobSincronizacion.objects.create(
-        id_instancia=inst, tipo_entidad="contactos", estado="completado"
-    )
+    job = JobSincronizacion.objects.create(id_instancia=inst, tipo_entidad="contactos", estado="completado")
     resp = _client(user_a).post(f"/api/integration-hub/jobs/{job.pk}/cancelar/")
     assert resp.status_code == 400
 
 
 def test_job_aislamiento_empresa(empresa_a, empresa_b, user_b):
     inst = _instancia(empresa_a)
-    job = JobSincronizacion.objects.create(
-        id_instancia=inst, tipo_entidad="contactos", estado="completado"
-    )
+    job = JobSincronizacion.objects.create(id_instancia=inst, tipo_entidad="contactos", estado="completado")
     resp = _client(user_b).get(f"/api/integration-hub/jobs/{job.pk}/logs/")
     assert resp.status_code == 404
 
@@ -435,7 +411,9 @@ def test_job_aislamiento_empresa(empresa_a, empresa_b, user_b):
 def test_status_resume_conectores_y_jobs(empresa_a, user_a):
     inst = _instancia(empresa_a, estado="activo")
     JobSincronizacion.objects.create(
-        id_instancia=inst, tipo_entidad="contactos", estado="completado",
+        id_instancia=inst,
+        tipo_entidad="contactos",
+        estado="completado",
         iniciado_en=timezone.now(),
     )
     resp = _client(user_a).get("/api/integration-hub/status/")
@@ -453,3 +431,102 @@ def test_lista_proveedores_activos(empresa_a, user_a):
     resp = _client(user_a).get("/api/integration-hub/proveedores/")
     assert resp.status_code == 200
     assert any(p["codigo"] == "odoo" for p in resp.data)
+
+
+def test_post_put_patch_no_exponen_secretos_plaintext(empresa_a, user_a):
+    """R-CODE-8: POST, PUT y PATCH jamás deben exponer configuracion ni secretos en respuesta."""
+    prov = _proveedor()
+    secret_read = "ci-only-dummy-key-read-123"
+    secret_write = "ci-only-dummy-key-write-456"
+    secret_pass = "ci-only-dummy-key-pass-789"
+
+    resp_post = _client(user_a).post(
+        "/api/integration-hub/instancias/",
+        {
+            "id_proveedor": str(prov.pk),
+            "nombre": "Odoo Seguro",
+            "configuracion": {
+                "host": "https://seguro.odoo.com",
+                "user": "reader@seguro.com",
+                "api_key": secret_read,
+                "write_user": "writer@seguro.com",
+                "write_api_key": secret_write,
+                "password": secret_pass,
+                "push_habilitado": True,
+            },
+            "entidades_activas": ["pagos"],
+        },
+        format="json",
+    )
+    assert resp_post.status_code == 201, resp_post.data
+
+    inst_id = resp_post.data["id_conector"]
+    resp_put = _client(user_a).put(
+        f"/api/integration-hub/instancias/{inst_id}/",
+        {
+            "id_proveedor": str(prov.pk),
+            "nombre": "Odoo Seguro PUT",
+            "configuracion": {
+                "host": "https://seguro-put.odoo.com",
+                "user": "reader@seguro.com",
+                "api_key": "ci-only-dummy-key-read-put-999",
+                "write_user": "writer@seguro.com",
+                "write_api_key": "ci-only-dummy-key-write-put-999",
+            },
+            "entidades_activas": ["pagos"],
+        },
+        format="json",
+    )
+    assert resp_put.status_code == 200, resp_put.data
+
+    resp_patch = _client(user_a).patch(
+        f"/api/integration-hub/instancias/{inst_id}/",
+        {
+            "configuracion": {
+                "host": "https://seguro-patch.odoo.com",
+                "user": "reader@seguro.com",
+                "api_key": "ci-only-dummy-key-read-patch-000",
+            }
+        },
+        format="json",
+    )
+    assert resp_patch.status_code == 200, resp_patch.data
+
+    for resp, forbidden_vals in (
+        (resp_post, (secret_read, secret_write, secret_pass)),
+        (resp_put, ("ci-only-dummy-key-read-put-999", "ci-only-dummy-key-write-put-999")),
+        (resp_patch, ("ci-only-dummy-key-read-patch-000", "ci-only-dummy-key-write-put-999")),
+    ):
+        assert "configuracion" not in resp.data
+        assert "configuracion_publica" in resp.data
+        pub = resp.data["configuracion_publica"]
+        for secret_key in ("api_key", "write_api_key", "password", "service_account"):
+            assert secret_key not in pub
+        dumped = json.dumps(resp.data, default=str)
+        for secret_val in forbidden_vals:
+            assert secret_val not in dumped
+            assert secret_val not in resp.content.decode("utf-8")
+
+
+def test_post_patch_rechazan_espacios_en_blanco_en_credenciales(empresa_a, user_a):
+    """Espacios en blanco en host/user/api_key deben rechazarse en creación y edición."""
+    prov = _proveedor()
+    for bad_cfg in (
+        {"host": "   ", "user": "u", "api_key": "k"},
+        {"host": "https://h.odoo.com", "user": "   ", "api_key": "k"},
+        {"host": "https://h.odoo.com", "user": "u", "api_key": "   "},
+    ):
+        resp = _client(user_a).post(
+            "/api/integration-hub/instancias/",
+            {"id_proveedor": str(prov.pk), "nombre": "Blank cfg", "configuracion": bad_cfg},
+            format="json",
+        )
+        assert resp.status_code == 400
+
+    inst = _instancia(empresa_a)
+    resp_patch = _client(user_a).patch(
+        f"/api/integration-hub/instancias/{inst.pk}/",
+        {"configuracion": {"host": "   ", "user": "u"}},
+        format="json",
+    )
+    assert resp_patch.status_code == 400

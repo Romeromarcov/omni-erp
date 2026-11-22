@@ -30,9 +30,7 @@ PASSWORD = "solo-para-tests-ctf012"  # nosec B105 — credencial efímera de tes
 def rol_limpio(db):
     """Skip si la conexión no puede crear roles; garantiza que ROL no exista."""
     with connection.cursor() as cur:
-        cur.execute(
-            "SELECT rolsuper OR rolcreaterole FROM pg_roles WHERE rolname = current_user"
-        )
+        cur.execute("SELECT rolsuper OR rolcreaterole FROM pg_roles WHERE rolname = current_user")
         if not cur.fetchone()[0]:
             pytest.skip("El rol de conexión no tiene CREATEROLE; no se puede probar")
 
@@ -89,14 +87,11 @@ def test_crea_rol_no_dueno_con_grants_minimos(rol_limpio, monkeypatch):
         )
         secuencia = cur.fetchone()
         if secuencia:
-            cur.execute(
-                "SELECT has_sequence_privilege(%s, %s, 'USAGE')", [ROL, secuencia[0]]
-            )
+            cur.execute("SELECT has_sequence_privilege(%s, %s, 'USAGE')", [ROL, secuencia[0]])
             assert cur.fetchone()[0], f"Falta USAGE sobre la secuencia {secuencia[0]}"
         # Default privileges para tablas futuras del rol dueño.
         cur.execute(
-            "SELECT count(*) FROM pg_default_acl d"
-            " WHERE d.defaclacl::text LIKE %s",
+            "SELECT count(*) FROM pg_default_acl d" " WHERE d.defaclacl::text LIKE %s",
             [f"%{ROL}=%"],
         )
         assert cur.fetchone()[0] >= 1, "Faltan ALTER DEFAULT PRIVILEGES hacia el rol"
@@ -139,3 +134,21 @@ def test_rechaza_nombre_de_rol_invalido(db, monkeypatch):
     monkeypatch.setenv(ENV_PASSWORD, PASSWORD)
     with pytest.raises(CommandError, match="Identificador SQL inválido"):
         call_command("configurar_rol_rls", rol='mal"; DROP ROLE x;--', stdout=io.StringIO())
+
+
+def test_auditoria_sin_update_ni_delete_para_rol_runtime(rol_limpio, monkeypatch):
+    """P1-5 (R13): el rol de runtime solo tiene SELECT/INSERT en tablas de auditoría."""
+    from django.core.management import call_command
+    from django.db import connection
+
+    monkeypatch.setenv("OMNI_APP_DB_PASSWORD", "test_pwd_12345")
+    call_command("configurar_rol_rls", rol=ROL)
+
+    with connection.cursor() as cur:
+        for tabla in ("public.auditoria_logauditoria", "public.registro_auditoria"):
+            for priv in ("SELECT", "INSERT"):
+                cur.execute("SELECT has_table_privilege(%s, %s, %s)", [ROL, tabla, priv])
+                assert cur.fetchone()[0] is True, f"{ROL} debería conservar {priv} en {tabla}"
+            for priv in ("UPDATE", "DELETE"):
+                cur.execute("SELECT has_table_privilege(%s, %s, %s)", [ROL, tabla, priv])
+                assert cur.fetchone()[0] is False, f"{ROL} NO debe tener {priv} en {tabla}"

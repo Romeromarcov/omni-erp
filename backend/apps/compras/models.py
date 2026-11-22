@@ -1,4 +1,3 @@
-import uuid
 from apps.core.uuid import uuid7
 
 from django.db import models
@@ -8,6 +7,20 @@ class OrdenCompra(models.Model):
     id_orden_compra = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE)
     id_proveedor = models.ForeignKey("proveedores.Proveedor", on_delete=models.CASCADE)
+    id_oferta_origen = models.ForeignKey(
+        "OfertaProveedor",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="ordenes_compra_generadas",
+    )
+    id_almacen_destino = models.ForeignKey(
+        "almacenes.Almacen",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="ordenes_compra",
+    )
     referencia_externa = models.CharField(max_length=100, null=True, blank=True)
     documento_json = models.JSONField(null=True, blank=True)
     tipo_operacion = models.CharField(max_length=50, null=True, blank=True)
@@ -102,7 +115,16 @@ class DetalleRecepcionMercancia(models.Model):
 class FacturaCompra(models.Model):
     id_factura_compra = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="facturas_compra")
-    id_orden_compra = models.ForeignKey(OrdenCompra, on_delete=models.CASCADE, related_name="facturas")
+    id_orden_compra = models.ForeignKey(
+        OrdenCompra, on_delete=models.SET_NULL, null=True, blank=True, related_name="facturas"
+    )
+    id_proveedor = models.ForeignKey(
+        "proveedores.Proveedor",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="facturas_compra",
+    )
     id_recepcion = models.ForeignKey(
         RecepcionMercancia, on_delete=models.SET_NULL, null=True, blank=True, related_name="facturas"
     )
@@ -206,6 +228,10 @@ class SolicitudCotizacion(models.Model):
         default="BORRADOR",
     )
     observaciones = models.TextField(null=True, blank=True)
+    requisiciones = models.ManyToManyField(RequisicionCompra, blank=True, related_name="solicitudes_cotizacion")
+    proveedores_invitados = models.ManyToManyField(
+        "proveedores.Proveedor", blank=True, related_name="solicitudes_cotizacion"
+    )
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:

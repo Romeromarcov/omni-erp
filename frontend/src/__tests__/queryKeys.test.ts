@@ -11,6 +11,7 @@ import {
   finanzasKeys,
   rrhhKeys,
   nominaKeys,
+  tareasKeys,
 } from '../lib/queryKeys';
 
 describe('queryKeys factory', () => {
@@ -133,5 +134,52 @@ describe('queryKeys factory', () => {
     expect(nominaKeys.recibos('p1').slice(0, procAll.length)).toEqual(procAll);
     // Los períodos NO deben invalidarse al procesar.
     expect(nominaKeys.periodos().slice(0, procAll.length)).not.toEqual(procAll);
+  });
+
+  it('tareasKeys aísla caché por empresaId y mantiene jerarquía de invalidación', () => {
+    expect(tareasKeys.all()).toEqual(['tareas']);
+    const emp = tareasKeys.porEmpresa('emp-1');
+    expect(emp).toEqual(['tareas', 'emp-1']);
+    expect(tareasKeys.porEmpresa()).toEqual(['tareas', null]);
+
+    expect(tareasKeys.areas('emp-1').slice(0, emp.length)).toEqual(emp);
+    expect(tareasKeys.proyectos('emp-1', false).slice(0, emp.length)).toEqual(emp);
+    expect(tareasKeys.proyectos()).toEqual(['tareas', null, 'proyectos', null]);
+    expect(tareasKeys.miTablero('emp-1')).toEqual(['tareas', 'emp-1', 'mi-tablero']);
+    expect(tareasKeys.secciones('emp-1', 'p1')).toEqual(['tareas', 'emp-1', 'secciones', 'p1']);
+    expect(tareasKeys.secciones()).toEqual(['tareas', null, 'secciones', null]);
+
+    const itemsAll = tareasKeys.itemsAll('emp-1');
+    expect(tareasKeys.items('emp-1', { estado: 'PENDIENTE' }).slice(0, itemsAll.length)).toEqual(
+      itemsAll,
+    );
+    expect(tareasKeys.items()).toEqual([
+      'tareas',
+      null,
+      'items',
+      'list',
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+    ]);
+    expect(tareasKeys.item('emp-1', 't1').slice(0, itemsAll.length)).toEqual(itemsAll);
+    expect(tareasKeys.comentarios('emp-1', 't1').slice(0, itemsAll.length)).toEqual(itemsAll);
+    expect(tareasKeys.dependencias('emp-1', 't1').slice(0, itemsAll.length)).toEqual(itemsAll);
+
+    expect(tareasKeys.recurrentes('emp-1')).toEqual(['tareas', 'emp-1', 'recurrentes']);
+    expect(tareasKeys.minutas('emp-1')).toEqual(['tareas', 'emp-1', 'minutas']);
+    expect(tareasKeys.configuracion('emp-1')).toEqual(['tareas', 'emp-1', 'configuracion']);
+    expect(tareasKeys.resumen('emp-1', '2026-11-20')).toEqual([
+      'tareas',
+      'emp-1',
+      'resumen',
+      '2026-11-20',
+    ]);
+    expect(tareasKeys.resumen()).toEqual(['tareas', null, 'resumen', null]);
+    expect(tareasKeys.alertas('emp-1')).toEqual(['tareas', 'emp-1', 'alertas']);
   });
 });

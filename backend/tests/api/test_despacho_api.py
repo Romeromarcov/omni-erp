@@ -48,9 +48,7 @@ def _escenario_venta(empresa, moneda, sufijo):
     unidad = UnidadMedida.objects.create(
         id_empresa=empresa, nombre=f"Unidad {sufijo}", abreviatura=f"UN-{sufijo}", tipo="CANTIDAD"
     )
-    categoria = CategoriaProducto.objects.create(
-        id_empresa=empresa, nombre_categoria=f"Cat {sufijo}"
-    )
+    categoria = CategoriaProducto.objects.create(id_empresa=empresa, nombre_categoria=f"Cat {sufijo}")
     producto = Producto.objects.create(
         id_empresa=empresa,
         nombre_producto=f"Producto {sufijo}",
@@ -167,9 +165,7 @@ class TestDespachoCRUD:
         resp = _crear_despacho_api(client_a, venta_a)
         assert resp.status_code == 201
         pk = resp.data["id_despacho"]
-        resp = client_a.patch(
-            f"{URL}{pk}/", {"estado_despacho": "ENTREGADO", "observaciones": "ok"}, format="json"
-        )
+        resp = client_a.patch(f"{URL}{pk}/", {"estado_despacho": "ENTREGADO", "observaciones": "ok"}, format="json")
         assert resp.status_code == 200
         assert resp.data["estado_despacho"] == "PENDIENTE"
         assert resp.data["observaciones"] == "ok"
@@ -210,9 +206,7 @@ class TestDesdeNotaVenta:
     def test_despacho_parcial_y_acumulado(self, client_a, venta_a):
         producto_id = str(venta_a["producto"].id_producto)
         # Primer viaje: 6 de 10.
-        resp = _crear_despacho_api(
-            client_a, venta_a, lineas=[{"id_producto": producto_id, "cantidad": "6"}]
-        )
+        resp = _crear_despacho_api(client_a, venta_a, lineas=[{"id_producto": producto_id, "cantidad": "6"}])
         assert resp.status_code == 201, resp.data
         # Segundo viaje: el total pendiente (4).
         resp = _crear_despacho_api(client_a, venta_a)
@@ -225,30 +219,22 @@ class TestDesdeNotaVenta:
 
     def test_sobre_despacho_rechazado_400(self, client_a, venta_a):
         producto_id = str(venta_a["producto"].id_producto)
-        resp = _crear_despacho_api(
-            client_a, venta_a, lineas=[{"id_producto": producto_id, "cantidad": "11"}]
-        )
+        resp = _crear_despacho_api(client_a, venta_a, lineas=[{"id_producto": producto_id, "cantidad": "11"}])
         assert resp.status_code == 400
         assert "Sobre-despacho" in str(resp.data)
         assert Despacho.objects.count() == 0
 
     def test_cancelado_libera_cupo(self, client_a, venta_a):
         producto_id = str(venta_a["producto"].id_producto)
-        resp = _crear_despacho_api(
-            client_a, venta_a, lineas=[{"id_producto": producto_id, "cantidad": "10"}]
-        )
+        resp = _crear_despacho_api(client_a, venta_a, lineas=[{"id_producto": producto_id, "cantidad": "10"}])
         pk = resp.data["id_despacho"]
         # Con todo el cupo consumido, otro despacho falla…
-        resp = _crear_despacho_api(
-            client_a, venta_a, lineas=[{"id_producto": producto_id, "cantidad": "1"}]
-        )
+        resp = _crear_despacho_api(client_a, venta_a, lineas=[{"id_producto": producto_id, "cantidad": "1"}])
         assert resp.status_code == 400
         # …pero al cancelar, el cupo vuelve a estar disponible.
         resp = client_a.post(f"{URL}{pk}/cancelar/", {"motivo": "Camión averiado"}, format="json")
         assert resp.status_code == 200
-        resp = _crear_despacho_api(
-            client_a, venta_a, lineas=[{"id_producto": producto_id, "cantidad": "10"}]
-        )
+        resp = _crear_despacho_api(client_a, venta_a, lineas=[{"id_producto": producto_id, "cantidad": "10"}])
         assert resp.status_code == 201, resp.data
 
     def test_nota_borrador_rechazada(self, client_a, venta_a):
@@ -269,9 +255,7 @@ class TestDesdeNotaVenta:
 
     def test_cantidad_no_positiva_rechazada(self, client_a, venta_a):
         producto_id = str(venta_a["producto"].id_producto)
-        resp = _crear_despacho_api(
-            client_a, venta_a, lineas=[{"id_producto": producto_id, "cantidad": "0"}]
-        )
+        resp = _crear_despacho_api(client_a, venta_a, lineas=[{"id_producto": producto_id, "cantidad": "0"}])
         assert resp.status_code == 400
 
     def test_producto_repetido_rechazado(self, client_a, venta_a):
@@ -296,9 +280,7 @@ class TestDesdeNotaVenta:
         assert resp.status_code == 400
 
     def test_transportista_asignado(self, client_a, venta_a, transportista_a):
-        resp = _crear_despacho_api(
-            client_a, venta_a, id_transportista=str(transportista_a.pk)
-        )
+        resp = _crear_despacho_api(client_a, venta_a, id_transportista=str(transportista_a.pk))
         assert resp.status_code == 201
         assert resp.data["id_transportista"] == transportista_a.pk
 
@@ -339,26 +321,20 @@ class TestTransiciones:
 
     def test_devolver_en_ruta(self, client_a, despacho_a):
         client_a.post(f"{URL}{despacho_a}/iniciar-ruta/", {}, format="json")
-        resp = client_a.post(
-            f"{URL}{despacho_a}/devolver/", {"motivo": "Cliente ausente"}, format="json"
-        )
+        resp = client_a.post(f"{URL}{despacho_a}/devolver/", {"motivo": "Cliente ausente"}, format="json")
         assert resp.status_code == 200
         assert resp.data["estado_despacho"] == "DEVUELTO"
         assert resp.data["fecha_devolucion"] is not None
         assert resp.data["documento_json"]["devolucion"]["motivo"] == "Cliente ausente"
 
     def test_cancelar_pendiente(self, client_a, despacho_a):
-        resp = client_a.post(
-            f"{URL}{despacho_a}/cancelar/", {"motivo": "Pedido duplicado"}, format="json"
-        )
+        resp = client_a.post(f"{URL}{despacho_a}/cancelar/", {"motivo": "Pedido duplicado"}, format="json")
         assert resp.status_code == 200
         assert resp.data["estado_despacho"] == "CANCELADO"
         assert resp.data["fecha_cancelacion"] is not None
 
     def test_no_entregar_lo_pendiente_sin_ruta(self, client_a, despacho_a):
-        resp = client_a.post(
-            f"{URL}{despacho_a}/entregar/", {"receptor": "Alguien"}, format="json"
-        )
+        resp = client_a.post(f"{URL}{despacho_a}/entregar/", {"receptor": "Alguien"}, format="json")
         assert resp.status_code == 400
         assert "Transición inválida" in str(resp.data)
 
@@ -394,9 +370,7 @@ class TestTransiciones:
 
 
 class TestFiltros:
-    def test_filtros_estado_transportista_nota_y_fechas(
-        self, client_a, venta_a, transportista_a
-    ):
+    def test_filtros_estado_transportista_nota_y_fechas(self, client_a, venta_a, transportista_a):
         r1 = _crear_despacho_api(
             client_a,
             venta_a,
@@ -499,9 +473,7 @@ class TestAislamiento:
 
 
 def _token(empresa, scopes):
-    return CapabilityToken.objects.create(
-        empresa=empresa, nombre="tok-despacho-test", scopes=scopes, activo=True
-    )
+    return CapabilityToken.objects.create(empresa=empresa, nombre="tok-despacho-test", scopes=scopes, activo=True)
 
 
 class TestMCPDespachosPendientes:
@@ -524,9 +496,7 @@ class TestMCPDespachosPendientes:
         assert primero["nota_venta"] == venta_a["nota"].numero_nota
         assert primero["transportista"] == "Carlos Chofer"
 
-        solo_pendientes = despacho_get_pendientes(
-            str(token.token), str(empresa_a.id_empresa), incluir_en_ruta=False
-        )
+        solo_pendientes = despacho_get_pendientes(str(token.token), str(empresa_a.id_empresa), incluir_en_ruta=False)
         assert {d["estado"] for d in solo_pendientes} == {"PENDIENTE"}
 
     def test_scope_faltante_rechazado(self, empresa_a):

@@ -1,4 +1,5 @@
 """Cubre el comando A1 `mapa_superficie` (Fase 0 — para satisfacer diff-cover)."""
+
 import pytest
 from django.core.management import call_command
 
@@ -38,14 +39,13 @@ def test_helpers_clasifican_tenant():
     from apps.core.management.commands.mapa_superficie import _es_tenant, _model_de
     from apps.crm.models import Cliente
 
-    assert _es_tenant(Cliente) is True       # tiene id_empresa concreto
+    assert _es_tenant(Cliente) is True  # tiene id_empresa concreto
     assert _es_tenant(None) is False
-    assert _model_de(object) is None          # objeto sin queryset/serializer
+    assert _model_de(object) is None  # objeto sin queryset/serializer
 
     # Existe al menos un modelo sin campo de empresa concreto → clasificado False.
     no_tenant = [
-        m for m in dj_apps.get_models()
-        if not ({f.name for f in m._meta.concrete_fields} & {"empresa", "id_empresa"})
+        m for m in dj_apps.get_models() if not ({f.name for f in m._meta.concrete_fields} & {"empresa", "id_empresa"})
     ]
     assert no_tenant, "se esperaba al menos un modelo no-tenant"
     assert _es_tenant(no_tenant[0]) is False

@@ -4,6 +4,7 @@ Tests de cobertura de las views del Integration Hub (apps/integration_hub/views.
 Rutas bajo /api/integration-hub/ (ver config/urls.py).
 Todo acceso al sistema externo se mockea vía registry.get_connector — CERO red real.
 """
+
 import pytest
 from unittest.mock import MagicMock, patch
 
@@ -84,9 +85,7 @@ class TestProveedoresEndpoint:
         assert "fake_views" in codigos
 
     def test_proveedor_inactivo_no_aparece(self, client_a, proveedor):
-        ConectorProveedor.objects.create(
-            codigo="apagado", nombre="Apagado", activo=False
-        )
+        ConectorProveedor.objects.create(codigo="apagado", nombre="Apagado", activo=False)
         resp = client_a.get(f"{BASE}/proveedores/")
         assert "apagado" not in [p["codigo"] for p in resp.data]
 
@@ -144,13 +143,22 @@ class TestInstanciasCRUD:
     def test_detalle_no_expone_api_key(self, client_a, instancia):
         resp = client_a.get(f"{BASE}/instancias/{instancia.id_conector}/")
         assert resp.status_code == 200
-        assert resp.data["configuracion_publica"] == {
+        cfg_pub = resp.data["configuracion_publica"]
+        assert cfg_pub == {
             "host": "fake.local",
             "db": "",
             "user": "u",
             "timeout": 30,
+            "push_habilitado": False,
+            "push_modo_pago": "borrador",
+            "write_user": "",
+            "tiene_write_api_key": False,
+            "diario_pagos_default_id": None,
         }
-        assert "api_key" not in str(resp.data)
+        assert "api_key" not in cfg_pub
+        assert "write_api_key" not in cfg_pub
+        assert "password" not in cfg_pub
+        assert "service_account" not in cfg_pub
 
     def test_aislamiento_empresa_b_no_ve_instancia_de_a(self, client_b, instancia):
         resp = client_b.get(f"{BASE}/instancias/")
@@ -166,8 +174,10 @@ class TestTestConnectionAction:
     def test_conexion_exitosa_activa_instancia(self, client_a, instancia):
         conector = _mock_conector()
         conector.test_connection.return_value = TestConnectionResult(
-            success=True, message="Conexión exitosa con Odoo 17.0",
-            version="17.0", details={"uid": 2},
+            success=True,
+            message="Conexión exitosa con Odoo 17.0",
+            version="17.0",
+            details={"uid": 2},
         )
         with patch.object(registry, "get_connector", return_value=conector):
             resp = client_a.post(f"{BASE}/instancias/{instancia.id_conector}/test/")
@@ -186,9 +196,7 @@ class TestTestConnectionAction:
 
     def test_conexion_fallida_marca_error(self, client_a, instancia):
         conector = _mock_conector()
-        conector.test_connection.return_value = TestConnectionResult(
-            success=False, message="Credenciales inválidas"
-        )
+        conector.test_connection.return_value = TestConnectionResult(success=False, message="Credenciales inválidas")
         with patch.object(registry, "get_connector", return_value=conector):
             resp = client_a.post(f"{BASE}/instancias/{instancia.id_conector}/test/")
 
@@ -199,9 +207,7 @@ class TestTestConnectionAction:
         assert instancia.mensaje_estado == "Credenciales inválidas"
 
     def test_excepcion_retorna_502(self, client_a, instancia):
-        with patch.object(
-            registry, "get_connector", side_effect=RuntimeError("sin conector")
-        ):
+        with patch.object(registry, "get_connector", side_effect=RuntimeError("sin conector")):
             resp = client_a.post(f"{BASE}/instancias/{instancia.id_conector}/test/")
 
         assert resp.status_code == 502
@@ -264,9 +270,12 @@ class TestTriggerSyncAction:
 
     def test_sync_fallback_sincronico_si_celery_falla(self, client_a, instancia):
         conector = _mock_conector()
-        with patch.object(registry, "get_connector", return_value=conector), patch(
-            "apps.integration_hub.tasks.ejecutar_job_sincronizacion.delay",
-            side_effect=RuntimeError("broker caído"),
+        with (
+            patch.object(registry, "get_connector", return_value=conector),
+            patch(
+                "apps.integration_hub.tasks.ejecutar_job_sincronizacion.delay",
+                side_effect=RuntimeError("broker caído"),
+            ),
         ):
             resp = client_a.post(
                 f"{BASE}/instancias/{instancia.id_conector}/sync/",
@@ -319,9 +328,7 @@ class TestJobsYEntidadesActions:
             tipo_entidad="productos",
             id_externo="99",
         )
-        resp = client_a.get(
-            f"{BASE}/instancias/{instancia.id_conector}/entidades/contactos/"
-        )
+        resp = client_a.get(f"{BASE}/instancias/{instancia.id_conector}/entidades/contactos/")
         assert resp.status_code == 200
         assert len(resp.data) == 1
         assert resp.data[0]["id_externo"] == "55"
@@ -333,9 +340,7 @@ class TestPreviewAction:
         registros = [{"id_externo": str(i), "nombre": f"C{i}"} for i in range(15)]
         conector = _mock_conector(registros=registros)
         with patch.object(registry, "get_connector", return_value=conector):
-            resp = client_a.get(
-                f"{BASE}/instancias/{instancia.id_conector}/preview/contactos/"
-            )
+            resp = client_a.get(f"{BASE}/instancias/{instancia.id_conector}/preview/contactos/")
         assert resp.status_code == 200
         assert resp.data["tipo_entidad"] == "contactos"
         assert len(resp.data["muestra"]) == 10  # máximo 10 en preview
@@ -345,28 +350,20 @@ class TestPreviewAction:
         conector = _mock_conector()
         conector.supports.return_value = False
         with patch.object(registry, "get_connector", return_value=conector):
-            resp = client_a.get(
-                f"{BASE}/instancias/{instancia.id_conector}/preview/contactos/"
-            )
+            resp = client_a.get(f"{BASE}/instancias/{instancia.id_conector}/preview/contactos/")
         assert resp.status_code == 400
         assert "no soportado" in resp.data["error"]
 
     def test_preview_sin_metodo_pull_400(self, client_a, instancia):
         conector = _mock_conector()
         with patch.object(registry, "get_connector", return_value=conector):
-            resp = client_a.get(
-                f"{BASE}/instancias/{instancia.id_conector}/preview/empleados/"
-            )
+            resp = client_a.get(f"{BASE}/instancias/{instancia.id_conector}/preview/empleados/")
         assert resp.status_code == 400
         assert "Sin método pull" in resp.data["error"]
 
     def test_preview_error_de_registry_502(self, client_a, instancia):
-        with patch.object(
-            registry, "get_connector", side_effect=RuntimeError("config rota")
-        ):
-            resp = client_a.get(
-                f"{BASE}/instancias/{instancia.id_conector}/preview/contactos/"
-            )
+        with patch.object(registry, "get_connector", side_effect=RuntimeError("config rota")):
+            resp = client_a.get(f"{BASE}/instancias/{instancia.id_conector}/preview/contactos/")
         assert resp.status_code == 502
         # SEC-M4 (R-CODE-8): el detalle interno NO se filtra al cliente.
         assert "config rota" not in resp.data["error"]
@@ -375,9 +372,7 @@ class TestPreviewAction:
         conector = _mock_conector()
         conector.pull_contactos.side_effect = RuntimeError("timeout externo")
         with patch.object(registry, "get_connector", return_value=conector):
-            resp = client_a.get(
-                f"{BASE}/instancias/{instancia.id_conector}/preview/contactos/"
-            )
+            resp = client_a.get(f"{BASE}/instancias/{instancia.id_conector}/preview/contactos/")
         assert resp.status_code == 502
         # SEC-M4 (R-CODE-8): el detalle interno NO se filtra al cliente.
         assert "timeout externo" not in resp.data["error"]
@@ -385,9 +380,7 @@ class TestPreviewAction:
 
 class TestJobViewSet:
     def test_lista_jobs_solo_de_mi_empresa(self, client_a, client_b, instancia):
-        job = JobSincronizacion.objects.create(
-            id_instancia=instancia, tipo_entidad="contactos", estado="completado"
-        )
+        job = JobSincronizacion.objects.create(id_instancia=instancia, tipo_entidad="contactos", estado="completado")
         resp_a = client_a.get(f"{BASE}/jobs/")
         assert resp_a.status_code == 200
         ids_a = [j["id_job"] for j in resp_a.data.get("results", resp_a.data)]
@@ -398,12 +391,8 @@ class TestJobViewSet:
         assert str(job.id_job) not in [str(i) for i in ids_b]
 
     def test_logs_de_un_job(self, client_a, instancia):
-        job = JobSincronizacion.objects.create(
-            id_instancia=instancia, tipo_entidad="contactos", estado="completado"
-        )
-        LogDetalleSincronizacion.objects.create(
-            id_job=job, id_externo="3", id_omni="o-3", operacion="crear"
-        )
+        job = JobSincronizacion.objects.create(id_instancia=instancia, tipo_entidad="contactos", estado="completado")
+        LogDetalleSincronizacion.objects.create(id_job=job, id_externo="3", id_omni="o-3", operacion="crear")
         resp = client_a.get(f"{BASE}/jobs/{job.id_job}/logs/")
         assert resp.status_code == 200
         assert len(resp.data) == 1
@@ -411,9 +400,7 @@ class TestJobViewSet:
         assert resp.data[0]["operacion"] == "crear"
 
     def test_cancelar_job_pendiente(self, client_a, instancia):
-        job = JobSincronizacion.objects.create(
-            id_instancia=instancia, tipo_entidad="contactos", estado="pendiente"
-        )
+        job = JobSincronizacion.objects.create(id_instancia=instancia, tipo_entidad="contactos", estado="pendiente")
         resp = client_a.post(f"{BASE}/jobs/{job.id_job}/cancelar/")
         assert resp.status_code == 200
         job.refresh_from_db()
@@ -441,9 +428,7 @@ class TestJobViewSet:
             estado="en_progreso",
             celery_task_id="task-xyz",
         )
-        with patch(
-            "config.celery.app.control.revoke", side_effect=RuntimeError("broker caído")
-        ):
+        with patch("config.celery.app.control.revoke", side_effect=RuntimeError("broker caído")):
             resp = client_a.post(f"{BASE}/jobs/{job.id_job}/cancelar/")
         # El error de revoke se traga (except pass) y el job se cancela igual
         assert resp.status_code == 200
@@ -451,9 +436,7 @@ class TestJobViewSet:
         assert job.estado == "cancelado"
 
     def test_cancelar_job_completado_400(self, client_a, instancia):
-        job = JobSincronizacion.objects.create(
-            id_instancia=instancia, tipo_entidad="contactos", estado="completado"
-        )
+        job = JobSincronizacion.objects.create(id_instancia=instancia, tipo_entidad="contactos", estado="completado")
         resp = client_a.post(f"{BASE}/jobs/{job.id_job}/cancelar/")
         assert resp.status_code == 400
         assert "completado" in resp.data["error"]

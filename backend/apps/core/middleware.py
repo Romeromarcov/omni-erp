@@ -32,15 +32,19 @@ class RLSContextMiddleware:
             raise MiddlewareNotUsed()
 
     def __call__(self, request):
-        self._apply_context(request)
+        from .viewsets import iniciar_cache_empresas_visible, limpiar_cache_empresas_visible
+
+        cache_token = iniciar_cache_empresas_visible()
         response = None
         try:
+            self._apply_context(request)
             response = self.get_response(request)
             return response
         finally:
+            limpiar_cache_empresas_visible(cache_token)
             # En respuestas en streaming (SSE) el cuerpo se genera DESPUÉS de
             # salir de este middleware; resetear aquí dejaría al generador sin
-            # contexto RLS (correría con bypass on, perdiendo el aislamiento).
+            # contexto RLS (perdería el aislamiento o quedaría sin tenant).
             # Con CONN_MAX_AGE=0 la conexión se cierra al terminar el stream, así
             # que no reseteamos. Si se habilita pooling/pgbouncer habrá que fijar
             # el contexto dentro del generador (ver docs/planes/05-seguridad-hardening.md).
@@ -48,34 +52,46 @@ class RLSContextMiddleware:
                 rls.apply_system_default()
 
     def _apply_context(self, request) -> None:
-        user = self._resolve_user(request)
-        if user is None or not getattr(user, "is_authenticated", False):
-            # Anónimo => fail-closed (sin empresas, sin bypass).
-            rls.apply_context([], bypass=False)
-            return
-        if getattr(user, "es_superusuario_omni", False):
-            rls.apply_context([], bypass=True)
-            return
-        from .viewsets import get_empresas_visible
+        # Garantiza punto de partida limpio antes de consultar tablas de autenticación.
+        rls.apply_system_default()
+        bypass = False
+        empresa_ids: list = []
+        try:
+            # Solo la resolución de credenciales/membresía corre bajo bypass para poder
+            # leer CapabilityToken / usuarios_empresas aunque la conexión arranque fail-closed.
+            with rls.rls_bypass():
+                user = self._resolve_user(request)
+                if user is not None and getattr(user, "is_authenticated", False):
+                    if getattr(user, "es_superusuario_omni", False):
+                        bypass = True
+                    else:
+                        from .viewsets import get_empresas_visible
 
-        empresa_ids = list(
-            get_empresas_visible(user).values_list("id_empresa", flat=True)
-        )
-        rls.apply_context(empresa_ids, bypass=False)
+                        empresa_ids = list(get_empresas_visible(user).values_list("id_empresa", flat=True))
+        finally:
+            rls.apply_context(empresa_ids, bypass=bypass)
 
     @staticmethod
     def _resolve_user(request):
         user = getattr(request, "user", None)
         if user is not None and getattr(user, "is_authenticated", False):
             return user
-        # Resolver vía JWT (la API no usa sesión).
+        # 1. Resolver vía JWT (la API no usa sesión).
         try:
             from rest_framework_simplejwt.authentication import JWTAuthentication
 
             result = JWTAuthentication().authenticate(request)
         except Exception:
-            # Token inválido/ausente => tratado como anónimo (fail-closed).
-            return None
+            result = None
         if result is not None:
             return result[0]
+        # 2. Resolver vía CapabilityToken (servicios máquina-a-máquina).
+        try:
+            from .capability_auth import resolve_capability_principal
+
+            cap = resolve_capability_principal(request, mark_used=False)
+        except Exception:
+            return None
+        if cap is not None:
+            return cap[0]
         return None

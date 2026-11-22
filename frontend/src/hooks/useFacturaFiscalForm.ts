@@ -7,7 +7,7 @@ import { getEmpresaId } from '../utils/empresa';
 import type { Pago } from '../components/Pedidos/ModalPago';
 import { FacturaFiscalService } from '../services/ventas';
 import { useDocumentoVentaBase } from './useDocumentoVentaBase';
-import { D } from '../lib/decimal';
+import { subtotalLinea, toFixedStr } from '../lib/decimal';
 import { facturaFiscalFormSchema, type FacturaFiscalFormInput } from '../schemas/ventas.schemas';
 
 const facturaFiscalService = new FacturaFiscalService();
@@ -74,7 +74,7 @@ export const useFacturaFiscalForm = (facturaId?: string) => {
         : [],
     });
     base.setLoading(false);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intencional: base cambia cada render; solo rehidratar al cargar facturaData
   }, [facturaData, isLoadingFactura]);
 
   const submitFacturaFiscal = async (values: FacturaFiscalFormInput, pagosToSend?: Pago[]) => {
@@ -92,10 +92,10 @@ export const useFacturaFiscalForm = (facturaId?: string) => {
 
     const detallesConSubtotal = values.detalles.map(d => ({
       id_producto: d.id_producto,
-      cantidad: Number(d.cantidad),
-      precio_unitario: Number(d.precio_unitario),
-      descuento_porcentaje: Number(d.descuento_porcentaje || 0),
-      subtotal: D(d.cantidad).times(D(d.precio_unitario)).toFixed(2),
+      cantidad: d.cantidad,
+      precio_unitario: d.precio_unitario,
+      descuento_porcentaje: d.descuento_porcentaje || '0',
+      subtotal: toFixedStr(subtotalLinea(d.cantidad, d.precio_unitario, d.descuento_porcentaje)),
     }));
     const payload: Record<string, unknown> = {
       ...values,

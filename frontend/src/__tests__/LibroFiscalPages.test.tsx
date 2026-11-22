@@ -107,7 +107,7 @@ describe('LibroVentasPage', () => {
     });
   });
 
-  it('shows summary cards with correct totals', async () => {
+  it('shows summary cards and formatted es-VE amounts with correct totals', async () => {
     vi.mocked(libroService.fetchLibroVentasTxt).mockResolvedValue(mockEntries);
     renderVentas();
     fireEvent.click(screen.getByRole('button', { name: /consultar/i }));
@@ -115,6 +115,14 @@ describe('LibroVentasPage', () => {
     await waitFor(() => {
       // Total count: 2
       expect(screen.getByText('2')).toBeInTheDocument();
+      // Filas individuales en locale es-VE
+      expect(screen.getByText('1.000,00')).toBeInTheDocument();
+      expect(screen.getByText('160,00')).toBeInTheDocument();
+      expect(screen.getByText('1.160,00')).toBeInTheDocument();
+      // Totales en KPIs y fila TOTALES
+      expect(screen.getAllByText('3.000,00')).toHaveLength(2);
+      expect(screen.getAllByText('480,00')).toHaveLength(2);
+      expect(screen.getAllByText('3.480,00')).toHaveLength(2);
     });
   });
 
@@ -154,7 +162,7 @@ describe('LibroComprasPage', () => {
     expect(screen.getByRole('button', { name: /consultar/i })).toBeInTheDocument();
   });
 
-  it('fetches and shows entries after Consultar click', async () => {
+  it('fetches and shows entries with formatted es-VE amounts and totals after Consultar click', async () => {
     vi.mocked(libroService.fetchLibroComprasTxt).mockResolvedValue(mockEntries);
     renderCompras();
 
@@ -162,6 +170,11 @@ describe('LibroComprasPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('FAC-0001')).toBeInTheDocument();
+      expect(screen.getByText('2.000,00')).toBeInTheDocument();
+      expect(screen.getByText('320,00')).toBeInTheDocument();
+      expect(screen.getAllByText('3.000,00')).toHaveLength(2);
+      expect(screen.getAllByText('480,00')).toHaveLength(2);
+      expect(screen.getAllByText('3.480,00')).toHaveLength(2);
     });
   });
 

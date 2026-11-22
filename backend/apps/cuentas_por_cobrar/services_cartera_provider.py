@@ -7,6 +7,7 @@ Mode B (datasource='native'): Lee de CuentaPorCobrar nativo de Omni.
 CxC nunca llama al Hub ni a CuentaPorCobrar directamente.
 Siempre pasa por get_cartera_provider().
 """
+
 from __future__ import annotations
 
 import logging
@@ -17,20 +18,13 @@ logger = logging.getLogger(__name__)
 
 def _get_datasource_config(empresa) -> str:
     """
-    Lee configuracion_motor.ParametroSistema para el datasource de CxC.
+    Lee configuracion_motor.ParametroSistema para el datasource de CxC (cacheado).
     Por defecto: 'native'.
     """
-    from apps.configuracion_motor.models import ParametroSistema
+    from apps.configuracion_motor.services import obtener_parametro
 
-    try:
-        param = ParametroSistema.objects.get(
-            id_empresa=empresa,
-            codigo_parametro="cxc.datasource",
-            activo=True,
-        )
-        return param.valor_parametro.strip().lower()
-    except ParametroSistema.DoesNotExist:
-        return "native"
+    valor = obtener_parametro("cxc.datasource", empresa=empresa, default="native")
+    return (valor or "native").lower()
 
 
 def get_cartera_provider(empresa) -> "CarteraProvider":
@@ -78,9 +72,7 @@ class OdooCarteraProvider(CarteraProvider):
             )
             return registry.get_connector(instancia)
         except ConectorInstancia.DoesNotExist:
-            raise RuntimeError(
-                f"No hay instancia Odoo activa para empresa {self.empresa.pk}"
-            )
+            raise RuntimeError(f"No hay instancia Odoo activa para empresa {self.empresa.pk}")
 
     def get_partidas(self, solo_vencidas: bool = False, fecha_desde=None) -> list:
         from apps.cuentas_por_cobrar.services_aging import PartidaCartera
@@ -104,10 +96,14 @@ class NativeCarteraProvider(CarteraProvider):
         from apps.cuentas_por_cobrar.models import CuentaPorCobrar
         from apps.cuentas_por_cobrar.services_aging import PartidaCartera
 
-        qs = CuentaPorCobrar.objects.filter(
-            empresa=self.empresa,
-            estado__in=["pendiente", "parcial", "vencida"],
-        ).prefetch_related("abonos").select_related("cliente")
+        qs = (
+            CuentaPorCobrar.objects.filter(
+                empresa=self.empresa,
+                estado__in=["pendiente", "parcial", "vencida"],
+            )
+            .prefetch_related("abonos")
+            .select_related("cliente")
+        )
 
         if fecha_desde:
             qs = qs.filter(fecha_vencimiento__gte=fecha_desde)
@@ -137,10 +133,14 @@ class NativeCarteraProvider(CarteraProvider):
         except (ValueError, TypeError, AttributeError):
             pass
 
-        abonos = AbonoCxC.objects.filter(
-            filtro,
-            cuenta_por_cobrar__empresa=self.empresa,
-        ).select_related("cuenta_por_cobrar").order_by("-fecha_abono")
+        abonos = (
+            AbonoCxC.objects.filter(
+                filtro,
+                cuenta_por_cobrar__empresa=self.empresa,
+            )
+            .select_related("cuenta_por_cobrar")
+            .order_by("-fecha_abono")
+        )
 
         return [
             {

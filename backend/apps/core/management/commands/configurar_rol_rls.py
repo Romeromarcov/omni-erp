@@ -40,9 +40,7 @@ ENV_ROL = "OMNI_APP_DB_ROLE"
 DEFAULT_ROL = "omni_app"
 
 # Atributos del rol: login sí; nada de privilegios que salten RLS o hagan DDL.
-_ATRIBUTOS = (
-    "LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION INHERIT"
-)
+_ATRIBUTOS = "LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION INHERIT"
 
 
 class Command(BaseCommand):
@@ -60,6 +58,8 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        from apps.core import rls
+
         rol = options["rol"]
         try:
             _check_ident(rol)
@@ -67,64 +67,61 @@ class Command(BaseCommand):
             raise CommandError(str(exc)) from exc
         password = os.environ.get(ENV_PASSWORD) or None
 
-        with connection.cursor() as cursor:
-            raw = cursor.cursor  # cursor psycopg2 real, para componer SQL seguro
-            ident = sql.Identifier(rol)
+        with rls.rls_bypass():
+            with connection.cursor() as cursor:
+                raw = cursor.cursor  # cursor psycopg2 real, para componer SQL seguro
+                ident = sql.Identifier(rol)
 
-            cursor.execute("SELECT 1 FROM pg_roles WHERE rolname = %s", [rol])
-            existe = cursor.fetchone() is not None
+                cursor.execute("SELECT 1 FROM pg_roles WHERE rolname = %s", [rol])
+                existe = cursor.fetchone() is not None
 
-            if not existe and password is None:
-                raise CommandError(
-                    f"El rol '{rol}' no existe y falta la variable de entorno "
-                    f"{ENV_PASSWORD} para crearlo con contraseña."
-                )
-
-            if existe:
-                # Reasegura atributos (p. ej. si alguien le dio BYPASSRLS a mano).
-                stmt = sql.SQL("ALTER ROLE {} WITH " + _ATRIBUTOS).format(ident)
-                if password is not None:
-                    stmt = sql.SQL("ALTER ROLE {} WITH " + _ATRIBUTOS + " PASSWORD {}").format(
-                        ident, sql.Literal(password)
+                if not existe and password is None:
+                    raise CommandError(
+                        f"El rol '{rol}' no existe y falta la variable de entorno "
+                        f"{ENV_PASSWORD} para crearlo con contraseña."
                     )
-                cursor.execute(stmt.as_string(raw))
-                accion = "actualizado"
-            else:
-                cursor.execute(
-                    sql.SQL("CREATE ROLE {} WITH " + _ATRIBUTOS + " PASSWORD {}")
-                    .format(ident, sql.Literal(password))
-                    .as_string(raw)
-                )
-                accion = "creado"
 
-            cursor.execute("SELECT current_database()")
-            db_name = cursor.fetchone()[0]
+                if existe:
+                    # Reasegura atributos (p. ej. si alguien le dio BYPASSRLS a mano).
+                    stmt = sql.SQL("ALTER ROLE {} WITH " + _ATRIBUTOS).format(ident)
+                    if password is not None:
+                        stmt = sql.SQL("ALTER ROLE {} WITH " + _ATRIBUTOS + " PASSWORD {}").format(
+                            ident, sql.Literal(password)
+                        )
+                    cursor.execute(stmt.as_string(raw))
+                    accion = "actualizado"
+                else:
+                    cursor.execute(
+                        sql.SQL("CREATE ROLE {} WITH " + _ATRIBUTOS + " PASSWORD {}")
+                        .format(ident, sql.Literal(password))
+                        .as_string(raw)
+                    )
+                    accion = "creado"
 
-            grants = [
-                sql.SQL("GRANT CONNECT ON DATABASE {} TO {}").format(
-                    sql.Identifier(db_name), ident
-                ),
-                sql.SQL("GRANT USAGE ON SCHEMA public TO {}").format(ident),
-                sql.SQL(
-                    "GRANT SELECT, INSERT, UPDATE, DELETE "
-                    "ON ALL TABLES IN SCHEMA public TO {}"
-                ).format(ident),
-                sql.SQL(
-                    "GRANT USAGE, SELECT, UPDATE "
-                    "ON ALL SEQUENCES IN SCHEMA public TO {}"
-                ).format(ident),
-                # Tablas/secuencias futuras creadas por el rol dueño (migraciones).
-                sql.SQL(
-                    "ALTER DEFAULT PRIVILEGES IN SCHEMA public "
-                    "GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO {}"
-                ).format(ident),
-                sql.SQL(
-                    "ALTER DEFAULT PRIVILEGES IN SCHEMA public "
-                    "GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO {}"
-                ).format(ident),
-            ]
-            for stmt in grants:
-                cursor.execute(stmt.as_string(raw))
+                cursor.execute("SELECT current_database()")
+                db_name = cursor.fetchone()[0]
+
+                grants = [
+                    sql.SQL("GRANT CONNECT ON DATABASE {} TO {}").format(sql.Identifier(db_name), ident),
+                    sql.SQL("GRANT USAGE ON SCHEMA public TO {}").format(ident),
+                    sql.SQL("GRANT SELECT, INSERT, UPDATE, DELETE " "ON ALL TABLES IN SCHEMA public TO {}").format(
+                        ident
+                    ),
+                    sql.SQL("GRANT USAGE, SELECT, UPDATE " "ON ALL SEQUENCES IN SCHEMA public TO {}").format(ident),
+                    # Tablas/secuencias futuras creadas por el rol dueño (migraciones).
+                    sql.SQL(
+                        "ALTER DEFAULT PRIVILEGES IN SCHEMA public "
+                        "GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO {}"
+                    ).format(ident),
+                    sql.SQL(
+                        "ALTER DEFAULT PRIVILEGES IN SCHEMA public " "GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO {}"
+                    ).format(ident),
+                    sql.SQL(
+                        "REVOKE UPDATE, DELETE ON TABLE public.auditoria_logauditoria, public.registro_auditoria FROM {}"
+                    ).format(ident),
+                ]
+                for stmt in grants:
+                    cursor.execute(stmt.as_string(raw))
 
         self.stdout.write(
             self.style.SUCCESS(

@@ -2,6 +2,8 @@
 // Consume /api/saas/* — planes y suscripciones. La ESCRITURA de planes está
 // restringida en backend a es_superusuario_omni; la UI que lo usa vive bajo
 // la ruta protegida /admin-saas (guard de rol en saasRoutes.tsx).
+import Decimal from 'decimal.js';
+import { D, toFixedStr } from '../lib/decimal';
 import { get, post, patch, fetchText } from './api';
 
 // ── Choices (espejo de apps/saas/models.py) ──────────────────────────────────
@@ -188,20 +190,20 @@ const ESTADOS_VIGENTES: SuscripcionEstado[] = ['ACTIVA', 'TRIAL'];
 /**
  * MRR estimado: suma del valor mensualizado de las suscripciones vigentes.
  * Para periodo ANUAL se mensualiza dividiendo el precio anual entre 12.
- * Usa los precios del plan asociado (join por id_plan).
+ * Usa aritmética Decimal exacta y devuelve un string con 2 decimales.
  */
-export function estimarMrr(suscripciones: Suscripcion[], planes: Plan[]): number {
+export function estimarMrr(suscripciones: Suscripcion[], planes: Plan[]): string {
   const planPorId = new Map(planes.map((p) => [p.id_plan, p]));
-  let mrr = 0;
+  let mrr = new Decimal(0);
   for (const s of suscripciones) {
     if (!ESTADOS_VIGENTES.includes(s.estado)) continue;
     const plan = planPorId.get(s.id_plan);
     if (!plan) continue;
     if (s.periodo === 'ANUAL') {
-      mrr += (Number(plan.precio_anual) || 0) / 12;
+      mrr = mrr.plus(D(plan.precio_anual).dividedBy(12));
     } else {
-      mrr += Number(plan.precio_mensual) || 0;
+      mrr = mrr.plus(D(plan.precio_mensual));
     }
   }
-  return mrr;
+  return toFixedStr(mrr, 2);
 }

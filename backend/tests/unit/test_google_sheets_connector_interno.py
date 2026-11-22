@@ -53,9 +53,7 @@ def test_get_client_construye_y_cachea(monkeypatch):
     assert conn._get_client() is fake_client
     # Segunda llamada usa el cache (no reconstruye).
     assert conn._get_client() is fake_client
-    construido.assert_called_once_with(
-        SA["service_account"], drive_folder_id="F9"
-    )
+    construido.assert_called_once_with(SA["service_account"], drive_folder_id="F9")
 
 
 def test_get_client_auth_error_se_traduce_a_connection_error(monkeypatch):

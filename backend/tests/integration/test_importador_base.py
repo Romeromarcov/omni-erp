@@ -12,6 +12,7 @@ para verificar la semántica todo-o-nada del importador:
 - ``_leer_filas``: archivo inexistente y archivo vacío sin cabecera.
 - Helpers ``requerido`` / ``opcional`` / ``a_decimal``.
 """
+
 import io
 from decimal import Decimal
 
@@ -83,6 +84,7 @@ class TestResolverEmpresa:
 
     def test_uuid_inexistente(self, empresa_a):
         import uuid
+
         with pytest.raises(CommandError, match="No existe una empresa"):
             resolver_empresa(str(uuid.uuid4()))
 
@@ -190,6 +192,7 @@ class TestValidarFilaDefault:
     def test_savepoint_revierte_la_escritura(self, empresa_a):
         """validar_fila delega en procesar_fila y revierte el savepoint."""
         from django.db import transaction
+
         cmd = DummyImportCommand()
         with transaction.atomic():
             cmd.validar_fila(empresa_a, {"codigo": "VAL-1", "nombre": "Temp"}, 2)
@@ -197,6 +200,7 @@ class TestValidarFilaDefault:
 
     def test_propaga_fila_error(self, empresa_a):
         from django.db import transaction
+
         cmd = DummyImportCommand()
         with transaction.atomic():
             with pytest.raises(FilaError):

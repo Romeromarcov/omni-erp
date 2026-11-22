@@ -89,9 +89,7 @@ class TestAislamientoCarpetas:
         ids = {str(r["id_carpeta"]) for r in resultados}
 
         assert str(carpeta_a.id_carpeta) in ids, "La carpeta propia de Empresa A no aparece en el listado."
-        assert (
-            str(carpeta_b.id_carpeta) not in ids
-        ), "LEAK: carpeta de Empresa B aparece en listado de Empresa A."
+        assert str(carpeta_b.id_carpeta) not in ids, "LEAK: carpeta de Empresa B aparece en listado de Empresa A."
 
     def test_get_carpeta_ajena_devuelve_404(self, user_a, carpeta_b):
         client = APIClient()

@@ -24,6 +24,7 @@ Serializers:
   create/update.
 - ``DispositivoSerializer.create`` fuerza ``creado_por`` del request.
 """
+
 import uuid
 from types import SimpleNamespace
 
@@ -73,9 +74,7 @@ def client_a(user_a):
 def superuser(db, empresa_a):
     from django.contrib.auth import get_user_model
 
-    user = get_user_model().objects.create_user(
-        username="super_omni", password="testpass123", is_active=True
-    )
+    user = get_user_model().objects.create_user(username="super_omni", password="testpass123", is_active=True)
     user.es_superusuario_omni = True
     user.save(update_fields=["es_superusuario_omni"])
     return user
@@ -90,9 +89,7 @@ def client_super(superuser):
 
 @pytest.fixture
 def sucursal_a(empresa_a):
-    return Sucursal.objects.create(
-        id_empresa=empresa_a, nombre="Matriz", codigo_sucursal="VS-A1"
-    )
+    return Sucursal.objects.create(id_empresa=empresa_a, nombre="Matriz", codigo_sucursal="VS-A1")
 
 
 # ── Visibilidad recursiva ─────────────────────────────────────────────────────
@@ -100,12 +97,8 @@ def sucursal_a(empresa_a):
 
 class TestVisibilidad:
     def test_empresas_visible_incluye_subsidiarias_recursivas(self, user_a, empresa_a, moneda_usd):
-        hija = Empresa.objects.create(
-            nombre_legal="Hija", empresa_matriz=empresa_a, id_moneda_base=moneda_usd
-        )
-        nieta = Empresa.objects.create(
-            nombre_legal="Nieta", empresa_matriz=hija, id_moneda_base=moneda_usd
-        )
+        hija = Empresa.objects.create(nombre_legal="Hija", empresa_matriz=empresa_a, id_moneda_base=moneda_usd)
+        nieta = Empresa.objects.create(nombre_legal="Nieta", empresa_matriz=hija, id_moneda_base=moneda_usd)
         ajena = Empresa.objects.create(nombre_legal="Ajena", id_moneda_base=moneda_usd)
         visibles = set(get_empresas_visible(user_a).values_list("nombre_legal", flat=True))
         assert visibles == {"Empresa Alpha S.A.", "Hija", "Nieta"}
@@ -442,9 +435,7 @@ class TestPermisosGate:
         resp = client_super.post("/api/core/permisos/", self.PAYLOAD, format="json")
         assert resp.status_code == 201
         pk = resp.json()["id_permiso"]
-        resp = client_super.patch(
-            f"/api/core/permisos/{pk}/", {"nombre_permiso": "Facturar v2"}, format="json"
-        )
+        resp = client_super.patch(f"/api/core/permisos/{pk}/", {"nombre_permiso": "Facturar v2"}, format="json")
         assert resp.status_code == 200
         assert resp.json()["nombre_permiso"] == "Facturar v2"
         resp = client_super.delete(f"/api/core/permisos/{pk}/")
@@ -455,9 +446,7 @@ class TestPermisosGate:
     def test_usuario_normal_no_puede_modificar_403(self, client_a, client_super):
         client_super.post("/api/core/permisos/", self.PAYLOAD, format="json")
         permiso = Permisos.objects.get()
-        resp = client_a.patch(
-            f"/api/core/permisos/{permiso.id_permiso}/", {"modulo": "otro"}, format="json"
-        )
+        resp = client_a.patch(f"/api/core/permisos/{permiso.id_permiso}/", {"modulo": "otro"}, format="json")
         assert resp.status_code == 403
         resp = client_a.delete(f"/api/core/permisos/{permiso.id_permiso}/")
         assert resp.status_code == 403
@@ -545,9 +534,7 @@ class TestNotificacionViewSet:
         crear_notificacion(empresa=empresa_a, titulo="Mía", mensaje="m", usuario=user_a)
         crear_notificacion(empresa=empresa_a, titulo="Broadcast", mensaje="m")
         crear_notificacion(empresa=empresa_b, titulo="Otra empresa", mensaje="m")
-        n_user_b = Notificacion.objects.create(
-            id_empresa=empresa_a, id_usuario=user_b, titulo="De B", mensaje="m"
-        )
+        n_user_b = Notificacion.objects.create(id_empresa=empresa_a, id_usuario=user_b, titulo="De B", mensaje="m")
         resp = client_a.get("/api/core/notificaciones/")
         titulos = {n["titulo"] for n in resp.json()["results"]}
         assert titulos == {"Mía", "Broadcast"}

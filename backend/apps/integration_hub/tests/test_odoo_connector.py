@@ -4,6 +4,7 @@ Tests del OdooConnector y OdooXMLRPCClient.
 Los tests de conexión real se omiten en CI (requieren servidor Odoo real).
 Los tests unitarios usan mocks para verificar la lógica de normalización.
 """
+
 import pytest
 from unittest.mock import MagicMock, patch
 

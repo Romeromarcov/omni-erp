@@ -1,6 +1,6 @@
 """Row Level Security (RLS) — P0-1 del plan de hardening de seguridad.
 
-Ver ``docs/planes/05-seguridad-hardening.md`` (P0-1).
+Ver ``docs/planes/05-seguridad-hardening.md`` (P0-1) y ``docs/ctf/CTF-012.md``.
 
 Capa de aislamiento multi-tenant **a nivel de PostgreSQL**, como defensa en
 profundidad sobre el filtrado a nivel de aplicación (``get_empresas_visible``).
@@ -15,29 +15,31 @@ Modelo de enforcement
 - Política por tabla: la fila es visible si ``bypass='on'`` **o** su columna de
   empresa pertenece al conjunto de ``omni.rls_empresas``. Sin contexto fijado la
   expresión evalúa a falso => **0 filas (fail-closed)**.
-- ``FORCE ROW LEVEL SECURITY``: necesario porque la aplicación se conecta con el
-  rol *dueño* de las tablas; sin ``FORCE`` el dueño saltaría las políticas.
+- ``FORCE ROW LEVEL SECURITY``: necesario porque, mientras el dueño sea dueño de
+  las tablas, sin ``FORCE`` el dueño saltaría las políticas. Con el rol
+  dedicado ``omni_app`` (no-dueño, ``NOSUPERUSER NOBYPASSRLS``) RLS aplica por
+  construcción.
 
 Estado por defecto de las conexiones
 ------------------------------------
-El signal ``connection_created`` (``apps/core/signals.py``) fija ``bypass='on'``
-en **toda** conexión Django nueva. Así las migraciones, Celery, el shell y los
-tests operan con acceso total y no se rompen al activar ``FORCE``. El middleware
-web (``apps/core/middleware.py``) baja ``bypass`` a ``'off'`` y fija el conjunto
-de empresas **solo** para requests HTTP autenticados, que son la superficie
-expuesta. Una conexión externa directa (``psql`` con el rol de la app) que no
-fije los GUC queda **fail-closed** (no ve filas), lo que es una defensa extra.
-
-El flag ``settings.RLS_ENABLED`` gobierna únicamente si el middleware aplica el
-enforcement; el signal de default y las políticas existen siempre para que la
-base de datos nunca quede en un estado inconsistente.
+- Cuando ``settings.RLS_ENABLED`` es ``False`` (default de transición mientras
+  se despliega el rol ``omni_app``): ``connection_created`` y
+  ``apply_system_default()`` fijan ``bypass='on'`` para mantener total
+  compatibilidad en migraciones, Celery, comandos y tests existentes.
+- Cuando ``settings.RLS_ENABLED`` es ``True``: ``connection_created`` y
+  ``apply_system_default()`` fijan **fail-closed por defecto**
+  (``omni.rls_bypass='off'``, ``omni.rls_empresas=''``). Todo código que opere
+  fuera de ``RLSContextMiddleware`` debe abrir explícitamente
+  ``with rls.rls_tenant_context([...]):`` o ``with rls.rls_bypass():``.
 """
 
 from __future__ import annotations
 
 import re
+import uuid
 from contextlib import contextmanager
 
+from django.conf import settings
 from django.db import DEFAULT_DB_ALIAS, connections
 
 # Nombres de los parámetros de sesión (GUC) de PostgreSQL.
@@ -69,9 +71,7 @@ def _predicate(empresa_column: str, *, null_visible: bool = False) -> str:
     )
 
 
-def build_enable_rls_sql(
-    table: str, empresa_column: str = "id_empresa_id", *, null_visible: bool = False
-) -> str:
+def build_enable_rls_sql(table: str, empresa_column: str = "id_empresa_id", *, null_visible: bool = False) -> str:
     """SQL idempotente para activar RLS forzado y la política en ``table``.
 
     ``empresa_column`` varía por tabla: ``id_empresa_id`` (FK por defecto de
@@ -138,36 +138,89 @@ def current_role_bypasses_rls(using: str = DEFAULT_DB_ALIAS) -> bool:
     dedicado no-dueño y sin estos atributos.
     """
     with connections[using].cursor() as cursor:
-        cursor.execute(
-            "SELECT rolsuper OR rolbypassrls FROM pg_roles WHERE rolname = current_user"
-        )
+        cursor.execute("SELECT rolsuper OR rolbypassrls FROM pg_roles WHERE rolname = current_user")
         row = cursor.fetchone()
     return bool(row and row[0])
 
 
-def apply_system_default(using: str = DEFAULT_DB_ALIAS) -> None:
-    """Estado por defecto de conexiones no-web: ``bypass='on'``, sin empresas.
+def default_bypass_value() -> str:
+    """Retorna ``'off'`` (fail-closed) si ``RLS_ENABLED=True``, o ``'on'`` si ``False``."""
+    return "off" if getattr(settings, "RLS_ENABLED", False) else "on"
 
-    Lo usa el signal ``connection_created`` y el middleware al finalizar cada
-    request (para no devolver una conexión "cerrada" a un pool si en el futuro
-    se habilita ``CONN_MAX_AGE`` / pgbouncer en *session pooling*).
+
+def apply_system_default_on_cursor(cursor) -> None:
+    """Fija los GUC RLS por defecto sobre un cursor ya abierto."""
+    _set_config(cursor, GUC_BYPASS, default_bypass_value())
+    _set_config(cursor, GUC_EMPRESAS, "")
+
+
+def apply_system_default(using: str = DEFAULT_DB_ALIAS) -> None:
+    """Restaura el estado RLS por defecto de la conexión.
+
+    Con ``RLS_ENABLED=False`` fija ``bypass='on'`` sin empresas (compatibilidad).
+    Con ``RLS_ENABLED=True`` fija ``bypass='off'`` sin empresas (fail-closed).
     """
     with connections[using].cursor() as cursor:
-        _set_config(cursor, GUC_BYPASS, "on")
-        _set_config(cursor, GUC_EMPRESAS, "")
+        apply_system_default_on_cursor(cursor)
+
+
+def _get_current_context(using: str = DEFAULT_DB_ALIAS) -> tuple[str, str]:
+    """Lee el estado actual ``(omni.rls_bypass, omni.rls_empresas)`` en la conexión."""
+    with connections[using].cursor() as cursor:
+        cursor.execute(
+            "SELECT current_setting(%s, true), current_setting(%s, true)",
+            [GUC_BYPASS, GUC_EMPRESAS],
+        )
+        row = cursor.fetchone()
+    prev_bypass = row[0] if row and row[0] is not None else default_bypass_value()
+    prev_empresas = row[1] if row and row[1] is not None else ""
+    return prev_bypass, prev_empresas
+
+
+def _restore_context(prev_bypass: str, prev_empresas: str, *, using: str = DEFAULT_DB_ALIAS) -> None:
+    """Restaura ambos GUC al estado previo capturado al entrar a un context manager."""
+    conn = connections[using]
+    if getattr(conn, "needs_rollback", False):
+        return
+    with conn.cursor() as cursor:
+        _set_config(cursor, GUC_BYPASS, prev_bypass)
+        _set_config(cursor, GUC_EMPRESAS, prev_empresas)
 
 
 @contextmanager
 def rls_bypass(using: str = DEFAULT_DB_ALIAS):
-    """Marca explícita de contexto de sistema con bypass (Celery, comandos,
-    data migrations). El default de conexión ya es bypass; este helper lo hace
-    explícito y reaplica el default al salir."""
+    """Contexto explícito de sistema con ``bypass='on'`` (Celery, comandos,
+    migraciones, resolución de autenticación).
+
+    Preserva el estado GUC previo (``omni.rls_bypass`` y ``omni.rls_empresas``)
+    y lo restaura al salir, permitiendo anidamiento seguro con
+    :func:`rls_tenant_context`.
+    """
+    prev_bypass, prev_empresas = _get_current_context(using)
     with connections[using].cursor() as cursor:
         _set_config(cursor, GUC_BYPASS, "on")
     try:
         yield
     finally:
-        apply_system_default(using)
+        _restore_context(prev_bypass, prev_empresas, using=using)
+
+
+@contextmanager
+def rls_tenant_context(empresa_ids, *, using: str = DEFAULT_DB_ALIAS):
+    """Aplica contexto RLS acotado a ``empresa_ids`` (``bypass='off'``).
+
+    Preserva el estado GUC previo (``omni.rls_bypass`` y ``omni.rls_empresas``)
+    y lo restaura al salir, permitiendo anidar contextos de tenant y
+    :func:`rls_bypass` de forma determinística.
+    """
+    if isinstance(empresa_ids, (str, bytes, uuid.UUID)):
+        raise TypeError("empresa_ids debe ser un iterable de IDs (ej. [empresa_id]), no un escalar.")
+    prev_bypass, prev_empresas = _get_current_context(using)
+    apply_context(empresa_ids, bypass=False, using=using)
+    try:
+        yield
+    finally:
+        _restore_context(prev_bypass, prev_empresas, using=using)
 
 
 # --- Registro de cobertura RLS (fuente de verdad para tests) ---------------
@@ -202,17 +255,28 @@ RLS_TABLES = {
     "crm_cliente": "id_empresa_id",
     "crm_contacto_cliente": "id_empresa_id",
     "crm_direccion_cliente": "id_empresa_id",
+    # crm ligero + connect (Omni Connect S1/S4)
+    "crm_pipeline": "id_empresa_id",
+    "crm_etapa": "id_empresa_id",
+    "crm_lead": "id_empresa_id",
+    "crm_actividad": "id_empresa_id",
+    "connect_perfil": "id_empresa_id",
+    "connect_tarjeta": "id_empresa_id",
+    "connect_toque": "id_empresa_id",
     # Lote 3 (CTF-012) — resto de tablas tenant, por app.
     # agentes
     "agentes_config_agente": "id_empresa_id",
+    "agentes_consumo_llm": "id_empresa_id",
+    "agentes_ejecucion_agente": "id_empresa_id",
     "agentes_prediccionagente": "id_empresa_id",
     # almacenes
     "almacenes_almacen": "id_empresa_id",
+    "almacenes_stock_ubicacion": "id_empresa_id",
     "almacenes_ubicacion_almacen": "id_empresa_id",
     # auditoria
     "auditoria_logauditoria": "id_empresa_id",
     # banca_electronica
-    "banca_electronica_cuentabancariaempresa": "empresa_id",
+    "banca_electronica_lote_pago": "id_empresa_id",
     # compras
     "compras_factura_compra": "id_empresa_id",
     "compras_requisicion_compra": "id_empresa_id",
@@ -221,7 +285,9 @@ RLS_TABLES = {
     "configuracion_motor_parametro_sistema": "id_empresa_id",
     # contabilidad
     "contabilidad_asiento_contable": "id_empresa_id",
+    "contabilidad_diario": "id_empresa_id",
     "contabilidad_mapeo_contable": "id_empresa_id",
+    "contabilidad_periodo_contable": "id_empresa_id",
     "contabilidad_plan_cuentas": "id_empresa_id",
     # control_asistencia
     "control_asistencia_horariotrabajo": "id_empresa_id",
@@ -240,6 +306,16 @@ RLS_TABLES = {
     "cxc_lubrikca_bandejafacturacion": "empresa_id",
     "cxc_lubrikca_configuracionconciliacion": "empresa_id",
     "cxc_lubrikca_conciliacionlubrikca": "empresa_id",
+    # activaciones (eventos en puntos de venta) y bots_ingest (ingesta desde Telegram)
+    "activaciones_calendario": "id_empresa_id",
+    "activaciones_recurso": "id_empresa_id",
+    "activaciones_evento": "id_empresa_id",
+    "activaciones_uso_recurso": "id_empresa_id",
+    "bots_ingest_usuario": "id_empresa_id",
+    "bots_ingest_ingesta": "id_empresa_id",
+    "bots_ingest_registro": "id_empresa_id",
+    "bots_ingest_latido": "id_empresa_id",
+    "bots_ingest_bitacora": "id_empresa_id",
     # core
     "core_capability_token": "empresa_id",
     "core_clave_idempotencia": "empresa_id",
@@ -267,6 +343,7 @@ RLS_TABLES = {
     # despacho
     "despacho_despacho": "id_empresa_id",
     # finanzas
+    "finanzas_asignacion_pago": "id_empresa_id",
     "finanzas_caja_fisica": "empresa_id",
     "finanzas_caja_virtual": "empresa_id",
     "finanzas_cuenta_bancaria_empresa": "id_empresa_id",
@@ -281,6 +358,7 @@ RLS_TABLES = {
     "finanzas_plantilla_maestro_cajas": "empresa_id",
     "finanzas_sesion_caja_fisica": "empresa_id",
     "finanzas_tasacambio": "id_empresa_id",
+    "finanzas_tipo_tasa_cambio": "id_empresa_id",
     # fiscal
     "fiscal_configuracion_empresa": "id_empresa_id",
     "fiscal_configuracionimpuesto": "empresa_id",
@@ -308,9 +386,12 @@ RLS_TABLES = {
     "integracion_b2b_configuracionintegracion": "id_empresa_id",
     # integration_hub
     "integration_hub_conectorinstancia": "id_empresa",
+    "integration_hub_evento_outbox": "id_empresa_id",
     # inventario
     "inventario_categoria_producto": "id_empresa_id",
     "inventario_conversion_unidad_medida": "id_empresa_id",
+    "inventario_lote_producto": "id_empresa_id",
+    "inventario_regla_reabastecimiento": "id_empresa_id",
     "inventario_requisicion_interna": "id_empresa_id",
     "inventario_stock_consignacion_cliente": "id_empresa_id",
     "inventario_stock_consignacion_proveedor": "id_empresa_id",
@@ -351,10 +432,26 @@ RLS_TABLES = {
     "servicio_cliente_categoriaticket": "id_empresa_id",
     "servicio_cliente_feedbackcliente": "id_empresa_id",
     "servicio_cliente_ticket_soporte": "id_empresa_id",
+    # tareas (ejecución operativa y proyectos — ADR-015)
+    "tareas_area_operativa": "id_empresa_id",
+    "tareas_miembro_area": "id_empresa_id",
+    "tareas_proyecto": "id_empresa_id",
+    "tareas_seccion_proyecto": "id_empresa_id",
+    "tareas_plantilla_recurrente": "id_empresa_id",
+    "tareas_minuta_reunion": "id_empresa_id",
+    "tareas_tarea": "id_empresa_id",
+    "tareas_dependencia": "id_empresa_id",
+    "tareas_comentario": "id_empresa_id",
+    "tareas_configuracion_seguimiento": "id_empresa_id",
+    "tareas_registro_alerta": "id_empresa_id",
     # tesoreria
     "tesoreria_conciliacion_bancaria": "id_empresa_id",
+    "tesoreria_configuracion_conciliacion_cuenta": "id_empresa_id",
+    "tesoreria_decision_preconciliacion_bancaria": "id_empresa_id",
+    "tesoreria_extracto_bancario_archivo": "id_empresa_id",
     "tesoreria_movimiento_bancario": "id_empresa_id",
     "tesoreria_operacion_cambio_divisa": "empresa_id",
+    "tesoreria_propuesta_conciliacion_bancaria": "id_empresa_id",
     # ventas
     "ventas_cotizacion": "id_empresa_id",
     "ventas_devolucion_venta": "id_empresa_id",
@@ -371,6 +468,7 @@ RLS_TABLES = {
 # (lo verifica tests_api/test_rls_rollout.py).
 RLS_SHARED_NULL_TABLES = frozenset(
     {
+        "agentes_consumo_llm",
         "configuracion_motor_parametro_sistema",
         "cuentas_por_cobrar_cuentaporcobrar",
         "finanzas_caja_fisica",
@@ -378,6 +476,7 @@ RLS_SHARED_NULL_TABLES = frozenset(
         "finanzas_metodo_pago",
         "finanzas_moneda",
         "finanzas_tasacambio",
+        "finanzas_tipo_tasa_cambio",
         "fiscal_contribucionparafiscal",
         "fiscal_impuesto",
         "roles",

@@ -10,6 +10,7 @@ import type { PaginatedResponse } from '../../../services/ventas';
 import Pagination from '../../../components/Pagination';
 import { PageContainer, PageHeader, DataTable, StatusChip } from '../../../components/ui';
 import type { Column } from '../../../components/ui';
+import { formatoDecimal } from '../../../lib/decimal';
 
 const PAGE_SIZE = 20;
 
@@ -30,7 +31,7 @@ export default function DevolucionesVentaListPage() {
     { key: 'numero', header: t('ventas.tabla.numero'), render: (d) => d.numero_devolucion },
     { key: 'fecha', header: t('ventas.tabla.fecha'), render: (d) => new Date(d.fecha_devolucion).toLocaleDateString() },
     { key: 'motivo', header: t('ventas.devoluciones.tabla.motivo'), render: (d) => d.motivo_devolucion },
-    { key: 'monto', header: t('ventas.devoluciones.tabla.total'), align: 'right', render: (d) => Number(d.monto_total ?? 0).toLocaleString('es-VE', { minimumFractionDigits: 2 }) },
+    { key: 'monto', header: t('ventas.devoluciones.tabla.total'), align: 'right', render: (d) => formatoDecimal(d.monto_total ?? 0) },
     { key: 'estado', header: t('ventas.tabla.estado'), render: (d) => <StatusChip value={d.estado} /> },
     {
       key: 'acciones',

@@ -7,7 +7,12 @@ vi.mock('../services/api', () => ({
 }));
 
 import { get, post, patch } from '../services/api';
-import { prediccionesService } from '../services/agentesService';
+import {
+  listarConsumoLLM,
+  obtenerResumenConsumoLLM,
+  prediccionesService,
+  type EjecucionAgente,
+} from '../services/agentesService';
 
 const prediccion = {
   id_prediccion: 'p1',
@@ -27,6 +32,24 @@ const prediccion = {
   fecha_prediccion: '2026-06-23T10:00:00Z',
   id_empresa: 'e1',
 };
+
+const makeEjecucion = <T = Record<string, unknown>>(
+  overrides: Partial<EjecucionAgente<T>> = {},
+): EjecucionAgente<T> => ({
+  id_ejecucion: 'ej-1',
+  agente: 'cobranza_estratega',
+  estado: 'pendiente',
+  celery_task_id: 'celery-1',
+  parametros: {},
+  resultado: {} as T,
+  mensaje_error: '',
+  iniciado_por: 'u1',
+  fecha_creacion: '2026-11-21T00:00:00Z',
+  fecha_inicio: null,
+  fecha_fin: null,
+  id_empresa: 'e1',
+  ...overrides,
+});
 
 describe('prediccionesService', () => {
   beforeEach(() => {
@@ -144,57 +167,136 @@ describe('prediccionesService', () => {
     });
   });
 
-  // ── análisis ──────────────────────────────────────────────────────────────
-  it('analizarCobranza postea al action con body vacío', async () => {
-    vi.mocked(post).mockResolvedValue({ sugerencias: [], total: 0 });
+  // ── análisis asíncrono (HTTP 202 → EjecucionAgente) ───────────────────────
+  it('analizarCobranza encola análisis y devuelve EjecucionAgente', async () => {
+    const ej = makeEjecucion({ estado: 'pendiente' });
+    vi.mocked(post).mockResolvedValue(ej);
     const res = await prediccionesService.analizarCobranza();
     expect(post).toHaveBeenCalledWith('/agentes/predicciones/analizar-cobranza/', {});
-    expect(res.total).toBe(0);
+    expect(res.id_ejecucion).toBe('ej-1');
+    expect(res.estado).toBe('pendiente');
   });
 
-  it('analizarReorden postea al action con body vacío', async () => {
-    vi.mocked(post).mockResolvedValue({ sugerencias: [], total: 0 });
-    await prediccionesService.analizarReorden();
-    expect(post).toHaveBeenCalledWith('/agentes/predicciones/analizar-reorden/', {});
-  });
-
-  it('analizarPersonalizacion postea al action con body vacío', async () => {
-    vi.mocked(post).mockResolvedValue({
-      flujo_documentos: {},
-      listas_precios: {},
-      credito_clientes: {},
+  it('analizarReorden encola análisis con payload opcional', async () => {
+    const ej = makeEjecucion({ agente: 'reorden_sugeridor' });
+    vi.mocked(post).mockResolvedValue(ej);
+    await prediccionesService.analizarReorden({ solo_alertas: false, persistir: true });
+    expect(post).toHaveBeenCalledWith('/agentes/predicciones/analizar-reorden/', {
+      solo_alertas: false,
+      persistir: true,
     });
+  });
+
+  it('analizarPersonalizacion encola análisis con body vacío', async () => {
+    const ej = makeEjecucion({ agente: 'personalizacion_capa2' });
+    vi.mocked(post).mockResolvedValue(ej);
     const res = await prediccionesService.analizarPersonalizacion();
     expect(post).toHaveBeenCalledWith('/agentes/predicciones/analizar-personalizacion/', {});
-    expect(res).toHaveProperty('flujo_documentos');
+    expect(res.agente).toBe('personalizacion_capa2');
   });
 
   // ── clasificarGasto ──────────────────────────────────────────────────────
-  it('clasificarGasto sin aplicar omite el flag', async () => {
-    vi.mocked(post).mockResolvedValue({ categoria: 'oficina', aplicado: false });
-    await prediccionesService.clasificarGasto({ gasto_id: 'g1' });
+  it('clasificarGasto sin aplicar omite el flag y retorna EjecucionAgente', async () => {
+    const ej = makeEjecucion({ agente: 'clasificador_gastos' });
+    vi.mocked(post).mockResolvedValue(ej);
+    const res = await prediccionesService.clasificarGasto({ gasto_id: 'g1' });
     expect(post).toHaveBeenCalledWith('/agentes/predicciones/clasificar-gasto/', {
       gasto_id: 'g1',
     });
+    expect(res.id_ejecucion).toBe('ej-1');
   });
 
   it('clasificarGasto con aplicar=true envía el flag', async () => {
-    vi.mocked(post).mockResolvedValue({ categoria: 'oficina', aplicado: true });
-    const res = await prediccionesService.clasificarGasto({ gasto_id: 'g1', aplicar: true });
+    vi.mocked(post).mockResolvedValue(makeEjecucion({ agente: 'clasificador_gastos' }));
+    await prediccionesService.clasificarGasto({ gasto_id: 'g1', aplicar: true });
     expect(post).toHaveBeenCalledWith('/agentes/predicciones/clasificar-gasto/', {
       gasto_id: 'g1',
       aplicar: true,
     });
-    expect(res.aplicado).toBe(true);
   });
 
   it('clasificarGasto con aplicar=false envía el flag explícito', async () => {
-    vi.mocked(post).mockResolvedValue({ categoria: 'oficina', aplicado: false });
+    vi.mocked(post).mockResolvedValue(makeEjecucion({ agente: 'clasificador_gastos' }));
     await prediccionesService.clasificarGasto({ gasto_id: 'g1', aplicar: false });
     expect(post).toHaveBeenCalledWith('/agentes/predicciones/clasificar-gasto/', {
       gasto_id: 'g1',
       aplicar: false,
     });
+  });
+
+  // ── ejecuciones y polling ─────────────────────────────────────────────────
+  it('obtenerEjecucion consulta /agentes/ejecuciones/{id}/', async () => {
+    const ej = makeEjecucion({ estado: 'completado', resultado: { total: 0 } });
+    vi.mocked(get).mockResolvedValue(ej);
+    const res = await prediccionesService.obtenerEjecucion('ej-1');
+    expect(get).toHaveBeenCalledWith('/agentes/ejecuciones/ej-1/');
+    expect(res.estado).toBe('completado');
+  });
+
+  it('obtenerEjecucion reenvía AbortSignal cuando se provee', async () => {
+    const controller = new AbortController();
+    const ej = makeEjecucion({ estado: 'ejecutando' });
+    vi.mocked(get).mockResolvedValue(ej);
+    await prediccionesService.obtenerEjecucion('ej-1', controller.signal);
+    expect(get).toHaveBeenCalledWith('/agentes/ejecuciones/ej-1/', { signal: controller.signal });
+  });
+
+  it('listarEjecuciones arma querystring con agente y estado', async () => {
+    vi.mocked(get).mockResolvedValue({ results: [makeEjecucion()] });
+    const res = await prediccionesService.listarEjecuciones({
+      agente: 'cobranza_estratega',
+      estado: 'completado',
+    });
+    expect(get).toHaveBeenCalledWith(
+      '/agentes/ejecuciones/?agente=cobranza_estratega&estado=completado',
+    );
+    expect(res).toHaveLength(1);
+  });
+
+  it('esperarEjecucion hace polling hasta completado y reporta estados', async () => {
+    const inicial = makeEjecucion({ estado: 'pendiente' });
+    const ejecutando = makeEjecucion({ estado: 'ejecutando' });
+    const completado = makeEjecucion({ estado: 'completado', resultado: { total: 2 } });
+    vi.mocked(get).mockResolvedValueOnce(ejecutando).mockResolvedValueOnce(completado);
+
+    const estados: string[] = [];
+    const finalEj = await prediccionesService.esperarEjecucion(inicial, {
+      intervalMs: 1,
+      maxIntentos: 5,
+      onEstado: (e) => estados.push(e.estado),
+    });
+
+    expect(finalEj.estado).toBe('completado');
+    expect(estados).toEqual(['pendiente', 'ejecutando', 'completado']);
+    expect(get).toHaveBeenCalledTimes(2);
+  });
+
+  it('esperarEjecucion retorna inmediatamente si ya está fallido', async () => {
+    const fallido = makeEjecucion({ estado: 'fallido', mensaje_error: 'Error controlado.' });
+    const res = await prediccionesService.esperarEjecucion(fallido, { intervalMs: 1 });
+    expect(res.estado).toBe('fallido');
+    expect(get).not.toHaveBeenCalled();
+  });
+
+  it('esperarEjecucion respeta AbortSignal cancelando el polling', async () => {
+    const controller = new AbortController();
+    const inicial = makeEjecucion({ estado: 'pendiente' });
+    const promesa = prediccionesService.esperarEjecucion(inicial, {
+      intervalMs: 5000,
+      maxIntentos: 5,
+      signal: controller.signal,
+    });
+    controller.abort();
+    await expect(promesa).rejects.toThrow();
+    expect(get).not.toHaveBeenCalled();
+  });
+
+  it('esperarEjecucion lanza timeout cuando excede maxIntentos', async () => {
+    const pendiente = makeEjecucion({ estado: 'pendiente' });
+    vi.mocked(get).mockResolvedValue(pendiente);
+    await expect(
+      prediccionesService.esperarEjecucion(pendiente, { intervalMs: 1, maxIntentos: 2 }),
+    ).rejects.toThrow(/Tiempo de espera agotado/);
   });
 
   // ── metricasClasificador ────────────────────────────────────────────────
@@ -210,6 +312,60 @@ describe('prediccionesService', () => {
     const res = await prediccionesService.metricasClasificador();
     expect(get).toHaveBeenCalledWith('/agentes/predicciones/metricas-clasificador/');
     expect(res.precision).toBe(0.923);
+  });
+
+  // ── consumo LLM (listarConsumoLLM / obtenerResumenConsumoLLM) ─────────────
+  it('listarConsumoLLM sin filtros consulta /agentes/consumo-llm/ y normaliza paginación', async () => {
+    const evento = {
+      id_consumo: 'c-1',
+      id_empresa: 'e1',
+      proveedor: 'anthropic',
+      uso: 'agente',
+      modelo: 'modelo-haiku-test',
+      tokens_entrada: 1000,
+      tokens_salida: 500,
+      costo_estimado_usd: '0.003500',
+      latencia_ms: 180,
+      creado_en: '2026-11-21T08:00:00Z',
+    };
+    vi.mocked(get).mockResolvedValue({ count: 1, next: null, previous: null, results: [evento] });
+    const res = await listarConsumoLLM();
+    expect(get).toHaveBeenCalledWith('/agentes/consumo-llm/');
+    expect(res).toEqual([evento]);
+  });
+
+  it('listarConsumoLLM arma querystring con modelo, uso y fechas', async () => {
+    vi.mocked(get).mockResolvedValue([]);
+    await prediccionesService.listarConsumoLLM({
+      modelo: 'modelo-sonnet-test',
+      uso: 'chat',
+      fecha_desde: '2026-11-01',
+      fecha_hasta: '2026-11-21',
+    });
+    expect(get).toHaveBeenCalledWith(
+      '/agentes/consumo-llm/?modelo=modelo-sonnet-test&uso=chat&fecha_desde=2026-11-01&fecha_hasta=2026-11-21',
+    );
+  });
+
+  it('obtenerResumenConsumoLLM consulta /agentes/consumo-llm/resumen/ con y sin filtros', async () => {
+    const resumen = {
+      llamadas: 4,
+      tokens_entrada_total: 4000,
+      tokens_salida_total: 1000,
+      costo_total_usd: '0.027000',
+      latencia_promedio_ms: 210,
+      por_modelo: [],
+      por_uso: [],
+    };
+    vi.mocked(get).mockResolvedValue(resumen);
+    const resSin = await obtenerResumenConsumoLLM();
+    expect(get).toHaveBeenCalledWith('/agentes/consumo-llm/resumen/');
+    expect(resSin.costo_total_usd).toBe('0.027000');
+
+    await prediccionesService.obtenerResumenConsumoLLM({ uso: 'analisis', fecha_desde: '2026-11-10' });
+    expect(get).toHaveBeenCalledWith(
+      '/agentes/consumo-llm/resumen/?uso=analisis&fecha_desde=2026-11-10',
+    );
   });
 
   // ── propagación de errores ──────────────────────────────────────────────

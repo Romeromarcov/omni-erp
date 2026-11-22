@@ -7,6 +7,27 @@ import { get, post, patch, fetchText } from './api';
 // ── Tipos ────────────────────────────────────────────────────────────────────
 
 export type ProveedorEstado = 'activo' | 'beta' | 'proximamente';
+export type PushModoPago = 'borrador' | 'confirmado';
+export type SyncDireccion = 'inbound' | 'outbound' | 'bidireccional';
+
+export const ENTIDAD_LABELS: Record<string, string> = {
+  contactos: 'Contactos',
+  productos: 'Productos',
+  pedidos_venta: 'Pedidos de Venta',
+  pedidos_compra: 'Pedidos de Compra',
+  facturas_venta: 'Facturas de Venta',
+  facturas_compra: 'Facturas de Compra',
+  pagos: 'Pagos',
+  gestiones_cobranza: 'Gestiones de Cobranza',
+  inventario: 'Inventario',
+  empleados: 'Empleados',
+};
+
+const ENTIDAD_LABELS_MAP = new Map<string, string>(Object.entries(ENTIDAD_LABELS));
+
+export function etiquetaEntidad(tipo: string): string {
+  return ENTIDAD_LABELS_MAP.get(tipo) ?? tipo;
+}
 
 export interface ConectorProveedor {
   id_proveedor: string;
@@ -43,6 +64,11 @@ export interface ConectorInstancia {
     db?: string;
     user?: string;
     timeout?: number;
+    push_habilitado?: boolean;
+    push_modo_pago?: PushModoPago;
+    write_user?: string;
+    tiene_write_api_key?: boolean;
+    diario_pagos_default_id?: number | null;
   };
   ultimo_sync: string | null;
   creado_en: string;
@@ -55,6 +81,11 @@ export interface ConectorConfiguracionApi {
   user: string;
   api_key: string;
   timeout?: number;
+  push_habilitado?: boolean;
+  push_modo_pago?: PushModoPago;
+  write_user?: string;
+  write_api_key?: string;
+  diario_pagos_default_id?: number | null;
 }
 
 /**
@@ -115,10 +146,26 @@ export interface TestConnectionResult {
 }
 
 export interface TriggerSyncResult {
-  success: boolean;
+  success?: boolean;
+  id_job?: string;
   job_id?: string;
+  estado?: string;
   mensaje?: string;
   error?: string;
+}
+
+export interface PushCobranzaPayload {
+  tipo?: 'pagos' | 'gestiones_cobranza' | 'todos';
+  ids?: string[];
+  push_modo_pago?: PushModoPago;
+  journal_id?: number;
+  sync_completo?: boolean;
+}
+
+export interface PushCobranzaResult {
+  mensaje: string;
+  job_id?: string | null;
+  jobs?: JobSincronizacion[];
 }
 
 /** Respuesta 202 del endpoint de exportación a Google Sheets. */
@@ -240,10 +287,39 @@ export async function testConector(id: string): Promise<TestConnectionResult> {
 export async function triggerSync(
   id: string,
   tipoEntidad: string,
+  direccion?: SyncDireccion,
+  opts?: { idempotencyKey?: string },
 ): Promise<TriggerSyncResult> {
-  return post<TriggerSyncResult>(`/integration-hub/instancias/${id}/sync/`, {
+  const body: Record<string, unknown> = {
     tipo_entidad: tipoEntidad,
-  });
+  };
+  if (direccion) {
+    body.direccion = direccion;
+  }
+  if (opts?.idempotencyKey) {
+    return post<TriggerSyncResult>(`/integration-hub/instancias/${id}/sync/`, body, {
+      headers: { 'Idempotency-Key': opts.idempotencyKey },
+    });
+  }
+  return post<TriggerSyncResult>(`/integration-hub/instancias/${id}/sync/`, body);
+}
+
+/**
+ * Dispara un push outbound de cobranza (pagos y/o gestiones de cobranza)
+ * hacia el sistema externo. Requiere ``push_habilitado=true`` en el conector.
+ */
+export async function pushCobranza(
+  id: string,
+  payload: PushCobranzaPayload = {},
+  opts?: { idempotencyKey?: string },
+): Promise<PushCobranzaResult> {
+  const endpoint = `/integration-hub/instancias/${id}/push-cobranza/`;
+  if (opts?.idempotencyKey) {
+    return post<PushCobranzaResult>(endpoint, payload as Record<string, unknown>, {
+      headers: { 'Idempotency-Key': opts.idempotencyKey },
+    });
+  }
+  return post<PushCobranzaResult>(endpoint, payload as Record<string, unknown>);
 }
 
 /**

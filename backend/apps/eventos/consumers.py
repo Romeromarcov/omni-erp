@@ -8,10 +8,13 @@ El consumer se ejecuta en un loop bloqueante; para detenerlo usa Ctrl+C.
 Si confluent-kafka no está instalado o el broker no está disponible,
 el comando termina con un mensaje informativo.
 """
+
 import json
 import logging
 import signal
-import sys
+from typing import Any
+
+from apps.core.telemetry import extract_trace_context, init_telemetry, trazar_operacion
 
 logger = logging.getLogger("omni.eventos.consumer")
 
@@ -37,13 +40,16 @@ def register_handler(event_type: str):
         def handle_pedido_creado(envelope: dict) -> None:
             ...
     """
+
     def decorator(fn):
         _handlers.setdefault(event_type, []).append(fn)
         return fn
+
     return decorator
 
 
 # ── Handlers por defecto (stubs) ──────────────────────────────────────────────
+
 
 @register_handler("ventas.pedido.creado")
 def _handle_pedido_creado(envelope: dict) -> None:
@@ -91,31 +97,68 @@ def _handle_pago(envelope: dict) -> None:
 
 # ── Consumer principal ────────────────────────────────────────────────────────
 
-def _process_message(msg_value: bytes) -> None:
-    """Deserializa el envelope y despacha al handler correspondiente."""
+
+def _process_message(msg_value: bytes | None, headers: Any = None) -> None:
+    """Deserializa el envelope, extrae contexto W3C si existe y despacha al handler."""
+    if msg_value is None:
+        logger.warning("OmniEventConsumer: mensaje tombstone (value=None) ignorado")
+        return
+
+    if not isinstance(msg_value, (bytes, bytearray, str)):
+        logger.warning(
+            "OmniEventConsumer: mensaje inválido (tipo inesperado %s)",
+            type(msg_value).__name__,
+        )
+        return
+
     try:
-        envelope = json.loads(msg_value.decode("utf-8"))
+        raw_text = msg_value if isinstance(msg_value, str) else bytes(msg_value).decode("utf-8")
+        envelope = json.loads(raw_text)
     except (json.JSONDecodeError, UnicodeDecodeError) as exc:
         logger.warning("OmniEventConsumer: mensaje inválido (no JSON): %s", exc)
         return
 
-    event_type = envelope.get("event_type", "")
+    if not isinstance(envelope, dict):
+        logger.warning("OmniEventConsumer: mensaje inválido (envelope no es objeto JSON)")
+        return
+
+    event_type = envelope.get("event_type")
+    if not isinstance(event_type, str) or not event_type:
+        logger.warning("OmniEventConsumer: mensaje inválido (event_type ausente o no string)")
+        return
+
     handlers = _handlers.get(event_type, [])
 
     if not handlers:
         logger.debug("OmniEventConsumer: sin handler para '%s'", event_type)
         return
 
-    for handler in handlers:
-        try:
-            handler(envelope)
-        except Exception as exc:
-            logger.exception(
-                "OmniEventConsumer: handler '%s' lanzó excepción para evento '%s': %s",
-                handler.__name__,
-                event_type,
-                exc,
-            )
+    from apps.core import rls
+
+    empresa_id = envelope.get("empresa_id") or envelope.get("tenant_id")
+    parent_ctx = extract_trace_context(headers)
+
+    with trazar_operacion(
+        "eventos.consumir",
+        context=parent_ctx,
+        span_kind="consumer",
+        event_type=event_type,
+        event_id=envelope.get("event_id"),
+        empresa_id=empresa_id,
+        messaging_system="kafka",
+    ):
+        for handler in handlers:
+            try:
+                ctx = rls.rls_tenant_context([empresa_id]) if empresa_id else rls.rls_bypass()
+                with ctx:
+                    handler(envelope)
+            except Exception as exc:
+                logger.exception(
+                    "OmniEventConsumer: handler '%s' lanzó excepción para evento '%s': %s",
+                    handler.__name__,
+                    event_type,
+                    exc,
+                )
 
 
 def run_consumer(
@@ -133,8 +176,7 @@ def run_consumer(
     """
     if not KAFKA_AVAILABLE:
         logger.error(
-            "OmniEventConsumer: confluent-kafka no está instalado. "
-            "Instala con: pip install confluent-kafka"
+            "OmniEventConsumer: confluent-kafka no está instalado. " "Instala con: pip install confluent-kafka"
         )
         return
 
@@ -151,6 +193,8 @@ def run_consumer(
             "Configura la variable de entorno o settings.KAFKA_BROKER_URL."
         )
         return
+
+    init_telemetry()
 
     consumer_config = {
         "bootstrap.servers": broker_url,
@@ -186,7 +230,7 @@ def run_consumer(
             if msg.error():
                 logger.warning("OmniEventConsumer: error de Kafka: %s", msg.error())
                 continue
-            _process_message(msg.value())
+            _process_message(msg.value(), headers=msg.headers())
     except KafkaException as exc:
         logger.exception("OmniEventConsumer: KafkaException: %s", exc)
     finally:

@@ -6,6 +6,7 @@ score = (dias_vencida × 3) + (monto_pendiente / 100) + (intentos_sin_respuesta 
 
 Mayor score = cliente más urgente de cobrar.
 """
+
 from __future__ import annotations
 
 import logging
@@ -64,15 +65,17 @@ def priorizar(
             intentos_sin_respuesta=intentos_map.get(p.cliente_id, 0),
         )
         score = calcular_score(inp)
-        scored.append({
-            "cliente_id": p.cliente_id,
-            "cliente_nombre": p.cliente_nombre,
-            "orden_ref": p.orden_ref,
-            "monto_pendiente": str(p.monto_pendiente),
-            "dias_vencida": p.dias_vencida,
-            "bucket": p.bucket,
-            "score": str(score),
-        })
+        scored.append(
+            {
+                "cliente_id": p.cliente_id,
+                "cliente_nombre": p.cliente_nombre,
+                "orden_ref": p.orden_ref,
+                "monto_pendiente": str(p.monto_pendiente),
+                "dias_vencida": p.dias_vencida,
+                "bucket": p.bucket,
+                "score": str(score),
+            }
+        )
 
     scored.sort(key=lambda x: Decimal(str(x["score"])), reverse=True)
     return scored

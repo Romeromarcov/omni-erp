@@ -38,9 +38,7 @@ def proponer_cierre(bandeja, usuario):
     """Propone el cierre de una bandeja candidata. Devuelve la SolicitudAprobacion
     (o None si el monto no requiere aprobación según el flujo configurado)."""
     if not bandeja.candidata_a_cierre:
-        raise VinculacionError(
-            "La bandeja no es candidata a cierre (neto no alcanzado)."
-        )
+        raise VinculacionError("La bandeja no es candidata a cierre (neto no alcanzado).")
     _asegurar_tipo(bandeja.empresa)
     return aprob.crear_solicitud(
         documento=bandeja,
@@ -67,13 +65,9 @@ def confirmar_cierre(bandeja, usuario, aprobado: bool, comentarios: str = ""):
     bandeja. Si queda aprobada, marca la bandeja como ``aprobado``."""
     solicitud = _solicitud_pendiente(bandeja)
     if solicitud is None:
-        raise VinculacionError(
-            "No hay una solicitud de aprobación pendiente para esta bandeja."
-        )
+        raise VinculacionError("No hay una solicitud de aprobación pendiente para esta bandeja.")
 
-    solicitud = aprob.registrar_decision(
-        solicitud, usuario, aprobado, comentarios=comentarios
-    )
+    solicitud = aprob.registrar_decision(solicitud, usuario, aprobado, comentarios=comentarios)
 
     if aprobado and aprob.esta_aprobada(bandeja):
         bandeja.estado = EstadoBandeja.APROBADO
