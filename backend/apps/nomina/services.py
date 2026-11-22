@@ -257,6 +257,7 @@ def procesar_proceso_nomina(proceso, datos_empleados: dict | None = None, usuari
         (proceso actualizado, asiento|None, advertencia_asiento|None)
     """
     from apps.contabilidad.services import generar_asiento_o_fallar  # noqa: PLC0415
+    from apps.localizacion.services import get_localizacion  # noqa: PLC0415
     from apps.rrhh.models import Empleado  # noqa: PLC0415
 
     from .calculo_lottt import q  # noqa: PLC0415
@@ -280,6 +281,7 @@ def procesar_proceso_nomina(proceso, datos_empleados: dict | None = None, usuari
 
     config = config_nomina_de_empresa(empresa)
     conceptos = _conceptos_de_empresa(empresa)
+    calc_nomina = get_localizacion(empresa, default_pais="VE")["CalculadoraNomina"]
     ahora = timezone.now()
 
     total_devengado = Decimal("0")
@@ -294,29 +296,43 @@ def procesar_proceso_nomina(proceso, datos_empleados: dict | None = None, usuari
                 f"El empleado {empleado.nombre} {empleado.apellido} ({empleado.cedula}) no tiene salario "
                 f"definido y no hay parámetro '{PARAM_SALARIO_MINIMO}' configurado para la empresa."
             )
-        entrada = EntradaNomina(
-            salario_mensual=salario,
-            antiguedad_anios=_antiguedad_anios(empleado, periodo),
-            cestaticket_mensual=config.cestaticket_mensual,
-            **datos,
+        dias_trabajados = int(datos.get("dias_trabajados", 30))
+        horas_extras = q(
+            Decimal(str(datos.get("horas_extra_diurnas", Decimal("0"))))
+            + Decimal(str(datos.get("horas_extra_nocturnas", Decimal("0"))))
         )
-        resultado = calcular_nomina(entrada, config.parametros)
+        resultado = calc_nomina.calcular(
+            empleado=empleado,
+            periodo=periodo,
+            empresa=empresa,
+            contexto={
+                "salario_mensual": salario,
+                "antiguedad_anios": _antiguedad_anios(empleado, periodo),
+                "cestaticket_mensual": config.cestaticket_mensual,
+                "parametros": config.parametros,
+                "datos": datos,
+            },
+        )
+
+        total_asignaciones_emp = resultado["total_asignaciones"]
+        total_deducciones_emp = resultado["total_deducciones"]
+        neto_pagar_emp = resultado["neto_pagar"]
 
         nomina = Nomina.objects.create(
             id_proceso_nomina=proceso,
             id_empleado=empleado,
             sueldo_base=salario,
-            total_devengado=resultado.total_asignaciones,
-            total_deducciones=resultado.total_deducciones,
-            total_neto=resultado.neto_pagar,
-            dias_trabajados=entrada.dias_trabajados,
-            horas_extras=q(entrada.horas_extra_diurnas + entrada.horas_extra_nocturnas),
+            total_devengado=total_asignaciones_emp,
+            total_deducciones=total_deducciones_emp,
+            total_neto=neto_pagar_emp,
+            dias_trabajados=dias_trabajados,
+            horas_extras=horas_extras,
             estado="CALCULADA",
             fecha_calculo=ahora,
         )
         detalles = []
         for codigo, (_n, _t, _c, campo) in CONCEPTOS_LOTTT.items():
-            monto = getattr(resultado, campo)
+            monto = resultado[campo]
             if monto == 0 and codigo != "SUELDO":
                 continue  # solo líneas con monto (el sueldo siempre se registra)
             detalles.append(
@@ -330,9 +346,9 @@ def procesar_proceso_nomina(proceso, datos_empleados: dict | None = None, usuari
             )
         DetalleNomina.objects.bulk_create(detalles)
 
-        total_devengado += resultado.total_asignaciones
-        total_deducciones += resultado.total_deducciones
-        total_neto += resultado.neto_pagar
+        total_devengado += total_asignaciones_emp
+        total_deducciones += total_deducciones_emp
+        total_neto += neto_pagar_emp
 
     proceso.total_empleados = len(empleados)
     proceso.total_devengado = total_devengado

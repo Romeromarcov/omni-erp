@@ -28,7 +28,7 @@ def generar_pdf_factura(factura) -> bytes:
     """
     try:
         from reportlab.lib import colors
-        from reportlab.lib.enums import TA_CENTER, TA_RIGHT
+        from reportlab.lib.enums import TA_CENTER
         from reportlab.lib.pagesizes import A4
         from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
         from reportlab.lib.units import cm
@@ -46,6 +46,20 @@ def generar_pdf_factura(factura) -> bytes:
     import io
     from decimal import Decimal
 
+    from django.core.exceptions import ValidationError as DjangoValidationError
+
+    from apps.localizacion.ports import GeneradorDocumentoLegalNoOp
+    from apps.localizacion.services import get_localizacion
+
+    # ── Datos de la empresa y resolución de localización (ADR-007) ───────────
+    empresa = factura.id_empresa
+    generador = get_localizacion(empresa, default_pais="VE")["GeneradorDocumentoLegal"]
+    try:
+        doc_legal = generador.emitir(documento=factura, empresa=empresa)
+        requiere_pie_seniat = bool(doc_legal.get("requiere_pie_legal_seniat", False))
+    except (ValueError, DjangoValidationError):
+        requiere_pie_seniat = not isinstance(generador, GeneradorDocumentoLegalNoOp)
+
     # ── Configuración del documento ───────────────────────────────────────────
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
@@ -62,7 +76,6 @@ def generar_pdf_factura(factura) -> bytes:
     GRIS_CLARO = colors.HexColor("#f5f5f5")
 
     estilo_centro = ParagraphStyle("centro", parent=styles["Normal"], alignment=TA_CENTER)
-    estilo_derecha = ParagraphStyle("derecha", parent=styles["Normal"], alignment=TA_RIGHT)
     estilo_titulo = ParagraphStyle(
         "titulo",
         parent=styles["Title"],
@@ -70,18 +83,15 @@ def generar_pdf_factura(factura) -> bytes:
         textColor=AZUL_OSCURO,
         spaceAfter=2,
     )
-    estilo_subtitulo = ParagraphStyle(
-        "subtitulo", parent=styles["Normal"], fontSize=10, textColor=AZUL_OSCURO, spaceAfter=2
-    )
     estilo_pie = ParagraphStyle("pie", parent=styles["Normal"], fontSize=7, textColor=colors.grey, alignment=TA_CENTER)
 
     elements = []
 
-    # ── Datos de la empresa ───────────────────────────────────────────────────
-    empresa = factura.id_empresa
     nombre_empresa = getattr(empresa, "nombre_legal", str(empresa))
     rif_empresa = getattr(empresa, "identificador_fiscal", "")
     direccion_empresa = getattr(empresa, "direccion_fiscal", "") or getattr(empresa, "direccion", "")
+    etiqueta_fiscal_emisor = "RIF" if requiere_pie_seniat else "ID Fiscal"
+    etiqueta_fiscal_receptor = "RIF Receptor:" if requiere_pie_seniat else "ID Fiscal Receptor:"
 
     # ── Datos del cliente ─────────────────────────────────────────────────────
     cliente = factura.id_cliente
@@ -107,7 +117,7 @@ def generar_pdf_factura(factura) -> bytes:
             ),
         ],
         [
-            Paragraph(f"RIF: <b>{rif_empresa}</b>", styles["Normal"]),
+            Paragraph(f"{etiqueta_fiscal_emisor}: <b>{rif_empresa}</b>", styles["Normal"]),
             Paragraph(f"N° Control: <b>{factura.numero_control}</b>", estilo_centro),
         ],
         [
@@ -139,7 +149,7 @@ def generar_pdf_factura(factura) -> bytes:
     # ══════════════════════════════════════════════════════════════════════════
     receptor_data = [
         ["Cliente:", nombre_cliente],
-        ["RIF Receptor:", rif_cliente],
+        [etiqueta_fiscal_receptor, rif_cliente],
         ["Dirección:", direccion_cliente or "—"],
     ]
     t_receptor = Table(receptor_data, colWidths=[3.5 * cm, 13.5 * cm])
@@ -221,9 +231,10 @@ def generar_pdf_factura(factura) -> bytes:
 
     totales_data = [
         ["Base Imponible:", f"{base_imponible:,.2f} {moneda}"],
-        [f"IVA ({alicuota}%):", f"{monto_iva:,.2f} {moneda}"],
-        ["TOTAL:", f"{monto_total:,.2f} {moneda}"],
     ]
+    if requiere_pie_seniat or monto_iva > Decimal("0"):
+        totales_data.append([f"IVA ({alicuota}%):", f"{monto_iva:,.2f} {moneda}"])
+    totales_data.append(["TOTAL:", f"{monto_total:,.2f} {moneda}"])
     t_totales = Table(totales_data, colWidths=[13 * cm, 4 * cm])
     t_totales.setStyle(
         TableStyle(
@@ -253,18 +264,19 @@ def generar_pdf_factura(factura) -> bytes:
         elements.append(Spacer(1, 0.3 * cm))
 
     # ══════════════════════════════════════════════════════════════════════════
-    # BLOQUE 6: Pie legal venezolano
+    # BLOQUE 6: Pie legal venezolano (solo si la localización legal lo exige)
     # ══════════════════════════════════════════════════════════════════════════
-    elements.append(HRFlowable(width="100%", thickness=0.5, color=colors.lightgrey))
-    elements.append(Spacer(1, 0.2 * cm))
+    if requiere_pie_seniat:
+        elements.append(HRFlowable(width="100%", thickness=0.5, color=colors.lightgrey))
+        elements.append(Spacer(1, 0.2 * cm))
 
-    pie_texto = (
-        "Documento fiscal emitido de conformidad con la Ley del IVA y su Reglamento. "
-        f"Emisor: {nombre_empresa} — RIF: {rif_empresa}. "
-        "La falsificación de facturas es penada por la ley (Art. 12 Ley del SENIAT). "
-        "Conserve este documento como comprobante de la operación realizada."
-    )
-    elements.append(Paragraph(pie_texto, estilo_pie))
+        pie_texto = (
+            "Documento fiscal emitido de conformidad con la Ley del IVA y su Reglamento. "
+            f"Emisor: {nombre_empresa} — RIF: {rif_empresa}. "
+            "La falsificación de facturas es penada por la ley (Art. 12 Ley del SENIAT). "
+            "Conserve este documento como comprobante de la operación realizada."
+        )
+        elements.append(Paragraph(pie_texto, estilo_pie))
 
     doc.build(elements)
     return buffer.getvalue()

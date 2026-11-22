@@ -276,9 +276,18 @@ class MotorImpuestosVE(MotorImpuestos):
     """Motor de impuestos venezolano: IVA + IGTF (delega en apps.fiscal)."""
 
     def calcular(self, *, subtotal: Decimal, empresa, contexto: dict | None = None) -> dict:
-        from apps.fiscal.services import calcular_impuestos
+        from apps.fiscal.services import _calcular_impuestos_ve
 
-        return calcular_impuestos(_a_decimal(subtotal, campo="subtotal"), empresa)
+        moneda = (contexto or {}).get("moneda")
+        res = _calcular_impuestos_ve(_a_decimal(subtotal, campo="subtotal"), empresa, moneda=moneda)
+        iva = res["monto_iva"]
+        igtf = res["monto_igtf"]
+        return {
+            **res,
+            "iva": iva,
+            "igtf": igtf,
+            "total_impuestos": iva + igtf,
+        }
 
 
 class GeneradorDocumentoLegalVE(GeneradorDocumentoLegal):
@@ -413,8 +422,19 @@ class GeneradorDocumentoLegalVE(GeneradorDocumentoLegal):
 class CalculadoraNominaVE(CalculadoraNomina):
     """Nómina venezolana (LOTTT): delega en el motor puro de apps.nomina (Ola 5.2)."""
 
-    def calcular(self, *, empleado, periodo, empresa) -> dict:
+    def calcular(self, *, empleado, periodo, empresa, contexto: dict | None = None) -> dict:
+        from apps.nomina.calculo_lottt import EntradaNomina, calcular_nomina
         from apps.nomina.services import calcular_nomina_empleado
+
+        if contexto and contexto.get("salario_mensual") is not None:
+            datos = dict(contexto.get("datos") or {})
+            entrada = EntradaNomina(
+                salario_mensual=contexto["salario_mensual"],
+                antiguedad_anios=int(contexto.get("antiguedad_anios", 0)),
+                cestaticket_mensual=contexto.get("cestaticket_mensual", Decimal("0")),
+                **datos,
+            )
+            return calcular_nomina(entrada, contexto.get("parametros")).as_dict()
 
         resultado = calcular_nomina_empleado(empleado, periodo)
         return resultado.as_dict()
