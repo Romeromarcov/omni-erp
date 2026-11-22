@@ -7,7 +7,13 @@ import { describe, it, expect } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { server } from '../test/server';
 import { apiUrl } from '../test/handlers';
-import { pullDeltas, pullAllDeltas } from '../services/syncService';
+import { pullDeltas, pullAllDeltas, pushOptimisticUpdate } from '../services/syncService';
+import {
+  clearSyncConflicts,
+  enqueueSyncConflict,
+  listSyncConflicts,
+  retrySyncConflictWithServerCursor,
+} from '../lib/syncConflictQueue';
 
 describe('syncService.pullDeltas (MSW)', () => {
   it('envía entity/desde/limite y devuelve la página', async () => {
@@ -85,5 +91,93 @@ describe('syncService.pullAllDeltas (MSW)', () => {
     const { records } = await pullAllDeltas('clientes');
     expect(records).toEqual([]);
     expect(llamadas).toBe(1);
+  });
+});
+
+describe('syncService.pushOptimisticUpdate y cola de conflictos (MSW)', () => {
+  it('retorna ok=true en 200 y envía Idempotency-Key', async () => {
+    let seenIdem = '';
+    server.use(
+      http.post(apiUrl('/sync/push/'), async ({ request }) => {
+        seenIdem = request.headers.get('Idempotency-Key') ?? '';
+        const body = (await request.json()) as { id: string };
+        return HttpResponse.json({
+          entity: 'clientes',
+          id: body.id,
+          server_time: '2026-11-22T12:00:00Z',
+          registro: {
+            id_cliente: body.id,
+            telefono: '0412-1112233',
+            activo: true,
+            fecha_actualizacion: '2026-11-22T12:00:00Z',
+          },
+        });
+      }),
+    );
+
+    const res = await pushOptimisticUpdate(
+      {
+        entity: 'clientes',
+        id: 'c-1',
+        expected_fecha_actualizacion: '2026-11-22T10:00:00Z',
+        cambios: { telefono: '0412-1112233' },
+      },
+      'key-sync-1',
+    );
+    expect(res.ok).toBe(true);
+    expect(seenIdem).toBe('key-sync-1');
+  });
+
+  it('retorna ok=false con CONFLICTO_VERSION en 409 y permite reintentar con el cursor servidor', async () => {
+    clearSyncConflicts();
+    server.use(
+      http.post(apiUrl('/sync/push/'), async ({ request }) => {
+        const body = (await request.json()) as { expected_fecha_actualizacion: string };
+        if (body.expected_fecha_actualizacion === '2026-11-22T10:00:00Z') {
+          return HttpResponse.json(
+            {
+              error: 'El registro fue modificado en el servidor.',
+              codigo: 'CONFLICTO_VERSION',
+              entity: 'clientes',
+              id: 'c-2',
+              registro_servidor: {
+                id_cliente: 'c-2',
+                telefono: '0424-9990000',
+                activo: true,
+                fecha_actualizacion: '2026-11-22T11:30:00Z',
+              },
+            },
+            { status: 409 },
+          );
+        }
+        return HttpResponse.json({
+          entity: 'clientes',
+          id: 'c-2',
+          server_time: '2026-11-22T12:05:00Z',
+          registro: {
+            id_cliente: 'c-2',
+            telefono: '0414-5556666',
+            activo: true,
+            fecha_actualizacion: '2026-11-22T12:05:00Z',
+          },
+        });
+      }),
+    );
+
+    const mutacion = {
+      entity: 'clientes' as const,
+      id: 'c-2',
+      expected_fecha_actualizacion: '2026-11-22T10:00:00Z',
+      cambios: { telefono: '0414-5556666' },
+    };
+    const r1 = await pushOptimisticUpdate(mutacion);
+    expect(r1.ok).toBe(false);
+    if (!r1.ok) {
+      const queued = enqueueSyncConflict(mutacion, r1.conflicto);
+      expect(listSyncConflicts()).toHaveLength(1);
+      const r2 = await retrySyncConflictWithServerCursor(queued);
+      expect(r2.ok).toBe(true);
+      expect(listSyncConflicts()).toHaveLength(0);
+    }
   });
 });

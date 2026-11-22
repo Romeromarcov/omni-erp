@@ -1191,6 +1191,7 @@ _MCP_DEFAULT_MODULE_PATHS = [
     "apps.localizacion.mcp",
     "apps.connect.mcp",
     "apps.crm.mcp",
+    "apps.sync.mcp",
 ]
 
 

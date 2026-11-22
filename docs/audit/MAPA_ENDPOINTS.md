@@ -1484,6 +1484,7 @@
 | `periodos-fiscales/` | PeriodoFiscalView | — | — | — | IsAuthenticated |
 | `periodos-fiscales/<int:año>/<int:mes>/cerrar/` | CerrarPeriodoFiscalView | — | — | — | IsAuthenticated |
 | `pull/` | SyncPullView | — | — | — | IsAuthenticated |
+| `push/` | SyncPushView | — | — | — | IsAuthenticated |
 | `push/ventas/` | SyncPushVentasView | — | — | — | IsAuthenticated |
 | `reportes/balance-comprobacion/` | ReporteBalanceComprobacionView | — | — | — | IsAuthenticated |
 | `reportes/balance-general/` | ReporteBalanceGeneralView | — | — | — | IsAuthenticated |
@@ -1500,4 +1501,4 @@
 | `validar-cuenta-ve/` | ValidarCuentaVeView | — | — | — | IsAuthenticated |
 | `validar-referencia/` | ValidarReferenciaView | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 269_
+_Total ViewSets: 270_

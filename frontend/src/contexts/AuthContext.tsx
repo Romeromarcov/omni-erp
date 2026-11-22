@@ -19,6 +19,7 @@ import {
 import { queryClient } from '../lib/queryClient';
 import { clearPersistedQueryCache } from '../lib/idbPersister';
 import { clearOutbox } from '../lib/salesOutbox';
+import { clearSyncConflicts } from '../lib/syncConflictQueue';
 
 interface AuthContextType {
   user: Usuario | null;
@@ -50,6 +51,7 @@ function purgeOfflineLocalState(): void {
   queryClient.clear();
   void clearPersistedQueryCache();
   void clearOutbox();
+  clearSyncConflicts();
 }
 
 function purgeAllSessionLocalState(): void {

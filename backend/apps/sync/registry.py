@@ -30,6 +30,8 @@ class SyncEntity:
     delta_field: str = "fecha_actualizacion"
     #: Búsquedas para `?desde` ordenadas de forma estable.
     order_by: tuple[str, ...] = field(default=("fecha_actualizacion", "pk"))
+    #: Whitelist explícita de campos editables vía POST /api/sync/push/ (CWE-915).
+    editable_fields: tuple[str, ...] = ()
 
 
 # Catálogo mínimo para operar un POS sin red. Ampliable sin tocar la vista.
@@ -49,6 +51,7 @@ SYNC_ENTITIES: dict[str, SyncEntity] = {
             "activo",
             "fecha_actualizacion",
         ),
+        editable_fields=("nombre_producto", "precio_venta_sugerido", "activo"),
     ),
     "categorias_producto": SyncEntity(
         model_label="inventario.CategoriaProducto",
@@ -60,6 +63,7 @@ SYNC_ENTITIES: dict[str, SyncEntity] = {
             "activo",
             "fecha_actualizacion",
         ),
+        editable_fields=("nombre_categoria", "activo"),
     ),
     "unidades_medida": SyncEntity(
         model_label="inventario.UnidadMedida",
@@ -87,6 +91,7 @@ SYNC_ENTITIES: dict[str, SyncEntity] = {
             "activo",
             "fecha_actualizacion",
         ),
+        editable_fields=("razon_social", "nombre_comercial", "telefono", "email", "activo"),
     ),
     "variantes_producto": SyncEntity(
         model_label="inventario.VarianteProducto",
