@@ -553,8 +553,7 @@ class TestMonedaEmpresaActivaSerializer:
         rep = MonedaEmpresaActivaSerializer(activa_ves).data
         assert rep["es_pais"] is True
         assert rep["moneda_codigo_iso"] == "VES"
-        # es_base usa empresa.moneda_base_id, que NO existe en Empresa
-        # (el campo real es id_moneda_base) → siempre False (bug documentado)
+        # empresa_a.id_moneda_base es USD, así que VES no es la moneda base
         assert rep["es_base"] is False
 
     def test_es_pais_false_para_otra_moneda(self, empresa_a, moneda_usd):

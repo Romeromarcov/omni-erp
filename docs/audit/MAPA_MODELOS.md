@@ -123,6 +123,7 @@
 | finanzas | SesionCajaFisica | ✅ | ✅ | — |
 | finanzas | SesionDatafono | — | ✅ | — |
 | finanzas | TasaCambio | ✅ | ✅ | — |
+| finanzas | TipoTasaCambio | ✅ | ✅ | — |
 | finanzas | TransaccionDatafono | — | ✅ | — |
 | finanzas | TransaccionFinanciera | ✅ | ✅ | — |
 | fiscal | ConfiguracionFiscalEmpresa | ✅ | ✅ | — |
@@ -265,4 +266,4 @@
 | ventas | NotaVenta | ✅ | ✅ | id_empresa+numero_nota |
 | ventas | Pedido | ✅ | ✅ | id_empresa+numero_pedido |
 
-_Total modelos: 262_
+_Total modelos: 263_

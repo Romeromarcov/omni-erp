@@ -358,6 +358,7 @@ RLS_TABLES = {
     "finanzas_plantilla_maestro_cajas": "empresa_id",
     "finanzas_sesion_caja_fisica": "empresa_id",
     "finanzas_tasacambio": "id_empresa_id",
+    "finanzas_tipo_tasa_cambio": "id_empresa_id",
     # fiscal
     "fiscal_configuracion_empresa": "id_empresa_id",
     "fiscal_configuracionimpuesto": "empresa_id",
@@ -475,6 +476,7 @@ RLS_SHARED_NULL_TABLES = frozenset(
         "finanzas_metodo_pago",
         "finanzas_moneda",
         "finanzas_tasacambio",
+        "finanzas_tipo_tasa_cambio",
         "fiscal_contribucionparafiscal",
         "fiscal_impuesto",
         "roles",

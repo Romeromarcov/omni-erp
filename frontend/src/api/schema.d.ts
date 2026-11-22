@@ -214,7 +214,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Consumo LLM. */
+                /** @description A UUID string identifying this Consumo LLM. */
                 id_consumo: string;
             };
             cookie?: never;
@@ -260,7 +260,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Ejecución de Agente. */
+                /** @description A UUID string identifying this Ejecución de Agente. */
                 id_ejecucion: string;
             };
             cookie?: never;
@@ -504,7 +504,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este prediccion agente. */
+                /** @description A UUID string identifying this prediccion agente. */
                 id_prediccion: string;
             };
             cookie?: never;
@@ -575,7 +575,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este prediccion agente. */
+                /** @description A UUID string identifying this prediccion agente. */
                 id_prediccion: string;
             };
             cookie?: never;
@@ -598,7 +598,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este prediccion agente. */
+                /** @description A UUID string identifying this prediccion agente. */
                 id_prediccion: string;
             };
             cookie?: never;
@@ -637,7 +637,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Almacén. */
+                /** @description A UUID string identifying this Almacén. */
                 id_almacen: string;
             };
             cookie?: never;
@@ -706,7 +706,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Stock por Ubicación. */
+                /** @description A UUID string identifying this Stock por Ubicación. */
                 id_stock_ubicacion: string;
             };
             cookie?: never;
@@ -741,7 +741,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Ubicación de Almacén. */
+                /** @description A UUID string identifying this Ubicación de Almacén. */
                 id_ubicacion: string;
             };
             cookie?: never;
@@ -776,7 +776,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este log auditoria. */
+                /** @description A UUID string identifying this log auditoria. */
                 id_log_auditoria: string;
             };
             cookie?: never;
@@ -993,7 +993,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Lote de Pago Bancario. */
+                /** @description A UUID string identifying this Lote de Pago Bancario. */
                 id_lote_pago: string;
             };
             cookie?: never;
@@ -1013,7 +1013,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Lote de Pago Bancario. */
+                /** @description A UUID string identifying this Lote de Pago Bancario. */
                 id_lote_pago: string;
             };
             cookie?: never;
@@ -1033,7 +1033,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Lote de Pago Bancario. */
+                /** @description A UUID string identifying this Lote de Pago Bancario. */
                 id_lote_pago: string;
             };
             cookie?: never;
@@ -1053,7 +1053,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Lote de Pago Bancario. */
+                /** @description A UUID string identifying this Lote de Pago Bancario. */
                 id_lote_pago: string;
             };
             cookie?: never;
@@ -1073,7 +1073,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Lote de Pago Bancario. */
+                /** @description A UUID string identifying this Lote de Pago Bancario. */
                 id_lote_pago: string;
             };
             cookie?: never;
@@ -1679,7 +1679,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Factura de Compra. */
+                /** @description A UUID string identifying this Detalle de Factura de Compra. */
                 id_detalle_factura: string;
             };
             cookie?: never;
@@ -1714,7 +1714,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Oferta. */
+                /** @description A UUID string identifying this Detalle de Oferta. */
                 id_detalle_oferta: string;
             };
             cookie?: never;
@@ -1749,7 +1749,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este detalle orden compra. */
+                /** @description A UUID string identifying this detalle orden compra. */
                 id_detalle_orden_compra: string;
             };
             cookie?: never;
@@ -1784,7 +1784,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Recepción. */
+                /** @description A UUID string identifying this Detalle de Recepción. */
                 id_detalle_recepcion: string;
             };
             cookie?: never;
@@ -1819,7 +1819,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Requisición. */
+                /** @description A UUID string identifying this Detalle de Requisición. */
                 id_detalle_requisicion: string;
             };
             cookie?: never;
@@ -1854,7 +1854,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Solicitud de Cotización. */
+                /** @description A UUID string identifying this Detalle de Solicitud de Cotización. */
                 id_detalle_solicitud: string;
             };
             cookie?: never;
@@ -1906,7 +1906,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Factura de Compra. */
+                /** @description A UUID string identifying this Factura de Compra. */
                 id_factura_compra: string;
             };
             cookie?: never;
@@ -1941,7 +1941,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Oferta de Proveedor. */
+                /** @description A UUID string identifying this Oferta de Proveedor. */
                 id_oferta: string;
             };
             cookie?: never;
@@ -1960,7 +1960,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Oferta de Proveedor. */
+                /** @description A UUID string identifying this Oferta de Proveedor. */
                 id_oferta: string;
             };
             cookie?: never;
@@ -1996,7 +1996,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Orden de Compra. */
+                /** @description A UUID string identifying this Orden de Compra. */
                 id_orden_compra: string;
             };
             cookie?: never;
@@ -2015,7 +2015,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Orden de Compra. */
+                /** @description A UUID string identifying this Orden de Compra. */
                 id_orden_compra: string;
             };
             cookie?: never;
@@ -2068,7 +2068,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Recepción de Mercancía. */
+                /** @description A UUID string identifying this Recepción de Mercancía. */
                 id_recepcion: string;
             };
             cookie?: never;
@@ -2103,7 +2103,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Requisición de Compra. */
+                /** @description A UUID string identifying this Requisición de Compra. */
                 id_requisicion: string;
             };
             cookie?: never;
@@ -2122,7 +2122,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Requisición de Compra. */
+                /** @description A UUID string identifying this Requisición de Compra. */
                 id_requisicion: string;
             };
             cookie?: never;
@@ -2142,7 +2142,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Requisición de Compra. */
+                /** @description A UUID string identifying this Requisición de Compra. */
                 id_requisicion: string;
             };
             cookie?: never;
@@ -2195,7 +2195,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Solicitud de Cotización. */
+                /** @description A UUID string identifying this Solicitud de Cotización. */
                 id_solicitud_cotizacion: string;
             };
             cookie?: never;
@@ -2214,7 +2214,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Solicitud de Cotización. */
+                /** @description A UUID string identifying this Solicitud de Cotización. */
                 id_solicitud_cotizacion: string;
             };
             cookie?: never;
@@ -2252,7 +2252,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este catalogo valor. */
+                /** @description A UUID string identifying this catalogo valor. */
                 id_catalogo_valor: string;
             };
             cookie?: never;
@@ -2301,7 +2301,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Parámetro del Sistema. */
+                /** @description A UUID string identifying this Parámetro del Sistema. */
                 id_parametro: string;
             };
             cookie?: never;
@@ -2358,7 +2358,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este tipo documento. */
+                /** @description A UUID string identifying this tipo documento. */
                 id_tipo_documento: string;
             };
             cookie?: never;
@@ -2463,7 +2463,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Perfil Connect. */
+                /** @description A UUID string identifying this Perfil Connect. */
                 id_perfil: string;
             };
             cookie?: never;
@@ -2486,7 +2486,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Perfil Connect. */
+                /** @description A UUID string identifying this Perfil Connect. */
                 id_perfil: string;
             };
             cookie?: never;
@@ -2527,7 +2527,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Tarjeta Connect. */
+                /** @description A UUID string identifying this Tarjeta Connect. */
                 id_tarjeta: string;
             };
             cookie?: never;
@@ -2550,7 +2550,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Tarjeta Connect. */
+                /** @description A UUID string identifying this Tarjeta Connect. */
                 id_tarjeta: string;
             };
             cookie?: never;
@@ -2573,7 +2573,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Tarjeta Connect. */
+                /** @description A UUID string identifying this Tarjeta Connect. */
                 id_tarjeta: string;
             };
             cookie?: never;
@@ -2596,7 +2596,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Tarjeta Connect. */
+                /** @description A UUID string identifying this Tarjeta Connect. */
                 id_tarjeta: string;
             };
             cookie?: never;
@@ -2619,7 +2619,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Tarjeta Connect. */
+                /** @description A UUID string identifying this Tarjeta Connect. */
                 id_tarjeta: string;
             };
             cookie?: never;
@@ -2642,7 +2642,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Tarjeta Connect. */
+                /** @description A UUID string identifying this Tarjeta Connect. */
                 id_tarjeta: string;
             };
             cookie?: never;
@@ -2698,7 +2698,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Asiento Contable. */
+                /** @description A UUID string identifying this Asiento Contable. */
                 id_asiento: string;
             };
             cookie?: never;
@@ -2717,7 +2717,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Asiento Contable. */
+                /** @description A UUID string identifying this Asiento Contable. */
                 id_asiento: string;
             };
             cookie?: never;
@@ -2737,7 +2737,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Asiento Contable. */
+                /** @description A UUID string identifying this Asiento Contable. */
                 id_asiento: string;
             };
             cookie?: never;
@@ -2757,7 +2757,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Asiento Contable. */
+                /** @description A UUID string identifying this Asiento Contable. */
                 id_asiento: string;
             };
             cookie?: never;
@@ -2793,7 +2793,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este detalle asiento. */
+                /** @description A UUID string identifying this detalle asiento. */
                 id_detalle_asiento: string;
             };
             cookie?: never;
@@ -2830,7 +2830,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Diario Contable. */
+                /** @description A UUID string identifying this Diario Contable. */
                 id_diario: string;
             };
             cookie?: never;
@@ -2853,7 +2853,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Diario Contable. */
+                /** @description A UUID string identifying this Diario Contable. */
                 id_diario: string;
             };
             cookie?: never;
@@ -2877,7 +2877,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Diario Contable. */
+                /** @description A UUID string identifying this Diario Contable. */
                 id_diario: string;
             };
             cookie?: never;
@@ -2941,7 +2941,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Mapeo Contable. */
+                /** @description A UUID string identifying this Mapeo Contable. */
                 id_mapeo: string;
             };
             cookie?: never;
@@ -3028,7 +3028,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Período Contable. */
+                /** @description A UUID string identifying this Período Contable. */
                 id_periodo: string;
             };
             cookie?: never;
@@ -3051,7 +3051,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Período Contable. */
+                /** @description A UUID string identifying this Período Contable. */
                 id_periodo: string;
             };
             cookie?: never;
@@ -3071,7 +3071,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Período Contable. */
+                /** @description A UUID string identifying this Período Contable. */
                 id_periodo: string;
             };
             cookie?: never;
@@ -3141,7 +3141,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Plan de Cuentas. */
+                /** @description A UUID string identifying this Plan de Cuentas. */
                 id_cuenta_contable: string;
             };
             cookie?: never;
@@ -3290,7 +3290,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este asignacion horario. */
+                /** @description A UUID string identifying this asignacion horario. */
                 id_asignacion_horario: string;
             };
             cookie?: never;
@@ -3309,7 +3309,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este asignacion horario. */
+                /** @description A UUID string identifying this asignacion horario. */
                 id_asignacion_horario: string;
             };
             cookie?: never;
@@ -3362,7 +3362,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este horario trabajo. */
+                /** @description A UUID string identifying this horario trabajo. */
                 id_horario: string;
             };
             cookie?: never;
@@ -3381,7 +3381,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este horario trabajo. */
+                /** @description A UUID string identifying this horario trabajo. */
                 id_horario: string;
             };
             cookie?: never;
@@ -3468,7 +3468,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este registro asistencia. */
+                /** @description A UUID string identifying this registro asistencia. */
                 id_registro_asistencia: string;
             };
             cookie?: never;
@@ -3554,7 +3554,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este resumen asistencia diario. */
+                /** @description A UUID string identifying this resumen asistencia diario. */
                 id_resumen_diario: string;
             };
             cookie?: never;
@@ -3573,7 +3573,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este resumen asistencia diario. */
+                /** @description A UUID string identifying this resumen asistencia diario. */
                 id_resumen_diario: string;
             };
             cookie?: never;
@@ -3619,7 +3619,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Contacto. */
+                /** @description A UUID string identifying this Contacto. */
                 id_contacto: string;
             };
             cookie?: never;
@@ -3708,7 +3708,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Departamento. */
+                /** @description A UUID string identifying this Departamento. */
                 id_departamento: string;
             };
             cookie?: never;
@@ -3768,7 +3768,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Dispositivo. */
+                /** @description A UUID string identifying this Dispositivo. */
                 id_dispositivo: string;
             };
             cookie?: never;
@@ -3819,7 +3819,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Empresa. */
+                /** @description A UUID string identifying this Empresa. */
                 id_empresa: string;
             };
             cookie?: never;
@@ -3872,7 +3872,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Configuración de Flujo de Documentos. */
+                /** @description A UUID string identifying this Configuración de Flujo de Documentos. */
                 id_configuracion: string;
             };
             cookie?: never;
@@ -3987,7 +3987,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Notificación. */
+                /** @description A UUID string identifying this Notificación. */
                 id_notificacion: string;
             };
             cookie?: never;
@@ -4026,7 +4026,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Notificación. */
+                /** @description A UUID string identifying this Notificación. */
                 id_notificacion: string;
             };
             cookie?: never;
@@ -4072,7 +4072,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Permiso. */
+                /** @description A UUID string identifying this Permiso. */
                 id_permiso: string;
             };
             cookie?: never;
@@ -4111,7 +4111,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Permiso. */
+                /** @description A UUID string identifying this Permiso. */
                 id_permiso: string;
             };
             cookie?: never;
@@ -4131,7 +4131,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Permiso. */
+                /** @description A UUID string identifying this Permiso. */
                 id_permiso: string;
             };
             cookie?: never;
@@ -4169,7 +4169,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Rol. */
+                /** @description A UUID string identifying this Rol. */
                 id_rol: string;
             };
             cookie?: never;
@@ -4192,7 +4192,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Rol. */
+                /** @description A UUID string identifying this Rol. */
                 id_rol: string;
             };
             cookie?: never;
@@ -4216,7 +4216,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Rol. */
+                /** @description A UUID string identifying this Rol. */
                 id_rol: string;
             };
             cookie?: never;
@@ -4255,7 +4255,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Sucursal. */
+                /** @description A UUID string identifying this Sucursal. */
                 id_sucursal: string;
             };
             cookie?: never;
@@ -4345,7 +4345,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Usuario. */
+                /** @description A UUID string identifying this Usuario. */
                 id: string;
             };
             cookie?: never;
@@ -4380,7 +4380,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Análisis de Variación de Costo. */
+                /** @description A UUID string identifying this Análisis de Variación de Costo. */
                 id_analisis_variacion: string;
             };
             cookie?: never;
@@ -4415,7 +4415,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Costo Estándar de Producto. */
+                /** @description A UUID string identifying this Costo Estándar de Producto. */
                 id_costo_estandar: string;
             };
             cookie?: never;
@@ -4450,7 +4450,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Costo de Producción. */
+                /** @description A UUID string identifying this Costo de Producción. */
                 id_costo_produccion: string;
             };
             cookie?: never;
@@ -4487,7 +4487,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Actividad. */
+                /** @description A UUID string identifying this Actividad. */
                 id_actividad: string;
             };
             cookie?: never;
@@ -4510,7 +4510,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Actividad. */
+                /** @description A UUID string identifying this Actividad. */
                 id_actividad: string;
             };
             cookie?: never;
@@ -4534,7 +4534,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Actividad. */
+                /** @description A UUID string identifying this Actividad. */
                 id_actividad: string;
             };
             cookie?: never;
@@ -4557,7 +4557,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Actividad. */
+                /** @description A UUID string identifying this Actividad. */
                 id_actividad: string;
             };
             cookie?: never;
@@ -4613,7 +4613,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este cliente. */
+                /** @description A UUID string identifying this cliente. */
                 id_cliente: string;
             };
             cookie?: never;
@@ -4632,7 +4632,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este cliente. */
+                /** @description A UUID string identifying this cliente. */
                 id_cliente: string;
             };
             cookie?: never;
@@ -4655,7 +4655,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este cliente. */
+                /** @description A UUID string identifying this cliente. */
                 id_cliente: string;
             };
             cookie?: never;
@@ -4691,7 +4691,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Contacto de Cliente. */
+                /** @description A UUID string identifying this Contacto de Cliente. */
                 id_contacto: string;
             };
             cookie?: never;
@@ -4726,7 +4726,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Dirección de Cliente. */
+                /** @description A UUID string identifying this Dirección de Cliente. */
                 id_direccion: string;
             };
             cookie?: never;
@@ -4763,7 +4763,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Etapa. */
+                /** @description A UUID string identifying this Etapa. */
                 id_etapa: string;
             };
             cookie?: never;
@@ -4786,7 +4786,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Etapa. */
+                /** @description A UUID string identifying this Etapa. */
                 id_etapa: string;
             };
             cookie?: never;
@@ -4810,7 +4810,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Etapa. */
+                /** @description A UUID string identifying this Etapa. */
                 id_etapa: string;
             };
             cookie?: never;
@@ -4851,7 +4851,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Lead. */
+                /** @description A UUID string identifying this Lead. */
                 id_lead: string;
             };
             cookie?: never;
@@ -4874,7 +4874,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Lead. */
+                /** @description A UUID string identifying this Lead. */
                 id_lead: string;
             };
             cookie?: never;
@@ -4898,7 +4898,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Lead. */
+                /** @description A UUID string identifying this Lead. */
                 id_lead: string;
             };
             cookie?: never;
@@ -4921,7 +4921,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Lead. */
+                /** @description A UUID string identifying this Lead. */
                 id_lead: string;
             };
             cookie?: never;
@@ -4944,7 +4944,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Lead. */
+                /** @description A UUID string identifying this Lead. */
                 id_lead: string;
             };
             cookie?: never;
@@ -4967,7 +4967,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Lead. */
+                /** @description A UUID string identifying this Lead. */
                 id_lead: string;
             };
             cookie?: never;
@@ -5028,7 +5028,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pipeline. */
+                /** @description A UUID string identifying this Pipeline. */
                 id_pipeline: string;
             };
             cookie?: never;
@@ -5051,7 +5051,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pipeline. */
+                /** @description A UUID string identifying this Pipeline. */
                 id_pipeline: string;
             };
             cookie?: never;
@@ -5075,7 +5075,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pipeline. */
+                /** @description A UUID string identifying this Pipeline. */
                 id_pipeline: string;
             };
             cookie?: never;
@@ -5098,7 +5098,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pipeline. */
+                /** @description A UUID string identifying this Pipeline. */
                 id_pipeline: string;
             };
             cookie?: never;
@@ -5137,7 +5137,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este abono cx p. */
+                /** @description A UUID string identifying this abono cx p. */
                 id_abono_cxp: string;
             };
             cookie?: never;
@@ -5192,7 +5192,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este cuenta por pagar. */
+                /** @description A UUID string identifying this cuenta por pagar. */
                 id_cxp: string;
             };
             cookie?: never;
@@ -5211,7 +5211,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este cuenta por pagar. */
+                /** @description A UUID string identifying this cuenta por pagar. */
                 id_cxp: string;
             };
             cookie?: never;
@@ -5248,7 +5248,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Bandeja de facturación. */
+                /** @description A UUID string identifying this Bandeja de facturación. */
                 id: string;
             };
             cookie?: never;
@@ -5268,7 +5268,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Bandeja de facturación. */
+                /** @description A UUID string identifying this Bandeja de facturación. */
                 id: string;
             };
             cookie?: never;
@@ -5288,7 +5288,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Bandeja de facturación. */
+                /** @description A UUID string identifying this Bandeja de facturación. */
                 id: string;
             };
             cookie?: never;
@@ -5359,7 +5359,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Conciliación. */
+                /** @description A UUID string identifying this Conciliación. */
                 id: string;
             };
             cookie?: never;
@@ -5379,7 +5379,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Conciliación. */
+                /** @description A UUID string identifying this Conciliación. */
                 id: string;
             };
             cookie?: never;
@@ -5417,7 +5417,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Configuración de conciliación. */
+                /** @description A UUID string identifying this Configuración de conciliación. */
                 id: string;
             };
             cookie?: never;
@@ -5440,7 +5440,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Configuración de conciliación. */
+                /** @description A UUID string identifying this Configuración de conciliación. */
                 id: string;
             };
             cookie?: never;
@@ -5464,7 +5464,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Configuración de conciliación. */
+                /** @description A UUID string identifying this Configuración de conciliación. */
                 id: string;
             };
             cookie?: never;
@@ -5503,7 +5503,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Descuento BCV completo. */
+                /** @description A UUID string identifying this Descuento BCV completo. */
                 id: string;
             };
             cookie?: never;
@@ -5522,7 +5522,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Descuento BCV completo. */
+                /** @description A UUID string identifying this Descuento BCV completo. */
                 id: string;
             };
             cookie?: never;
@@ -5546,7 +5546,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Descuento BCV completo. */
+                /** @description A UUID string identifying this Descuento BCV completo. */
                 id: string;
             };
             cookie?: never;
@@ -5585,7 +5585,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Descuento por marca/categoría. */
+                /** @description A UUID string identifying this Descuento por marca/categoría. */
                 id: string;
             };
             cookie?: never;
@@ -5604,7 +5604,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Descuento por marca/categoría. */
+                /** @description A UUID string identifying this Descuento por marca/categoría. */
                 id: string;
             };
             cookie?: never;
@@ -5628,7 +5628,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Descuento por marca/categoría. */
+                /** @description A UUID string identifying this Descuento por marca/categoría. */
                 id: string;
             };
             cookie?: never;
@@ -5667,7 +5667,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Feriado. */
+                /** @description A UUID string identifying this Feriado. */
                 id: string;
             };
             cookie?: never;
@@ -5686,7 +5686,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Feriado. */
+                /** @description A UUID string identifying this Feriado. */
                 id: string;
             };
             cookie?: never;
@@ -5710,7 +5710,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Feriado. */
+                /** @description A UUID string identifying this Feriado. */
                 id: string;
             };
             cookie?: never;
@@ -5749,7 +5749,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Línea de pedido (espejo). */
+                /** @description A UUID string identifying this Línea de pedido (espejo). */
                 id: string;
             };
             cookie?: never;
@@ -5768,7 +5768,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Línea de pedido (espejo). */
+                /** @description A UUID string identifying this Línea de pedido (espejo). */
                 id: string;
             };
             cookie?: never;
@@ -5792,7 +5792,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Línea de pedido (espejo). */
+                /** @description A UUID string identifying this Línea de pedido (espejo). */
                 id: string;
             };
             cookie?: never;
@@ -5831,7 +5831,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Método de pago. */
+                /** @description A UUID string identifying this Método de pago. */
                 id: string;
             };
             cookie?: never;
@@ -5850,7 +5850,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Método de pago. */
+                /** @description A UUID string identifying this Método de pago. */
                 id: string;
             };
             cookie?: never;
@@ -5874,7 +5874,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Método de pago. */
+                /** @description A UUID string identifying this Método de pago. */
                 id: string;
             };
             cookie?: never;
@@ -5913,7 +5913,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago (espejo). */
+                /** @description A UUID string identifying this Pago (espejo). */
                 id: string;
             };
             cookie?: never;
@@ -5932,7 +5932,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago (espejo). */
+                /** @description A UUID string identifying this Pago (espejo). */
                 id: string;
             };
             cookie?: never;
@@ -5956,7 +5956,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago (espejo). */
+                /** @description A UUID string identifying this Pago (espejo). */
                 id: string;
             };
             cookie?: never;
@@ -6012,7 +6012,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pedido (espejo). */
+                /** @description A UUID string identifying this Pedido (espejo). */
                 id: string;
             };
             cookie?: never;
@@ -6031,7 +6031,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pedido (espejo). */
+                /** @description A UUID string identifying this Pedido (espejo). */
                 id: string;
             };
             cookie?: never;
@@ -6055,7 +6055,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pedido (espejo). */
+                /** @description A UUID string identifying this Pedido (espejo). */
                 id: string;
             };
             cookie?: never;
@@ -6078,7 +6078,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pedido (espejo). */
+                /** @description A UUID string identifying this Pedido (espejo). */
                 id: string;
             };
             cookie?: never;
@@ -6114,7 +6114,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Precio de lista. */
+                /** @description A UUID string identifying this Precio de lista. */
                 id: string;
             };
             cookie?: never;
@@ -6133,7 +6133,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Precio de lista. */
+                /** @description A UUID string identifying this Precio de lista. */
                 id: string;
             };
             cookie?: never;
@@ -6157,7 +6157,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Precio de lista. */
+                /** @description A UUID string identifying this Precio de lista. */
                 id: string;
             };
             cookie?: never;
@@ -6196,7 +6196,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Promoción de primera compra. */
+                /** @description A UUID string identifying this Promoción de primera compra. */
                 id: string;
             };
             cookie?: never;
@@ -6215,7 +6215,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Promoción de primera compra. */
+                /** @description A UUID string identifying this Promoción de primera compra. */
                 id: string;
             };
             cookie?: never;
@@ -6239,7 +6239,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Promoción de primera compra. */
+                /** @description A UUID string identifying this Promoción de primera compra. */
                 id: string;
             };
             cookie?: never;
@@ -6278,7 +6278,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Regla de recurrencia. */
+                /** @description A UUID string identifying this Regla de recurrencia. */
                 id: string;
             };
             cookie?: never;
@@ -6297,7 +6297,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Regla de recurrencia. */
+                /** @description A UUID string identifying this Regla de recurrencia. */
                 id: string;
             };
             cookie?: never;
@@ -6321,7 +6321,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Regla de recurrencia. */
+                /** @description A UUID string identifying this Regla de recurrencia. */
                 id: string;
             };
             cookie?: never;
@@ -6386,7 +6386,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Vinculación pago↔pedido. */
+                /** @description A UUID string identifying this Vinculación pago↔pedido. */
                 id: string;
             };
             cookie?: never;
@@ -6410,7 +6410,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Vinculación pago↔pedido. */
+                /** @description A UUID string identifying this Vinculación pago↔pedido. */
                 id: string;
             };
             cookie?: never;
@@ -6434,7 +6434,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Vinculación pago↔pedido. */
+                /** @description A UUID string identifying this Vinculación pago↔pedido. */
                 id: string;
             };
             cookie?: never;
@@ -6474,7 +6474,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un valor de entero único que identifique este abono cx c. */
+                /** @description A unique integer value identifying this abono cx c. */
                 id: number;
             };
             cookie?: never;
@@ -6552,7 +6552,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un valor de entero único que identifique este cuenta por cobrar. */
+                /** @description A unique integer value identifying this cuenta por cobrar. */
                 id: number;
             };
             cookie?: never;
@@ -6571,7 +6571,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un valor de entero único que identifique este cuenta por cobrar. */
+                /** @description A unique integer value identifying this cuenta por cobrar. */
                 id: number;
             };
             cookie?: never;
@@ -6624,7 +6624,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Despacho. */
+                /** @description A UUID string identifying this Despacho. */
                 id_despacho: string;
             };
             cookie?: never;
@@ -6643,7 +6643,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Despacho. */
+                /** @description A UUID string identifying this Despacho. */
                 id_despacho: string;
             };
             cookie?: never;
@@ -6663,7 +6663,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Despacho. */
+                /** @description A UUID string identifying this Despacho. */
                 id_despacho: string;
             };
             cookie?: never;
@@ -6683,7 +6683,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Despacho. */
+                /** @description A UUID string identifying this Despacho. */
                 id_despacho: string;
             };
             cookie?: never;
@@ -6703,7 +6703,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Despacho. */
+                /** @description A UUID string identifying this Despacho. */
                 id_despacho: string;
             };
             cookie?: never;
@@ -6723,7 +6723,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Despacho. */
+                /** @description A UUID string identifying this Despacho. */
                 id_despacho: string;
             };
             cookie?: never;
@@ -6765,7 +6765,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Despacho. */
+                /** @description A UUID string identifying this Detalle de Despacho. */
                 id_detalle_despacho: string;
             };
             cookie?: never;
@@ -6824,7 +6824,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Asignación de Pago. */
+                /** @description A UUID string identifying this Asignación de Pago. */
                 id_asignacion: string;
             };
             cookie?: never;
@@ -6844,7 +6844,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Asignación de Pago. */
+                /** @description A UUID string identifying this Asignación de Pago. */
                 id_asignacion: string;
             };
             cookie?: never;
@@ -6880,7 +6880,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Física de Usuario. */
+                /** @description A UUID string identifying this Caja Física de Usuario. */
                 id: string;
             };
             cookie?: never;
@@ -6966,7 +6966,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Física. */
+                /** @description A UUID string identifying this Caja Física. */
                 id_caja_fisica: string;
             };
             cookie?: never;
@@ -6985,7 +6985,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Física. */
+                /** @description A UUID string identifying this Caja Física. */
                 id_caja_fisica: string;
             };
             cookie?: never;
@@ -7010,7 +7010,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Física. */
+                /** @description A UUID string identifying this Caja Física. */
                 id_caja_fisica: string;
             };
             cookie?: never;
@@ -7038,7 +7038,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Física. */
+                /** @description A UUID string identifying this Caja Física. */
                 id_caja_fisica: string;
             };
             cookie?: never;
@@ -7079,7 +7079,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Virtual de Usuario. */
+                /** @description A UUID string identifying this Caja Virtual de Usuario. */
                 id: string;
             };
             cookie?: never;
@@ -7114,7 +7114,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Virtual Automática. */
+                /** @description A UUID string identifying this Caja Virtual Automática. */
                 id_caja_virtual: string;
             };
             cookie?: never;
@@ -7166,7 +7166,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Virtual. */
+                /** @description A UUID string identifying this Caja Virtual. */
                 id_caja: string;
             };
             cookie?: never;
@@ -7185,7 +7185,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Virtual. */
+                /** @description A UUID string identifying this Caja Virtual. */
                 id_caja: string;
             };
             cookie?: never;
@@ -7213,7 +7213,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Virtual. */
+                /** @description A UUID string identifying this Caja Virtual. */
                 id_caja: string;
             };
             cookie?: never;
@@ -7271,7 +7271,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Cuenta Bancaria Empresa. */
+                /** @description A UUID string identifying this Cuenta Bancaria Empresa. */
                 id_cuenta_bancaria: string;
             };
             cookie?: never;
@@ -7290,7 +7290,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Cuenta Bancaria Empresa. */
+                /** @description A UUID string identifying this Cuenta Bancaria Empresa. */
                 id_cuenta_bancaria: string;
             };
             cookie?: never;
@@ -7329,7 +7329,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Cuenta Bancaria Empresa. */
+                /** @description A UUID string identifying this Cuenta Bancaria Empresa. */
                 id_cuenta_bancaria: string;
             };
             cookie?: never;
@@ -7348,7 +7348,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Cuenta Bancaria Empresa. */
+                /** @description A UUID string identifying this Cuenta Bancaria Empresa. */
                 id_cuenta_bancaria: string;
             };
             cookie?: never;
@@ -7387,7 +7387,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Datafono. */
+                /** @description A UUID string identifying this Datafono. */
                 id_datafono: string;
             };
             cookie?: never;
@@ -7406,7 +7406,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Datafono. */
+                /** @description A UUID string identifying this Datafono. */
                 id_datafono: string;
             };
             cookie?: never;
@@ -7426,7 +7426,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Datafono. */
+                /** @description A UUID string identifying this Datafono. */
                 id_datafono: string;
             };
             cookie?: never;
@@ -7462,7 +7462,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Datafono. */
+                /** @description A UUID string identifying this Datafono. */
                 id_datafono: string;
             };
             cookie?: never;
@@ -7481,7 +7481,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Datafono. */
+                /** @description A UUID string identifying this Datafono. */
                 id_datafono: string;
             };
             cookie?: never;
@@ -7501,7 +7501,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Datafono. */
+                /** @description A UUID string identifying this Datafono. */
                 id_datafono: string;
             };
             cookie?: never;
@@ -7554,7 +7554,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Depósito de Datafono. */
+                /** @description A UUID string identifying this Depósito de Datafono. */
                 id_deposito: string;
             };
             cookie?: never;
@@ -7573,7 +7573,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Depósito de Datafono. */
+                /** @description A UUID string identifying this Depósito de Datafono. */
                 id_deposito: string;
             };
             cookie?: never;
@@ -7582,6 +7582,23 @@ export interface paths {
         put?: never;
         /** @description Conciliar un depósito con un movimiento bancario recibido. */
         post: operations["finanzas_depositos-datafono_conciliar_deposito"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finanzas/equivalencias-trimonetarias/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Calcula equivalencias simultáneas Base + País/Fiscal (BCV) + Referencia. */
+        post: operations["finanzas_equivalencias-trimonetarias_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7625,7 +7642,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este metodo pago empresa activa. */
+                /** @description A UUID string identifying this metodo pago empresa activa. */
                 id: string;
             };
             cookie?: never;
@@ -7686,7 +7703,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Método de Pago. */
+                /** @description A UUID string identifying this Método de Pago. */
                 id_metodo_pago: string;
             };
             cookie?: never;
@@ -7705,7 +7722,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Método de Pago. */
+                /** @description A UUID string identifying this Método de Pago. */
                 id_metodo_pago: string;
             };
             cookie?: never;
@@ -7725,7 +7742,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Método de Pago. */
+                /** @description A UUID string identifying this Método de Pago. */
                 id_metodo_pago: string;
             };
             cookie?: never;
@@ -7764,7 +7781,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este moneda empresa activa. */
+                /** @description A UUID string identifying this moneda empresa activa. */
                 id: string;
             };
             cookie?: never;
@@ -7815,7 +7832,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este moneda. */
+                /** @description A UUID string identifying this moneda. */
                 id_moneda: string;
             };
             cookie?: never;
@@ -7850,7 +7867,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Movimiento de Caja/Banco. */
+                /** @description A UUID string identifying this Movimiento de Caja/Banco. */
                 id_movimiento: string;
             };
             cookie?: never;
@@ -7885,7 +7902,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Override Método de Pago. */
+                /** @description A UUID string identifying this Override Método de Pago. */
                 id_override: string;
             };
             cookie?: never;
@@ -7920,7 +7937,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago de Tercero. */
+                /** @description A UUID string identifying this Pago de Tercero. */
                 id_pago_tercero: string;
             };
             cookie?: never;
@@ -7939,7 +7956,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago de Tercero. */
+                /** @description A UUID string identifying this Pago de Tercero. */
                 id_pago_tercero: string;
             };
             cookie?: never;
@@ -7958,7 +7975,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago de Tercero. */
+                /** @description A UUID string identifying this Pago de Tercero. */
                 id_pago_tercero: string;
             };
             cookie?: never;
@@ -7978,7 +7995,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago de Tercero. */
+                /** @description A UUID string identifying this Pago de Tercero. */
                 id_pago_tercero: string;
             };
             cookie?: never;
@@ -7997,7 +8014,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago de Tercero. */
+                /** @description A UUID string identifying this Pago de Tercero. */
                 id_pago_tercero: string;
             };
             cookie?: never;
@@ -8017,7 +8034,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago de Tercero. */
+                /** @description A UUID string identifying this Pago de Tercero. */
                 id_pago_tercero: string;
             };
             cookie?: never;
@@ -8086,7 +8103,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago. */
+                /** @description A UUID string identifying this Pago. */
                 id_pago: string;
             };
             cookie?: never;
@@ -8105,7 +8122,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago. */
+                /** @description A UUID string identifying this Pago. */
                 id_pago: string;
             };
             cookie?: never;
@@ -8125,7 +8142,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago. */
+                /** @description A UUID string identifying this Pago. */
                 id_pago: string;
             };
             cookie?: never;
@@ -8161,7 +8178,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Plantilla Maestro Cajas Virtuales. */
+                /** @description A UUID string identifying this Plantilla Maestro Cajas Virtuales. */
                 id_plantilla_maestro: string;
             };
             cookie?: never;
@@ -8180,7 +8197,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Plantilla Maestro Cajas Virtuales. */
+                /** @description A UUID string identifying this Plantilla Maestro Cajas Virtuales. */
                 id_plantilla_maestro: string;
             };
             cookie?: never;
@@ -8216,7 +8233,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Sesión de Caja Física. */
+                /** @description A UUID string identifying this Sesión de Caja Física. */
                 id_sesion: string;
             };
             cookie?: never;
@@ -8235,7 +8252,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Sesión de Caja Física. */
+                /** @description A UUID string identifying this Sesión de Caja Física. */
                 id_sesion: string;
             };
             cookie?: never;
@@ -8264,7 +8281,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Sesión de Caja Física. */
+                /** @description A UUID string identifying this Sesión de Caja Física. */
                 id_sesion: string;
             };
             cookie?: never;
@@ -8310,7 +8327,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Sesión de Datafono. */
+                /** @description A UUID string identifying this Sesión de Datafono. */
                 id_sesion: string;
             };
             cookie?: never;
@@ -8368,7 +8385,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este tasa cambio. */
+                /** @description A UUID string identifying this tasa cambio. */
                 id_tasa_cambio: string;
             };
             cookie?: never;
@@ -8380,6 +8397,41 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["finanzas_tasas-cambio_partial_update"];
+        trace?: never;
+    };
+    "/finanzas/tipos-tasa-cambio/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["finanzas_tipos-tasa-cambio_list"];
+        put?: never;
+        post: operations["finanzas_tipos-tasa-cambio_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/finanzas/tipos-tasa-cambio/{id_tipo_tasa}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Tipo de Tasa de Cambio. */
+                id_tipo_tasa: string;
+            };
+            cookie?: never;
+        };
+        get: operations["finanzas_tipos-tasa-cambio_read"];
+        put: operations["finanzas_tipos-tasa-cambio_update"];
+        post?: never;
+        delete: operations["finanzas_tipos-tasa-cambio_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["finanzas_tipos-tasa-cambio_partial_update"];
         trace?: never;
     };
     "/finanzas/transacciones-datafono/": {
@@ -8403,7 +8455,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Transacción de Datafono. */
+                /** @description A UUID string identifying this Transacción de Datafono. */
                 id_transaccion_datafono: string;
             };
             cookie?: never;
@@ -8438,7 +8490,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Transacción Financiera. */
+                /** @description A UUID string identifying this Transacción Financiera. */
                 id_transaccion: string;
             };
             cookie?: never;
@@ -8473,7 +8525,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este configuracion fiscal empresa. */
+                /** @description A UUID string identifying this configuracion fiscal empresa. */
                 id: string;
             };
             cookie?: never;
@@ -8572,7 +8624,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago de Contribución Parafiscal. */
+                /** @description A UUID string identifying this Pago de Contribución Parafiscal. */
                 id_pago_parafiscal: string;
             };
             cookie?: never;
@@ -8591,7 +8643,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago de Contribución Parafiscal. */
+                /** @description A UUID string identifying this Pago de Contribución Parafiscal. */
                 id_pago_parafiscal: string;
             };
             cookie?: never;
@@ -8611,7 +8663,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago de Contribución Parafiscal. */
+                /** @description A UUID string identifying this Pago de Contribución Parafiscal. */
                 id_pago_parafiscal: string;
             };
             cookie?: never;
@@ -8706,7 +8758,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este tasa iva empresa. */
+                /** @description A UUID string identifying this tasa iva empresa. */
                 id: string;
             };
             cookie?: never;
@@ -8758,7 +8810,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este categoria gasto. */
+                /** @description A UUID string identifying this categoria gasto. */
                 id_categoria_gasto: string;
             };
             cookie?: never;
@@ -8795,7 +8847,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este detalle gasto. */
+                /** @description A UUID string identifying this detalle gasto. */
                 id_detalle_gasto: string;
             };
             cookie?: never;
@@ -8868,7 +8920,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este gasto. */
+                /** @description A UUID string identifying this gasto. */
                 id_gasto: string;
             };
             cookie?: never;
@@ -8887,7 +8939,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este gasto. */
+                /** @description A UUID string identifying this gasto. */
                 id_gasto: string;
             };
             cookie?: never;
@@ -8911,7 +8963,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este gasto. */
+                /** @description A UUID string identifying this gasto. */
                 id_gasto: string;
             };
             cookie?: never;
@@ -8964,7 +9016,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este reembolso gasto. */
+                /** @description A UUID string identifying this reembolso gasto. */
                 id_reembolso: string;
             };
             cookie?: never;
@@ -8983,7 +9035,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este reembolso gasto. */
+                /** @description A UUID string identifying this reembolso gasto. */
                 id_reembolso: string;
             };
             cookie?: never;
@@ -9003,7 +9055,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este reembolso gasto. */
+                /** @description A UUID string identifying this reembolso gasto. */
                 id_reembolso: string;
             };
             cookie?: never;
@@ -9039,7 +9091,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este flujo aprobacion. */
+                /** @description A UUID string identifying this flujo aprobacion. */
                 id_flujo_aprobacion: string;
             };
             cookie?: never;
@@ -9074,7 +9126,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este registro aprobacion. */
+                /** @description A UUID string identifying this registro aprobacion. */
                 id_registro_aprobacion: string;
             };
             cookie?: never;
@@ -9109,7 +9161,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este solicitud aprobacion. */
+                /** @description A UUID string identifying this solicitud aprobacion. */
                 id_solicitud_aprobacion: string;
             };
             cookie?: never;
@@ -9128,7 +9180,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este solicitud aprobacion. */
+                /** @description A UUID string identifying this solicitud aprobacion. */
                 id_solicitud_aprobacion: string;
             };
             cookie?: never;
@@ -9164,7 +9216,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Tipo de Aprobación. */
+                /** @description A UUID string identifying this Tipo de Aprobación. */
                 id_tipo_aprobacion: string;
             };
             cookie?: never;
@@ -9199,7 +9251,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este carpeta. */
+                /** @description A UUID string identifying this carpeta. */
                 id_carpeta: string;
             };
             cookie?: never;
@@ -9259,7 +9311,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este documento. */
+                /** @description A UUID string identifying this documento. */
                 id_documento: string;
             };
             cookie?: never;
@@ -9278,7 +9330,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este documento. */
+                /** @description A UUID string identifying this documento. */
                 id_documento: string;
             };
             cookie?: never;
@@ -9298,7 +9350,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este documento. */
+                /** @description A UUID string identifying this documento. */
                 id_documento: string;
             };
             cookie?: never;
@@ -9338,7 +9390,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este permiso documento. */
+                /** @description A UUID string identifying this permiso documento. */
                 id_permiso_documento: string;
             };
             cookie?: never;
@@ -9373,7 +9425,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este vinculo documento. */
+                /** @description A UUID string identifying this vinculo documento. */
                 id_vinculo: string;
             };
             cookie?: never;
@@ -9429,7 +9481,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este configuracion integracion. */
+                /** @description A UUID string identifying this configuracion integracion. */
                 id_configuracion: string;
             };
             cookie?: never;
@@ -9464,7 +9516,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este log integracion. */
+                /** @description A UUID string identifying this log integracion. */
                 id_log_integracion: string;
             };
             cookie?: never;
@@ -9499,7 +9551,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este mapeo campo. */
+                /** @description A UUID string identifying this mapeo campo. */
                 id_mapeo_campo: string;
             };
             cookie?: never;
@@ -9898,7 +9950,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Conector Proveedor. */
+                /** @description A UUID string identifying this Conector Proveedor. */
                 id_proveedor: string;
             };
             cookie?: never;
@@ -9986,7 +10038,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Categoría de Producto. */
+                /** @description A UUID string identifying this Categoría de Producto. */
                 id_categoria_producto: string;
             };
             cookie?: never;
@@ -10021,7 +10073,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Conversión de Unidad de Medida. */
+                /** @description A UUID string identifying this Conversión de Unidad de Medida. */
                 id_conversion: string;
             };
             cookie?: never;
@@ -10109,7 +10161,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Lote de Producto. */
+                /** @description A UUID string identifying this Lote de Producto. */
                 id_lote: string;
             };
             cookie?: never;
@@ -10144,7 +10196,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Movimiento de Inventario. */
+                /** @description A UUID string identifying this Movimiento de Inventario. */
                 id_movimiento_inventario: string;
             };
             cookie?: never;
@@ -10181,7 +10233,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Paso de Operación. */
+                /** @description A UUID string identifying this Paso de Operación. */
                 id_paso_operacion: string;
             };
             cookie?: never;
@@ -10220,7 +10272,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Producto. */
+                /** @description A UUID string identifying this Producto. */
                 id_producto: string;
             };
             cookie?: never;
@@ -10239,7 +10291,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Producto. */
+                /** @description A UUID string identifying this Producto. */
                 id_producto: string;
             };
             cookie?: never;
@@ -10351,7 +10403,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Regla de Reabastecimiento. */
+                /** @description A UUID string identifying this Regla de Reabastecimiento. */
                 id_regla: string;
             };
             cookie?: never;
@@ -10370,7 +10422,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Regla de Reabastecimiento. */
+                /** @description A UUID string identifying this Regla de Reabastecimiento. */
                 id_regla: string;
             };
             cookie?: never;
@@ -10461,7 +10513,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Stock Actual. */
+                /** @description A UUID string identifying this Stock Actual. */
                 id_stock_actual: string;
             };
             cookie?: never;
@@ -10496,7 +10548,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Stock en Consignación a Cliente. */
+                /** @description A UUID string identifying this Stock en Consignación a Cliente. */
                 id_stock_consignacion: string;
             };
             cookie?: never;
@@ -10531,7 +10583,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Stock en Consignación de Proveedor. */
+                /** @description A UUID string identifying this Stock en Consignación de Proveedor. */
                 id_stock_consignacion: string;
             };
             cookie?: never;
@@ -10566,7 +10618,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Unidad de Medida. */
+                /** @description A UUID string identifying this Unidad de Medida. */
                 id_unidad_medida: string;
             };
             cookie?: never;
@@ -10601,7 +10653,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Variante de Producto. */
+                /** @description A UUID string identifying this Variante de Producto. */
                 id_variante: string;
             };
             cookie?: never;
@@ -10656,7 +10708,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Centro de Trabajo. */
+                /** @description A UUID string identifying this Centro de Trabajo. */
                 id_centro_trabajo: string;
             };
             cookie?: never;
@@ -10693,7 +10745,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Configuración de Manufactura. */
+                /** @description A UUID string identifying this Configuración de Manufactura. */
                 id: string;
             };
             cookie?: never;
@@ -10732,7 +10784,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este consumo material. */
+                /** @description A UUID string identifying this consumo material. */
                 id: string;
             };
             cookie?: never;
@@ -10794,7 +10846,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Etapa de Producción. */
+                /** @description A UUID string identifying this Etapa de Producción. */
                 id: string;
             };
             cookie?: never;
@@ -10833,7 +10885,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Etapa de Producción. */
+                /** @description A UUID string identifying this Etapa de Producción. */
                 id: string;
             };
             cookie?: never;
@@ -10857,7 +10909,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Etapa de Producción. */
+                /** @description A UUID string identifying this Etapa de Producción. */
                 id: string;
             };
             cookie?: never;
@@ -10896,7 +10948,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Lista de Materiales. */
+                /** @description A UUID string identifying this Detalle de Lista de Materiales. */
                 id_detalle_lista: string;
             };
             cookie?: never;
@@ -10931,7 +10983,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este lista materiales. */
+                /** @description A UUID string identifying this lista materiales. */
                 id: string;
             };
             cookie?: never;
@@ -10966,7 +11018,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Operación de Producción. */
+                /** @description A UUID string identifying this Operación de Producción. */
                 id_operacion: string;
             };
             cookie?: never;
@@ -11019,7 +11071,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este orden produccion. */
+                /** @description A UUID string identifying this orden produccion. */
                 id: string;
             };
             cookie?: never;
@@ -11074,7 +11126,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este orden produccion. */
+                /** @description A UUID string identifying this orden produccion. */
                 id: string;
             };
             cookie?: never;
@@ -11097,7 +11149,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este orden produccion. */
+                /** @description A UUID string identifying this orden produccion. */
                 id: string;
             };
             cookie?: never;
@@ -11120,7 +11172,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este orden produccion. */
+                /** @description A UUID string identifying this orden produccion. */
                 id: string;
             };
             cookie?: never;
@@ -11140,7 +11192,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este orden produccion. */
+                /** @description A UUID string identifying this orden produccion. */
                 id: string;
             };
             cookie?: never;
@@ -11163,7 +11215,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este orden produccion. */
+                /** @description A UUID string identifying this orden produccion. */
                 id: string;
             };
             cookie?: never;
@@ -11183,7 +11235,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este orden produccion. */
+                /** @description A UUID string identifying this orden produccion. */
                 id: string;
             };
             cookie?: never;
@@ -11222,7 +11274,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este produccion terminada. */
+                /** @description A UUID string identifying this produccion terminada. */
                 id: string;
             };
             cookie?: never;
@@ -11257,7 +11309,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Registro de Operación. */
+                /** @description A UUID string identifying this Registro de Operación. */
                 id_registro: string;
             };
             cookie?: never;
@@ -11292,7 +11344,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Ruta de Producción. */
+                /** @description A UUID string identifying this Detalle de Ruta de Producción. */
                 id_detalle_ruta: string;
             };
             cookie?: never;
@@ -11327,7 +11379,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este ruta produccion. */
+                /** @description A UUID string identifying this ruta produccion. */
                 id: string;
             };
             cookie?: never;
@@ -11362,7 +11414,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este detalle error migracion. */
+                /** @description A UUID string identifying this detalle error migracion. */
                 id_detalle_error: string;
             };
             cookie?: never;
@@ -11399,7 +11451,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este plantilla migracion. */
+                /** @description A UUID string identifying this plantilla migracion. */
                 id_plantilla_migracion: string;
             };
             cookie?: never;
@@ -11438,7 +11490,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este proceso migracion. */
+                /** @description A UUID string identifying this proceso migracion. */
                 id_proceso_migracion: string;
             };
             cookie?: never;
@@ -11524,7 +11576,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Concepto de Nómina. */
+                /** @description A UUID string identifying this Concepto de Nómina. */
                 id_concepto_nomina: string;
             };
             cookie?: never;
@@ -11559,7 +11611,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Nómina. */
+                /** @description A UUID string identifying this Detalle de Nómina. */
                 id_detalle_nomina: string;
             };
             cookie?: never;
@@ -11594,7 +11646,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nómina Extrasalarial. */
+                /** @description A UUID string identifying this Nómina Extrasalarial. */
                 id_nomina_extrasalarial: string;
             };
             cookie?: never;
@@ -11613,7 +11665,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nómina Extrasalarial. */
+                /** @description A UUID string identifying this Nómina Extrasalarial. */
                 id_nomina_extrasalarial: string;
             };
             cookie?: never;
@@ -11633,7 +11685,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nómina Extrasalarial. */
+                /** @description A UUID string identifying this Nómina Extrasalarial. */
                 id_nomina_extrasalarial: string;
             };
             cookie?: never;
@@ -11669,7 +11721,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nómina. */
+                /** @description A UUID string identifying this Nómina. */
                 id_nomina: string;
             };
             cookie?: never;
@@ -11688,7 +11740,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nómina. */
+                /** @description A UUID string identifying this Nómina. */
                 id_nomina: string;
             };
             cookie?: never;
@@ -11708,7 +11760,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nómina. */
+                /** @description A UUID string identifying this Nómina. */
                 id_nomina: string;
             };
             cookie?: never;
@@ -11778,7 +11830,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Período de Nómina. */
+                /** @description A UUID string identifying this Período de Nómina. */
                 id_periodo_nomina: string;
             };
             cookie?: never;
@@ -11797,7 +11849,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Período de Nómina. */
+                /** @description A UUID string identifying this Período de Nómina. */
                 id_periodo_nomina: string;
             };
             cookie?: never;
@@ -11833,7 +11885,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Proceso de Nómina Extrasalarial. */
+                /** @description A UUID string identifying this Proceso de Nómina Extrasalarial. */
                 id_proceso_extrasalarial: string;
             };
             cookie?: never;
@@ -11852,7 +11904,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Proceso de Nómina Extrasalarial. */
+                /** @description A UUID string identifying this Proceso de Nómina Extrasalarial. */
                 id_proceso_extrasalarial: string;
             };
             cookie?: never;
@@ -11872,7 +11924,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Proceso de Nómina Extrasalarial. */
+                /** @description A UUID string identifying this Proceso de Nómina Extrasalarial. */
                 id_proceso_extrasalarial: string;
             };
             cookie?: never;
@@ -11908,7 +11960,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Proceso de Nómina. */
+                /** @description A UUID string identifying this Proceso de Nómina. */
                 id_proceso_nomina: string;
             };
             cookie?: never;
@@ -11927,7 +11979,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Proceso de Nómina. */
+                /** @description A UUID string identifying this Proceso de Nómina. */
                 id_proceso_nomina: string;
             };
             cookie?: never;
@@ -11947,7 +11999,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Proceso de Nómina. */
+                /** @description A UUID string identifying this Proceso de Nómina. */
                 id_proceso_nomina: string;
             };
             cookie?: never;
@@ -11977,7 +12029,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Proceso de Nómina. */
+                /** @description A UUID string identifying this Proceso de Nómina. */
                 id_proceso_nomina: string;
             };
             cookie?: never;
@@ -12091,7 +12143,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este personalizacion config. */
+                /** @description A UUID string identifying this personalizacion config. */
                 id_config: string;
             };
             cookie?: never;
@@ -12110,7 +12162,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este personalizacion config. */
+                /** @description A UUID string identifying this personalizacion config. */
                 id_config: string;
             };
             cookie?: never;
@@ -12146,7 +12198,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Contacto de Proveedor. */
+                /** @description A UUID string identifying this Contacto de Proveedor. */
                 id_contacto: string;
             };
             cookie?: never;
@@ -12181,7 +12233,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Cuenta Bancaria de Proveedor. */
+                /** @description A UUID string identifying this Cuenta Bancaria de Proveedor. */
                 id_cuenta_bancaria: string;
             };
             cookie?: never;
@@ -12233,7 +12285,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este proveedor. */
+                /** @description A UUID string identifying this proveedor. */
                 id_proveedor: string;
             };
             cookie?: never;
@@ -12334,7 +12386,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Beneficio de Empleado. */
+                /** @description A UUID string identifying this Beneficio de Empleado. */
                 id_beneficio_empleado: string;
             };
             cookie?: never;
@@ -12369,7 +12421,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Beneficio. */
+                /** @description A UUID string identifying this Beneficio. */
                 id_beneficio: string;
             };
             cookie?: never;
@@ -12404,7 +12456,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un valor de entero único que identifique este cargo. */
+                /** @description A unique integer value identifying this cargo. */
                 id: number;
             };
             cookie?: never;
@@ -12439,7 +12491,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un valor de entero único que identifique este Empleado. */
+                /** @description A unique integer value identifying this Empleado. */
                 id: number;
             };
             cookie?: never;
@@ -12474,7 +12526,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Licencia de Empleado. */
+                /** @description A UUID string identifying this Licencia de Empleado. */
                 id_licencia: string;
             };
             cookie?: never;
@@ -12509,7 +12561,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Tipo de Licencia. */
+                /** @description A UUID string identifying this Tipo de Licencia. */
                 id_tipo_licencia: string;
             };
             cookie?: never;
@@ -12560,7 +12612,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Plan. */
+                /** @description A UUID string identifying this Plan. */
                 id_plan: string;
             };
             cookie?: never;
@@ -12695,7 +12747,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Suscripción. */
+                /** @description A UUID string identifying this Suscripción. */
                 id_suscripcion: string;
             };
             cookie?: never;
@@ -12754,7 +12806,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Suscripción. */
+                /** @description A UUID string identifying this Suscripción. */
                 id_suscripcion: string;
             };
             cookie?: never;
@@ -12780,7 +12832,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Suscripción. */
+                /** @description A UUID string identifying this Suscripción. */
                 id_suscripcion: string;
             };
             cookie?: never;
@@ -12857,7 +12909,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este base conocimiento articulo. */
+                /** @description A UUID string identifying this base conocimiento articulo. */
                 id_articulo: string;
             };
             cookie?: never;
@@ -12876,7 +12928,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este base conocimiento articulo. */
+                /** @description A UUID string identifying this base conocimiento articulo. */
                 id_articulo: string;
             };
             cookie?: never;
@@ -12929,7 +12981,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este categoria ticket. */
+                /** @description A UUID string identifying this categoria ticket. */
                 id_categoria_ticket: string;
             };
             cookie?: never;
@@ -12948,7 +13000,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este categoria ticket. */
+                /** @description A UUID string identifying this categoria ticket. */
                 id_categoria_ticket: string;
             };
             cookie?: never;
@@ -13035,7 +13087,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este feedback cliente. */
+                /** @description A UUID string identifying this feedback cliente. */
                 id_feedback: string;
             };
             cookie?: never;
@@ -13087,7 +13139,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este interaccion ticket. */
+                /** @description A UUID string identifying this interaccion ticket. */
                 id_interaccion: string;
             };
             cookie?: never;
@@ -13173,7 +13225,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Ticket de Soporte. */
+                /** @description A UUID string identifying this Ticket de Soporte. */
                 id_ticket: string;
             };
             cookie?: never;
@@ -13192,7 +13244,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Ticket de Soporte. */
+                /** @description A UUID string identifying this Ticket de Soporte. */
                 id_ticket: string;
             };
             cookie?: never;
@@ -13212,7 +13264,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Ticket de Soporte. */
+                /** @description A UUID string identifying this Ticket de Soporte. */
                 id_ticket: string;
             };
             cookie?: never;
@@ -13232,7 +13284,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Ticket de Soporte. */
+                /** @description A UUID string identifying this Ticket de Soporte. */
                 id_ticket: string;
             };
             cookie?: never;
@@ -13736,7 +13788,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Virtual. */
+                /** @description A UUID string identifying this Caja Virtual. */
                 id_caja: string;
             };
             cookie?: never;
@@ -13783,7 +13835,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este conciliacion bancaria. */
+                /** @description A UUID string identifying this conciliacion bancaria. */
                 id: string;
             };
             cookie?: never;
@@ -13826,7 +13878,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este conciliacion bancaria. */
+                /** @description A UUID string identifying this conciliacion bancaria. */
                 id: string;
             };
             cookie?: never;
@@ -13867,7 +13919,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este configuracion conciliacion cuenta. */
+                /** @description A UUID string identifying this configuracion conciliacion cuenta. */
                 id: string;
             };
             cookie?: never;
@@ -13962,7 +14014,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este extracto bancario archivo. */
+                /** @description A UUID string identifying this extracto bancario archivo. */
                 id: string;
             };
             cookie?: never;
@@ -14061,7 +14113,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este movimiento bancario. */
+                /** @description A UUID string identifying this movimiento bancario. */
                 id: string;
             };
             cookie?: never;
@@ -14124,7 +14176,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un valor de entero único que identifique este movimiento interno fondo. */
+                /** @description A unique integer value identifying this movimiento interno fondo. */
                 id: number;
             };
             cookie?: never;
@@ -14159,7 +14211,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un valor de entero único que identifique este Operación de Cambio de Divisa. */
+                /** @description A unique integer value identifying this Operación de Cambio de Divisa. */
                 id: number;
             };
             cookie?: never;
@@ -14278,7 +14330,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este propuesta conciliacion bancaria. */
+                /** @description A UUID string identifying this propuesta conciliacion bancaria. */
                 id: string;
             };
             cookie?: never;
@@ -14306,7 +14358,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este propuesta conciliacion bancaria. */
+                /** @description A UUID string identifying this propuesta conciliacion bancaria. */
                 id: string;
             };
             cookie?: never;
@@ -14397,7 +14449,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Comisión de Venta. */
+                /** @description A UUID string identifying this Comisión de Venta. */
                 id_comision_venta: string;
             };
             cookie?: never;
@@ -14442,7 +14494,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Cotización. */
+                /** @description A UUID string identifying this Cotización. */
                 id_cotizacion: string;
             };
             cookie?: never;
@@ -14461,7 +14513,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Cotización. */
+                /** @description A UUID string identifying this Cotización. */
                 id_cotizacion: string;
             };
             cookie?: never;
@@ -14497,7 +14549,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Cotización. */
+                /** @description A UUID string identifying this Detalle de Cotización. */
                 id_detalle_cotizacion: string;
             };
             cookie?: never;
@@ -14532,7 +14584,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Devolución. */
+                /** @description A UUID string identifying this Detalle de Devolución. */
                 id_detalle_devolucion: string;
             };
             cookie?: never;
@@ -14567,7 +14619,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Factura Fiscal. */
+                /** @description A UUID string identifying this Detalle de Factura Fiscal. */
                 id_detalle_factura: string;
             };
             cookie?: never;
@@ -14602,7 +14654,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Nota de Crédito Fiscal. */
+                /** @description A UUID string identifying this Detalle de Nota de Crédito Fiscal. */
                 id_detalle_nota_credito: string;
             };
             cookie?: never;
@@ -14637,7 +14689,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Nota de Crédito. */
+                /** @description A UUID string identifying this Detalle de Nota de Crédito. */
                 id_detalle_nota_credito: string;
             };
             cookie?: never;
@@ -14672,7 +14724,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Nota de Venta. */
+                /** @description A UUID string identifying this Detalle de Nota de Venta. */
                 id_detalle_nota_venta: string;
             };
             cookie?: never;
@@ -14707,7 +14759,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Pedido. */
+                /** @description A UUID string identifying this Detalle de Pedido. */
                 id_detalle_pedido: string;
             };
             cookie?: never;
@@ -14742,7 +14794,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Precio. */
+                /** @description A UUID string identifying this Detalle de Precio. */
                 id_detalle: string;
             };
             cookie?: never;
@@ -14777,7 +14829,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Devolución de Venta. */
+                /** @description A UUID string identifying this Devolución de Venta. */
                 id_devolucion: string;
             };
             cookie?: never;
@@ -14814,7 +14866,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Override de Comisión por Categoría. */
+                /** @description A UUID string identifying this Override de Comisión por Categoría. */
                 id_esquema_comision_categoria: string;
             };
             cookie?: never;
@@ -14865,7 +14917,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Esquema de Comisión. */
+                /** @description A UUID string identifying this Esquema de Comisión. */
                 id_esquema_comision: string;
             };
             cookie?: never;
@@ -14924,7 +14976,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Factura Fiscal. */
+                /** @description A UUID string identifying this Factura Fiscal. */
                 id_factura: string;
             };
             cookie?: never;
@@ -14943,7 +14995,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Factura Fiscal. */
+                /** @description A UUID string identifying this Factura Fiscal. */
                 id_factura: string;
             };
             cookie?: never;
@@ -14979,7 +15031,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Lista de Precios. */
+                /** @description A UUID string identifying this Lista de Precios. */
                 id_lista: string;
             };
             cookie?: never;
@@ -14998,7 +15050,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Lista de Precios. */
+                /** @description A UUID string identifying this Lista de Precios. */
                 id_lista: string;
             };
             cookie?: never;
@@ -15039,7 +15091,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nota de Crédito Fiscal. */
+                /** @description A UUID string identifying this Nota de Crédito Fiscal. */
                 id_nota_credito_fiscal: string;
             };
             cookie?: never;
@@ -15074,7 +15126,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nota de Crédito de Venta. */
+                /** @description A UUID string identifying this Nota de Crédito de Venta. */
                 id_nota_credito: string;
             };
             cookie?: never;
@@ -15109,7 +15161,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nota de Venta. */
+                /** @description A UUID string identifying this Nota de Venta. */
                 id_nota_venta: string;
             };
             cookie?: never;
@@ -15128,7 +15180,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nota de Venta. */
+                /** @description A UUID string identifying this Nota de Venta. */
                 id_nota_venta: string;
             };
             cookie?: never;
@@ -15154,7 +15206,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nota de Venta. */
+                /** @description A UUID string identifying this Nota de Venta. */
                 id_nota_venta: string;
             };
             cookie?: never;
@@ -15178,7 +15230,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nota de Venta. */
+                /** @description A UUID string identifying this Nota de Venta. */
                 id_nota_venta: string;
             };
             cookie?: never;
@@ -15198,7 +15250,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nota de Venta. */
+                /** @description A UUID string identifying this Nota de Venta. */
                 id_nota_venta: string;
             };
             cookie?: never;
@@ -15234,7 +15286,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pedido. */
+                /** @description A UUID string identifying this Pedido. */
                 id_pedido: string;
             };
             cookie?: never;
@@ -15253,7 +15305,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pedido. */
+                /** @description A UUID string identifying this Pedido. */
                 id_pedido: string;
             };
             cookie?: never;
@@ -15273,7 +15325,7 @@ export interface paths {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pedido. */
+                /** @description A UUID string identifying this Pedido. */
                 id_pedido: string;
             };
             cookie?: never;
@@ -21186,7 +21238,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-22T02:31:30.460439-04:00
+             * @default 2026-11-22T09:24:36.205099-04:00
              */
             fecha_despacho: string;
             /**
@@ -22087,6 +22139,30 @@ export interface components {
              */
             usuario_conciliacion?: string | null;
         };
+        EquivalenciasTrimonetariasInput: {
+            /**
+             * Monto
+             * Format: decimal
+             */
+            monto: string;
+            /** Moneda origen */
+            moneda_origen: string;
+            /**
+             * Fecha
+             * Format: date
+             */
+            fecha?: string | null;
+            /**
+             * Codigo tipo tasa base
+             * @default
+             */
+            codigo_tipo_tasa_base: string;
+            /**
+             * Codigo tipo tasa referencia
+             * @default
+             */
+            codigo_tipo_tasa_referencia: string;
+        };
         MetodoPagoEmpresaActiva: {
             /**
              * Id
@@ -22179,6 +22255,11 @@ export interface components {
             readonly moneda_nombre?: string;
             /** Activa */
             activa?: boolean;
+            /**
+             * Es moneda referencia
+             * @description Moneda de referencia adicional activable por empresa (ej. USDT) para cálculos y reportería trimonetaria.
+             */
+            es_moneda_referencia?: boolean;
             /** Es base */
             readonly es_base?: string;
             /** Es pais */
@@ -22894,10 +22975,20 @@ export interface components {
             /** Usuario registro username */
             readonly usuario_registro_username?: string;
             /**
+             * Id tipo tasa
+             * Format: uuid
+             * @description Tipo de tasa extensible (permite múltiples tasas personalizadas para el mismo par).
+             */
+            id_tipo_tasa?: string | null;
+            /** Tipo tasa codigo */
+            readonly tipo_tasa_codigo?: string;
+            /** Tipo tasa nombre */
+            readonly tipo_tasa_nombre?: string;
+            /**
              * Tipo tasa
              * @enum {string}
              */
-            tipo_tasa: "OFICIAL_BCV" | "ESPECIAL_USUARIO" | "PROMEDIO_MERCADO" | "FIJA";
+            tipo_tasa?: "OFICIAL_BCV" | "ESPECIAL_USUARIO" | "PROMEDIO_MERCADO" | "FIJA" | "PERSONALIZADA";
             /**
              * Valor tasa
              * Format: decimal
@@ -22947,6 +23038,51 @@ export interface components {
              * Format: uuid
              */
             id_usuario_registro?: string | null;
+        };
+        TipoTasaCambio: {
+            /**
+             * Id tipo tasa
+             * Format: uuid
+             */
+            readonly id_tipo_tasa?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa?: string | null;
+            /** Codigo */
+            codigo: string;
+            /** Nombre */
+            nombre: string;
+            /** Descripcion */
+            descripcion?: string;
+            /**
+             * Es oficial fiscal
+             * @description Si es True, se usa obligatoriamente para cumplimiento fiscal/contable (ej. BCV).
+             */
+            es_oficial_fiscal?: boolean;
+            /**
+             * Prioridad
+             * @description Menor valor = mayor prioridad en búsqueda por defecto.
+             */
+            prioridad?: number;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
         };
         TransaccionDatafono: {
             /**
@@ -29684,6 +29820,11 @@ export interface components {
                 "application/json": components["schemas"]["ListaMaterialesDetalle"];
             };
         };
+        TipoTasaCambio: {
+            content: {
+                "application/json": components["schemas"]["TipoTasaCambio"];
+            };
+        };
         RutaProduccionDetalle: {
             content: {
                 "application/json": components["schemas"]["RutaProduccionDetalle"];
@@ -30502,11 +30643,11 @@ export interface operations {
     activaciones_calendarios_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -30657,11 +30798,11 @@ export interface operations {
     activaciones_eventos_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -30751,11 +30892,11 @@ export interface operations {
     activaciones_recursos_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -30902,11 +31043,11 @@ export interface operations {
     "agentes_consumo-llm_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
                 /** @description UUID de empresa visible (obligatorio para superusuarios Omni sin empresa propia). */
                 empresa_id?: string;
@@ -30945,11 +31086,11 @@ export interface operations {
     "agentes_consumo-llm_resumen": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
                 /** @description UUID de empresa visible (obligatorio para superusuarios Omni sin empresa propia). */
                 empresa_id?: string;
@@ -30983,7 +31124,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Consumo LLM. */
+                /** @description A UUID string identifying this Consumo LLM. */
                 id_consumo: string;
             };
             cookie?: never;
@@ -31003,11 +31144,11 @@ export interface operations {
     agentes_ejecuciones_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -31038,7 +31179,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Ejecución de Agente. */
+                /** @description A UUID string identifying this Ejecución de Agente. */
                 id_ejecucion: string;
             };
             cookie?: never;
@@ -31058,11 +31199,11 @@ export interface operations {
     agentes_predicciones_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -31239,11 +31380,11 @@ export interface operations {
     agentes_predicciones_metricas_clasificador: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
                 /** @description UUID de empresa visible (obligatorio para superusuarios Omni sin empresa propia). */
                 empresa_id?: string;
@@ -31311,11 +31452,11 @@ export interface operations {
     agentes_predicciones_sugerencias_activas: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
                 /** @description UUID de empresa visible (obligatorio para superusuarios Omni sin empresa propia). */
                 empresa_id?: string;
@@ -31348,7 +31489,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este prediccion agente. */
+                /** @description A UUID string identifying this prediccion agente. */
                 id_prediccion: string;
             };
             cookie?: never;
@@ -31370,7 +31511,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este prediccion agente. */
+                /** @description A UUID string identifying this prediccion agente. */
                 id_prediccion: string;
             };
             cookie?: never;
@@ -31392,7 +31533,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este prediccion agente. */
+                /** @description A UUID string identifying this prediccion agente. */
                 id_prediccion: string;
             };
             cookie?: never;
@@ -31412,7 +31553,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este prediccion agente. */
+                /** @description A UUID string identifying this prediccion agente. */
                 id_prediccion: string;
             };
             cookie?: never;
@@ -31434,7 +31575,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este prediccion agente. */
+                /** @description A UUID string identifying this prediccion agente. */
                 id_prediccion: string;
             };
             cookie?: never;
@@ -31456,7 +31597,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este prediccion agente. */
+                /** @description A UUID string identifying this prediccion agente. */
                 id_prediccion: string;
             };
             cookie?: never;
@@ -31476,11 +31617,11 @@ export interface operations {
     almacenes_almacenes_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -31530,7 +31671,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Almacén. */
+                /** @description A UUID string identifying this Almacén. */
                 id_almacen: string;
             };
             cookie?: never;
@@ -31552,7 +31693,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Almacén. */
+                /** @description A UUID string identifying this Almacén. */
                 id_almacen: string;
             };
             cookie?: never;
@@ -31574,7 +31715,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Almacén. */
+                /** @description A UUID string identifying this Almacén. */
                 id_almacen: string;
             };
             cookie?: never;
@@ -31594,7 +31735,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Almacén. */
+                /** @description A UUID string identifying this Almacén. */
                 id_almacen: string;
             };
             cookie?: never;
@@ -31614,11 +31755,11 @@ export interface operations {
     "almacenes_stock-ubicaciones_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -31718,7 +31859,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Stock por Ubicación. */
+                /** @description A UUID string identifying this Stock por Ubicación. */
                 id_stock_ubicacion: string;
             };
             cookie?: never;
@@ -31738,11 +31879,11 @@ export interface operations {
     "almacenes_ubicaciones-almacen_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -31792,7 +31933,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Ubicación de Almacén. */
+                /** @description A UUID string identifying this Ubicación de Almacén. */
                 id_ubicacion: string;
             };
             cookie?: never;
@@ -31814,7 +31955,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Ubicación de Almacén. */
+                /** @description A UUID string identifying this Ubicación de Almacén. */
                 id_ubicacion: string;
             };
             cookie?: never;
@@ -31836,7 +31977,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Ubicación de Almacén. */
+                /** @description A UUID string identifying this Ubicación de Almacén. */
                 id_ubicacion: string;
             };
             cookie?: never;
@@ -31856,7 +31997,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Ubicación de Almacén. */
+                /** @description A UUID string identifying this Ubicación de Almacén. */
                 id_ubicacion: string;
             };
             cookie?: never;
@@ -31876,11 +32017,11 @@ export interface operations {
     "auditoria_logs-auditoria_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -31911,7 +32052,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este log auditoria. */
+                /** @description A UUID string identifying this log auditoria. */
                 id_log_auditoria: string;
             };
             cookie?: never;
@@ -32073,11 +32214,11 @@ export interface operations {
     "banca-electronica_lotes-pago_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
                 /** @description Filtrar lotes por UUID de empresa. */
                 empresa?: string;
@@ -32160,7 +32301,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Lote de Pago Bancario. */
+                /** @description A UUID string identifying this Lote de Pago Bancario. */
                 id_lote_pago: string;
             };
             cookie?: never;
@@ -32182,7 +32323,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Lote de Pago Bancario. */
+                /** @description A UUID string identifying this Lote de Pago Bancario. */
                 id_lote_pago: string;
             };
             cookie?: never;
@@ -32204,7 +32345,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Lote de Pago Bancario. */
+                /** @description A UUID string identifying this Lote de Pago Bancario. */
                 id_lote_pago: string;
             };
             cookie?: never;
@@ -32227,7 +32368,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Lote de Pago Bancario. */
+                /** @description A UUID string identifying this Lote de Pago Bancario. */
                 id_lote_pago: string;
             };
             cookie?: never;
@@ -32249,7 +32390,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Lote de Pago Bancario. */
+                /** @description A UUID string identifying this Lote de Pago Bancario. */
                 id_lote_pago: string;
             };
             cookie?: never;
@@ -32425,11 +32566,11 @@ export interface operations {
                 estado?: "PROCESADO" | "BORRADOR" | "INCOMPLETO" | "SINCRONIZADO" | "ERROR";
                 /** @description kind */
                 kind?: "contacto" | "cotizacion" | "pedido" | "pago" | "pago_proveedor" | "proveedor" | "factura_proveedor" | "gasto" | "evento";
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -32540,11 +32681,11 @@ export interface operations {
     bots_usuarios_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -32674,11 +32815,11 @@ export interface operations {
     cobranza_acuerdos_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -32730,11 +32871,11 @@ export interface operations {
     cobranza_acuerdos_vencimientos_proximos: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -32900,11 +33041,11 @@ export interface operations {
     cobranza_gestiones_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -32952,11 +33093,11 @@ export interface operations {
     cobranza_gestiones_agenda: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -32985,11 +33126,11 @@ export interface operations {
     cobranza_gestiones_prioridades: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -33121,11 +33262,11 @@ export interface operations {
     cobranza_lotes_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -33255,11 +33396,11 @@ export interface operations {
     cobranza_plantillas_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -33389,11 +33530,11 @@ export interface operations {
     "cobranza_ventas-fraccionadas_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -33441,11 +33582,11 @@ export interface operations {
     "cobranza_ventas-fraccionadas_resumen": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -33577,11 +33718,11 @@ export interface operations {
     "compras_detalles-factura-compra_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -33631,7 +33772,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Factura de Compra. */
+                /** @description A UUID string identifying this Detalle de Factura de Compra. */
                 id_detalle_factura: string;
             };
             cookie?: never;
@@ -33653,7 +33794,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Factura de Compra. */
+                /** @description A UUID string identifying this Detalle de Factura de Compra. */
                 id_detalle_factura: string;
             };
             cookie?: never;
@@ -33675,7 +33816,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Factura de Compra. */
+                /** @description A UUID string identifying this Detalle de Factura de Compra. */
                 id_detalle_factura: string;
             };
             cookie?: never;
@@ -33695,7 +33836,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Factura de Compra. */
+                /** @description A UUID string identifying this Detalle de Factura de Compra. */
                 id_detalle_factura: string;
             };
             cookie?: never;
@@ -33715,11 +33856,11 @@ export interface operations {
     "compras_detalles-oferta-proveedor_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -33769,7 +33910,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Oferta. */
+                /** @description A UUID string identifying this Detalle de Oferta. */
                 id_detalle_oferta: string;
             };
             cookie?: never;
@@ -33791,7 +33932,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Oferta. */
+                /** @description A UUID string identifying this Detalle de Oferta. */
                 id_detalle_oferta: string;
             };
             cookie?: never;
@@ -33813,7 +33954,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Oferta. */
+                /** @description A UUID string identifying this Detalle de Oferta. */
                 id_detalle_oferta: string;
             };
             cookie?: never;
@@ -33833,7 +33974,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Oferta. */
+                /** @description A UUID string identifying this Detalle de Oferta. */
                 id_detalle_oferta: string;
             };
             cookie?: never;
@@ -33853,11 +33994,11 @@ export interface operations {
     "compras_detalles-orden-compra_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -33907,7 +34048,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este detalle orden compra. */
+                /** @description A UUID string identifying this detalle orden compra. */
                 id_detalle_orden_compra: string;
             };
             cookie?: never;
@@ -33929,7 +34070,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este detalle orden compra. */
+                /** @description A UUID string identifying this detalle orden compra. */
                 id_detalle_orden_compra: string;
             };
             cookie?: never;
@@ -33951,7 +34092,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este detalle orden compra. */
+                /** @description A UUID string identifying this detalle orden compra. */
                 id_detalle_orden_compra: string;
             };
             cookie?: never;
@@ -33971,7 +34112,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este detalle orden compra. */
+                /** @description A UUID string identifying this detalle orden compra. */
                 id_detalle_orden_compra: string;
             };
             cookie?: never;
@@ -33991,11 +34132,11 @@ export interface operations {
     "compras_detalles-recepcion-mercancia_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -34045,7 +34186,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Recepción. */
+                /** @description A UUID string identifying this Detalle de Recepción. */
                 id_detalle_recepcion: string;
             };
             cookie?: never;
@@ -34067,7 +34208,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Recepción. */
+                /** @description A UUID string identifying this Detalle de Recepción. */
                 id_detalle_recepcion: string;
             };
             cookie?: never;
@@ -34089,7 +34230,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Recepción. */
+                /** @description A UUID string identifying this Detalle de Recepción. */
                 id_detalle_recepcion: string;
             };
             cookie?: never;
@@ -34109,7 +34250,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Recepción. */
+                /** @description A UUID string identifying this Detalle de Recepción. */
                 id_detalle_recepcion: string;
             };
             cookie?: never;
@@ -34129,11 +34270,11 @@ export interface operations {
     "compras_detalles-requisicion-compra_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -34183,7 +34324,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Requisición. */
+                /** @description A UUID string identifying this Detalle de Requisición. */
                 id_detalle_requisicion: string;
             };
             cookie?: never;
@@ -34205,7 +34346,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Requisición. */
+                /** @description A UUID string identifying this Detalle de Requisición. */
                 id_detalle_requisicion: string;
             };
             cookie?: never;
@@ -34227,7 +34368,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Requisición. */
+                /** @description A UUID string identifying this Detalle de Requisición. */
                 id_detalle_requisicion: string;
             };
             cookie?: never;
@@ -34247,7 +34388,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Requisición. */
+                /** @description A UUID string identifying this Detalle de Requisición. */
                 id_detalle_requisicion: string;
             };
             cookie?: never;
@@ -34267,11 +34408,11 @@ export interface operations {
     "compras_detalles-solicitud-cotizacion_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -34321,7 +34462,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Solicitud de Cotización. */
+                /** @description A UUID string identifying this Detalle de Solicitud de Cotización. */
                 id_detalle_solicitud: string;
             };
             cookie?: never;
@@ -34343,7 +34484,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Solicitud de Cotización. */
+                /** @description A UUID string identifying this Detalle de Solicitud de Cotización. */
                 id_detalle_solicitud: string;
             };
             cookie?: never;
@@ -34365,7 +34506,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Solicitud de Cotización. */
+                /** @description A UUID string identifying this Detalle de Solicitud de Cotización. */
                 id_detalle_solicitud: string;
             };
             cookie?: never;
@@ -34385,7 +34526,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Solicitud de Cotización. */
+                /** @description A UUID string identifying this Detalle de Solicitud de Cotización. */
                 id_detalle_solicitud: string;
             };
             cookie?: never;
@@ -34405,11 +34546,11 @@ export interface operations {
     "compras_facturas-compra_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -34478,7 +34619,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Factura de Compra. */
+                /** @description A UUID string identifying this Factura de Compra. */
                 id_factura_compra: string;
             };
             cookie?: never;
@@ -34500,7 +34641,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Factura de Compra. */
+                /** @description A UUID string identifying this Factura de Compra. */
                 id_factura_compra: string;
             };
             cookie?: never;
@@ -34522,7 +34663,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Factura de Compra. */
+                /** @description A UUID string identifying this Factura de Compra. */
                 id_factura_compra: string;
             };
             cookie?: never;
@@ -34542,7 +34683,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Factura de Compra. */
+                /** @description A UUID string identifying this Factura de Compra. */
                 id_factura_compra: string;
             };
             cookie?: never;
@@ -34562,11 +34703,11 @@ export interface operations {
     "compras_ofertas-proveedor_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -34616,7 +34757,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Oferta de Proveedor. */
+                /** @description A UUID string identifying this Oferta de Proveedor. */
                 id_oferta: string;
             };
             cookie?: never;
@@ -34638,7 +34779,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Oferta de Proveedor. */
+                /** @description A UUID string identifying this Oferta de Proveedor. */
                 id_oferta: string;
             };
             cookie?: never;
@@ -34660,7 +34801,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Oferta de Proveedor. */
+                /** @description A UUID string identifying this Oferta de Proveedor. */
                 id_oferta: string;
             };
             cookie?: never;
@@ -34680,7 +34821,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Oferta de Proveedor. */
+                /** @description A UUID string identifying this Oferta de Proveedor. */
                 id_oferta: string;
             };
             cookie?: never;
@@ -34702,7 +34843,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Oferta de Proveedor. */
+                /** @description A UUID string identifying this Oferta de Proveedor. */
                 id_oferta: string;
             };
             cookie?: never;
@@ -34726,11 +34867,11 @@ export interface operations {
     "compras_ordenes-compra_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -34780,7 +34921,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Orden de Compra. */
+                /** @description A UUID string identifying this Orden de Compra. */
                 id_orden_compra: string;
             };
             cookie?: never;
@@ -34802,7 +34943,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Orden de Compra. */
+                /** @description A UUID string identifying this Orden de Compra. */
                 id_orden_compra: string;
             };
             cookie?: never;
@@ -34824,7 +34965,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Orden de Compra. */
+                /** @description A UUID string identifying this Orden de Compra. */
                 id_orden_compra: string;
             };
             cookie?: never;
@@ -34844,7 +34985,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Orden de Compra. */
+                /** @description A UUID string identifying this Orden de Compra. */
                 id_orden_compra: string;
             };
             cookie?: never;
@@ -34866,7 +35007,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Orden de Compra. */
+                /** @description A UUID string identifying this Orden de Compra. */
                 id_orden_compra: string;
             };
             cookie?: never;
@@ -34886,11 +35027,11 @@ export interface operations {
     "compras_recepciones-mercancia_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -34959,7 +35100,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Recepción de Mercancía. */
+                /** @description A UUID string identifying this Recepción de Mercancía. */
                 id_recepcion: string;
             };
             cookie?: never;
@@ -34981,7 +35122,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Recepción de Mercancía. */
+                /** @description A UUID string identifying this Recepción de Mercancía. */
                 id_recepcion: string;
             };
             cookie?: never;
@@ -35003,7 +35144,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Recepción de Mercancía. */
+                /** @description A UUID string identifying this Recepción de Mercancía. */
                 id_recepcion: string;
             };
             cookie?: never;
@@ -35023,7 +35164,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Recepción de Mercancía. */
+                /** @description A UUID string identifying this Recepción de Mercancía. */
                 id_recepcion: string;
             };
             cookie?: never;
@@ -35043,11 +35184,11 @@ export interface operations {
     "compras_requisiciones-compra_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -35097,7 +35238,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Requisición de Compra. */
+                /** @description A UUID string identifying this Requisición de Compra. */
                 id_requisicion: string;
             };
             cookie?: never;
@@ -35119,7 +35260,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Requisición de Compra. */
+                /** @description A UUID string identifying this Requisición de Compra. */
                 id_requisicion: string;
             };
             cookie?: never;
@@ -35141,7 +35282,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Requisición de Compra. */
+                /** @description A UUID string identifying this Requisición de Compra. */
                 id_requisicion: string;
             };
             cookie?: never;
@@ -35161,7 +35302,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Requisición de Compra. */
+                /** @description A UUID string identifying this Requisición de Compra. */
                 id_requisicion: string;
             };
             cookie?: never;
@@ -35183,7 +35324,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Requisición de Compra. */
+                /** @description A UUID string identifying this Requisición de Compra. */
                 id_requisicion: string;
             };
             cookie?: never;
@@ -35205,7 +35346,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Requisición de Compra. */
+                /** @description A UUID string identifying this Requisición de Compra. */
                 id_requisicion: string;
             };
             cookie?: never;
@@ -35225,11 +35366,11 @@ export interface operations {
     "compras_solicitudes-cotizacion_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -35302,7 +35443,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Solicitud de Cotización. */
+                /** @description A UUID string identifying this Solicitud de Cotización. */
                 id_solicitud_cotizacion: string;
             };
             cookie?: never;
@@ -35324,7 +35465,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Solicitud de Cotización. */
+                /** @description A UUID string identifying this Solicitud de Cotización. */
                 id_solicitud_cotizacion: string;
             };
             cookie?: never;
@@ -35346,7 +35487,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Solicitud de Cotización. */
+                /** @description A UUID string identifying this Solicitud de Cotización. */
                 id_solicitud_cotizacion: string;
             };
             cookie?: never;
@@ -35366,7 +35507,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Solicitud de Cotización. */
+                /** @description A UUID string identifying this Solicitud de Cotización. */
                 id_solicitud_cotizacion: string;
             };
             cookie?: never;
@@ -35388,7 +35529,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Solicitud de Cotización. */
+                /** @description A UUID string identifying this Solicitud de Cotización. */
                 id_solicitud_cotizacion: string;
             };
             cookie?: never;
@@ -35408,11 +35549,11 @@ export interface operations {
     "configuracion_catalogos-valor_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -35462,7 +35603,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este catalogo valor. */
+                /** @description A UUID string identifying this catalogo valor. */
                 id_catalogo_valor: string;
             };
             cookie?: never;
@@ -35484,7 +35625,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este catalogo valor. */
+                /** @description A UUID string identifying this catalogo valor. */
                 id_catalogo_valor: string;
             };
             cookie?: never;
@@ -35506,7 +35647,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este catalogo valor. */
+                /** @description A UUID string identifying this catalogo valor. */
                 id_catalogo_valor: string;
             };
             cookie?: never;
@@ -35526,7 +35667,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este catalogo valor. */
+                /** @description A UUID string identifying this catalogo valor. */
                 id_catalogo_valor: string;
             };
             cookie?: never;
@@ -35546,11 +35687,11 @@ export interface operations {
     "configuracion_parametros-sistema_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -35600,7 +35741,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Parámetro del Sistema. */
+                /** @description A UUID string identifying this Parámetro del Sistema. */
                 id_parametro: string;
             };
             cookie?: never;
@@ -35622,7 +35763,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Parámetro del Sistema. */
+                /** @description A UUID string identifying this Parámetro del Sistema. */
                 id_parametro: string;
             };
             cookie?: never;
@@ -35644,7 +35785,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Parámetro del Sistema. */
+                /** @description A UUID string identifying this Parámetro del Sistema. */
                 id_parametro: string;
             };
             cookie?: never;
@@ -35664,7 +35805,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Parámetro del Sistema. */
+                /** @description A UUID string identifying this Parámetro del Sistema. */
                 id_parametro: string;
             };
             cookie?: never;
@@ -35684,11 +35825,11 @@ export interface operations {
     "configuracion_tipos-documento_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -35738,7 +35879,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este tipo documento. */
+                /** @description A UUID string identifying this tipo documento. */
                 id_tipo_documento: string;
             };
             cookie?: never;
@@ -35760,7 +35901,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este tipo documento. */
+                /** @description A UUID string identifying this tipo documento. */
                 id_tipo_documento: string;
             };
             cookie?: never;
@@ -35782,7 +35923,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este tipo documento. */
+                /** @description A UUID string identifying this tipo documento. */
                 id_tipo_documento: string;
             };
             cookie?: never;
@@ -35802,7 +35943,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este tipo documento. */
+                /** @description A UUID string identifying this tipo documento. */
                 id_tipo_documento: string;
             };
             cookie?: never;
@@ -35873,11 +36014,11 @@ export interface operations {
     connect_perfiles_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -35925,11 +36066,11 @@ export interface operations {
     "connect_perfiles_mi-perfil_read": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
                 /** @description UUID de la empresa visible activa (opcional). */
                 empresa_id?: string;
@@ -36015,11 +36156,11 @@ export interface operations {
     "connect_perfiles_mi-perfil_mi_perfil_qr": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
                 /** @description UUID de la empresa visible activa (opcional). */
                 empresa_id?: string;
@@ -36064,7 +36205,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Perfil Connect. */
+                /** @description A UUID string identifying this Perfil Connect. */
                 id_perfil: string;
             };
             cookie?: never;
@@ -36086,7 +36227,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Perfil Connect. */
+                /** @description A UUID string identifying this Perfil Connect. */
                 id_perfil: string;
             };
             cookie?: never;
@@ -36108,7 +36249,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Perfil Connect. */
+                /** @description A UUID string identifying this Perfil Connect. */
                 id_perfil: string;
             };
             cookie?: never;
@@ -36128,7 +36269,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Perfil Connect. */
+                /** @description A UUID string identifying this Perfil Connect. */
                 id_perfil: string;
             };
             cookie?: never;
@@ -36153,7 +36294,7 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Perfil Connect. */
+                /** @description A UUID string identifying this Perfil Connect. */
                 id_perfil: string;
             };
             cookie?: never;
@@ -36190,11 +36331,11 @@ export interface operations {
     connect_tarjetas_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -36244,7 +36385,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Tarjeta Connect. */
+                /** @description A UUID string identifying this Tarjeta Connect. */
                 id_tarjeta: string;
             };
             cookie?: never;
@@ -36266,7 +36407,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Tarjeta Connect. */
+                /** @description A UUID string identifying this Tarjeta Connect. */
                 id_tarjeta: string;
             };
             cookie?: never;
@@ -36288,7 +36429,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Tarjeta Connect. */
+                /** @description A UUID string identifying this Tarjeta Connect. */
                 id_tarjeta: string;
             };
             cookie?: never;
@@ -36308,7 +36449,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Tarjeta Connect. */
+                /** @description A UUID string identifying this Tarjeta Connect. */
                 id_tarjeta: string;
             };
             cookie?: never;
@@ -36330,7 +36471,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Tarjeta Connect. */
+                /** @description A UUID string identifying this Tarjeta Connect. */
                 id_tarjeta: string;
             };
             cookie?: never;
@@ -36373,7 +36514,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Tarjeta Connect. */
+                /** @description A UUID string identifying this Tarjeta Connect. */
                 id_tarjeta: string;
             };
             cookie?: never;
@@ -36420,7 +36561,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Tarjeta Connect. */
+                /** @description A UUID string identifying this Tarjeta Connect. */
                 id_tarjeta: string;
             };
             cookie?: never;
@@ -36463,7 +36604,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Tarjeta Connect. */
+                /** @description A UUID string identifying this Tarjeta Connect. */
                 id_tarjeta: string;
             };
             cookie?: never;
@@ -36502,7 +36643,7 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Tarjeta Connect. */
+                /** @description A UUID string identifying this Tarjeta Connect. */
                 id_tarjeta: string;
             };
             cookie?: never;
@@ -36539,11 +36680,11 @@ export interface operations {
     "contabilidad_asientos-contables_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -36591,11 +36732,11 @@ export interface operations {
     "contabilidad_asientos-contables_balance_comprobacion": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -36626,7 +36767,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Asiento Contable. */
+                /** @description A UUID string identifying this Asiento Contable. */
                 id_asiento: string;
             };
             cookie?: never;
@@ -36648,7 +36789,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Asiento Contable. */
+                /** @description A UUID string identifying this Asiento Contable. */
                 id_asiento: string;
             };
             cookie?: never;
@@ -36670,7 +36811,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Asiento Contable. */
+                /** @description A UUID string identifying this Asiento Contable. */
                 id_asiento: string;
             };
             cookie?: never;
@@ -36690,7 +36831,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Asiento Contable. */
+                /** @description A UUID string identifying this Asiento Contable. */
                 id_asiento: string;
             };
             cookie?: never;
@@ -36712,7 +36853,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Asiento Contable. */
+                /** @description A UUID string identifying this Asiento Contable. */
                 id_asiento: string;
             };
             cookie?: never;
@@ -36734,7 +36875,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Asiento Contable. */
+                /** @description A UUID string identifying this Asiento Contable. */
                 id_asiento: string;
             };
             cookie?: never;
@@ -36756,7 +36897,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Asiento Contable. */
+                /** @description A UUID string identifying this Asiento Contable. */
                 id_asiento: string;
             };
             cookie?: never;
@@ -36780,11 +36921,11 @@ export interface operations {
     "contabilidad_detalles-asiento_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -36834,7 +36975,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este detalle asiento. */
+                /** @description A UUID string identifying this detalle asiento. */
                 id_detalle_asiento: string;
             };
             cookie?: never;
@@ -36856,7 +36997,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este detalle asiento. */
+                /** @description A UUID string identifying this detalle asiento. */
                 id_detalle_asiento: string;
             };
             cookie?: never;
@@ -36878,7 +37019,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este detalle asiento. */
+                /** @description A UUID string identifying this detalle asiento. */
                 id_detalle_asiento: string;
             };
             cookie?: never;
@@ -36898,7 +37039,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este detalle asiento. */
+                /** @description A UUID string identifying this detalle asiento. */
                 id_detalle_asiento: string;
             };
             cookie?: never;
@@ -36918,11 +37059,11 @@ export interface operations {
     contabilidad_diarios_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -36972,7 +37113,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Diario Contable. */
+                /** @description A UUID string identifying this Diario Contable. */
                 id_diario: string;
             };
             cookie?: never;
@@ -36994,7 +37135,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Diario Contable. */
+                /** @description A UUID string identifying this Diario Contable. */
                 id_diario: string;
             };
             cookie?: never;
@@ -37016,7 +37157,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Diario Contable. */
+                /** @description A UUID string identifying this Diario Contable. */
                 id_diario: string;
             };
             cookie?: never;
@@ -37036,7 +37177,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Diario Contable. */
+                /** @description A UUID string identifying this Diario Contable. */
                 id_diario: string;
             };
             cookie?: never;
@@ -37058,7 +37199,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Diario Contable. */
+                /** @description A UUID string identifying this Diario Contable. */
                 id_diario: string;
             };
             cookie?: never;
@@ -37080,7 +37221,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Diario Contable. */
+                /** @description A UUID string identifying this Diario Contable. */
                 id_diario: string;
             };
             cookie?: never;
@@ -37100,11 +37241,11 @@ export interface operations {
     "contabilidad_mapeos-contables_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -37152,11 +37293,11 @@ export interface operations {
     "contabilidad_mapeos-contables_tipos_asiento": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -37187,7 +37328,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Mapeo Contable. */
+                /** @description A UUID string identifying this Mapeo Contable. */
                 id_mapeo: string;
             };
             cookie?: never;
@@ -37209,7 +37350,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Mapeo Contable. */
+                /** @description A UUID string identifying this Mapeo Contable. */
                 id_mapeo: string;
             };
             cookie?: never;
@@ -37231,7 +37372,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Mapeo Contable. */
+                /** @description A UUID string identifying this Mapeo Contable. */
                 id_mapeo: string;
             };
             cookie?: never;
@@ -37251,7 +37392,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Mapeo Contable. */
+                /** @description A UUID string identifying this Mapeo Contable. */
                 id_mapeo: string;
             };
             cookie?: never;
@@ -37271,11 +37412,11 @@ export interface operations {
     "contabilidad_periodos-contables_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -37371,7 +37512,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Período Contable. */
+                /** @description A UUID string identifying this Período Contable. */
                 id_periodo: string;
             };
             cookie?: never;
@@ -37393,7 +37534,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Período Contable. */
+                /** @description A UUID string identifying this Período Contable. */
                 id_periodo: string;
             };
             cookie?: never;
@@ -37415,7 +37556,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Período Contable. */
+                /** @description A UUID string identifying this Período Contable. */
                 id_periodo: string;
             };
             cookie?: never;
@@ -37435,7 +37576,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Período Contable. */
+                /** @description A UUID string identifying this Período Contable. */
                 id_periodo: string;
             };
             cookie?: never;
@@ -37457,7 +37598,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Período Contable. */
+                /** @description A UUID string identifying this Período Contable. */
                 id_periodo: string;
             };
             cookie?: never;
@@ -37483,7 +37624,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Período Contable. */
+                /** @description A UUID string identifying this Período Contable. */
                 id_periodo: string;
             };
             cookie?: never;
@@ -37507,11 +37648,11 @@ export interface operations {
     "contabilidad_plan-cuentas_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -37559,11 +37700,11 @@ export interface operations {
     "contabilidad_plan-cuentas_activos": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -37592,11 +37733,11 @@ export interface operations {
     "contabilidad_plan-cuentas_por_tipo": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -37627,7 +37768,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Plan de Cuentas. */
+                /** @description A UUID string identifying this Plan de Cuentas. */
                 id_cuenta_contable: string;
             };
             cookie?: never;
@@ -37649,7 +37790,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Plan de Cuentas. */
+                /** @description A UUID string identifying this Plan de Cuentas. */
                 id_cuenta_contable: string;
             };
             cookie?: never;
@@ -37671,7 +37812,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Plan de Cuentas. */
+                /** @description A UUID string identifying this Plan de Cuentas. */
                 id_cuenta_contable: string;
             };
             cookie?: never;
@@ -37691,7 +37832,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Plan de Cuentas. */
+                /** @description A UUID string identifying this Plan de Cuentas. */
                 id_cuenta_contable: string;
             };
             cookie?: never;
@@ -37827,11 +37968,11 @@ export interface operations {
     "control-asistencia_asignaciones-horario_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -37879,11 +38020,11 @@ export interface operations {
     "control-asistencia_asignaciones-horario_activas": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -37912,11 +38053,11 @@ export interface operations {
     "control-asistencia_asignaciones-horario_por_empleado": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -37947,7 +38088,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este asignacion horario. */
+                /** @description A UUID string identifying this asignacion horario. */
                 id_asignacion_horario: string;
             };
             cookie?: never;
@@ -37969,7 +38110,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este asignacion horario. */
+                /** @description A UUID string identifying this asignacion horario. */
                 id_asignacion_horario: string;
             };
             cookie?: never;
@@ -37991,7 +38132,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este asignacion horario. */
+                /** @description A UUID string identifying this asignacion horario. */
                 id_asignacion_horario: string;
             };
             cookie?: never;
@@ -38011,7 +38152,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este asignacion horario. */
+                /** @description A UUID string identifying this asignacion horario. */
                 id_asignacion_horario: string;
             };
             cookie?: never;
@@ -38033,7 +38174,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este asignacion horario. */
+                /** @description A UUID string identifying this asignacion horario. */
                 id_asignacion_horario: string;
             };
             cookie?: never;
@@ -38053,11 +38194,11 @@ export interface operations {
     "control-asistencia_horarios-trabajo_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -38105,11 +38246,11 @@ export interface operations {
     "control-asistencia_horarios-trabajo_activos": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -38140,7 +38281,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este horario trabajo. */
+                /** @description A UUID string identifying this horario trabajo. */
                 id_horario: string;
             };
             cookie?: never;
@@ -38162,7 +38303,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este horario trabajo. */
+                /** @description A UUID string identifying this horario trabajo. */
                 id_horario: string;
             };
             cookie?: never;
@@ -38184,7 +38325,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este horario trabajo. */
+                /** @description A UUID string identifying this horario trabajo. */
                 id_horario: string;
             };
             cookie?: never;
@@ -38204,7 +38345,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este horario trabajo. */
+                /** @description A UUID string identifying this horario trabajo. */
                 id_horario: string;
             };
             cookie?: never;
@@ -38226,7 +38367,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este horario trabajo. */
+                /** @description A UUID string identifying this horario trabajo. */
                 id_horario: string;
             };
             cookie?: never;
@@ -38246,11 +38387,11 @@ export interface operations {
     "control-asistencia_registros-asistencia_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -38298,11 +38439,11 @@ export interface operations {
     "control-asistencia_registros-asistencia_hoy": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -38350,11 +38491,11 @@ export interface operations {
     "control-asistencia_registros-asistencia_por_empleado_fecha": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -38385,7 +38526,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este registro asistencia. */
+                /** @description A UUID string identifying this registro asistencia. */
                 id_registro_asistencia: string;
             };
             cookie?: never;
@@ -38407,7 +38548,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este registro asistencia. */
+                /** @description A UUID string identifying this registro asistencia. */
                 id_registro_asistencia: string;
             };
             cookie?: never;
@@ -38429,7 +38570,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este registro asistencia. */
+                /** @description A UUID string identifying this registro asistencia. */
                 id_registro_asistencia: string;
             };
             cookie?: never;
@@ -38449,7 +38590,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este registro asistencia. */
+                /** @description A UUID string identifying this registro asistencia. */
                 id_registro_asistencia: string;
             };
             cookie?: never;
@@ -38469,11 +38610,11 @@ export interface operations {
     "control-asistencia_resumenes-asistencia-diario_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -38540,11 +38681,11 @@ export interface operations {
     "control-asistencia_resumenes-asistencia-diario_pendientes_revision": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -38573,11 +38714,11 @@ export interface operations {
     "control-asistencia_resumenes-asistencia-diario_reporte_mensual": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -38608,7 +38749,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este resumen asistencia diario. */
+                /** @description A UUID string identifying this resumen asistencia diario. */
                 id_resumen_diario: string;
             };
             cookie?: never;
@@ -38630,7 +38771,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este resumen asistencia diario. */
+                /** @description A UUID string identifying this resumen asistencia diario. */
                 id_resumen_diario: string;
             };
             cookie?: never;
@@ -38652,7 +38793,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este resumen asistencia diario. */
+                /** @description A UUID string identifying this resumen asistencia diario. */
                 id_resumen_diario: string;
             };
             cookie?: never;
@@ -38672,7 +38813,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este resumen asistencia diario. */
+                /** @description A UUID string identifying this resumen asistencia diario. */
                 id_resumen_diario: string;
             };
             cookie?: never;
@@ -38694,7 +38835,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este resumen asistencia diario. */
+                /** @description A UUID string identifying this resumen asistencia diario. */
                 id_resumen_diario: string;
             };
             cookie?: never;
@@ -38714,11 +38855,11 @@ export interface operations {
     core_contactos_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -38768,7 +38909,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Contacto. */
+                /** @description A UUID string identifying this Contacto. */
                 id_contacto: string;
             };
             cookie?: never;
@@ -38790,7 +38931,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Contacto. */
+                /** @description A UUID string identifying this Contacto. */
                 id_contacto: string;
             };
             cookie?: never;
@@ -38812,7 +38953,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Contacto. */
+                /** @description A UUID string identifying this Contacto. */
                 id_contacto: string;
             };
             cookie?: never;
@@ -38832,7 +38973,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Contacto. */
+                /** @description A UUID string identifying this Contacto. */
                 id_contacto: string;
             };
             cookie?: never;
@@ -38886,11 +39027,11 @@ export interface operations {
     core_departamentos_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -38940,7 +39081,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Departamento. */
+                /** @description A UUID string identifying this Departamento. */
                 id_departamento: string;
             };
             cookie?: never;
@@ -38962,7 +39103,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Departamento. */
+                /** @description A UUID string identifying this Departamento. */
                 id_departamento: string;
             };
             cookie?: never;
@@ -38984,7 +39125,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Departamento. */
+                /** @description A UUID string identifying this Departamento. */
                 id_departamento: string;
             };
             cookie?: never;
@@ -39004,7 +39145,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Departamento. */
+                /** @description A UUID string identifying this Departamento. */
                 id_departamento: string;
             };
             cookie?: never;
@@ -39024,11 +39165,11 @@ export interface operations {
     core_dispositivos_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -39095,7 +39236,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Dispositivo. */
+                /** @description A UUID string identifying this Dispositivo. */
                 id_dispositivo: string;
             };
             cookie?: never;
@@ -39117,7 +39258,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Dispositivo. */
+                /** @description A UUID string identifying this Dispositivo. */
                 id_dispositivo: string;
             };
             cookie?: never;
@@ -39139,7 +39280,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Dispositivo. */
+                /** @description A UUID string identifying this Dispositivo. */
                 id_dispositivo: string;
             };
             cookie?: never;
@@ -39159,7 +39300,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Dispositivo. */
+                /** @description A UUID string identifying this Dispositivo. */
                 id_dispositivo: string;
             };
             cookie?: never;
@@ -39179,11 +39320,11 @@ export interface operations {
     core_empresas_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -39233,7 +39374,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Empresa. */
+                /** @description A UUID string identifying this Empresa. */
                 id_empresa: string;
             };
             cookie?: never;
@@ -39255,7 +39396,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Empresa. */
+                /** @description A UUID string identifying this Empresa. */
                 id_empresa: string;
             };
             cookie?: never;
@@ -39277,7 +39418,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Empresa. */
+                /** @description A UUID string identifying this Empresa. */
                 id_empresa: string;
             };
             cookie?: never;
@@ -39297,7 +39438,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Empresa. */
+                /** @description A UUID string identifying this Empresa. */
                 id_empresa: string;
             };
             cookie?: never;
@@ -39317,11 +39458,11 @@ export interface operations {
     "core_flujo-documentos_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -39371,7 +39512,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Configuración de Flujo de Documentos. */
+                /** @description A UUID string identifying this Configuración de Flujo de Documentos. */
                 id_configuracion: string;
             };
             cookie?: never;
@@ -39393,7 +39534,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Configuración de Flujo de Documentos. */
+                /** @description A UUID string identifying this Configuración de Flujo de Documentos. */
                 id_configuracion: string;
             };
             cookie?: never;
@@ -39415,7 +39556,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Configuración de Flujo de Documentos. */
+                /** @description A UUID string identifying this Configuración de Flujo de Documentos. */
                 id_configuracion: string;
             };
             cookie?: never;
@@ -39435,7 +39576,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Configuración de Flujo de Documentos. */
+                /** @description A UUID string identifying this Configuración de Flujo de Documentos. */
                 id_configuracion: string;
             };
             cookie?: never;
@@ -39455,11 +39596,11 @@ export interface operations {
     core_notificaciones_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -39526,11 +39667,11 @@ export interface operations {
     core_notificaciones_no_leidas: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -39561,7 +39702,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Notificación. */
+                /** @description A UUID string identifying this Notificación. */
                 id_notificacion: string;
             };
             cookie?: never;
@@ -39583,7 +39724,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Notificación. */
+                /** @description A UUID string identifying this Notificación. */
                 id_notificacion: string;
             };
             cookie?: never;
@@ -39605,7 +39746,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Notificación. */
+                /** @description A UUID string identifying this Notificación. */
                 id_notificacion: string;
             };
             cookie?: never;
@@ -39625,7 +39766,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Notificación. */
+                /** @description A UUID string identifying this Notificación. */
                 id_notificacion: string;
             };
             cookie?: never;
@@ -39647,7 +39788,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Notificación. */
+                /** @description A UUID string identifying this Notificación. */
                 id_notificacion: string;
             };
             cookie?: never;
@@ -39667,11 +39808,11 @@ export interface operations {
     core_permisos_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -39721,7 +39862,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Permiso. */
+                /** @description A UUID string identifying this Permiso. */
                 id_permiso: string;
             };
             cookie?: never;
@@ -39743,7 +39884,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Permiso. */
+                /** @description A UUID string identifying this Permiso. */
                 id_permiso: string;
             };
             cookie?: never;
@@ -39765,7 +39906,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Permiso. */
+                /** @description A UUID string identifying this Permiso. */
                 id_permiso: string;
             };
             cookie?: never;
@@ -39785,7 +39926,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Permiso. */
+                /** @description A UUID string identifying this Permiso. */
                 id_permiso: string;
             };
             cookie?: never;
@@ -39807,7 +39948,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Permiso. */
+                /** @description A UUID string identifying this Permiso. */
                 id_permiso: string;
             };
             cookie?: never;
@@ -39829,7 +39970,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Permiso. */
+                /** @description A UUID string identifying this Permiso. */
                 id_permiso: string;
             };
             cookie?: never;
@@ -39849,11 +39990,11 @@ export interface operations {
     core_roles_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -39903,7 +40044,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Rol. */
+                /** @description A UUID string identifying this Rol. */
                 id_rol: string;
             };
             cookie?: never;
@@ -39925,7 +40066,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Rol. */
+                /** @description A UUID string identifying this Rol. */
                 id_rol: string;
             };
             cookie?: never;
@@ -39947,7 +40088,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Rol. */
+                /** @description A UUID string identifying this Rol. */
                 id_rol: string;
             };
             cookie?: never;
@@ -39967,7 +40108,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Rol. */
+                /** @description A UUID string identifying this Rol. */
                 id_rol: string;
             };
             cookie?: never;
@@ -39989,7 +40130,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Rol. */
+                /** @description A UUID string identifying this Rol. */
                 id_rol: string;
             };
             cookie?: never;
@@ -40011,7 +40152,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Rol. */
+                /** @description A UUID string identifying this Rol. */
                 id_rol: string;
             };
             cookie?: never;
@@ -40031,11 +40172,11 @@ export interface operations {
     core_sucursales_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -40085,7 +40226,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Sucursal. */
+                /** @description A UUID string identifying this Sucursal. */
                 id_sucursal: string;
             };
             cookie?: never;
@@ -40107,7 +40248,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Sucursal. */
+                /** @description A UUID string identifying this Sucursal. */
                 id_sucursal: string;
             };
             cookie?: never;
@@ -40129,7 +40270,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Sucursal. */
+                /** @description A UUID string identifying this Sucursal. */
                 id_sucursal: string;
             };
             cookie?: never;
@@ -40149,7 +40290,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Sucursal. */
+                /** @description A UUID string identifying this Sucursal. */
                 id_sucursal: string;
             };
             cookie?: never;
@@ -40186,11 +40327,11 @@ export interface operations {
     core_usuarios_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -40274,7 +40415,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Usuario. */
+                /** @description A UUID string identifying this Usuario. */
                 id: string;
             };
             cookie?: never;
@@ -40296,7 +40437,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Usuario. */
+                /** @description A UUID string identifying this Usuario. */
                 id: string;
             };
             cookie?: never;
@@ -40318,7 +40459,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Usuario. */
+                /** @description A UUID string identifying this Usuario. */
                 id: string;
             };
             cookie?: never;
@@ -40338,7 +40479,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Usuario. */
+                /** @description A UUID string identifying this Usuario. */
                 id: string;
             };
             cookie?: never;
@@ -40358,11 +40499,11 @@ export interface operations {
     "costos_analisis-variacion-costo_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -40412,7 +40553,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Análisis de Variación de Costo. */
+                /** @description A UUID string identifying this Análisis de Variación de Costo. */
                 id_analisis_variacion: string;
             };
             cookie?: never;
@@ -40434,7 +40575,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Análisis de Variación de Costo. */
+                /** @description A UUID string identifying this Análisis de Variación de Costo. */
                 id_analisis_variacion: string;
             };
             cookie?: never;
@@ -40456,7 +40597,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Análisis de Variación de Costo. */
+                /** @description A UUID string identifying this Análisis de Variación de Costo. */
                 id_analisis_variacion: string;
             };
             cookie?: never;
@@ -40476,7 +40617,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Análisis de Variación de Costo. */
+                /** @description A UUID string identifying this Análisis de Variación de Costo. */
                 id_analisis_variacion: string;
             };
             cookie?: never;
@@ -40496,11 +40637,11 @@ export interface operations {
     "costos_costos-estandar-producto_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -40550,7 +40691,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Costo Estándar de Producto. */
+                /** @description A UUID string identifying this Costo Estándar de Producto. */
                 id_costo_estandar: string;
             };
             cookie?: never;
@@ -40572,7 +40713,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Costo Estándar de Producto. */
+                /** @description A UUID string identifying this Costo Estándar de Producto. */
                 id_costo_estandar: string;
             };
             cookie?: never;
@@ -40594,7 +40735,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Costo Estándar de Producto. */
+                /** @description A UUID string identifying this Costo Estándar de Producto. */
                 id_costo_estandar: string;
             };
             cookie?: never;
@@ -40614,7 +40755,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Costo Estándar de Producto. */
+                /** @description A UUID string identifying this Costo Estándar de Producto. */
                 id_costo_estandar: string;
             };
             cookie?: never;
@@ -40634,11 +40775,11 @@ export interface operations {
     "costos_costos-produccion_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -40688,7 +40829,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Costo de Producción. */
+                /** @description A UUID string identifying this Costo de Producción. */
                 id_costo_produccion: string;
             };
             cookie?: never;
@@ -40710,7 +40851,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Costo de Producción. */
+                /** @description A UUID string identifying this Costo de Producción. */
                 id_costo_produccion: string;
             };
             cookie?: never;
@@ -40732,7 +40873,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Costo de Producción. */
+                /** @description A UUID string identifying this Costo de Producción. */
                 id_costo_produccion: string;
             };
             cookie?: never;
@@ -40752,7 +40893,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Costo de Producción. */
+                /** @description A UUID string identifying this Costo de Producción. */
                 id_costo_produccion: string;
             };
             cookie?: never;
@@ -40772,11 +40913,11 @@ export interface operations {
     crm_actividades_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -40826,7 +40967,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Actividad. */
+                /** @description A UUID string identifying this Actividad. */
                 id_actividad: string;
             };
             cookie?: never;
@@ -40848,7 +40989,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Actividad. */
+                /** @description A UUID string identifying this Actividad. */
                 id_actividad: string;
             };
             cookie?: never;
@@ -40870,7 +41011,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Actividad. */
+                /** @description A UUID string identifying this Actividad. */
                 id_actividad: string;
             };
             cookie?: never;
@@ -40890,7 +41031,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Actividad. */
+                /** @description A UUID string identifying this Actividad. */
                 id_actividad: string;
             };
             cookie?: never;
@@ -40912,7 +41053,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Actividad. */
+                /** @description A UUID string identifying this Actividad. */
                 id_actividad: string;
             };
             cookie?: never;
@@ -40934,7 +41075,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Actividad. */
+                /** @description A UUID string identifying this Actividad. */
                 id_actividad: string;
             };
             cookie?: never;
@@ -40974,7 +41115,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Actividad. */
+                /** @description A UUID string identifying this Actividad. */
                 id_actividad: string;
             };
             cookie?: never;
@@ -40994,11 +41135,11 @@ export interface operations {
     crm_clientes_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -41046,11 +41187,11 @@ export interface operations {
     crm_clientes_buscar_por_rif: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -41081,7 +41222,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este cliente. */
+                /** @description A UUID string identifying this cliente. */
                 id_cliente: string;
             };
             cookie?: never;
@@ -41103,7 +41244,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este cliente. */
+                /** @description A UUID string identifying this cliente. */
                 id_cliente: string;
             };
             cookie?: never;
@@ -41125,7 +41266,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este cliente. */
+                /** @description A UUID string identifying this cliente. */
                 id_cliente: string;
             };
             cookie?: never;
@@ -41145,7 +41286,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este cliente. */
+                /** @description A UUID string identifying this cliente. */
                 id_cliente: string;
             };
             cookie?: never;
@@ -41167,7 +41308,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este cliente. */
+                /** @description A UUID string identifying this cliente. */
                 id_cliente: string;
             };
             cookie?: never;
@@ -41189,7 +41330,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este cliente. */
+                /** @description A UUID string identifying this cliente. */
                 id_cliente: string;
             };
             cookie?: never;
@@ -41209,11 +41350,11 @@ export interface operations {
     "crm_contactos-cliente_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -41263,7 +41404,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Contacto de Cliente. */
+                /** @description A UUID string identifying this Contacto de Cliente. */
                 id_contacto: string;
             };
             cookie?: never;
@@ -41285,7 +41426,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Contacto de Cliente. */
+                /** @description A UUID string identifying this Contacto de Cliente. */
                 id_contacto: string;
             };
             cookie?: never;
@@ -41307,7 +41448,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Contacto de Cliente. */
+                /** @description A UUID string identifying this Contacto de Cliente. */
                 id_contacto: string;
             };
             cookie?: never;
@@ -41327,7 +41468,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Contacto de Cliente. */
+                /** @description A UUID string identifying this Contacto de Cliente. */
                 id_contacto: string;
             };
             cookie?: never;
@@ -41347,11 +41488,11 @@ export interface operations {
     "crm_direcciones-cliente_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -41401,7 +41542,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Dirección de Cliente. */
+                /** @description A UUID string identifying this Dirección de Cliente. */
                 id_direccion: string;
             };
             cookie?: never;
@@ -41423,7 +41564,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Dirección de Cliente. */
+                /** @description A UUID string identifying this Dirección de Cliente. */
                 id_direccion: string;
             };
             cookie?: never;
@@ -41445,7 +41586,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Dirección de Cliente. */
+                /** @description A UUID string identifying this Dirección de Cliente. */
                 id_direccion: string;
             };
             cookie?: never;
@@ -41465,7 +41606,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Dirección de Cliente. */
+                /** @description A UUID string identifying this Dirección de Cliente. */
                 id_direccion: string;
             };
             cookie?: never;
@@ -41485,11 +41626,11 @@ export interface operations {
     crm_etapas_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -41539,7 +41680,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Etapa. */
+                /** @description A UUID string identifying this Etapa. */
                 id_etapa: string;
             };
             cookie?: never;
@@ -41561,7 +41702,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Etapa. */
+                /** @description A UUID string identifying this Etapa. */
                 id_etapa: string;
             };
             cookie?: never;
@@ -41583,7 +41724,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Etapa. */
+                /** @description A UUID string identifying this Etapa. */
                 id_etapa: string;
             };
             cookie?: never;
@@ -41603,7 +41744,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Etapa. */
+                /** @description A UUID string identifying this Etapa. */
                 id_etapa: string;
             };
             cookie?: never;
@@ -41625,7 +41766,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Etapa. */
+                /** @description A UUID string identifying this Etapa. */
                 id_etapa: string;
             };
             cookie?: never;
@@ -41647,7 +41788,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Etapa. */
+                /** @description A UUID string identifying this Etapa. */
                 id_etapa: string;
             };
             cookie?: never;
@@ -41667,11 +41808,11 @@ export interface operations {
     crm_leads_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -41721,7 +41862,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Lead. */
+                /** @description A UUID string identifying this Lead. */
                 id_lead: string;
             };
             cookie?: never;
@@ -41743,7 +41884,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Lead. */
+                /** @description A UUID string identifying this Lead. */
                 id_lead: string;
             };
             cookie?: never;
@@ -41765,7 +41906,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Lead. */
+                /** @description A UUID string identifying this Lead. */
                 id_lead: string;
             };
             cookie?: never;
@@ -41785,7 +41926,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Lead. */
+                /** @description A UUID string identifying this Lead. */
                 id_lead: string;
             };
             cookie?: never;
@@ -41807,7 +41948,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Lead. */
+                /** @description A UUID string identifying this Lead. */
                 id_lead: string;
             };
             cookie?: never;
@@ -41829,7 +41970,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Lead. */
+                /** @description A UUID string identifying this Lead. */
                 id_lead: string;
             };
             cookie?: never;
@@ -41869,7 +42010,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Lead. */
+                /** @description A UUID string identifying this Lead. */
                 id_lead: string;
             };
             cookie?: never;
@@ -41909,7 +42050,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Lead. */
+                /** @description A UUID string identifying this Lead. */
                 id_lead: string;
             };
             cookie?: never;
@@ -41931,7 +42072,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Lead. */
+                /** @description A UUID string identifying this Lead. */
                 id_lead: string;
             };
             cookie?: never;
@@ -41969,11 +42110,11 @@ export interface operations {
     crm_pipelines_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -42063,7 +42204,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pipeline. */
+                /** @description A UUID string identifying this Pipeline. */
                 id_pipeline: string;
             };
             cookie?: never;
@@ -42085,7 +42226,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pipeline. */
+                /** @description A UUID string identifying this Pipeline. */
                 id_pipeline: string;
             };
             cookie?: never;
@@ -42107,7 +42248,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pipeline. */
+                /** @description A UUID string identifying this Pipeline. */
                 id_pipeline: string;
             };
             cookie?: never;
@@ -42127,7 +42268,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pipeline. */
+                /** @description A UUID string identifying this Pipeline. */
                 id_pipeline: string;
             };
             cookie?: never;
@@ -42149,7 +42290,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pipeline. */
+                /** @description A UUID string identifying this Pipeline. */
                 id_pipeline: string;
             };
             cookie?: never;
@@ -42171,7 +42312,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pipeline. */
+                /** @description A UUID string identifying this Pipeline. */
                 id_pipeline: string;
             };
             cookie?: never;
@@ -42193,7 +42334,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pipeline. */
+                /** @description A UUID string identifying this Pipeline. */
                 id_pipeline: string;
             };
             cookie?: never;
@@ -42231,11 +42372,11 @@ export interface operations {
     "cuentas-por-pagar_abonos-cxp_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -42266,7 +42407,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este abono cx p. */
+                /** @description A UUID string identifying this abono cx p. */
                 id_abono_cxp: string;
             };
             cookie?: never;
@@ -42286,11 +42427,11 @@ export interface operations {
     "cuentas-por-pagar_cuentas-por-pagar_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -42338,11 +42479,11 @@ export interface operations {
     "cuentas-por-pagar_cuentas-por-pagar_aging": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -42373,7 +42514,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este cuenta por pagar. */
+                /** @description A UUID string identifying this cuenta por pagar. */
                 id_cxp: string;
             };
             cookie?: never;
@@ -42395,7 +42536,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este cuenta por pagar. */
+                /** @description A UUID string identifying this cuenta por pagar. */
                 id_cxp: string;
             };
             cookie?: never;
@@ -42415,11 +42556,11 @@ export interface operations {
     "cxc-lubrikca_bandeja_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -42450,7 +42591,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Bandeja de facturación. */
+                /** @description A UUID string identifying this Bandeja de facturación. */
                 id: string;
             };
             cookie?: never;
@@ -42472,7 +42613,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Bandeja de facturación. */
+                /** @description A UUID string identifying this Bandeja de facturación. */
                 id: string;
             };
             cookie?: never;
@@ -42494,7 +42635,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Bandeja de facturación. */
+                /** @description A UUID string identifying this Bandeja de facturación. */
                 id: string;
             };
             cookie?: never;
@@ -42514,11 +42655,11 @@ export interface operations {
     "cxc-lubrikca_conciliaciones_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -42566,11 +42707,11 @@ export interface operations {
     "cxc-lubrikca_conciliaciones_resumen": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -42601,7 +42742,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Conciliación. */
+                /** @description A UUID string identifying this Conciliación. */
                 id: string;
             };
             cookie?: never;
@@ -42623,7 +42764,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Conciliación. */
+                /** @description A UUID string identifying this Conciliación. */
                 id: string;
             };
             cookie?: never;
@@ -42643,11 +42784,11 @@ export interface operations {
     "cxc-lubrikca_config-conciliacion_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -42697,7 +42838,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Configuración de conciliación. */
+                /** @description A UUID string identifying this Configuración de conciliación. */
                 id: string;
             };
             cookie?: never;
@@ -42719,7 +42860,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Configuración de conciliación. */
+                /** @description A UUID string identifying this Configuración de conciliación. */
                 id: string;
             };
             cookie?: never;
@@ -42741,7 +42882,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Configuración de conciliación. */
+                /** @description A UUID string identifying this Configuración de conciliación. */
                 id: string;
             };
             cookie?: never;
@@ -42761,7 +42902,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Configuración de conciliación. */
+                /** @description A UUID string identifying this Configuración de conciliación. */
                 id: string;
             };
             cookie?: never;
@@ -42783,7 +42924,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Configuración de conciliación. */
+                /** @description A UUID string identifying this Configuración de conciliación. */
                 id: string;
             };
             cookie?: never;
@@ -42805,7 +42946,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Configuración de conciliación. */
+                /** @description A UUID string identifying this Configuración de conciliación. */
                 id: string;
             };
             cookie?: never;
@@ -42825,11 +42966,11 @@ export interface operations {
     "cxc-lubrikca_descuentos-bcv-completo_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -42879,7 +43020,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Descuento BCV completo. */
+                /** @description A UUID string identifying this Descuento BCV completo. */
                 id: string;
             };
             cookie?: never;
@@ -42901,7 +43042,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Descuento BCV completo. */
+                /** @description A UUID string identifying this Descuento BCV completo. */
                 id: string;
             };
             cookie?: never;
@@ -42923,7 +43064,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Descuento BCV completo. */
+                /** @description A UUID string identifying this Descuento BCV completo. */
                 id: string;
             };
             cookie?: never;
@@ -42943,7 +43084,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Descuento BCV completo. */
+                /** @description A UUID string identifying this Descuento BCV completo. */
                 id: string;
             };
             cookie?: never;
@@ -42965,7 +43106,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Descuento BCV completo. */
+                /** @description A UUID string identifying this Descuento BCV completo. */
                 id: string;
             };
             cookie?: never;
@@ -42987,7 +43128,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Descuento BCV completo. */
+                /** @description A UUID string identifying this Descuento BCV completo. */
                 id: string;
             };
             cookie?: never;
@@ -43007,11 +43148,11 @@ export interface operations {
     "cxc-lubrikca_descuentos-marca-categoria_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -43061,7 +43202,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Descuento por marca/categoría. */
+                /** @description A UUID string identifying this Descuento por marca/categoría. */
                 id: string;
             };
             cookie?: never;
@@ -43083,7 +43224,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Descuento por marca/categoría. */
+                /** @description A UUID string identifying this Descuento por marca/categoría. */
                 id: string;
             };
             cookie?: never;
@@ -43105,7 +43246,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Descuento por marca/categoría. */
+                /** @description A UUID string identifying this Descuento por marca/categoría. */
                 id: string;
             };
             cookie?: never;
@@ -43125,7 +43266,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Descuento por marca/categoría. */
+                /** @description A UUID string identifying this Descuento por marca/categoría. */
                 id: string;
             };
             cookie?: never;
@@ -43147,7 +43288,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Descuento por marca/categoría. */
+                /** @description A UUID string identifying this Descuento por marca/categoría. */
                 id: string;
             };
             cookie?: never;
@@ -43169,7 +43310,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Descuento por marca/categoría. */
+                /** @description A UUID string identifying this Descuento por marca/categoría. */
                 id: string;
             };
             cookie?: never;
@@ -43189,11 +43330,11 @@ export interface operations {
     "cxc-lubrikca_feriados_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -43243,7 +43384,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Feriado. */
+                /** @description A UUID string identifying this Feriado. */
                 id: string;
             };
             cookie?: never;
@@ -43265,7 +43406,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Feriado. */
+                /** @description A UUID string identifying this Feriado. */
                 id: string;
             };
             cookie?: never;
@@ -43287,7 +43428,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Feriado. */
+                /** @description A UUID string identifying this Feriado. */
                 id: string;
             };
             cookie?: never;
@@ -43307,7 +43448,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Feriado. */
+                /** @description A UUID string identifying this Feriado. */
                 id: string;
             };
             cookie?: never;
@@ -43329,7 +43470,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Feriado. */
+                /** @description A UUID string identifying this Feriado. */
                 id: string;
             };
             cookie?: never;
@@ -43351,7 +43492,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Feriado. */
+                /** @description A UUID string identifying this Feriado. */
                 id: string;
             };
             cookie?: never;
@@ -43371,11 +43512,11 @@ export interface operations {
     "cxc-lubrikca_lineas-pedido_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -43425,7 +43566,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Línea de pedido (espejo). */
+                /** @description A UUID string identifying this Línea de pedido (espejo). */
                 id: string;
             };
             cookie?: never;
@@ -43447,7 +43588,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Línea de pedido (espejo). */
+                /** @description A UUID string identifying this Línea de pedido (espejo). */
                 id: string;
             };
             cookie?: never;
@@ -43469,7 +43610,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Línea de pedido (espejo). */
+                /** @description A UUID string identifying this Línea de pedido (espejo). */
                 id: string;
             };
             cookie?: never;
@@ -43489,7 +43630,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Línea de pedido (espejo). */
+                /** @description A UUID string identifying this Línea de pedido (espejo). */
                 id: string;
             };
             cookie?: never;
@@ -43511,7 +43652,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Línea de pedido (espejo). */
+                /** @description A UUID string identifying this Línea de pedido (espejo). */
                 id: string;
             };
             cookie?: never;
@@ -43533,7 +43674,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Línea de pedido (espejo). */
+                /** @description A UUID string identifying this Línea de pedido (espejo). */
                 id: string;
             };
             cookie?: never;
@@ -43553,11 +43694,11 @@ export interface operations {
     "cxc-lubrikca_metodos-pago_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -43607,7 +43748,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Método de pago. */
+                /** @description A UUID string identifying this Método de pago. */
                 id: string;
             };
             cookie?: never;
@@ -43629,7 +43770,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Método de pago. */
+                /** @description A UUID string identifying this Método de pago. */
                 id: string;
             };
             cookie?: never;
@@ -43651,7 +43792,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Método de pago. */
+                /** @description A UUID string identifying this Método de pago. */
                 id: string;
             };
             cookie?: never;
@@ -43671,7 +43812,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Método de pago. */
+                /** @description A UUID string identifying this Método de pago. */
                 id: string;
             };
             cookie?: never;
@@ -43693,7 +43834,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Método de pago. */
+                /** @description A UUID string identifying this Método de pago. */
                 id: string;
             };
             cookie?: never;
@@ -43715,7 +43856,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Método de pago. */
+                /** @description A UUID string identifying this Método de pago. */
                 id: string;
             };
             cookie?: never;
@@ -43735,11 +43876,11 @@ export interface operations {
     "cxc-lubrikca_pagos_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -43789,7 +43930,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago (espejo). */
+                /** @description A UUID string identifying this Pago (espejo). */
                 id: string;
             };
             cookie?: never;
@@ -43811,7 +43952,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago (espejo). */
+                /** @description A UUID string identifying this Pago (espejo). */
                 id: string;
             };
             cookie?: never;
@@ -43833,7 +43974,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago (espejo). */
+                /** @description A UUID string identifying this Pago (espejo). */
                 id: string;
             };
             cookie?: never;
@@ -43853,7 +43994,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago (espejo). */
+                /** @description A UUID string identifying this Pago (espejo). */
                 id: string;
             };
             cookie?: never;
@@ -43875,7 +44016,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago (espejo). */
+                /** @description A UUID string identifying this Pago (espejo). */
                 id: string;
             };
             cookie?: never;
@@ -43897,7 +44038,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago (espejo). */
+                /** @description A UUID string identifying this Pago (espejo). */
                 id: string;
             };
             cookie?: never;
@@ -43917,11 +44058,11 @@ export interface operations {
     "cxc-lubrikca_pedidos_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -43990,7 +44131,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pedido (espejo). */
+                /** @description A UUID string identifying this Pedido (espejo). */
                 id: string;
             };
             cookie?: never;
@@ -44012,7 +44153,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pedido (espejo). */
+                /** @description A UUID string identifying this Pedido (espejo). */
                 id: string;
             };
             cookie?: never;
@@ -44034,7 +44175,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pedido (espejo). */
+                /** @description A UUID string identifying this Pedido (espejo). */
                 id: string;
             };
             cookie?: never;
@@ -44054,7 +44195,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pedido (espejo). */
+                /** @description A UUID string identifying this Pedido (espejo). */
                 id: string;
             };
             cookie?: never;
@@ -44076,7 +44217,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pedido (espejo). */
+                /** @description A UUID string identifying this Pedido (espejo). */
                 id: string;
             };
             cookie?: never;
@@ -44098,7 +44239,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pedido (espejo). */
+                /** @description A UUID string identifying this Pedido (espejo). */
                 id: string;
             };
             cookie?: never;
@@ -44120,7 +44261,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pedido (espejo). */
+                /** @description A UUID string identifying this Pedido (espejo). */
                 id: string;
             };
             cookie?: never;
@@ -44140,11 +44281,11 @@ export interface operations {
     "cxc-lubrikca_precios-lista_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -44194,7 +44335,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Precio de lista. */
+                /** @description A UUID string identifying this Precio de lista. */
                 id: string;
             };
             cookie?: never;
@@ -44216,7 +44357,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Precio de lista. */
+                /** @description A UUID string identifying this Precio de lista. */
                 id: string;
             };
             cookie?: never;
@@ -44238,7 +44379,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Precio de lista. */
+                /** @description A UUID string identifying this Precio de lista. */
                 id: string;
             };
             cookie?: never;
@@ -44258,7 +44399,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Precio de lista. */
+                /** @description A UUID string identifying this Precio de lista. */
                 id: string;
             };
             cookie?: never;
@@ -44280,7 +44421,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Precio de lista. */
+                /** @description A UUID string identifying this Precio de lista. */
                 id: string;
             };
             cookie?: never;
@@ -44302,7 +44443,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Precio de lista. */
+                /** @description A UUID string identifying this Precio de lista. */
                 id: string;
             };
             cookie?: never;
@@ -44322,11 +44463,11 @@ export interface operations {
     "cxc-lubrikca_promociones-primera-compra_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -44376,7 +44517,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Promoción de primera compra. */
+                /** @description A UUID string identifying this Promoción de primera compra. */
                 id: string;
             };
             cookie?: never;
@@ -44398,7 +44539,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Promoción de primera compra. */
+                /** @description A UUID string identifying this Promoción de primera compra. */
                 id: string;
             };
             cookie?: never;
@@ -44420,7 +44561,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Promoción de primera compra. */
+                /** @description A UUID string identifying this Promoción de primera compra. */
                 id: string;
             };
             cookie?: never;
@@ -44440,7 +44581,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Promoción de primera compra. */
+                /** @description A UUID string identifying this Promoción de primera compra. */
                 id: string;
             };
             cookie?: never;
@@ -44462,7 +44603,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Promoción de primera compra. */
+                /** @description A UUID string identifying this Promoción de primera compra. */
                 id: string;
             };
             cookie?: never;
@@ -44484,7 +44625,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Promoción de primera compra. */
+                /** @description A UUID string identifying this Promoción de primera compra. */
                 id: string;
             };
             cookie?: never;
@@ -44504,11 +44645,11 @@ export interface operations {
     "cxc-lubrikca_reglas-recurrencia_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -44558,7 +44699,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Regla de recurrencia. */
+                /** @description A UUID string identifying this Regla de recurrencia. */
                 id: string;
             };
             cookie?: never;
@@ -44580,7 +44721,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Regla de recurrencia. */
+                /** @description A UUID string identifying this Regla de recurrencia. */
                 id: string;
             };
             cookie?: never;
@@ -44602,7 +44743,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Regla de recurrencia. */
+                /** @description A UUID string identifying this Regla de recurrencia. */
                 id: string;
             };
             cookie?: never;
@@ -44622,7 +44763,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Regla de recurrencia. */
+                /** @description A UUID string identifying this Regla de recurrencia. */
                 id: string;
             };
             cookie?: never;
@@ -44644,7 +44785,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Regla de recurrencia. */
+                /** @description A UUID string identifying this Regla de recurrencia. */
                 id: string;
             };
             cookie?: never;
@@ -44666,7 +44807,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Regla de recurrencia. */
+                /** @description A UUID string identifying this Regla de recurrencia. */
                 id: string;
             };
             cookie?: never;
@@ -44686,11 +44827,11 @@ export interface operations {
     "cxc-lubrikca_vinculaciones_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -44740,7 +44881,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Vinculación pago↔pedido. */
+                /** @description A UUID string identifying this Vinculación pago↔pedido. */
                 id: string;
             };
             cookie?: never;
@@ -44762,7 +44903,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Vinculación pago↔pedido. */
+                /** @description A UUID string identifying this Vinculación pago↔pedido. */
                 id: string;
             };
             cookie?: never;
@@ -44784,7 +44925,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Vinculación pago↔pedido. */
+                /** @description A UUID string identifying this Vinculación pago↔pedido. */
                 id: string;
             };
             cookie?: never;
@@ -44804,11 +44945,11 @@ export interface operations {
     "cxc_abonos-cxc_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -44862,7 +45003,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un valor de entero único que identifique este abono cx c. */
+                /** @description A unique integer value identifying this abono cx c. */
                 id: number;
             };
             cookie?: never;
@@ -44882,11 +45023,11 @@ export interface operations {
     "cxc_cuentas-por-cobrar_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -44934,11 +45075,11 @@ export interface operations {
     "cxc_cuentas-por-cobrar_aging": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -44967,11 +45108,11 @@ export interface operations {
     "cxc_cuentas-por-cobrar_estado-cuenta_estado_cuenta_pdf": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -45004,7 +45145,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un valor de entero único que identifique este cuenta por cobrar. */
+                /** @description A unique integer value identifying this cuenta por cobrar. */
                 id: number;
             };
             cookie?: never;
@@ -45026,7 +45167,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un valor de entero único que identifique este cuenta por cobrar. */
+                /** @description A unique integer value identifying this cuenta por cobrar. */
                 id: number;
             };
             cookie?: never;
@@ -45046,11 +45187,11 @@ export interface operations {
     despacho_despachos_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -45119,7 +45260,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Despacho. */
+                /** @description A UUID string identifying this Despacho. */
                 id_despacho: string;
             };
             cookie?: never;
@@ -45141,7 +45282,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Despacho. */
+                /** @description A UUID string identifying this Despacho. */
                 id_despacho: string;
             };
             cookie?: never;
@@ -45163,7 +45304,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Despacho. */
+                /** @description A UUID string identifying this Despacho. */
                 id_despacho: string;
             };
             cookie?: never;
@@ -45183,7 +45324,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Despacho. */
+                /** @description A UUID string identifying this Despacho. */
                 id_despacho: string;
             };
             cookie?: never;
@@ -45205,7 +45346,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Despacho. */
+                /** @description A UUID string identifying this Despacho. */
                 id_despacho: string;
             };
             cookie?: never;
@@ -45227,7 +45368,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Despacho. */
+                /** @description A UUID string identifying this Despacho. */
                 id_despacho: string;
             };
             cookie?: never;
@@ -45249,7 +45390,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Despacho. */
+                /** @description A UUID string identifying this Despacho. */
                 id_despacho: string;
             };
             cookie?: never;
@@ -45271,7 +45412,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Despacho. */
+                /** @description A UUID string identifying this Despacho. */
                 id_despacho: string;
             };
             cookie?: never;
@@ -45293,7 +45434,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Despacho. */
+                /** @description A UUID string identifying this Despacho. */
                 id_despacho: string;
             };
             cookie?: never;
@@ -45313,11 +45454,11 @@ export interface operations {
     "despacho_detalles-despacho_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -45348,7 +45489,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Despacho. */
+                /** @description A UUID string identifying this Detalle de Despacho. */
                 id_detalle_despacho: string;
             };
             cookie?: never;
@@ -45385,11 +45526,11 @@ export interface operations {
     "finanzas_asignaciones-pago_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
                 /** @description Filtrar por UUID de Pago. */
                 pago?: string;
@@ -45453,7 +45594,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Asignación de Pago. */
+                /** @description A UUID string identifying this Asignación de Pago. */
                 id_asignacion: string;
             };
             cookie?: never;
@@ -45475,7 +45616,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Asignación de Pago. */
+                /** @description A UUID string identifying this Asignación de Pago. */
                 id_asignacion: string;
             };
             cookie?: never;
@@ -45499,11 +45640,11 @@ export interface operations {
     "finanzas_cajas-fisicas-usuario_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -45553,7 +45694,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Física de Usuario. */
+                /** @description A UUID string identifying this Caja Física de Usuario. */
                 id: string;
             };
             cookie?: never;
@@ -45575,7 +45716,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Física de Usuario. */
+                /** @description A UUID string identifying this Caja Física de Usuario. */
                 id: string;
             };
             cookie?: never;
@@ -45597,7 +45738,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Física de Usuario. */
+                /** @description A UUID string identifying this Caja Física de Usuario. */
                 id: string;
             };
             cookie?: never;
@@ -45617,7 +45758,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Física de Usuario. */
+                /** @description A UUID string identifying this Caja Física de Usuario. */
                 id: string;
             };
             cookie?: never;
@@ -45637,11 +45778,11 @@ export interface operations {
     "finanzas_cajas-fisicas_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -45689,11 +45830,11 @@ export interface operations {
     "finanzas_cajas-fisicas_tipo_caja_choices": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -45722,11 +45863,11 @@ export interface operations {
     "finanzas_cajas-fisicas_tipos_documento": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -45755,11 +45896,11 @@ export interface operations {
     "finanzas_cajas-fisicas_tipos_operacion": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -45790,7 +45931,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Física. */
+                /** @description A UUID string identifying this Caja Física. */
                 id_caja_fisica: string;
             };
             cookie?: never;
@@ -45812,7 +45953,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Física. */
+                /** @description A UUID string identifying this Caja Física. */
                 id_caja_fisica: string;
             };
             cookie?: never;
@@ -45834,7 +45975,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Física. */
+                /** @description A UUID string identifying this Caja Física. */
                 id_caja_fisica: string;
             };
             cookie?: never;
@@ -45854,7 +45995,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Física. */
+                /** @description A UUID string identifying this Caja Física. */
                 id_caja_fisica: string;
             };
             cookie?: never;
@@ -45876,7 +46017,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Física. */
+                /** @description A UUID string identifying this Caja Física. */
                 id_caja_fisica: string;
             };
             cookie?: never;
@@ -45898,7 +46039,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Física. */
+                /** @description A UUID string identifying this Caja Física. */
                 id_caja_fisica: string;
             };
             cookie?: never;
@@ -45920,7 +46061,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Física. */
+                /** @description A UUID string identifying this Caja Física. */
                 id_caja_fisica: string;
             };
             cookie?: never;
@@ -45940,11 +46081,11 @@ export interface operations {
     "finanzas_cajas-usuario_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -45994,7 +46135,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Virtual de Usuario. */
+                /** @description A UUID string identifying this Caja Virtual de Usuario. */
                 id: string;
             };
             cookie?: never;
@@ -46016,7 +46157,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Virtual de Usuario. */
+                /** @description A UUID string identifying this Caja Virtual de Usuario. */
                 id: string;
             };
             cookie?: never;
@@ -46038,7 +46179,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Virtual de Usuario. */
+                /** @description A UUID string identifying this Caja Virtual de Usuario. */
                 id: string;
             };
             cookie?: never;
@@ -46058,7 +46199,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Virtual de Usuario. */
+                /** @description A UUID string identifying this Caja Virtual de Usuario. */
                 id: string;
             };
             cookie?: never;
@@ -46078,11 +46219,11 @@ export interface operations {
     "finanzas_cajas-virtuales-auto_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -46132,7 +46273,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Virtual Automática. */
+                /** @description A UUID string identifying this Caja Virtual Automática. */
                 id_caja_virtual: string;
             };
             cookie?: never;
@@ -46154,7 +46295,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Virtual Automática. */
+                /** @description A UUID string identifying this Caja Virtual Automática. */
                 id_caja_virtual: string;
             };
             cookie?: never;
@@ -46176,7 +46317,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Virtual Automática. */
+                /** @description A UUID string identifying this Caja Virtual Automática. */
                 id_caja_virtual: string;
             };
             cookie?: never;
@@ -46196,7 +46337,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Virtual Automática. */
+                /** @description A UUID string identifying this Caja Virtual Automática. */
                 id_caja_virtual: string;
             };
             cookie?: never;
@@ -46216,11 +46357,11 @@ export interface operations {
     finanzas_cajas_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -46268,11 +46409,11 @@ export interface operations {
     finanzas_cajas_tipo_caja_choices: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -46303,7 +46444,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Virtual. */
+                /** @description A UUID string identifying this Caja Virtual. */
                 id_caja: string;
             };
             cookie?: never;
@@ -46325,7 +46466,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Virtual. */
+                /** @description A UUID string identifying this Caja Virtual. */
                 id_caja: string;
             };
             cookie?: never;
@@ -46347,7 +46488,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Virtual. */
+                /** @description A UUID string identifying this Caja Virtual. */
                 id_caja: string;
             };
             cookie?: never;
@@ -46367,7 +46508,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Virtual. */
+                /** @description A UUID string identifying this Caja Virtual. */
                 id_caja: string;
             };
             cookie?: never;
@@ -46389,7 +46530,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Virtual. */
+                /** @description A UUID string identifying this Caja Virtual. */
                 id_caja: string;
             };
             cookie?: never;
@@ -46411,7 +46552,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Virtual. */
+                /** @description A UUID string identifying this Caja Virtual. */
                 id_caja: string;
             };
             cookie?: never;
@@ -46455,11 +46596,11 @@ export interface operations {
     "finanzas_cuentas-bancarias-empresa_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -46509,7 +46650,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Cuenta Bancaria Empresa. */
+                /** @description A UUID string identifying this Cuenta Bancaria Empresa. */
                 id_cuenta_bancaria: string;
             };
             cookie?: never;
@@ -46531,7 +46672,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Cuenta Bancaria Empresa. */
+                /** @description A UUID string identifying this Cuenta Bancaria Empresa. */
                 id_cuenta_bancaria: string;
             };
             cookie?: never;
@@ -46553,7 +46694,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Cuenta Bancaria Empresa. */
+                /** @description A UUID string identifying this Cuenta Bancaria Empresa. */
                 id_cuenta_bancaria: string;
             };
             cookie?: never;
@@ -46573,7 +46714,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Cuenta Bancaria Empresa. */
+                /** @description A UUID string identifying this Cuenta Bancaria Empresa. */
                 id_cuenta_bancaria: string;
             };
             cookie?: never;
@@ -46595,7 +46736,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Cuenta Bancaria Empresa. */
+                /** @description A UUID string identifying this Cuenta Bancaria Empresa. */
                 id_cuenta_bancaria: string;
             };
             cookie?: never;
@@ -46615,11 +46756,11 @@ export interface operations {
     "finanzas_cuentas-bancarias_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -46669,7 +46810,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Cuenta Bancaria Empresa. */
+                /** @description A UUID string identifying this Cuenta Bancaria Empresa. */
                 id_cuenta_bancaria: string;
             };
             cookie?: never;
@@ -46691,7 +46832,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Cuenta Bancaria Empresa. */
+                /** @description A UUID string identifying this Cuenta Bancaria Empresa. */
                 id_cuenta_bancaria: string;
             };
             cookie?: never;
@@ -46713,7 +46854,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Cuenta Bancaria Empresa. */
+                /** @description A UUID string identifying this Cuenta Bancaria Empresa. */
                 id_cuenta_bancaria: string;
             };
             cookie?: never;
@@ -46733,7 +46874,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Cuenta Bancaria Empresa. */
+                /** @description A UUID string identifying this Cuenta Bancaria Empresa. */
                 id_cuenta_bancaria: string;
             };
             cookie?: never;
@@ -46755,7 +46896,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Cuenta Bancaria Empresa. */
+                /** @description A UUID string identifying this Cuenta Bancaria Empresa. */
                 id_cuenta_bancaria: string;
             };
             cookie?: never;
@@ -46775,11 +46916,11 @@ export interface operations {
     finanzas_datafono_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -46829,7 +46970,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Datafono. */
+                /** @description A UUID string identifying this Datafono. */
                 id_datafono: string;
             };
             cookie?: never;
@@ -46851,7 +46992,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Datafono. */
+                /** @description A UUID string identifying this Datafono. */
                 id_datafono: string;
             };
             cookie?: never;
@@ -46873,7 +47014,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Datafono. */
+                /** @description A UUID string identifying this Datafono. */
                 id_datafono: string;
             };
             cookie?: never;
@@ -46893,7 +47034,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Datafono. */
+                /** @description A UUID string identifying this Datafono. */
                 id_datafono: string;
             };
             cookie?: never;
@@ -46915,7 +47056,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Datafono. */
+                /** @description A UUID string identifying this Datafono. */
                 id_datafono: string;
             };
             cookie?: never;
@@ -46937,7 +47078,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Datafono. */
+                /** @description A UUID string identifying this Datafono. */
                 id_datafono: string;
             };
             cookie?: never;
@@ -46957,11 +47098,11 @@ export interface operations {
     finanzas_datafonos_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -47011,7 +47152,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Datafono. */
+                /** @description A UUID string identifying this Datafono. */
                 id_datafono: string;
             };
             cookie?: never;
@@ -47033,7 +47174,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Datafono. */
+                /** @description A UUID string identifying this Datafono. */
                 id_datafono: string;
             };
             cookie?: never;
@@ -47055,7 +47196,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Datafono. */
+                /** @description A UUID string identifying this Datafono. */
                 id_datafono: string;
             };
             cookie?: never;
@@ -47075,7 +47216,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Datafono. */
+                /** @description A UUID string identifying this Datafono. */
                 id_datafono: string;
             };
             cookie?: never;
@@ -47097,7 +47238,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Datafono. */
+                /** @description A UUID string identifying this Datafono. */
                 id_datafono: string;
             };
             cookie?: never;
@@ -47119,7 +47260,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Datafono. */
+                /** @description A UUID string identifying this Datafono. */
                 id_datafono: string;
             };
             cookie?: never;
@@ -47139,11 +47280,11 @@ export interface operations {
     "finanzas_depositos-datafono_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -47191,11 +47332,11 @@ export interface operations {
     "finanzas_depositos-datafono_depositos_pendientes": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -47226,7 +47367,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Depósito de Datafono. */
+                /** @description A UUID string identifying this Depósito de Datafono. */
                 id_deposito: string;
             };
             cookie?: never;
@@ -47248,7 +47389,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Depósito de Datafono. */
+                /** @description A UUID string identifying this Depósito de Datafono. */
                 id_deposito: string;
             };
             cookie?: never;
@@ -47270,7 +47411,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Depósito de Datafono. */
+                /** @description A UUID string identifying this Depósito de Datafono. */
                 id_deposito: string;
             };
             cookie?: never;
@@ -47290,7 +47431,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Depósito de Datafono. */
+                /** @description A UUID string identifying this Depósito de Datafono. */
                 id_deposito: string;
             };
             cookie?: never;
@@ -47312,7 +47453,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Depósito de Datafono. */
+                /** @description A UUID string identifying this Depósito de Datafono. */
                 id_deposito: string;
             };
             cookie?: never;
@@ -47325,6 +47466,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DepositoDatafono"];
+                };
+            };
+        };
+    };
+    "finanzas_equivalencias-trimonetarias_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EquivalenciasTrimonetariasInput"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquivalenciasTrimonetariasInput"];
                 };
             };
         };
@@ -47349,11 +47513,11 @@ export interface operations {
     "finanzas_metodos-pago-empresa-activas_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -47403,7 +47567,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este metodo pago empresa activa. */
+                /** @description A UUID string identifying this metodo pago empresa activa. */
                 id: string;
             };
             cookie?: never;
@@ -47425,7 +47589,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este metodo pago empresa activa. */
+                /** @description A UUID string identifying this metodo pago empresa activa. */
                 id: string;
             };
             cookie?: never;
@@ -47447,7 +47611,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este metodo pago empresa activa. */
+                /** @description A UUID string identifying this metodo pago empresa activa. */
                 id: string;
             };
             cookie?: never;
@@ -47467,7 +47631,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este metodo pago empresa activa. */
+                /** @description A UUID string identifying this metodo pago empresa activa. */
                 id: string;
             };
             cookie?: never;
@@ -47487,11 +47651,11 @@ export interface operations {
     "finanzas_metodos-pago_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -47539,11 +47703,11 @@ export interface operations {
     "finanzas_metodos-pago_buscar_reutilizar": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -47574,7 +47738,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Método de Pago. */
+                /** @description A UUID string identifying this Método de Pago. */
                 id_metodo_pago: string;
             };
             cookie?: never;
@@ -47596,7 +47760,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Método de Pago. */
+                /** @description A UUID string identifying this Método de Pago. */
                 id_metodo_pago: string;
             };
             cookie?: never;
@@ -47618,7 +47782,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Método de Pago. */
+                /** @description A UUID string identifying this Método de Pago. */
                 id_metodo_pago: string;
             };
             cookie?: never;
@@ -47638,7 +47802,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Método de Pago. */
+                /** @description A UUID string identifying this Método de Pago. */
                 id_metodo_pago: string;
             };
             cookie?: never;
@@ -47660,7 +47824,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Método de Pago. */
+                /** @description A UUID string identifying this Método de Pago. */
                 id_metodo_pago: string;
             };
             cookie?: never;
@@ -47682,7 +47846,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Método de Pago. */
+                /** @description A UUID string identifying this Método de Pago. */
                 id_metodo_pago: string;
             };
             cookie?: never;
@@ -47702,11 +47866,11 @@ export interface operations {
     "finanzas_monedas-empresa-activas_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -47756,7 +47920,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este moneda empresa activa. */
+                /** @description A UUID string identifying this moneda empresa activa. */
                 id: string;
             };
             cookie?: never;
@@ -47778,7 +47942,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este moneda empresa activa. */
+                /** @description A UUID string identifying this moneda empresa activa. */
                 id: string;
             };
             cookie?: never;
@@ -47800,7 +47964,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este moneda empresa activa. */
+                /** @description A UUID string identifying this moneda empresa activa. */
                 id: string;
             };
             cookie?: never;
@@ -47820,7 +47984,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este moneda empresa activa. */
+                /** @description A UUID string identifying this moneda empresa activa. */
                 id: string;
             };
             cookie?: never;
@@ -47840,11 +48004,11 @@ export interface operations {
     finanzas_monedas_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -47892,11 +48056,11 @@ export interface operations {
     finanzas_monedas_activas: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -47927,7 +48091,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este moneda. */
+                /** @description A UUID string identifying this moneda. */
                 id_moneda: string;
             };
             cookie?: never;
@@ -47949,7 +48113,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este moneda. */
+                /** @description A UUID string identifying this moneda. */
                 id_moneda: string;
             };
             cookie?: never;
@@ -47971,7 +48135,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este moneda. */
+                /** @description A UUID string identifying this moneda. */
                 id_moneda: string;
             };
             cookie?: never;
@@ -47991,7 +48155,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este moneda. */
+                /** @description A UUID string identifying this moneda. */
                 id_moneda: string;
             };
             cookie?: never;
@@ -48011,11 +48175,11 @@ export interface operations {
     "finanzas_movimientos-caja-banco_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -48065,7 +48229,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Movimiento de Caja/Banco. */
+                /** @description A UUID string identifying this Movimiento de Caja/Banco. */
                 id_movimiento: string;
             };
             cookie?: never;
@@ -48087,7 +48251,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Movimiento de Caja/Banco. */
+                /** @description A UUID string identifying this Movimiento de Caja/Banco. */
                 id_movimiento: string;
             };
             cookie?: never;
@@ -48109,7 +48273,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Movimiento de Caja/Banco. */
+                /** @description A UUID string identifying this Movimiento de Caja/Banco. */
                 id_movimiento: string;
             };
             cookie?: never;
@@ -48129,7 +48293,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Movimiento de Caja/Banco. */
+                /** @description A UUID string identifying this Movimiento de Caja/Banco. */
                 id_movimiento: string;
             };
             cookie?: never;
@@ -48149,11 +48313,11 @@ export interface operations {
     "finanzas_overrides-metodos-pago_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -48203,7 +48367,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Override Método de Pago. */
+                /** @description A UUID string identifying this Override Método de Pago. */
                 id_override: string;
             };
             cookie?: never;
@@ -48225,7 +48389,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Override Método de Pago. */
+                /** @description A UUID string identifying this Override Método de Pago. */
                 id_override: string;
             };
             cookie?: never;
@@ -48247,7 +48411,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Override Método de Pago. */
+                /** @description A UUID string identifying this Override Método de Pago. */
                 id_override: string;
             };
             cookie?: never;
@@ -48267,7 +48431,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Override Método de Pago. */
+                /** @description A UUID string identifying this Override Método de Pago. */
                 id_override: string;
             };
             cookie?: never;
@@ -48287,11 +48451,11 @@ export interface operations {
     "finanzas_pagos-terceros_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -48341,7 +48505,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago de Tercero. */
+                /** @description A UUID string identifying this Pago de Tercero. */
                 id_pago_tercero: string;
             };
             cookie?: never;
@@ -48363,7 +48527,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago de Tercero. */
+                /** @description A UUID string identifying this Pago de Tercero. */
                 id_pago_tercero: string;
             };
             cookie?: never;
@@ -48385,7 +48549,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago de Tercero. */
+                /** @description A UUID string identifying this Pago de Tercero. */
                 id_pago_tercero: string;
             };
             cookie?: never;
@@ -48405,7 +48569,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago de Tercero. */
+                /** @description A UUID string identifying this Pago de Tercero. */
                 id_pago_tercero: string;
             };
             cookie?: never;
@@ -48427,7 +48591,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago de Tercero. */
+                /** @description A UUID string identifying this Pago de Tercero. */
                 id_pago_tercero: string;
             };
             cookie?: never;
@@ -48449,7 +48613,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago de Tercero. */
+                /** @description A UUID string identifying this Pago de Tercero. */
                 id_pago_tercero: string;
             };
             cookie?: never;
@@ -48471,7 +48635,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago de Tercero. */
+                /** @description A UUID string identifying this Pago de Tercero. */
                 id_pago_tercero: string;
             };
             cookie?: never;
@@ -48493,7 +48657,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago de Tercero. */
+                /** @description A UUID string identifying this Pago de Tercero. */
                 id_pago_tercero: string;
             };
             cookie?: never;
@@ -48515,7 +48679,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago de Tercero. */
+                /** @description A UUID string identifying this Pago de Tercero. */
                 id_pago_tercero: string;
             };
             cookie?: never;
@@ -48535,11 +48699,11 @@ export interface operations {
     finanzas_pagos_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -48587,11 +48751,11 @@ export interface operations {
     finanzas_pagos_tipos_documento: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -48620,11 +48784,11 @@ export interface operations {
     finanzas_pagos_tipos_operacion: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -48655,7 +48819,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago. */
+                /** @description A UUID string identifying this Pago. */
                 id_pago: string;
             };
             cookie?: never;
@@ -48677,7 +48841,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago. */
+                /** @description A UUID string identifying this Pago. */
                 id_pago: string;
             };
             cookie?: never;
@@ -48699,7 +48863,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago. */
+                /** @description A UUID string identifying this Pago. */
                 id_pago: string;
             };
             cookie?: never;
@@ -48719,7 +48883,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago. */
+                /** @description A UUID string identifying this Pago. */
                 id_pago: string;
             };
             cookie?: never;
@@ -48741,7 +48905,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago. */
+                /** @description A UUID string identifying this Pago. */
                 id_pago: string;
             };
             cookie?: never;
@@ -48770,7 +48934,7 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago. */
+                /** @description A UUID string identifying this Pago. */
                 id_pago: string;
             };
             cookie?: never;
@@ -48790,11 +48954,11 @@ export interface operations {
     "finanzas_plantillas-maestro-cajas_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -48844,7 +49008,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Plantilla Maestro Cajas Virtuales. */
+                /** @description A UUID string identifying this Plantilla Maestro Cajas Virtuales. */
                 id_plantilla_maestro: string;
             };
             cookie?: never;
@@ -48866,7 +49030,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Plantilla Maestro Cajas Virtuales. */
+                /** @description A UUID string identifying this Plantilla Maestro Cajas Virtuales. */
                 id_plantilla_maestro: string;
             };
             cookie?: never;
@@ -48888,7 +49052,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Plantilla Maestro Cajas Virtuales. */
+                /** @description A UUID string identifying this Plantilla Maestro Cajas Virtuales. */
                 id_plantilla_maestro: string;
             };
             cookie?: never;
@@ -48908,7 +49072,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Plantilla Maestro Cajas Virtuales. */
+                /** @description A UUID string identifying this Plantilla Maestro Cajas Virtuales. */
                 id_plantilla_maestro: string;
             };
             cookie?: never;
@@ -48930,7 +49094,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Plantilla Maestro Cajas Virtuales. */
+                /** @description A UUID string identifying this Plantilla Maestro Cajas Virtuales. */
                 id_plantilla_maestro: string;
             };
             cookie?: never;
@@ -48950,11 +49114,11 @@ export interface operations {
     "finanzas_sesiones-caja_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -49004,7 +49168,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Sesión de Caja Física. */
+                /** @description A UUID string identifying this Sesión de Caja Física. */
                 id_sesion: string;
             };
             cookie?: never;
@@ -49026,7 +49190,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Sesión de Caja Física. */
+                /** @description A UUID string identifying this Sesión de Caja Física. */
                 id_sesion: string;
             };
             cookie?: never;
@@ -49048,7 +49212,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Sesión de Caja Física. */
+                /** @description A UUID string identifying this Sesión de Caja Física. */
                 id_sesion: string;
             };
             cookie?: never;
@@ -49068,7 +49232,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Sesión de Caja Física. */
+                /** @description A UUID string identifying this Sesión de Caja Física. */
                 id_sesion: string;
             };
             cookie?: never;
@@ -49090,7 +49254,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Sesión de Caja Física. */
+                /** @description A UUID string identifying this Sesión de Caja Física. */
                 id_sesion: string;
             };
             cookie?: never;
@@ -49112,7 +49276,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Sesión de Caja Física. */
+                /** @description A UUID string identifying this Sesión de Caja Física. */
                 id_sesion: string;
             };
             cookie?: never;
@@ -49132,11 +49296,11 @@ export interface operations {
     "finanzas_sesiones-datafono_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -49186,7 +49350,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Sesión de Datafono. */
+                /** @description A UUID string identifying this Sesión de Datafono. */
                 id_sesion: string;
             };
             cookie?: never;
@@ -49208,7 +49372,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Sesión de Datafono. */
+                /** @description A UUID string identifying this Sesión de Datafono. */
                 id_sesion: string;
             };
             cookie?: never;
@@ -49230,7 +49394,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Sesión de Datafono. */
+                /** @description A UUID string identifying this Sesión de Datafono. */
                 id_sesion: string;
             };
             cookie?: never;
@@ -49250,7 +49414,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Sesión de Datafono. */
+                /** @description A UUID string identifying this Sesión de Datafono. */
                 id_sesion: string;
             };
             cookie?: never;
@@ -49287,11 +49451,11 @@ export interface operations {
     "finanzas_tasas-cambio_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -49341,7 +49505,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este tasa cambio. */
+                /** @description A UUID string identifying this tasa cambio. */
                 id_tasa_cambio: string;
             };
             cookie?: never;
@@ -49363,7 +49527,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este tasa cambio. */
+                /** @description A UUID string identifying this tasa cambio. */
                 id_tasa_cambio: string;
             };
             cookie?: never;
@@ -49385,7 +49549,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este tasa cambio. */
+                /** @description A UUID string identifying this tasa cambio. */
                 id_tasa_cambio: string;
             };
             cookie?: never;
@@ -49405,7 +49569,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este tasa cambio. */
+                /** @description A UUID string identifying this tasa cambio. */
                 id_tasa_cambio: string;
             };
             cookie?: never;
@@ -49422,14 +49586,152 @@ export interface operations {
             };
         };
     };
+    "finanzas_tipos-tasa-cambio_list": {
+        parameters: {
+            query?: {
+                /** @description A search term. */
+                search?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["TipoTasaCambio"][];
+                    };
+                };
+            };
+        };
+    };
+    "finanzas_tipos-tasa-cambio_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["TipoTasaCambio"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TipoTasaCambio"];
+                };
+            };
+        };
+    };
+    "finanzas_tipos-tasa-cambio_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Tipo de Tasa de Cambio. */
+                id_tipo_tasa: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TipoTasaCambio"];
+                };
+            };
+        };
+    };
+    "finanzas_tipos-tasa-cambio_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Tipo de Tasa de Cambio. */
+                id_tipo_tasa: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["TipoTasaCambio"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TipoTasaCambio"];
+                };
+            };
+        };
+    };
+    "finanzas_tipos-tasa-cambio_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Tipo de Tasa de Cambio. */
+                id_tipo_tasa: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "finanzas_tipos-tasa-cambio_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this Tipo de Tasa de Cambio. */
+                id_tipo_tasa: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["TipoTasaCambio"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TipoTasaCambio"];
+                };
+            };
+        };
+    };
     "finanzas_transacciones-datafono_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -49479,7 +49781,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Transacción de Datafono. */
+                /** @description A UUID string identifying this Transacción de Datafono. */
                 id_transaccion_datafono: string;
             };
             cookie?: never;
@@ -49501,7 +49803,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Transacción de Datafono. */
+                /** @description A UUID string identifying this Transacción de Datafono. */
                 id_transaccion_datafono: string;
             };
             cookie?: never;
@@ -49523,7 +49825,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Transacción de Datafono. */
+                /** @description A UUID string identifying this Transacción de Datafono. */
                 id_transaccion_datafono: string;
             };
             cookie?: never;
@@ -49543,7 +49845,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Transacción de Datafono. */
+                /** @description A UUID string identifying this Transacción de Datafono. */
                 id_transaccion_datafono: string;
             };
             cookie?: never;
@@ -49563,9 +49865,9 @@ export interface operations {
     "finanzas_transacciones-financieras_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
             };
             header?: never;
@@ -49608,7 +49910,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Transacción Financiera. */
+                /** @description A UUID string identifying this Transacción Financiera. */
                 id_transaccion: string;
             };
             cookie?: never;
@@ -49630,7 +49932,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Transacción Financiera. */
+                /** @description A UUID string identifying this Transacción Financiera. */
                 id_transaccion: string;
             };
             cookie?: never;
@@ -49652,7 +49954,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Transacción Financiera. */
+                /** @description A UUID string identifying this Transacción Financiera. */
                 id_transaccion: string;
             };
             cookie?: never;
@@ -49672,7 +49974,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Transacción Financiera. */
+                /** @description A UUID string identifying this Transacción Financiera. */
                 id_transaccion: string;
             };
             cookie?: never;
@@ -49692,11 +49994,11 @@ export interface operations {
     "fiscal_configuracion-fiscal_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -49746,7 +50048,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este configuracion fiscal empresa. */
+                /** @description A UUID string identifying this configuracion fiscal empresa. */
                 id: string;
             };
             cookie?: never;
@@ -49768,7 +50070,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este configuracion fiscal empresa. */
+                /** @description A UUID string identifying this configuracion fiscal empresa. */
                 id: string;
             };
             cookie?: never;
@@ -49790,7 +50092,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este configuracion fiscal empresa. */
+                /** @description A UUID string identifying this configuracion fiscal empresa. */
                 id: string;
             };
             cookie?: never;
@@ -49810,7 +50112,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este configuracion fiscal empresa. */
+                /** @description A UUID string identifying this configuracion fiscal empresa. */
                 id: string;
             };
             cookie?: never;
@@ -49898,11 +50200,11 @@ export interface operations {
     "fiscal_pagos-parafiscales_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -49952,7 +50254,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago de Contribución Parafiscal. */
+                /** @description A UUID string identifying this Pago de Contribución Parafiscal. */
                 id_pago_parafiscal: string;
             };
             cookie?: never;
@@ -49974,7 +50276,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago de Contribución Parafiscal. */
+                /** @description A UUID string identifying this Pago de Contribución Parafiscal. */
                 id_pago_parafiscal: string;
             };
             cookie?: never;
@@ -49996,7 +50298,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago de Contribución Parafiscal. */
+                /** @description A UUID string identifying this Pago de Contribución Parafiscal. */
                 id_pago_parafiscal: string;
             };
             cookie?: never;
@@ -50016,7 +50318,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago de Contribución Parafiscal. */
+                /** @description A UUID string identifying this Pago de Contribución Parafiscal. */
                 id_pago_parafiscal: string;
             };
             cookie?: never;
@@ -50038,7 +50340,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago de Contribución Parafiscal. */
+                /** @description A UUID string identifying this Pago de Contribución Parafiscal. */
                 id_pago_parafiscal: string;
             };
             cookie?: never;
@@ -50060,7 +50362,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pago de Contribución Parafiscal. */
+                /** @description A UUID string identifying this Pago de Contribución Parafiscal. */
                 id_pago_parafiscal: string;
             };
             cookie?: never;
@@ -50117,11 +50419,11 @@ export interface operations {
     "fiscal_tasas-iva_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -50190,7 +50492,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este tasa iva empresa. */
+                /** @description A UUID string identifying this tasa iva empresa. */
                 id: string;
             };
             cookie?: never;
@@ -50212,7 +50514,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este tasa iva empresa. */
+                /** @description A UUID string identifying this tasa iva empresa. */
                 id: string;
             };
             cookie?: never;
@@ -50234,7 +50536,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este tasa iva empresa. */
+                /** @description A UUID string identifying this tasa iva empresa. */
                 id: string;
             };
             cookie?: never;
@@ -50254,7 +50556,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este tasa iva empresa. */
+                /** @description A UUID string identifying this tasa iva empresa. */
                 id: string;
             };
             cookie?: never;
@@ -50274,11 +50576,11 @@ export interface operations {
     "gastos_categorias-gasto_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -50326,11 +50628,11 @@ export interface operations {
     "gastos_categorias-gasto_activas": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -50361,7 +50663,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este categoria gasto. */
+                /** @description A UUID string identifying this categoria gasto. */
                 id_categoria_gasto: string;
             };
             cookie?: never;
@@ -50383,7 +50685,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este categoria gasto. */
+                /** @description A UUID string identifying this categoria gasto. */
                 id_categoria_gasto: string;
             };
             cookie?: never;
@@ -50405,7 +50707,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este categoria gasto. */
+                /** @description A UUID string identifying this categoria gasto. */
                 id_categoria_gasto: string;
             };
             cookie?: never;
@@ -50425,7 +50727,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este categoria gasto. */
+                /** @description A UUID string identifying this categoria gasto. */
                 id_categoria_gasto: string;
             };
             cookie?: never;
@@ -50445,11 +50747,11 @@ export interface operations {
     "gastos_detalles-gasto_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -50499,7 +50801,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este detalle gasto. */
+                /** @description A UUID string identifying this detalle gasto. */
                 id_detalle_gasto: string;
             };
             cookie?: never;
@@ -50521,7 +50823,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este detalle gasto. */
+                /** @description A UUID string identifying this detalle gasto. */
                 id_detalle_gasto: string;
             };
             cookie?: never;
@@ -50543,7 +50845,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este detalle gasto. */
+                /** @description A UUID string identifying this detalle gasto. */
                 id_detalle_gasto: string;
             };
             cookie?: never;
@@ -50563,7 +50865,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este detalle gasto. */
+                /** @description A UUID string identifying this detalle gasto. */
                 id_detalle_gasto: string;
             };
             cookie?: never;
@@ -50583,11 +50885,11 @@ export interface operations {
     gastos_gastos_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -50635,11 +50937,11 @@ export interface operations {
     gastos_gastos_pendientes_aprobacion: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -50668,11 +50970,11 @@ export interface operations {
     gastos_gastos_resumen_por_categoria: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -50703,7 +51005,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este gasto. */
+                /** @description A UUID string identifying this gasto. */
                 id_gasto: string;
             };
             cookie?: never;
@@ -50725,7 +51027,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este gasto. */
+                /** @description A UUID string identifying this gasto. */
                 id_gasto: string;
             };
             cookie?: never;
@@ -50747,7 +51049,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este gasto. */
+                /** @description A UUID string identifying this gasto. */
                 id_gasto: string;
             };
             cookie?: never;
@@ -50767,7 +51069,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este gasto. */
+                /** @description A UUID string identifying this gasto. */
                 id_gasto: string;
             };
             cookie?: never;
@@ -50789,7 +51091,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este gasto. */
+                /** @description A UUID string identifying this gasto. */
                 id_gasto: string;
             };
             cookie?: never;
@@ -50811,7 +51113,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este gasto. */
+                /** @description A UUID string identifying this gasto. */
                 id_gasto: string;
             };
             cookie?: never;
@@ -50831,11 +51133,11 @@ export interface operations {
     "gastos_reembolsos-gasto_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -50883,11 +51185,11 @@ export interface operations {
     "gastos_reembolsos-gasto_pendientes_pago": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -50918,7 +51220,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este reembolso gasto. */
+                /** @description A UUID string identifying this reembolso gasto. */
                 id_reembolso: string;
             };
             cookie?: never;
@@ -50940,7 +51242,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este reembolso gasto. */
+                /** @description A UUID string identifying this reembolso gasto. */
                 id_reembolso: string;
             };
             cookie?: never;
@@ -50962,7 +51264,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este reembolso gasto. */
+                /** @description A UUID string identifying this reembolso gasto. */
                 id_reembolso: string;
             };
             cookie?: never;
@@ -50982,7 +51284,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este reembolso gasto. */
+                /** @description A UUID string identifying this reembolso gasto. */
                 id_reembolso: string;
             };
             cookie?: never;
@@ -51004,7 +51306,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este reembolso gasto. */
+                /** @description A UUID string identifying this reembolso gasto. */
                 id_reembolso: string;
             };
             cookie?: never;
@@ -51026,7 +51328,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este reembolso gasto. */
+                /** @description A UUID string identifying this reembolso gasto. */
                 id_reembolso: string;
             };
             cookie?: never;
@@ -51046,11 +51348,11 @@ export interface operations {
     "gestion-aprobaciones_flujos-aprobacion_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -51100,7 +51402,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este flujo aprobacion. */
+                /** @description A UUID string identifying this flujo aprobacion. */
                 id_flujo_aprobacion: string;
             };
             cookie?: never;
@@ -51122,7 +51424,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este flujo aprobacion. */
+                /** @description A UUID string identifying this flujo aprobacion. */
                 id_flujo_aprobacion: string;
             };
             cookie?: never;
@@ -51144,7 +51446,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este flujo aprobacion. */
+                /** @description A UUID string identifying this flujo aprobacion. */
                 id_flujo_aprobacion: string;
             };
             cookie?: never;
@@ -51164,7 +51466,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este flujo aprobacion. */
+                /** @description A UUID string identifying this flujo aprobacion. */
                 id_flujo_aprobacion: string;
             };
             cookie?: never;
@@ -51184,11 +51486,11 @@ export interface operations {
     "gestion-aprobaciones_registros-aprobacion_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -51238,7 +51540,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este registro aprobacion. */
+                /** @description A UUID string identifying this registro aprobacion. */
                 id_registro_aprobacion: string;
             };
             cookie?: never;
@@ -51260,7 +51562,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este registro aprobacion. */
+                /** @description A UUID string identifying this registro aprobacion. */
                 id_registro_aprobacion: string;
             };
             cookie?: never;
@@ -51282,7 +51584,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este registro aprobacion. */
+                /** @description A UUID string identifying this registro aprobacion. */
                 id_registro_aprobacion: string;
             };
             cookie?: never;
@@ -51302,7 +51604,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este registro aprobacion. */
+                /** @description A UUID string identifying this registro aprobacion. */
                 id_registro_aprobacion: string;
             };
             cookie?: never;
@@ -51322,11 +51624,11 @@ export interface operations {
     "gestion-aprobaciones_solicitudes-aprobacion_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -51376,7 +51678,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este solicitud aprobacion. */
+                /** @description A UUID string identifying this solicitud aprobacion. */
                 id_solicitud_aprobacion: string;
             };
             cookie?: never;
@@ -51398,7 +51700,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este solicitud aprobacion. */
+                /** @description A UUID string identifying this solicitud aprobacion. */
                 id_solicitud_aprobacion: string;
             };
             cookie?: never;
@@ -51420,7 +51722,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este solicitud aprobacion. */
+                /** @description A UUID string identifying this solicitud aprobacion. */
                 id_solicitud_aprobacion: string;
             };
             cookie?: never;
@@ -51440,7 +51742,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este solicitud aprobacion. */
+                /** @description A UUID string identifying this solicitud aprobacion. */
                 id_solicitud_aprobacion: string;
             };
             cookie?: never;
@@ -51462,7 +51764,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este solicitud aprobacion. */
+                /** @description A UUID string identifying this solicitud aprobacion. */
                 id_solicitud_aprobacion: string;
             };
             cookie?: never;
@@ -51486,11 +51788,11 @@ export interface operations {
     "gestion-aprobaciones_tipos-aprobacion_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -51540,7 +51842,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Tipo de Aprobación. */
+                /** @description A UUID string identifying this Tipo de Aprobación. */
                 id_tipo_aprobacion: string;
             };
             cookie?: never;
@@ -51562,7 +51864,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Tipo de Aprobación. */
+                /** @description A UUID string identifying this Tipo de Aprobación. */
                 id_tipo_aprobacion: string;
             };
             cookie?: never;
@@ -51584,7 +51886,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Tipo de Aprobación. */
+                /** @description A UUID string identifying this Tipo de Aprobación. */
                 id_tipo_aprobacion: string;
             };
             cookie?: never;
@@ -51604,7 +51906,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Tipo de Aprobación. */
+                /** @description A UUID string identifying this Tipo de Aprobación. */
                 id_tipo_aprobacion: string;
             };
             cookie?: never;
@@ -51624,11 +51926,11 @@ export interface operations {
     "gestion-documental_carpetas_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -51678,7 +51980,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este carpeta. */
+                /** @description A UUID string identifying this carpeta. */
                 id_carpeta: string;
             };
             cookie?: never;
@@ -51700,7 +52002,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este carpeta. */
+                /** @description A UUID string identifying this carpeta. */
                 id_carpeta: string;
             };
             cookie?: never;
@@ -51722,7 +52024,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este carpeta. */
+                /** @description A UUID string identifying this carpeta. */
                 id_carpeta: string;
             };
             cookie?: never;
@@ -51742,7 +52044,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este carpeta. */
+                /** @description A UUID string identifying this carpeta. */
                 id_carpeta: string;
             };
             cookie?: never;
@@ -51762,11 +52064,11 @@ export interface operations {
     "gestion-documental_documentos_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -51835,7 +52137,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este documento. */
+                /** @description A UUID string identifying this documento. */
                 id_documento: string;
             };
             cookie?: never;
@@ -51857,7 +52159,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este documento. */
+                /** @description A UUID string identifying this documento. */
                 id_documento: string;
             };
             cookie?: never;
@@ -51879,7 +52181,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este documento. */
+                /** @description A UUID string identifying this documento. */
                 id_documento: string;
             };
             cookie?: never;
@@ -51899,7 +52201,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este documento. */
+                /** @description A UUID string identifying this documento. */
                 id_documento: string;
             };
             cookie?: never;
@@ -51921,7 +52223,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este documento. */
+                /** @description A UUID string identifying this documento. */
                 id_documento: string;
             };
             cookie?: never;
@@ -51943,7 +52245,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este documento. */
+                /** @description A UUID string identifying this documento. */
                 id_documento: string;
             };
             cookie?: never;
@@ -51961,11 +52263,11 @@ export interface operations {
     "gestion-documental_permisos-documento_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -52015,7 +52317,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este permiso documento. */
+                /** @description A UUID string identifying this permiso documento. */
                 id_permiso_documento: string;
             };
             cookie?: never;
@@ -52037,7 +52339,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este permiso documento. */
+                /** @description A UUID string identifying this permiso documento. */
                 id_permiso_documento: string;
             };
             cookie?: never;
@@ -52059,7 +52361,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este permiso documento. */
+                /** @description A UUID string identifying this permiso documento. */
                 id_permiso_documento: string;
             };
             cookie?: never;
@@ -52079,7 +52381,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este permiso documento. */
+                /** @description A UUID string identifying this permiso documento. */
                 id_permiso_documento: string;
             };
             cookie?: never;
@@ -52099,11 +52401,11 @@ export interface operations {
     "gestion-documental_vinculos-documento_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -52153,7 +52455,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este vinculo documento. */
+                /** @description A UUID string identifying this vinculo documento. */
                 id_vinculo: string;
             };
             cookie?: never;
@@ -52175,7 +52477,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este vinculo documento. */
+                /** @description A UUID string identifying this vinculo documento. */
                 id_vinculo: string;
             };
             cookie?: never;
@@ -52197,7 +52499,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este vinculo documento. */
+                /** @description A UUID string identifying this vinculo documento. */
                 id_vinculo: string;
             };
             cookie?: never;
@@ -52217,7 +52519,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este vinculo documento. */
+                /** @description A UUID string identifying this vinculo documento. */
                 id_vinculo: string;
             };
             cookie?: never;
@@ -52254,11 +52556,11 @@ export interface operations {
     "integracion-b2b_configuracion-integracion_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -52308,7 +52610,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este configuracion integracion. */
+                /** @description A UUID string identifying this configuracion integracion. */
                 id_configuracion: string;
             };
             cookie?: never;
@@ -52330,7 +52632,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este configuracion integracion. */
+                /** @description A UUID string identifying this configuracion integracion. */
                 id_configuracion: string;
             };
             cookie?: never;
@@ -52352,7 +52654,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este configuracion integracion. */
+                /** @description A UUID string identifying this configuracion integracion. */
                 id_configuracion: string;
             };
             cookie?: never;
@@ -52372,7 +52674,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este configuracion integracion. */
+                /** @description A UUID string identifying this configuracion integracion. */
                 id_configuracion: string;
             };
             cookie?: never;
@@ -52392,11 +52694,11 @@ export interface operations {
     "integracion-b2b_logs-integracion_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -52446,7 +52748,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este log integracion. */
+                /** @description A UUID string identifying this log integracion. */
                 id_log_integracion: string;
             };
             cookie?: never;
@@ -52468,7 +52770,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este log integracion. */
+                /** @description A UUID string identifying this log integracion. */
                 id_log_integracion: string;
             };
             cookie?: never;
@@ -52490,7 +52792,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este log integracion. */
+                /** @description A UUID string identifying this log integracion. */
                 id_log_integracion: string;
             };
             cookie?: never;
@@ -52510,7 +52812,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este log integracion. */
+                /** @description A UUID string identifying this log integracion. */
                 id_log_integracion: string;
             };
             cookie?: never;
@@ -52530,11 +52832,11 @@ export interface operations {
     "integracion-b2b_mapeo-campos_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -52584,7 +52886,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este mapeo campo. */
+                /** @description A UUID string identifying this mapeo campo. */
                 id_mapeo_campo: string;
             };
             cookie?: never;
@@ -52606,7 +52908,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este mapeo campo. */
+                /** @description A UUID string identifying this mapeo campo. */
                 id_mapeo_campo: string;
             };
             cookie?: never;
@@ -52628,7 +52930,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este mapeo campo. */
+                /** @description A UUID string identifying this mapeo campo. */
                 id_mapeo_campo: string;
             };
             cookie?: never;
@@ -52648,7 +52950,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este mapeo campo. */
+                /** @description A UUID string identifying this mapeo campo. */
                 id_mapeo_campo: string;
             };
             cookie?: never;
@@ -52668,11 +52970,11 @@ export interface operations {
     "integration-hub_instancias_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -52959,11 +53261,11 @@ export interface operations {
     "integration-hub_jobs_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -53059,11 +53361,11 @@ export interface operations {
     "integration-hub_outbox_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -53148,9 +53450,9 @@ export interface operations {
     "integration-hub_proveedores_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
             };
             header?: never;
@@ -53193,7 +53495,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Conector Proveedor. */
+                /** @description A UUID string identifying this Conector Proveedor. */
                 id_proveedor: string;
             };
             cookie?: never;
@@ -53215,7 +53517,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Conector Proveedor. */
+                /** @description A UUID string identifying this Conector Proveedor. */
                 id_proveedor: string;
             };
             cookie?: never;
@@ -53237,7 +53539,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Conector Proveedor. */
+                /** @description A UUID string identifying this Conector Proveedor. */
                 id_proveedor: string;
             };
             cookie?: never;
@@ -53257,7 +53559,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Conector Proveedor. */
+                /** @description A UUID string identifying this Conector Proveedor. */
                 id_proveedor: string;
             };
             cookie?: never;
@@ -53294,11 +53596,11 @@ export interface operations {
     "inventario_categorias-producto_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -53348,7 +53650,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Categoría de Producto. */
+                /** @description A UUID string identifying this Categoría de Producto. */
                 id_categoria_producto: string;
             };
             cookie?: never;
@@ -53370,7 +53672,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Categoría de Producto. */
+                /** @description A UUID string identifying this Categoría de Producto. */
                 id_categoria_producto: string;
             };
             cookie?: never;
@@ -53392,7 +53694,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Categoría de Producto. */
+                /** @description A UUID string identifying this Categoría de Producto. */
                 id_categoria_producto: string;
             };
             cookie?: never;
@@ -53412,7 +53714,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Categoría de Producto. */
+                /** @description A UUID string identifying this Categoría de Producto. */
                 id_categoria_producto: string;
             };
             cookie?: never;
@@ -53432,11 +53734,11 @@ export interface operations {
     "inventario_conversiones-unidad-medida_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -53486,7 +53788,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Conversión de Unidad de Medida. */
+                /** @description A UUID string identifying this Conversión de Unidad de Medida. */
                 id_conversion: string;
             };
             cookie?: never;
@@ -53508,7 +53810,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Conversión de Unidad de Medida. */
+                /** @description A UUID string identifying this Conversión de Unidad de Medida. */
                 id_conversion: string;
             };
             cookie?: never;
@@ -53530,7 +53832,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Conversión de Unidad de Medida. */
+                /** @description A UUID string identifying this Conversión de Unidad de Medida. */
                 id_conversion: string;
             };
             cookie?: never;
@@ -53550,7 +53852,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Conversión de Unidad de Medida. */
+                /** @description A UUID string identifying this Conversión de Unidad de Medida. */
                 id_conversion: string;
             };
             cookie?: never;
@@ -53570,11 +53872,11 @@ export interface operations {
     inventario_entregas_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -53726,11 +54028,11 @@ export interface operations {
     "inventario_lotes-producto_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -53780,7 +54082,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Lote de Producto. */
+                /** @description A UUID string identifying this Lote de Producto. */
                 id_lote: string;
             };
             cookie?: never;
@@ -53802,7 +54104,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Lote de Producto. */
+                /** @description A UUID string identifying this Lote de Producto. */
                 id_lote: string;
             };
             cookie?: never;
@@ -53822,11 +54124,11 @@ export interface operations {
     "inventario_movimientos-inventario_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -53880,7 +54182,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Movimiento de Inventario. */
+                /** @description A UUID string identifying this Movimiento de Inventario. */
                 id_movimiento_inventario: string;
             };
             cookie?: never;
@@ -53900,11 +54202,11 @@ export interface operations {
     "inventario_pasos-operacion_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -53954,7 +54256,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Paso de Operación. */
+                /** @description A UUID string identifying this Paso de Operación. */
                 id_paso_operacion: string;
             };
             cookie?: never;
@@ -53976,7 +54278,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Paso de Operación. */
+                /** @description A UUID string identifying this Paso de Operación. */
                 id_paso_operacion: string;
             };
             cookie?: never;
@@ -53998,7 +54300,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Paso de Operación. */
+                /** @description A UUID string identifying this Paso de Operación. */
                 id_paso_operacion: string;
             };
             cookie?: never;
@@ -54018,7 +54320,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Paso de Operación. */
+                /** @description A UUID string identifying this Paso de Operación. */
                 id_paso_operacion: string;
             };
             cookie?: never;
@@ -54038,11 +54340,11 @@ export interface operations {
     inventario_productos_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -54092,7 +54394,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Producto. */
+                /** @description A UUID string identifying this Producto. */
                 id_producto: string;
             };
             cookie?: never;
@@ -54114,7 +54416,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Producto. */
+                /** @description A UUID string identifying this Producto. */
                 id_producto: string;
             };
             cookie?: never;
@@ -54136,7 +54438,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Producto. */
+                /** @description A UUID string identifying this Producto. */
                 id_producto: string;
             };
             cookie?: never;
@@ -54156,7 +54458,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Producto. */
+                /** @description A UUID string identifying this Producto. */
                 id_producto: string;
             };
             cookie?: never;
@@ -54178,7 +54480,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Producto. */
+                /** @description A UUID string identifying this Producto. */
                 id_producto: string;
             };
             cookie?: never;
@@ -54198,11 +54500,11 @@ export interface operations {
     inventario_recepciones_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -54354,11 +54656,11 @@ export interface operations {
     "inventario_reglas-reabastecimiento_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -54431,7 +54733,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Regla de Reabastecimiento. */
+                /** @description A UUID string identifying this Regla de Reabastecimiento. */
                 id_regla: string;
             };
             cookie?: never;
@@ -54453,7 +54755,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Regla de Reabastecimiento. */
+                /** @description A UUID string identifying this Regla de Reabastecimiento. */
                 id_regla: string;
             };
             cookie?: never;
@@ -54475,7 +54777,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Regla de Reabastecimiento. */
+                /** @description A UUID string identifying this Regla de Reabastecimiento. */
                 id_regla: string;
             };
             cookie?: never;
@@ -54495,7 +54797,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Regla de Reabastecimiento. */
+                /** @description A UUID string identifying this Regla de Reabastecimiento. */
                 id_regla: string;
             };
             cookie?: never;
@@ -54517,7 +54819,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Regla de Reabastecimiento. */
+                /** @description A UUID string identifying this Regla de Reabastecimiento. */
                 id_regla: string;
             };
             cookie?: never;
@@ -54592,11 +54894,11 @@ export interface operations {
     "inventario_stock-actual_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -54646,7 +54948,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Stock Actual. */
+                /** @description A UUID string identifying this Stock Actual. */
                 id_stock_actual: string;
             };
             cookie?: never;
@@ -54668,7 +54970,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Stock Actual. */
+                /** @description A UUID string identifying this Stock Actual. */
                 id_stock_actual: string;
             };
             cookie?: never;
@@ -54690,7 +54992,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Stock Actual. */
+                /** @description A UUID string identifying this Stock Actual. */
                 id_stock_actual: string;
             };
             cookie?: never;
@@ -54710,7 +55012,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Stock Actual. */
+                /** @description A UUID string identifying this Stock Actual. */
                 id_stock_actual: string;
             };
             cookie?: never;
@@ -54730,11 +55032,11 @@ export interface operations {
     "inventario_stock-consignacion-cliente_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -54784,7 +55086,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Stock en Consignación a Cliente. */
+                /** @description A UUID string identifying this Stock en Consignación a Cliente. */
                 id_stock_consignacion: string;
             };
             cookie?: never;
@@ -54806,7 +55108,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Stock en Consignación a Cliente. */
+                /** @description A UUID string identifying this Stock en Consignación a Cliente. */
                 id_stock_consignacion: string;
             };
             cookie?: never;
@@ -54828,7 +55130,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Stock en Consignación a Cliente. */
+                /** @description A UUID string identifying this Stock en Consignación a Cliente. */
                 id_stock_consignacion: string;
             };
             cookie?: never;
@@ -54848,7 +55150,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Stock en Consignación a Cliente. */
+                /** @description A UUID string identifying this Stock en Consignación a Cliente. */
                 id_stock_consignacion: string;
             };
             cookie?: never;
@@ -54868,11 +55170,11 @@ export interface operations {
     "inventario_stock-consignacion-proveedor_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -54922,7 +55224,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Stock en Consignación de Proveedor. */
+                /** @description A UUID string identifying this Stock en Consignación de Proveedor. */
                 id_stock_consignacion: string;
             };
             cookie?: never;
@@ -54944,7 +55246,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Stock en Consignación de Proveedor. */
+                /** @description A UUID string identifying this Stock en Consignación de Proveedor. */
                 id_stock_consignacion: string;
             };
             cookie?: never;
@@ -54966,7 +55268,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Stock en Consignación de Proveedor. */
+                /** @description A UUID string identifying this Stock en Consignación de Proveedor. */
                 id_stock_consignacion: string;
             };
             cookie?: never;
@@ -54986,7 +55288,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Stock en Consignación de Proveedor. */
+                /** @description A UUID string identifying this Stock en Consignación de Proveedor. */
                 id_stock_consignacion: string;
             };
             cookie?: never;
@@ -55006,11 +55308,11 @@ export interface operations {
     "inventario_unidades-medida_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -55060,7 +55362,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Unidad de Medida. */
+                /** @description A UUID string identifying this Unidad de Medida. */
                 id_unidad_medida: string;
             };
             cookie?: never;
@@ -55082,7 +55384,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Unidad de Medida. */
+                /** @description A UUID string identifying this Unidad de Medida. */
                 id_unidad_medida: string;
             };
             cookie?: never;
@@ -55104,7 +55406,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Unidad de Medida. */
+                /** @description A UUID string identifying this Unidad de Medida. */
                 id_unidad_medida: string;
             };
             cookie?: never;
@@ -55124,7 +55426,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Unidad de Medida. */
+                /** @description A UUID string identifying this Unidad de Medida. */
                 id_unidad_medida: string;
             };
             cookie?: never;
@@ -55144,11 +55446,11 @@ export interface operations {
     "inventario_variantes-producto_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -55198,7 +55500,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Variante de Producto. */
+                /** @description A UUID string identifying this Variante de Producto. */
                 id_variante: string;
             };
             cookie?: never;
@@ -55220,7 +55522,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Variante de Producto. */
+                /** @description A UUID string identifying this Variante de Producto. */
                 id_variante: string;
             };
             cookie?: never;
@@ -55242,7 +55544,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Variante de Producto. */
+                /** @description A UUID string identifying this Variante de Producto. */
                 id_variante: string;
             };
             cookie?: never;
@@ -55262,7 +55564,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Variante de Producto. */
+                /** @description A UUID string identifying this Variante de Producto. */
                 id_variante: string;
             };
             cookie?: never;
@@ -55304,11 +55606,11 @@ export interface operations {
     "manufactura_centros-trabajo_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -55358,7 +55660,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Centro de Trabajo. */
+                /** @description A UUID string identifying this Centro de Trabajo. */
                 id_centro_trabajo: string;
             };
             cookie?: never;
@@ -55380,7 +55682,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Centro de Trabajo. */
+                /** @description A UUID string identifying this Centro de Trabajo. */
                 id_centro_trabajo: string;
             };
             cookie?: never;
@@ -55402,7 +55704,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Centro de Trabajo. */
+                /** @description A UUID string identifying this Centro de Trabajo. */
                 id_centro_trabajo: string;
             };
             cookie?: never;
@@ -55422,7 +55724,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Centro de Trabajo. */
+                /** @description A UUID string identifying this Centro de Trabajo. */
                 id_centro_trabajo: string;
             };
             cookie?: never;
@@ -55442,11 +55744,11 @@ export interface operations {
     manufactura_configuracion_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -55496,7 +55798,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Configuración de Manufactura. */
+                /** @description A UUID string identifying this Configuración de Manufactura. */
                 id: string;
             };
             cookie?: never;
@@ -55518,7 +55820,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Configuración de Manufactura. */
+                /** @description A UUID string identifying this Configuración de Manufactura. */
                 id: string;
             };
             cookie?: never;
@@ -55540,7 +55842,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Configuración de Manufactura. */
+                /** @description A UUID string identifying this Configuración de Manufactura. */
                 id: string;
             };
             cookie?: never;
@@ -55560,7 +55862,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Configuración de Manufactura. */
+                /** @description A UUID string identifying this Configuración de Manufactura. */
                 id: string;
             };
             cookie?: never;
@@ -55580,11 +55882,11 @@ export interface operations {
     "manufactura_consumos-material_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -55634,7 +55936,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este consumo material. */
+                /** @description A UUID string identifying this consumo material. */
                 id: string;
             };
             cookie?: never;
@@ -55656,7 +55958,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este consumo material. */
+                /** @description A UUID string identifying this consumo material. */
                 id: string;
             };
             cookie?: never;
@@ -55678,7 +55980,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este consumo material. */
+                /** @description A UUID string identifying this consumo material. */
                 id: string;
             };
             cookie?: never;
@@ -55698,7 +56000,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este consumo material. */
+                /** @description A UUID string identifying this consumo material. */
                 id: string;
             };
             cookie?: never;
@@ -55718,11 +56020,11 @@ export interface operations {
     "manufactura_etapas-produccion_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -55791,7 +56093,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Etapa de Producción. */
+                /** @description A UUID string identifying this Etapa de Producción. */
                 id: string;
             };
             cookie?: never;
@@ -55813,7 +56115,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Etapa de Producción. */
+                /** @description A UUID string identifying this Etapa de Producción. */
                 id: string;
             };
             cookie?: never;
@@ -55835,7 +56137,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Etapa de Producción. */
+                /** @description A UUID string identifying this Etapa de Producción. */
                 id: string;
             };
             cookie?: never;
@@ -55855,7 +56157,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Etapa de Producción. */
+                /** @description A UUID string identifying this Etapa de Producción. */
                 id: string;
             };
             cookie?: never;
@@ -55877,7 +56179,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Etapa de Producción. */
+                /** @description A UUID string identifying this Etapa de Producción. */
                 id: string;
             };
             cookie?: never;
@@ -55899,7 +56201,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Etapa de Producción. */
+                /** @description A UUID string identifying this Etapa de Producción. */
                 id: string;
             };
             cookie?: never;
@@ -55919,11 +56221,11 @@ export interface operations {
     "manufactura_listas-materiales-detalle_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -55973,7 +56275,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Lista de Materiales. */
+                /** @description A UUID string identifying this Detalle de Lista de Materiales. */
                 id_detalle_lista: string;
             };
             cookie?: never;
@@ -55995,7 +56297,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Lista de Materiales. */
+                /** @description A UUID string identifying this Detalle de Lista de Materiales. */
                 id_detalle_lista: string;
             };
             cookie?: never;
@@ -56017,7 +56319,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Lista de Materiales. */
+                /** @description A UUID string identifying this Detalle de Lista de Materiales. */
                 id_detalle_lista: string;
             };
             cookie?: never;
@@ -56037,7 +56339,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Lista de Materiales. */
+                /** @description A UUID string identifying this Detalle de Lista de Materiales. */
                 id_detalle_lista: string;
             };
             cookie?: never;
@@ -56057,11 +56359,11 @@ export interface operations {
     "manufactura_listas-materiales_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -56111,7 +56413,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este lista materiales. */
+                /** @description A UUID string identifying this lista materiales. */
                 id: string;
             };
             cookie?: never;
@@ -56133,7 +56435,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este lista materiales. */
+                /** @description A UUID string identifying this lista materiales. */
                 id: string;
             };
             cookie?: never;
@@ -56155,7 +56457,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este lista materiales. */
+                /** @description A UUID string identifying this lista materiales. */
                 id: string;
             };
             cookie?: never;
@@ -56175,7 +56477,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este lista materiales. */
+                /** @description A UUID string identifying this lista materiales. */
                 id: string;
             };
             cookie?: never;
@@ -56195,11 +56497,11 @@ export interface operations {
     "manufactura_operaciones-produccion_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -56249,7 +56551,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Operación de Producción. */
+                /** @description A UUID string identifying this Operación de Producción. */
                 id_operacion: string;
             };
             cookie?: never;
@@ -56271,7 +56573,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Operación de Producción. */
+                /** @description A UUID string identifying this Operación de Producción. */
                 id_operacion: string;
             };
             cookie?: never;
@@ -56293,7 +56595,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Operación de Producción. */
+                /** @description A UUID string identifying this Operación de Producción. */
                 id_operacion: string;
             };
             cookie?: never;
@@ -56313,7 +56615,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Operación de Producción. */
+                /** @description A UUID string identifying this Operación de Producción. */
                 id_operacion: string;
             };
             cookie?: never;
@@ -56333,11 +56635,11 @@ export interface operations {
     "manufactura_ordenes-produccion_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -56387,7 +56689,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este orden produccion. */
+                /** @description A UUID string identifying this orden produccion. */
                 id: string;
             };
             cookie?: never;
@@ -56409,7 +56711,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este orden produccion. */
+                /** @description A UUID string identifying this orden produccion. */
                 id: string;
             };
             cookie?: never;
@@ -56431,7 +56733,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este orden produccion. */
+                /** @description A UUID string identifying this orden produccion. */
                 id: string;
             };
             cookie?: never;
@@ -56451,7 +56753,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este orden produccion. */
+                /** @description A UUID string identifying this orden produccion. */
                 id: string;
             };
             cookie?: never;
@@ -56473,7 +56775,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este orden produccion. */
+                /** @description A UUID string identifying this orden produccion. */
                 id: string;
             };
             cookie?: never;
@@ -56495,7 +56797,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este orden produccion. */
+                /** @description A UUID string identifying this orden produccion. */
                 id: string;
             };
             cookie?: never;
@@ -56517,7 +56819,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este orden produccion. */
+                /** @description A UUID string identifying this orden produccion. */
                 id: string;
             };
             cookie?: never;
@@ -56539,7 +56841,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este orden produccion. */
+                /** @description A UUID string identifying this orden produccion. */
                 id: string;
             };
             cookie?: never;
@@ -56561,7 +56863,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este orden produccion. */
+                /** @description A UUID string identifying this orden produccion. */
                 id: string;
             };
             cookie?: never;
@@ -56583,7 +56885,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este orden produccion. */
+                /** @description A UUID string identifying this orden produccion. */
                 id: string;
             };
             cookie?: never;
@@ -56603,11 +56905,11 @@ export interface operations {
     "manufactura_produccion-terminada_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -56657,7 +56959,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este produccion terminada. */
+                /** @description A UUID string identifying this produccion terminada. */
                 id: string;
             };
             cookie?: never;
@@ -56679,7 +56981,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este produccion terminada. */
+                /** @description A UUID string identifying this produccion terminada. */
                 id: string;
             };
             cookie?: never;
@@ -56701,7 +57003,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este produccion terminada. */
+                /** @description A UUID string identifying this produccion terminada. */
                 id: string;
             };
             cookie?: never;
@@ -56721,7 +57023,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este produccion terminada. */
+                /** @description A UUID string identifying this produccion terminada. */
                 id: string;
             };
             cookie?: never;
@@ -56741,11 +57043,11 @@ export interface operations {
     "manufactura_registros-operacion_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -56795,7 +57097,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Registro de Operación. */
+                /** @description A UUID string identifying this Registro de Operación. */
                 id_registro: string;
             };
             cookie?: never;
@@ -56817,7 +57119,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Registro de Operación. */
+                /** @description A UUID string identifying this Registro de Operación. */
                 id_registro: string;
             };
             cookie?: never;
@@ -56839,7 +57141,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Registro de Operación. */
+                /** @description A UUID string identifying this Registro de Operación. */
                 id_registro: string;
             };
             cookie?: never;
@@ -56859,7 +57161,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Registro de Operación. */
+                /** @description A UUID string identifying this Registro de Operación. */
                 id_registro: string;
             };
             cookie?: never;
@@ -56879,11 +57181,11 @@ export interface operations {
     "manufactura_rutas-produccion-detalle_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -56933,7 +57235,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Ruta de Producción. */
+                /** @description A UUID string identifying this Detalle de Ruta de Producción. */
                 id_detalle_ruta: string;
             };
             cookie?: never;
@@ -56955,7 +57257,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Ruta de Producción. */
+                /** @description A UUID string identifying this Detalle de Ruta de Producción. */
                 id_detalle_ruta: string;
             };
             cookie?: never;
@@ -56977,7 +57279,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Ruta de Producción. */
+                /** @description A UUID string identifying this Detalle de Ruta de Producción. */
                 id_detalle_ruta: string;
             };
             cookie?: never;
@@ -56997,7 +57299,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Ruta de Producción. */
+                /** @description A UUID string identifying this Detalle de Ruta de Producción. */
                 id_detalle_ruta: string;
             };
             cookie?: never;
@@ -57017,11 +57319,11 @@ export interface operations {
     "manufactura_rutas-produccion_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -57071,7 +57373,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este ruta produccion. */
+                /** @description A UUID string identifying this ruta produccion. */
                 id: string;
             };
             cookie?: never;
@@ -57093,7 +57395,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este ruta produccion. */
+                /** @description A UUID string identifying this ruta produccion. */
                 id: string;
             };
             cookie?: never;
@@ -57115,7 +57417,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este ruta produccion. */
+                /** @description A UUID string identifying this ruta produccion. */
                 id: string;
             };
             cookie?: never;
@@ -57135,7 +57437,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este ruta produccion. */
+                /** @description A UUID string identifying this ruta produccion. */
                 id: string;
             };
             cookie?: never;
@@ -57155,11 +57457,11 @@ export interface operations {
     "migracion-datos_detalles-error-migracion_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -57209,7 +57511,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este detalle error migracion. */
+                /** @description A UUID string identifying this detalle error migracion. */
                 id_detalle_error: string;
             };
             cookie?: never;
@@ -57231,7 +57533,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este detalle error migracion. */
+                /** @description A UUID string identifying this detalle error migracion. */
                 id_detalle_error: string;
             };
             cookie?: never;
@@ -57253,7 +57555,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este detalle error migracion. */
+                /** @description A UUID string identifying this detalle error migracion. */
                 id_detalle_error: string;
             };
             cookie?: never;
@@ -57273,7 +57575,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este detalle error migracion. */
+                /** @description A UUID string identifying this detalle error migracion. */
                 id_detalle_error: string;
             };
             cookie?: never;
@@ -57293,11 +57595,11 @@ export interface operations {
     "migracion-datos_plantillas-migracion_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -57347,7 +57649,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este plantilla migracion. */
+                /** @description A UUID string identifying this plantilla migracion. */
                 id_plantilla_migracion: string;
             };
             cookie?: never;
@@ -57369,7 +57671,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este plantilla migracion. */
+                /** @description A UUID string identifying this plantilla migracion. */
                 id_plantilla_migracion: string;
             };
             cookie?: never;
@@ -57391,7 +57693,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este plantilla migracion. */
+                /** @description A UUID string identifying this plantilla migracion. */
                 id_plantilla_migracion: string;
             };
             cookie?: never;
@@ -57411,7 +57713,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este plantilla migracion. */
+                /** @description A UUID string identifying this plantilla migracion. */
                 id_plantilla_migracion: string;
             };
             cookie?: never;
@@ -57431,11 +57733,11 @@ export interface operations {
     "migracion-datos_procesos-migracion_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -57485,7 +57787,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este proceso migracion. */
+                /** @description A UUID string identifying this proceso migracion. */
                 id_proceso_migracion: string;
             };
             cookie?: never;
@@ -57507,7 +57809,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este proceso migracion. */
+                /** @description A UUID string identifying this proceso migracion. */
                 id_proceso_migracion: string;
             };
             cookie?: never;
@@ -57529,7 +57831,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este proceso migracion. */
+                /** @description A UUID string identifying this proceso migracion. */
                 id_proceso_migracion: string;
             };
             cookie?: never;
@@ -57549,7 +57851,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este proceso migracion. */
+                /** @description A UUID string identifying this proceso migracion. */
                 id_proceso_migracion: string;
             };
             cookie?: never;
@@ -57569,11 +57871,11 @@ export interface operations {
     "nomina_conceptos-nomina_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -57621,11 +57923,11 @@ export interface operations {
     "nomina_conceptos-nomina_deducciones": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -57654,11 +57956,11 @@ export interface operations {
     "nomina_conceptos-nomina_devengados": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -57687,11 +57989,11 @@ export interface operations {
     "nomina_conceptos-nomina_por_tipo": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -57722,7 +58024,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Concepto de Nómina. */
+                /** @description A UUID string identifying this Concepto de Nómina. */
                 id_concepto_nomina: string;
             };
             cookie?: never;
@@ -57744,7 +58046,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Concepto de Nómina. */
+                /** @description A UUID string identifying this Concepto de Nómina. */
                 id_concepto_nomina: string;
             };
             cookie?: never;
@@ -57766,7 +58068,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Concepto de Nómina. */
+                /** @description A UUID string identifying this Concepto de Nómina. */
                 id_concepto_nomina: string;
             };
             cookie?: never;
@@ -57786,7 +58088,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Concepto de Nómina. */
+                /** @description A UUID string identifying this Concepto de Nómina. */
                 id_concepto_nomina: string;
             };
             cookie?: never;
@@ -57806,11 +58108,11 @@ export interface operations {
     "nomina_detalles-nomina_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -57860,7 +58162,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Nómina. */
+                /** @description A UUID string identifying this Detalle de Nómina. */
                 id_detalle_nomina: string;
             };
             cookie?: never;
@@ -57882,7 +58184,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Nómina. */
+                /** @description A UUID string identifying this Detalle de Nómina. */
                 id_detalle_nomina: string;
             };
             cookie?: never;
@@ -57904,7 +58206,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Nómina. */
+                /** @description A UUID string identifying this Detalle de Nómina. */
                 id_detalle_nomina: string;
             };
             cookie?: never;
@@ -57924,7 +58226,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Nómina. */
+                /** @description A UUID string identifying this Detalle de Nómina. */
                 id_detalle_nomina: string;
             };
             cookie?: never;
@@ -57944,11 +58246,11 @@ export interface operations {
     "nomina_nominas-extrasalarial_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -57998,7 +58300,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nómina Extrasalarial. */
+                /** @description A UUID string identifying this Nómina Extrasalarial. */
                 id_nomina_extrasalarial: string;
             };
             cookie?: never;
@@ -58020,7 +58322,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nómina Extrasalarial. */
+                /** @description A UUID string identifying this Nómina Extrasalarial. */
                 id_nomina_extrasalarial: string;
             };
             cookie?: never;
@@ -58042,7 +58344,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nómina Extrasalarial. */
+                /** @description A UUID string identifying this Nómina Extrasalarial. */
                 id_nomina_extrasalarial: string;
             };
             cookie?: never;
@@ -58062,7 +58364,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nómina Extrasalarial. */
+                /** @description A UUID string identifying this Nómina Extrasalarial. */
                 id_nomina_extrasalarial: string;
             };
             cookie?: never;
@@ -58084,7 +58386,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nómina Extrasalarial. */
+                /** @description A UUID string identifying this Nómina Extrasalarial. */
                 id_nomina_extrasalarial: string;
             };
             cookie?: never;
@@ -58106,7 +58408,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nómina Extrasalarial. */
+                /** @description A UUID string identifying this Nómina Extrasalarial. */
                 id_nomina_extrasalarial: string;
             };
             cookie?: never;
@@ -58126,11 +58428,11 @@ export interface operations {
     nomina_nominas_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -58180,7 +58482,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nómina. */
+                /** @description A UUID string identifying this Nómina. */
                 id_nomina: string;
             };
             cookie?: never;
@@ -58202,7 +58504,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nómina. */
+                /** @description A UUID string identifying this Nómina. */
                 id_nomina: string;
             };
             cookie?: never;
@@ -58224,7 +58526,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nómina. */
+                /** @description A UUID string identifying this Nómina. */
                 id_nomina: string;
             };
             cookie?: never;
@@ -58244,7 +58546,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nómina. */
+                /** @description A UUID string identifying this Nómina. */
                 id_nomina: string;
             };
             cookie?: never;
@@ -58266,7 +58568,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nómina. */
+                /** @description A UUID string identifying this Nómina. */
                 id_nomina: string;
             };
             cookie?: never;
@@ -58288,7 +58590,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nómina. */
+                /** @description A UUID string identifying this Nómina. */
                 id_nomina: string;
             };
             cookie?: never;
@@ -58308,11 +58610,11 @@ export interface operations {
     "nomina_periodos-nomina_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -58360,11 +58662,11 @@ export interface operations {
     "nomina_periodos-nomina_abiertos": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -58393,11 +58695,11 @@ export interface operations {
     "nomina_periodos-nomina_activos": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -58428,7 +58730,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Período de Nómina. */
+                /** @description A UUID string identifying this Período de Nómina. */
                 id_periodo_nomina: string;
             };
             cookie?: never;
@@ -58450,7 +58752,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Período de Nómina. */
+                /** @description A UUID string identifying this Período de Nómina. */
                 id_periodo_nomina: string;
             };
             cookie?: never;
@@ -58472,7 +58774,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Período de Nómina. */
+                /** @description A UUID string identifying this Período de Nómina. */
                 id_periodo_nomina: string;
             };
             cookie?: never;
@@ -58492,7 +58794,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Período de Nómina. */
+                /** @description A UUID string identifying this Período de Nómina. */
                 id_periodo_nomina: string;
             };
             cookie?: never;
@@ -58514,7 +58816,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Período de Nómina. */
+                /** @description A UUID string identifying this Período de Nómina. */
                 id_periodo_nomina: string;
             };
             cookie?: never;
@@ -58534,11 +58836,11 @@ export interface operations {
     "nomina_procesos-nomina-extrasalarial_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -58588,7 +58890,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Proceso de Nómina Extrasalarial. */
+                /** @description A UUID string identifying this Proceso de Nómina Extrasalarial. */
                 id_proceso_extrasalarial: string;
             };
             cookie?: never;
@@ -58610,7 +58912,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Proceso de Nómina Extrasalarial. */
+                /** @description A UUID string identifying this Proceso de Nómina Extrasalarial. */
                 id_proceso_extrasalarial: string;
             };
             cookie?: never;
@@ -58632,7 +58934,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Proceso de Nómina Extrasalarial. */
+                /** @description A UUID string identifying this Proceso de Nómina Extrasalarial. */
                 id_proceso_extrasalarial: string;
             };
             cookie?: never;
@@ -58652,7 +58954,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Proceso de Nómina Extrasalarial. */
+                /** @description A UUID string identifying this Proceso de Nómina Extrasalarial. */
                 id_proceso_extrasalarial: string;
             };
             cookie?: never;
@@ -58674,7 +58976,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Proceso de Nómina Extrasalarial. */
+                /** @description A UUID string identifying this Proceso de Nómina Extrasalarial. */
                 id_proceso_extrasalarial: string;
             };
             cookie?: never;
@@ -58696,7 +58998,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Proceso de Nómina Extrasalarial. */
+                /** @description A UUID string identifying this Proceso de Nómina Extrasalarial. */
                 id_proceso_extrasalarial: string;
             };
             cookie?: never;
@@ -58716,11 +59018,11 @@ export interface operations {
     "nomina_procesos-nomina_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -58770,7 +59072,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Proceso de Nómina. */
+                /** @description A UUID string identifying this Proceso de Nómina. */
                 id_proceso_nomina: string;
             };
             cookie?: never;
@@ -58792,7 +59094,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Proceso de Nómina. */
+                /** @description A UUID string identifying this Proceso de Nómina. */
                 id_proceso_nomina: string;
             };
             cookie?: never;
@@ -58814,7 +59116,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Proceso de Nómina. */
+                /** @description A UUID string identifying this Proceso de Nómina. */
                 id_proceso_nomina: string;
             };
             cookie?: never;
@@ -58834,7 +59136,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Proceso de Nómina. */
+                /** @description A UUID string identifying this Proceso de Nómina. */
                 id_proceso_nomina: string;
             };
             cookie?: never;
@@ -58856,7 +59158,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Proceso de Nómina. */
+                /** @description A UUID string identifying this Proceso de Nómina. */
                 id_proceso_nomina: string;
             };
             cookie?: never;
@@ -58878,7 +59180,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Proceso de Nómina. */
+                /** @description A UUID string identifying this Proceso de Nómina. */
                 id_proceso_nomina: string;
             };
             cookie?: never;
@@ -58900,7 +59202,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Proceso de Nómina. */
+                /** @description A UUID string identifying this Proceso de Nómina. */
                 id_proceso_nomina: string;
             };
             cookie?: never;
@@ -58920,11 +59222,11 @@ export interface operations {
     notificaciones_notificaciones_mis_notificaciones: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -58978,11 +59280,11 @@ export interface operations {
     personalizacion_configuraciones_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -59030,11 +59332,11 @@ export interface operations {
     personalizacion_configuraciones_activa: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -59063,11 +59365,11 @@ export interface operations {
     personalizacion_configuraciones_historial: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -59098,7 +59400,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este personalizacion config. */
+                /** @description A UUID string identifying this personalizacion config. */
                 id_config: string;
             };
             cookie?: never;
@@ -59120,7 +59422,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este personalizacion config. */
+                /** @description A UUID string identifying this personalizacion config. */
                 id_config: string;
             };
             cookie?: never;
@@ -59142,7 +59444,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este personalizacion config. */
+                /** @description A UUID string identifying this personalizacion config. */
                 id_config: string;
             };
             cookie?: never;
@@ -59162,7 +59464,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este personalizacion config. */
+                /** @description A UUID string identifying this personalizacion config. */
                 id_config: string;
             };
             cookie?: never;
@@ -59184,7 +59486,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este personalizacion config. */
+                /** @description A UUID string identifying this personalizacion config. */
                 id_config: string;
             };
             cookie?: never;
@@ -59204,11 +59506,11 @@ export interface operations {
     "proveedores_contactos-proveedor_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -59258,7 +59560,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Contacto de Proveedor. */
+                /** @description A UUID string identifying this Contacto de Proveedor. */
                 id_contacto: string;
             };
             cookie?: never;
@@ -59280,7 +59582,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Contacto de Proveedor. */
+                /** @description A UUID string identifying this Contacto de Proveedor. */
                 id_contacto: string;
             };
             cookie?: never;
@@ -59302,7 +59604,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Contacto de Proveedor. */
+                /** @description A UUID string identifying this Contacto de Proveedor. */
                 id_contacto: string;
             };
             cookie?: never;
@@ -59322,7 +59624,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Contacto de Proveedor. */
+                /** @description A UUID string identifying this Contacto de Proveedor. */
                 id_contacto: string;
             };
             cookie?: never;
@@ -59342,11 +59644,11 @@ export interface operations {
     "proveedores_cuentas-bancarias-proveedor_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -59396,7 +59698,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Cuenta Bancaria de Proveedor. */
+                /** @description A UUID string identifying this Cuenta Bancaria de Proveedor. */
                 id_cuenta_bancaria: string;
             };
             cookie?: never;
@@ -59418,7 +59720,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Cuenta Bancaria de Proveedor. */
+                /** @description A UUID string identifying this Cuenta Bancaria de Proveedor. */
                 id_cuenta_bancaria: string;
             };
             cookie?: never;
@@ -59440,7 +59742,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Cuenta Bancaria de Proveedor. */
+                /** @description A UUID string identifying this Cuenta Bancaria de Proveedor. */
                 id_cuenta_bancaria: string;
             };
             cookie?: never;
@@ -59460,7 +59762,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Cuenta Bancaria de Proveedor. */
+                /** @description A UUID string identifying this Cuenta Bancaria de Proveedor. */
                 id_cuenta_bancaria: string;
             };
             cookie?: never;
@@ -59480,11 +59782,11 @@ export interface operations {
     proveedores_proveedores_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -59532,11 +59834,11 @@ export interface operations {
     proveedores_proveedores_buscar_por_rif: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -59567,7 +59869,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este proveedor. */
+                /** @description A UUID string identifying this proveedor. */
                 id_proveedor: string;
             };
             cookie?: never;
@@ -59589,7 +59891,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este proveedor. */
+                /** @description A UUID string identifying this proveedor. */
                 id_proveedor: string;
             };
             cookie?: never;
@@ -59611,7 +59913,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este proveedor. */
+                /** @description A UUID string identifying this proveedor. */
                 id_proveedor: string;
             };
             cookie?: never;
@@ -59631,7 +59933,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este proveedor. */
+                /** @description A UUID string identifying this proveedor. */
                 id_proveedor: string;
             };
             cookie?: never;
@@ -59782,11 +60084,11 @@ export interface operations {
     "rrhh_beneficios-empleado_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -59836,7 +60138,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Beneficio de Empleado. */
+                /** @description A UUID string identifying this Beneficio de Empleado. */
                 id_beneficio_empleado: string;
             };
             cookie?: never;
@@ -59858,7 +60160,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Beneficio de Empleado. */
+                /** @description A UUID string identifying this Beneficio de Empleado. */
                 id_beneficio_empleado: string;
             };
             cookie?: never;
@@ -59880,7 +60182,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Beneficio de Empleado. */
+                /** @description A UUID string identifying this Beneficio de Empleado. */
                 id_beneficio_empleado: string;
             };
             cookie?: never;
@@ -59900,7 +60202,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Beneficio de Empleado. */
+                /** @description A UUID string identifying this Beneficio de Empleado. */
                 id_beneficio_empleado: string;
             };
             cookie?: never;
@@ -59920,11 +60222,11 @@ export interface operations {
     rrhh_beneficios_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -59974,7 +60276,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Beneficio. */
+                /** @description A UUID string identifying this Beneficio. */
                 id_beneficio: string;
             };
             cookie?: never;
@@ -59996,7 +60298,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Beneficio. */
+                /** @description A UUID string identifying this Beneficio. */
                 id_beneficio: string;
             };
             cookie?: never;
@@ -60018,7 +60320,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Beneficio. */
+                /** @description A UUID string identifying this Beneficio. */
                 id_beneficio: string;
             };
             cookie?: never;
@@ -60038,7 +60340,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Beneficio. */
+                /** @description A UUID string identifying this Beneficio. */
                 id_beneficio: string;
             };
             cookie?: never;
@@ -60058,11 +60360,11 @@ export interface operations {
     rrhh_cargos_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -60112,7 +60414,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un valor de entero único que identifique este cargo. */
+                /** @description A unique integer value identifying this cargo. */
                 id: number;
             };
             cookie?: never;
@@ -60134,7 +60436,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un valor de entero único que identifique este cargo. */
+                /** @description A unique integer value identifying this cargo. */
                 id: number;
             };
             cookie?: never;
@@ -60156,7 +60458,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un valor de entero único que identifique este cargo. */
+                /** @description A unique integer value identifying this cargo. */
                 id: number;
             };
             cookie?: never;
@@ -60176,7 +60478,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un valor de entero único que identifique este cargo. */
+                /** @description A unique integer value identifying this cargo. */
                 id: number;
             };
             cookie?: never;
@@ -60196,11 +60498,11 @@ export interface operations {
     rrhh_empleados_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -60250,7 +60552,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un valor de entero único que identifique este Empleado. */
+                /** @description A unique integer value identifying this Empleado. */
                 id: number;
             };
             cookie?: never;
@@ -60272,7 +60574,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un valor de entero único que identifique este Empleado. */
+                /** @description A unique integer value identifying this Empleado. */
                 id: number;
             };
             cookie?: never;
@@ -60294,7 +60596,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un valor de entero único que identifique este Empleado. */
+                /** @description A unique integer value identifying this Empleado. */
                 id: number;
             };
             cookie?: never;
@@ -60314,7 +60616,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un valor de entero único que identifique este Empleado. */
+                /** @description A unique integer value identifying this Empleado. */
                 id: number;
             };
             cookie?: never;
@@ -60334,11 +60636,11 @@ export interface operations {
     "rrhh_licencias-empleado_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -60388,7 +60690,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Licencia de Empleado. */
+                /** @description A UUID string identifying this Licencia de Empleado. */
                 id_licencia: string;
             };
             cookie?: never;
@@ -60410,7 +60712,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Licencia de Empleado. */
+                /** @description A UUID string identifying this Licencia de Empleado. */
                 id_licencia: string;
             };
             cookie?: never;
@@ -60432,7 +60734,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Licencia de Empleado. */
+                /** @description A UUID string identifying this Licencia de Empleado. */
                 id_licencia: string;
             };
             cookie?: never;
@@ -60452,7 +60754,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Licencia de Empleado. */
+                /** @description A UUID string identifying this Licencia de Empleado. */
                 id_licencia: string;
             };
             cookie?: never;
@@ -60472,11 +60774,11 @@ export interface operations {
     "rrhh_tipos-licencia_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -60526,7 +60828,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Tipo de Licencia. */
+                /** @description A UUID string identifying this Tipo de Licencia. */
                 id_tipo_licencia: string;
             };
             cookie?: never;
@@ -60548,7 +60850,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Tipo de Licencia. */
+                /** @description A UUID string identifying this Tipo de Licencia. */
                 id_tipo_licencia: string;
             };
             cookie?: never;
@@ -60570,7 +60872,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Tipo de Licencia. */
+                /** @description A UUID string identifying this Tipo de Licencia. */
                 id_tipo_licencia: string;
             };
             cookie?: never;
@@ -60590,7 +60892,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Tipo de Licencia. */
+                /** @description A UUID string identifying this Tipo de Licencia. */
                 id_tipo_licencia: string;
             };
             cookie?: never;
@@ -60610,11 +60912,11 @@ export interface operations {
     saas_planes_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -60664,7 +60966,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Plan. */
+                /** @description A UUID string identifying this Plan. */
                 id_plan: string;
             };
             cookie?: never;
@@ -60686,7 +60988,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Plan. */
+                /** @description A UUID string identifying this Plan. */
                 id_plan: string;
             };
             cookie?: never;
@@ -60708,7 +61010,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Plan. */
+                /** @description A UUID string identifying this Plan. */
                 id_plan: string;
             };
             cookie?: never;
@@ -60728,7 +61030,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Plan. */
+                /** @description A UUID string identifying this Plan. */
                 id_plan: string;
             };
             cookie?: never;
@@ -60765,11 +61067,11 @@ export interface operations {
     saas_suscripciones_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -60817,11 +61119,11 @@ export interface operations {
     saas_suscripciones_activa: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -60852,7 +61154,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Suscripción. */
+                /** @description A UUID string identifying this Suscripción. */
                 id_suscripcion: string;
             };
             cookie?: never;
@@ -60874,7 +61176,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Suscripción. */
+                /** @description A UUID string identifying this Suscripción. */
                 id_suscripcion: string;
             };
             cookie?: never;
@@ -60896,7 +61198,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Suscripción. */
+                /** @description A UUID string identifying this Suscripción. */
                 id_suscripcion: string;
             };
             cookie?: never;
@@ -60916,7 +61218,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Suscripción. */
+                /** @description A UUID string identifying this Suscripción. */
                 id_suscripcion: string;
             };
             cookie?: never;
@@ -60938,7 +61240,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Suscripción. */
+                /** @description A UUID string identifying this Suscripción. */
                 id_suscripcion: string;
             };
             cookie?: never;
@@ -60960,7 +61262,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Suscripción. */
+                /** @description A UUID string identifying this Suscripción. */
                 id_suscripcion: string;
             };
             cookie?: never;
@@ -60980,11 +61282,11 @@ export interface operations {
     "servicio-cliente_articulos-conocimiento_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -61032,11 +61334,11 @@ export interface operations {
     "servicio-cliente_articulos-conocimiento_buscar": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -61065,11 +61367,11 @@ export interface operations {
     "servicio-cliente_articulos-conocimiento_publicos": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -61100,7 +61402,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este base conocimiento articulo. */
+                /** @description A UUID string identifying this base conocimiento articulo. */
                 id_articulo: string;
             };
             cookie?: never;
@@ -61122,7 +61424,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este base conocimiento articulo. */
+                /** @description A UUID string identifying this base conocimiento articulo. */
                 id_articulo: string;
             };
             cookie?: never;
@@ -61144,7 +61446,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este base conocimiento articulo. */
+                /** @description A UUID string identifying this base conocimiento articulo. */
                 id_articulo: string;
             };
             cookie?: never;
@@ -61164,7 +61466,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este base conocimiento articulo. */
+                /** @description A UUID string identifying this base conocimiento articulo. */
                 id_articulo: string;
             };
             cookie?: never;
@@ -61186,7 +61488,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este base conocimiento articulo. */
+                /** @description A UUID string identifying this base conocimiento articulo. */
                 id_articulo: string;
             };
             cookie?: never;
@@ -61206,11 +61508,11 @@ export interface operations {
     "servicio-cliente_categorias-ticket_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -61258,11 +61560,11 @@ export interface operations {
     "servicio-cliente_categorias-ticket_activas": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -61293,7 +61595,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este categoria ticket. */
+                /** @description A UUID string identifying this categoria ticket. */
                 id_categoria_ticket: string;
             };
             cookie?: never;
@@ -61315,7 +61617,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este categoria ticket. */
+                /** @description A UUID string identifying this categoria ticket. */
                 id_categoria_ticket: string;
             };
             cookie?: never;
@@ -61337,7 +61639,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este categoria ticket. */
+                /** @description A UUID string identifying this categoria ticket. */
                 id_categoria_ticket: string;
             };
             cookie?: never;
@@ -61357,7 +61659,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este categoria ticket. */
+                /** @description A UUID string identifying this categoria ticket. */
                 id_categoria_ticket: string;
             };
             cookie?: never;
@@ -61379,7 +61681,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este categoria ticket. */
+                /** @description A UUID string identifying this categoria ticket. */
                 id_categoria_ticket: string;
             };
             cookie?: never;
@@ -61399,11 +61701,11 @@ export interface operations {
     "servicio-cliente_feedback-cliente_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -61451,11 +61753,11 @@ export interface operations {
     "servicio-cliente_feedback-cliente_estadisticas_satisfaccion": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -61484,11 +61786,11 @@ export interface operations {
     "servicio-cliente_feedback-cliente_por_tipo": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -61517,11 +61819,11 @@ export interface operations {
     "servicio-cliente_feedback-cliente_quejas_sugerencias": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -61552,7 +61854,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este feedback cliente. */
+                /** @description A UUID string identifying this feedback cliente. */
                 id_feedback: string;
             };
             cookie?: never;
@@ -61574,7 +61876,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este feedback cliente. */
+                /** @description A UUID string identifying this feedback cliente. */
                 id_feedback: string;
             };
             cookie?: never;
@@ -61596,7 +61898,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este feedback cliente. */
+                /** @description A UUID string identifying this feedback cliente. */
                 id_feedback: string;
             };
             cookie?: never;
@@ -61616,7 +61918,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este feedback cliente. */
+                /** @description A UUID string identifying this feedback cliente. */
                 id_feedback: string;
             };
             cookie?: never;
@@ -61636,11 +61938,11 @@ export interface operations {
     "servicio-cliente_interacciones-ticket_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -61709,7 +62011,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este interaccion ticket. */
+                /** @description A UUID string identifying this interaccion ticket. */
                 id_interaccion: string;
             };
             cookie?: never;
@@ -61731,7 +62033,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este interaccion ticket. */
+                /** @description A UUID string identifying this interaccion ticket. */
                 id_interaccion: string;
             };
             cookie?: never;
@@ -61753,7 +62055,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este interaccion ticket. */
+                /** @description A UUID string identifying this interaccion ticket. */
                 id_interaccion: string;
             };
             cookie?: never;
@@ -61773,7 +62075,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este interaccion ticket. */
+                /** @description A UUID string identifying this interaccion ticket. */
                 id_interaccion: string;
             };
             cookie?: never;
@@ -61793,11 +62095,11 @@ export interface operations {
     "servicio-cliente_tickets-soporte_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -61845,11 +62147,11 @@ export interface operations {
     "servicio-cliente_tickets-soporte_abiertos": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -61878,11 +62180,11 @@ export interface operations {
     "servicio-cliente_tickets-soporte_dashboard": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -61911,11 +62213,11 @@ export interface operations {
     "servicio-cliente_tickets-soporte_por_prioridad": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -61946,7 +62248,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Ticket de Soporte. */
+                /** @description A UUID string identifying this Ticket de Soporte. */
                 id_ticket: string;
             };
             cookie?: never;
@@ -61968,7 +62270,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Ticket de Soporte. */
+                /** @description A UUID string identifying this Ticket de Soporte. */
                 id_ticket: string;
             };
             cookie?: never;
@@ -61990,7 +62292,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Ticket de Soporte. */
+                /** @description A UUID string identifying this Ticket de Soporte. */
                 id_ticket: string;
             };
             cookie?: never;
@@ -62010,7 +62312,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Ticket de Soporte. */
+                /** @description A UUID string identifying this Ticket de Soporte. */
                 id_ticket: string;
             };
             cookie?: never;
@@ -62032,7 +62334,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Ticket de Soporte. */
+                /** @description A UUID string identifying this Ticket de Soporte. */
                 id_ticket: string;
             };
             cookie?: never;
@@ -62054,7 +62356,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Ticket de Soporte. */
+                /** @description A UUID string identifying this Ticket de Soporte. */
                 id_ticket: string;
             };
             cookie?: never;
@@ -62076,7 +62378,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Ticket de Soporte. */
+                /** @description A UUID string identifying this Ticket de Soporte. */
                 id_ticket: string;
             };
             cookie?: never;
@@ -62130,11 +62432,11 @@ export interface operations {
     tareas_alertas_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -62184,11 +62486,11 @@ export interface operations {
     tareas_areas_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -62373,11 +62675,11 @@ export interface operations {
     tareas_items_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -62633,11 +62935,11 @@ export interface operations {
     tareas_minutas_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -62746,11 +63048,11 @@ export interface operations {
     tareas_proyectos_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -62899,11 +63201,11 @@ export interface operations {
     tareas_recurrentes_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -63069,11 +63371,11 @@ export interface operations {
     tareas_secciones_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -63220,11 +63522,11 @@ export interface operations {
     tesoreria_cajas_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -63274,7 +63576,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Virtual. */
+                /** @description A UUID string identifying this Caja Virtual. */
                 id_caja: string;
             };
             cookie?: never;
@@ -63296,7 +63598,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Virtual. */
+                /** @description A UUID string identifying this Caja Virtual. */
                 id_caja: string;
             };
             cookie?: never;
@@ -63318,7 +63620,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Virtual. */
+                /** @description A UUID string identifying this Caja Virtual. */
                 id_caja: string;
             };
             cookie?: never;
@@ -63338,7 +63640,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Caja Virtual. */
+                /** @description A UUID string identifying this Caja Virtual. */
                 id_caja: string;
             };
             cookie?: never;
@@ -63358,11 +63660,11 @@ export interface operations {
     "tesoreria_conciliaciones-bancarias_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -63412,7 +63714,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este conciliacion bancaria. */
+                /** @description A UUID string identifying this conciliacion bancaria. */
                 id: string;
             };
             cookie?: never;
@@ -63434,7 +63736,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este conciliacion bancaria. */
+                /** @description A UUID string identifying this conciliacion bancaria. */
                 id: string;
             };
             cookie?: never;
@@ -63456,7 +63758,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este conciliacion bancaria. */
+                /** @description A UUID string identifying this conciliacion bancaria. */
                 id: string;
             };
             cookie?: never;
@@ -63476,7 +63778,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este conciliacion bancaria. */
+                /** @description A UUID string identifying this conciliacion bancaria. */
                 id: string;
             };
             cookie?: never;
@@ -63498,7 +63800,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este conciliacion bancaria. */
+                /** @description A UUID string identifying this conciliacion bancaria. */
                 id: string;
             };
             cookie?: never;
@@ -63518,11 +63820,11 @@ export interface operations {
     "tesoreria_configuraciones-conciliacion_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
                 empresa?: string;
                 cuenta?: string;
@@ -63574,7 +63876,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este configuracion conciliacion cuenta. */
+                /** @description A UUID string identifying this configuracion conciliacion cuenta. */
                 id: string;
             };
             cookie?: never;
@@ -63596,7 +63898,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este configuracion conciliacion cuenta. */
+                /** @description A UUID string identifying this configuracion conciliacion cuenta. */
                 id: string;
             };
             cookie?: never;
@@ -63618,7 +63920,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este configuracion conciliacion cuenta. */
+                /** @description A UUID string identifying this configuracion conciliacion cuenta. */
                 id: string;
             };
             cookie?: never;
@@ -63638,7 +63940,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este configuracion conciliacion cuenta. */
+                /** @description A UUID string identifying this configuracion conciliacion cuenta. */
                 id: string;
             };
             cookie?: never;
@@ -63658,11 +63960,11 @@ export interface operations {
     "tesoreria_extractos-bancarios_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -63730,11 +64032,11 @@ export interface operations {
     "tesoreria_extractos-bancarios_saldos_consolidados": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
                 /** @description UUID de la empresa (opcional; usa la empresa activa accesible). */
                 empresa?: string;
@@ -63762,7 +64064,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este extracto bancario archivo. */
+                /** @description A UUID string identifying this extracto bancario archivo. */
                 id: string;
             };
             cookie?: never;
@@ -63784,7 +64086,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este extracto bancario archivo. */
+                /** @description A UUID string identifying this extracto bancario archivo. */
                 id: string;
             };
             cookie?: never;
@@ -63802,11 +64104,11 @@ export interface operations {
     "tesoreria_movimientos-bancarios_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -63894,7 +64196,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este movimiento bancario. */
+                /** @description A UUID string identifying this movimiento bancario. */
                 id: string;
             };
             cookie?: never;
@@ -63916,7 +64218,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este movimiento bancario. */
+                /** @description A UUID string identifying this movimiento bancario. */
                 id: string;
             };
             cookie?: never;
@@ -63938,7 +64240,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este movimiento bancario. */
+                /** @description A UUID string identifying this movimiento bancario. */
                 id: string;
             };
             cookie?: never;
@@ -63958,7 +64260,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este movimiento bancario. */
+                /** @description A UUID string identifying this movimiento bancario. */
                 id: string;
             };
             cookie?: never;
@@ -63978,11 +64280,11 @@ export interface operations {
     "tesoreria_movimientos-internos-fondo_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -64032,7 +64334,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un valor de entero único que identifique este movimiento interno fondo. */
+                /** @description A unique integer value identifying this movimiento interno fondo. */
                 id: number;
             };
             cookie?: never;
@@ -64054,7 +64356,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un valor de entero único que identifique este movimiento interno fondo. */
+                /** @description A unique integer value identifying this movimiento interno fondo. */
                 id: number;
             };
             cookie?: never;
@@ -64076,7 +64378,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un valor de entero único que identifique este movimiento interno fondo. */
+                /** @description A unique integer value identifying this movimiento interno fondo. */
                 id: number;
             };
             cookie?: never;
@@ -64096,7 +64398,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un valor de entero único que identifique este movimiento interno fondo. */
+                /** @description A unique integer value identifying this movimiento interno fondo. */
                 id: number;
             };
             cookie?: never;
@@ -64116,11 +64418,11 @@ export interface operations {
     "tesoreria_operaciones-cambio-divisa_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -64170,7 +64472,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un valor de entero único que identifique este Operación de Cambio de Divisa. */
+                /** @description A unique integer value identifying this Operación de Cambio de Divisa. */
                 id: number;
             };
             cookie?: never;
@@ -64192,7 +64494,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un valor de entero único que identifique este Operación de Cambio de Divisa. */
+                /** @description A unique integer value identifying this Operación de Cambio de Divisa. */
                 id: number;
             };
             cookie?: never;
@@ -64214,7 +64516,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un valor de entero único que identifique este Operación de Cambio de Divisa. */
+                /** @description A unique integer value identifying this Operación de Cambio de Divisa. */
                 id: number;
             };
             cookie?: never;
@@ -64234,7 +64536,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un valor de entero único que identifique este Operación de Cambio de Divisa. */
+                /** @description A unique integer value identifying this Operación de Cambio de Divisa. */
                 id: number;
             };
             cookie?: never;
@@ -64254,11 +64556,11 @@ export interface operations {
     "tesoreria_propuestas-conciliacion_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
                 empresa?: string;
                 cuenta?: string;
@@ -64294,11 +64596,11 @@ export interface operations {
     "tesoreria_propuestas-conciliacion_aprobadas": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
                 empresa?: string;
                 cuenta?: string;
@@ -64324,11 +64626,11 @@ export interface operations {
     "tesoreria_propuestas-conciliacion_bitacora": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
                 empresa?: string;
                 propuesta?: string;
@@ -64379,7 +64681,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este propuesta conciliacion bancaria. */
+                /** @description A UUID string identifying this propuesta conciliacion bancaria. */
                 id: string;
             };
             cookie?: never;
@@ -64401,7 +64703,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este propuesta conciliacion bancaria. */
+                /** @description A UUID string identifying this propuesta conciliacion bancaria. */
                 id: string;
             };
             cookie?: never;
@@ -64425,11 +64727,11 @@ export interface operations {
     ventas_comisiones_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -64481,11 +64783,11 @@ export interface operations {
     ventas_comisiones_resumen: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -64516,7 +64818,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Comisión de Venta. */
+                /** @description A UUID string identifying this Comisión de Venta. */
                 id_comision_venta: string;
             };
             cookie?: never;
@@ -64536,11 +64838,11 @@ export interface operations {
     ventas_cotizaciones_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -64590,7 +64892,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Cotización. */
+                /** @description A UUID string identifying this Cotización. */
                 id_cotizacion: string;
             };
             cookie?: never;
@@ -64612,7 +64914,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Cotización. */
+                /** @description A UUID string identifying this Cotización. */
                 id_cotizacion: string;
             };
             cookie?: never;
@@ -64634,7 +64936,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Cotización. */
+                /** @description A UUID string identifying this Cotización. */
                 id_cotizacion: string;
             };
             cookie?: never;
@@ -64654,7 +64956,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Cotización. */
+                /** @description A UUID string identifying this Cotización. */
                 id_cotizacion: string;
             };
             cookie?: never;
@@ -64676,7 +64978,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Cotización. */
+                /** @description A UUID string identifying this Cotización. */
                 id_cotizacion: string;
             };
             cookie?: never;
@@ -64696,11 +64998,11 @@ export interface operations {
     "ventas_detalles-cotizacion_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -64750,7 +65052,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Cotización. */
+                /** @description A UUID string identifying this Detalle de Cotización. */
                 id_detalle_cotizacion: string;
             };
             cookie?: never;
@@ -64772,7 +65074,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Cotización. */
+                /** @description A UUID string identifying this Detalle de Cotización. */
                 id_detalle_cotizacion: string;
             };
             cookie?: never;
@@ -64794,7 +65096,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Cotización. */
+                /** @description A UUID string identifying this Detalle de Cotización. */
                 id_detalle_cotizacion: string;
             };
             cookie?: never;
@@ -64814,7 +65116,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Cotización. */
+                /** @description A UUID string identifying this Detalle de Cotización. */
                 id_detalle_cotizacion: string;
             };
             cookie?: never;
@@ -64834,11 +65136,11 @@ export interface operations {
     "ventas_detalles-devolucion-venta_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -64888,7 +65190,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Devolución. */
+                /** @description A UUID string identifying this Detalle de Devolución. */
                 id_detalle_devolucion: string;
             };
             cookie?: never;
@@ -64910,7 +65212,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Devolución. */
+                /** @description A UUID string identifying this Detalle de Devolución. */
                 id_detalle_devolucion: string;
             };
             cookie?: never;
@@ -64932,7 +65234,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Devolución. */
+                /** @description A UUID string identifying this Detalle de Devolución. */
                 id_detalle_devolucion: string;
             };
             cookie?: never;
@@ -64952,7 +65254,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Devolución. */
+                /** @description A UUID string identifying this Detalle de Devolución. */
                 id_detalle_devolucion: string;
             };
             cookie?: never;
@@ -64972,11 +65274,11 @@ export interface operations {
     "ventas_detalles-factura-fiscal_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -65026,7 +65328,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Factura Fiscal. */
+                /** @description A UUID string identifying this Detalle de Factura Fiscal. */
                 id_detalle_factura: string;
             };
             cookie?: never;
@@ -65048,7 +65350,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Factura Fiscal. */
+                /** @description A UUID string identifying this Detalle de Factura Fiscal. */
                 id_detalle_factura: string;
             };
             cookie?: never;
@@ -65070,7 +65372,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Factura Fiscal. */
+                /** @description A UUID string identifying this Detalle de Factura Fiscal. */
                 id_detalle_factura: string;
             };
             cookie?: never;
@@ -65090,7 +65392,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Factura Fiscal. */
+                /** @description A UUID string identifying this Detalle de Factura Fiscal. */
                 id_detalle_factura: string;
             };
             cookie?: never;
@@ -65110,11 +65412,11 @@ export interface operations {
     "ventas_detalles-nota-credito-fiscal_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -65164,7 +65466,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Nota de Crédito Fiscal. */
+                /** @description A UUID string identifying this Detalle de Nota de Crédito Fiscal. */
                 id_detalle_nota_credito: string;
             };
             cookie?: never;
@@ -65186,7 +65488,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Nota de Crédito Fiscal. */
+                /** @description A UUID string identifying this Detalle de Nota de Crédito Fiscal. */
                 id_detalle_nota_credito: string;
             };
             cookie?: never;
@@ -65208,7 +65510,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Nota de Crédito Fiscal. */
+                /** @description A UUID string identifying this Detalle de Nota de Crédito Fiscal. */
                 id_detalle_nota_credito: string;
             };
             cookie?: never;
@@ -65228,7 +65530,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Nota de Crédito Fiscal. */
+                /** @description A UUID string identifying this Detalle de Nota de Crédito Fiscal. */
                 id_detalle_nota_credito: string;
             };
             cookie?: never;
@@ -65248,11 +65550,11 @@ export interface operations {
     "ventas_detalles-nota-credito-venta_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -65302,7 +65604,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Nota de Crédito. */
+                /** @description A UUID string identifying this Detalle de Nota de Crédito. */
                 id_detalle_nota_credito: string;
             };
             cookie?: never;
@@ -65324,7 +65626,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Nota de Crédito. */
+                /** @description A UUID string identifying this Detalle de Nota de Crédito. */
                 id_detalle_nota_credito: string;
             };
             cookie?: never;
@@ -65346,7 +65648,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Nota de Crédito. */
+                /** @description A UUID string identifying this Detalle de Nota de Crédito. */
                 id_detalle_nota_credito: string;
             };
             cookie?: never;
@@ -65366,7 +65668,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Nota de Crédito. */
+                /** @description A UUID string identifying this Detalle de Nota de Crédito. */
                 id_detalle_nota_credito: string;
             };
             cookie?: never;
@@ -65386,11 +65688,11 @@ export interface operations {
     "ventas_detalles-nota-venta_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -65440,7 +65742,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Nota de Venta. */
+                /** @description A UUID string identifying this Detalle de Nota de Venta. */
                 id_detalle_nota_venta: string;
             };
             cookie?: never;
@@ -65462,7 +65764,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Nota de Venta. */
+                /** @description A UUID string identifying this Detalle de Nota de Venta. */
                 id_detalle_nota_venta: string;
             };
             cookie?: never;
@@ -65484,7 +65786,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Nota de Venta. */
+                /** @description A UUID string identifying this Detalle de Nota de Venta. */
                 id_detalle_nota_venta: string;
             };
             cookie?: never;
@@ -65504,7 +65806,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Nota de Venta. */
+                /** @description A UUID string identifying this Detalle de Nota de Venta. */
                 id_detalle_nota_venta: string;
             };
             cookie?: never;
@@ -65524,11 +65826,11 @@ export interface operations {
     "ventas_detalles-pedido_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -65578,7 +65880,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Pedido. */
+                /** @description A UUID string identifying this Detalle de Pedido. */
                 id_detalle_pedido: string;
             };
             cookie?: never;
@@ -65600,7 +65902,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Pedido. */
+                /** @description A UUID string identifying this Detalle de Pedido. */
                 id_detalle_pedido: string;
             };
             cookie?: never;
@@ -65622,7 +65924,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Pedido. */
+                /** @description A UUID string identifying this Detalle de Pedido. */
                 id_detalle_pedido: string;
             };
             cookie?: never;
@@ -65642,7 +65944,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Pedido. */
+                /** @description A UUID string identifying this Detalle de Pedido. */
                 id_detalle_pedido: string;
             };
             cookie?: never;
@@ -65662,11 +65964,11 @@ export interface operations {
     "ventas_detalles-precio_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -65716,7 +66018,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Precio. */
+                /** @description A UUID string identifying this Detalle de Precio. */
                 id_detalle: string;
             };
             cookie?: never;
@@ -65738,7 +66040,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Precio. */
+                /** @description A UUID string identifying this Detalle de Precio. */
                 id_detalle: string;
             };
             cookie?: never;
@@ -65760,7 +66062,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Precio. */
+                /** @description A UUID string identifying this Detalle de Precio. */
                 id_detalle: string;
             };
             cookie?: never;
@@ -65780,7 +66082,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Detalle de Precio. */
+                /** @description A UUID string identifying this Detalle de Precio. */
                 id_detalle: string;
             };
             cookie?: never;
@@ -65800,11 +66102,11 @@ export interface operations {
     "ventas_devoluciones-venta_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -65854,7 +66156,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Devolución de Venta. */
+                /** @description A UUID string identifying this Devolución de Venta. */
                 id_devolucion: string;
             };
             cookie?: never;
@@ -65876,7 +66178,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Devolución de Venta. */
+                /** @description A UUID string identifying this Devolución de Venta. */
                 id_devolucion: string;
             };
             cookie?: never;
@@ -65898,7 +66200,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Devolución de Venta. */
+                /** @description A UUID string identifying this Devolución de Venta. */
                 id_devolucion: string;
             };
             cookie?: never;
@@ -65918,7 +66220,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Devolución de Venta. */
+                /** @description A UUID string identifying this Devolución de Venta. */
                 id_devolucion: string;
             };
             cookie?: never;
@@ -65938,11 +66240,11 @@ export interface operations {
     "ventas_esquemas-comision-categorias_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -65992,7 +66294,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Override de Comisión por Categoría. */
+                /** @description A UUID string identifying this Override de Comisión por Categoría. */
                 id_esquema_comision_categoria: string;
             };
             cookie?: never;
@@ -66014,7 +66316,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Override de Comisión por Categoría. */
+                /** @description A UUID string identifying this Override de Comisión por Categoría. */
                 id_esquema_comision_categoria: string;
             };
             cookie?: never;
@@ -66036,7 +66338,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Override de Comisión por Categoría. */
+                /** @description A UUID string identifying this Override de Comisión por Categoría. */
                 id_esquema_comision_categoria: string;
             };
             cookie?: never;
@@ -66056,7 +66358,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Override de Comisión por Categoría. */
+                /** @description A UUID string identifying this Override de Comisión por Categoría. */
                 id_esquema_comision_categoria: string;
             };
             cookie?: never;
@@ -66076,11 +66378,11 @@ export interface operations {
     "ventas_esquemas-comision_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -66130,7 +66432,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Esquema de Comisión. */
+                /** @description A UUID string identifying this Esquema de Comisión. */
                 id_esquema_comision: string;
             };
             cookie?: never;
@@ -66152,7 +66454,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Esquema de Comisión. */
+                /** @description A UUID string identifying this Esquema de Comisión. */
                 id_esquema_comision: string;
             };
             cookie?: never;
@@ -66174,7 +66476,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Esquema de Comisión. */
+                /** @description A UUID string identifying this Esquema de Comisión. */
                 id_esquema_comision: string;
             };
             cookie?: never;
@@ -66194,7 +66496,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Esquema de Comisión. */
+                /** @description A UUID string identifying this Esquema de Comisión. */
                 id_esquema_comision: string;
             };
             cookie?: never;
@@ -66214,11 +66516,11 @@ export interface operations {
     "ventas_facturas-fiscales_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -66268,7 +66570,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Factura Fiscal. */
+                /** @description A UUID string identifying this Factura Fiscal. */
                 id_factura: string;
             };
             cookie?: never;
@@ -66290,7 +66592,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Factura Fiscal. */
+                /** @description A UUID string identifying this Factura Fiscal. */
                 id_factura: string;
             };
             cookie?: never;
@@ -66312,7 +66614,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Factura Fiscal. */
+                /** @description A UUID string identifying this Factura Fiscal. */
                 id_factura: string;
             };
             cookie?: never;
@@ -66332,7 +66634,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Factura Fiscal. */
+                /** @description A UUID string identifying this Factura Fiscal. */
                 id_factura: string;
             };
             cookie?: never;
@@ -66354,7 +66656,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Factura Fiscal. */
+                /** @description A UUID string identifying this Factura Fiscal. */
                 id_factura: string;
             };
             cookie?: never;
@@ -66374,11 +66676,11 @@ export interface operations {
     "ventas_listas-precio_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -66428,7 +66730,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Lista de Precios. */
+                /** @description A UUID string identifying this Lista de Precios. */
                 id_lista: string;
             };
             cookie?: never;
@@ -66450,7 +66752,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Lista de Precios. */
+                /** @description A UUID string identifying this Lista de Precios. */
                 id_lista: string;
             };
             cookie?: never;
@@ -66472,7 +66774,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Lista de Precios. */
+                /** @description A UUID string identifying this Lista de Precios. */
                 id_lista: string;
             };
             cookie?: never;
@@ -66492,7 +66794,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Lista de Precios. */
+                /** @description A UUID string identifying this Lista de Precios. */
                 id_lista: string;
             };
             cookie?: never;
@@ -66514,7 +66816,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Lista de Precios. */
+                /** @description A UUID string identifying this Lista de Precios. */
                 id_lista: string;
             };
             cookie?: never;
@@ -66534,11 +66836,11 @@ export interface operations {
     "ventas_notas-credito-fiscal_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -66588,7 +66890,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nota de Crédito Fiscal. */
+                /** @description A UUID string identifying this Nota de Crédito Fiscal. */
                 id_nota_credito_fiscal: string;
             };
             cookie?: never;
@@ -66610,7 +66912,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nota de Crédito Fiscal. */
+                /** @description A UUID string identifying this Nota de Crédito Fiscal. */
                 id_nota_credito_fiscal: string;
             };
             cookie?: never;
@@ -66632,7 +66934,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nota de Crédito Fiscal. */
+                /** @description A UUID string identifying this Nota de Crédito Fiscal. */
                 id_nota_credito_fiscal: string;
             };
             cookie?: never;
@@ -66652,7 +66954,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nota de Crédito Fiscal. */
+                /** @description A UUID string identifying this Nota de Crédito Fiscal. */
                 id_nota_credito_fiscal: string;
             };
             cookie?: never;
@@ -66672,11 +66974,11 @@ export interface operations {
     "ventas_notas-credito-venta_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -66726,7 +67028,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nota de Crédito de Venta. */
+                /** @description A UUID string identifying this Nota de Crédito de Venta. */
                 id_nota_credito: string;
             };
             cookie?: never;
@@ -66748,7 +67050,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nota de Crédito de Venta. */
+                /** @description A UUID string identifying this Nota de Crédito de Venta. */
                 id_nota_credito: string;
             };
             cookie?: never;
@@ -66770,7 +67072,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nota de Crédito de Venta. */
+                /** @description A UUID string identifying this Nota de Crédito de Venta. */
                 id_nota_credito: string;
             };
             cookie?: never;
@@ -66790,7 +67092,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nota de Crédito de Venta. */
+                /** @description A UUID string identifying this Nota de Crédito de Venta. */
                 id_nota_credito: string;
             };
             cookie?: never;
@@ -66810,11 +67112,11 @@ export interface operations {
     "ventas_notas-venta_list": {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -66864,7 +67166,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nota de Venta. */
+                /** @description A UUID string identifying this Nota de Venta. */
                 id_nota_venta: string;
             };
             cookie?: never;
@@ -66886,7 +67188,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nota de Venta. */
+                /** @description A UUID string identifying this Nota de Venta. */
                 id_nota_venta: string;
             };
             cookie?: never;
@@ -66908,7 +67210,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nota de Venta. */
+                /** @description A UUID string identifying this Nota de Venta. */
                 id_nota_venta: string;
             };
             cookie?: never;
@@ -66928,7 +67230,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nota de Venta. */
+                /** @description A UUID string identifying this Nota de Venta. */
                 id_nota_venta: string;
             };
             cookie?: never;
@@ -66950,7 +67252,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nota de Venta. */
+                /** @description A UUID string identifying this Nota de Venta. */
                 id_nota_venta: string;
             };
             cookie?: never;
@@ -66972,7 +67274,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nota de Venta. */
+                /** @description A UUID string identifying this Nota de Venta. */
                 id_nota_venta: string;
             };
             cookie?: never;
@@ -66994,7 +67296,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nota de Venta. */
+                /** @description A UUID string identifying this Nota de Venta. */
                 id_nota_venta: string;
             };
             cookie?: never;
@@ -67016,7 +67318,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Nota de Venta. */
+                /** @description A UUID string identifying this Nota de Venta. */
                 id_nota_venta: string;
             };
             cookie?: never;
@@ -67036,11 +67338,11 @@ export interface operations {
     ventas_pedidos_list: {
         parameters: {
             query?: {
-                /** @description Un término de búsqueda. */
+                /** @description A search term. */
                 search?: string;
-                /** @description Qué campo usar para ordenar los resultados. */
+                /** @description Which field to use when ordering the results. */
                 ordering?: string;
-                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                /** @description A page number within the paginated result set. */
                 page?: number;
             };
             header?: never;
@@ -67090,7 +67392,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pedido. */
+                /** @description A UUID string identifying this Pedido. */
                 id_pedido: string;
             };
             cookie?: never;
@@ -67112,7 +67414,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pedido. */
+                /** @description A UUID string identifying this Pedido. */
                 id_pedido: string;
             };
             cookie?: never;
@@ -67134,7 +67436,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pedido. */
+                /** @description A UUID string identifying this Pedido. */
                 id_pedido: string;
             };
             cookie?: never;
@@ -67154,7 +67456,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pedido. */
+                /** @description A UUID string identifying this Pedido. */
                 id_pedido: string;
             };
             cookie?: never;
@@ -67176,7 +67478,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pedido. */
+                /** @description A UUID string identifying this Pedido. */
                 id_pedido: string;
             };
             cookie?: never;
@@ -67198,7 +67500,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Un Cadena UUID que identifique este Pedido. */
+                /** @description A UUID string identifying this Pedido. */
                 id_pedido: string;
             };
             cookie?: never;

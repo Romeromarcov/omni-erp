@@ -1397,6 +1397,10 @@
 | `^tipos-licencia/(?P<pk>[^/.]+)/$` | TipoLicenciaViewSet | TipoLicencia | ✅ | ✅ | IsAuthenticated |
 | `^tipos-licencia/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | TipoLicenciaViewSet | TipoLicencia | ✅ | ✅ | IsAuthenticated |
 | `^tipos-licencia\.(?P<format>[a-z0-9]+)/?$` | TipoLicenciaViewSet | TipoLicencia | ✅ | ✅ | IsAuthenticated |
+| `^tipos-tasa-cambio/$` | TipoTasaCambioViewSet | TipoTasaCambio | ✅ | ✅ | IsAuthenticated |
+| `^tipos-tasa-cambio/(?P<pk>[^/.]+)/$` | TipoTasaCambioViewSet | TipoTasaCambio | ✅ | ✅ | IsAuthenticated |
+| `^tipos-tasa-cambio/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | TipoTasaCambioViewSet | TipoTasaCambio | ✅ | ✅ | IsAuthenticated |
+| `^tipos-tasa-cambio\.(?P<format>[a-z0-9]+)/?$` | TipoTasaCambioViewSet | TipoTasaCambio | ✅ | ✅ | IsAuthenticated |
 | `^transacciones-datafono/$` | TransaccionDatafonoViewSet | TransaccionDatafono | — | ✅ | IsAuthenticated |
 | `^transacciones-datafono/(?P<pk>[^/.]+)/$` | TransaccionDatafonoViewSet | TransaccionDatafono | — | ✅ | IsAuthenticated |
 | `^transacciones-datafono/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | TransaccionDatafonoViewSet | TransaccionDatafono | — | ✅ | IsAuthenticated |
@@ -1469,6 +1473,7 @@
 | `dashboard/stats/` | dashboard_stats_view | — | — | — | IsAuthenticated |
 | `destinos/` | BotDestinosView | — | — | — | PuedePanelBots |
 | `dispositivos/accion/` | dispositivo_accion_view | — | — | — | IsAuthenticated |
+| `equivalencias-trimonetarias/` | EquivalenciasTrimonetariasView | — | — | — | IsAuthenticated |
 | `estado/` | EstadoLocalizacionView | — | — | — | IsAuthenticated |
 | `heartbeat/` | BotHeartbeatView | — | — | — | PuedeEnviarLatido |
 | `libro-compras-pdf/` | LibroComprasPDFView | — | — | — | IsAuthenticated |
@@ -1495,4 +1500,4 @@
 | `validar-cuenta-ve/` | ValidarCuentaVeView | — | — | — | IsAuthenticated |
 | `validar-referencia/` | ValidarReferenciaView | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 267_
+_Total ViewSets: 269_

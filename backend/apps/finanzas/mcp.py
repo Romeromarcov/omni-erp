@@ -7,8 +7,10 @@ Herramientas expuestas:
   finanzas_get_metodos_pago            — lista métodos de pago disponibles
   finanzas_pagos_terceros_pendientes   — pagos de terceros (Zelle) por gestionar
   finanzas_get_saldos_favor_contacto   — saldos a favor / anticipos de un contacto
-  finanzas_conciliar_pago_multiple     — aplica un pago a 1..N documentos en lote atómico
-  finanzas_revertir_asignacion_pago    — revierte una asignación activa con contra-asiento
+  finanzas_conciliar_pago_multiple           — aplica un pago a 1..N documentos en lote atómico
+  finanzas_revertir_asignacion_pago          — revierte una asignación activa con contra-asiento
+  finanzas_listar_tipos_tasa                 — lista tipos de tasa globales y de la empresa
+  finanzas_calcular_equivalencias_trimonetarias — calcula equivalencias Base/País(BCV)/Referencia
 """
 
 import logging
@@ -430,6 +432,142 @@ def finanzas_revertir_asignacion_pago(
         }
 
 
+def finanzas_listar_tipos_tasa(
+    capability_token: str,
+    empresa_id: str,
+) -> list:
+    """
+    Lista los tipos de tasa de cambio activos visibles para la empresa (globales + propios).
+
+    Scope requerido: ``finanzas:read``
+    """
+    from django.db.models import Q  # noqa: PLC0415
+
+    from apps.finanzas.models import TipoTasaCambio  # noqa: PLC0415
+
+    with _ctx(capability_token, f"{_SCOPE}:read", empresa_id=empresa_id) as ctx:
+        tipos = TipoTasaCambio.objects.filter(
+            Q(id_empresa__isnull=True) | Q(id_empresa=empresa_id),
+            activo=True,
+        ).order_by("prioridad", "codigo")
+        logger.info(
+            "finanzas_listar_tipos_tasa | actor=%s | tenant=%s | count=%d",
+            ctx["actor_id"],
+            ctx["tenant_id"],
+            len(tipos),
+        )
+        return [
+            {
+                "id_tipo_tasa": str(t.id_tipo_tasa),
+                "codigo": t.codigo,
+                "nombre": t.nombre,
+                "es_oficial_fiscal": t.es_oficial_fiscal,
+                "es_global": t.id_empresa_id is None,
+                "prioridad": t.prioridad,
+            }
+            for t in tipos
+        ]
+
+
+def _limpiar_texto_mcp(valor: Any, campo: str) -> str:
+    texto = str(valor or "")
+    if "\x00" in texto:
+        raise ValueError(f"El parámetro '{campo}' contiene caracteres inválidos.")
+    return texto.strip()
+
+
+def _serializar_tasa_mcp(meta: dict | None) -> dict | None:
+    if meta is None:
+        return None
+    fecha_tasa = meta.get("fecha_tasa")
+    return {
+        **meta,
+        "fecha_tasa": (
+            fecha_tasa.isoformat() if fecha_tasa is not None and hasattr(fecha_tasa, "isoformat") else fecha_tasa
+        ),
+    }
+
+
+def finanzas_calcular_equivalencias_trimonetarias(
+    capability_token: str,
+    empresa_id: str,
+    monto: Any,
+    moneda_origen: str,
+    fecha: str = "",
+    codigo_tipo_tasa_base: str = "",
+    codigo_tipo_tasa_referencia: str = "",
+) -> dict:
+    """
+    Convierte un monto simultáneamente a Moneda Base, Moneda País (BCV) y Moneda Referencia.
+
+    Scope requerido: ``finanzas:read``
+    """
+    from datetime import date  # noqa: PLC0415
+
+    from apps.core.models import Empresa  # noqa: PLC0415
+    from apps.finanzas.services import TasaCambioError  # noqa: PLC0415
+    from apps.finanzas.services_trimonetario import calcular_equivalencias_trimonetarias  # noqa: PLC0415
+
+    with _ctx(capability_token, f"{_SCOPE}:read", empresa_id=empresa_id) as ctx:
+        empresa = (
+            Empresa.objects.select_related("id_moneda_base", "id_moneda_pais")
+            .filter(id_empresa=empresa_id, activo=True)
+            .first()
+        )
+        if empresa is None:
+            return {"error": "Empresa no encontrada o inactiva."}
+
+        try:
+            monto_dec = _parse_decimal_mcp(monto, "monto")
+            moneda_iso = _limpiar_texto_mcp(moneda_origen, "moneda_origen")
+            tipo_base = _limpiar_texto_mcp(codigo_tipo_tasa_base, "codigo_tipo_tasa_base") or None
+            tipo_ref = _limpiar_texto_mcp(codigo_tipo_tasa_referencia, "codigo_tipo_tasa_referencia") or None
+            fecha_txt = _limpiar_texto_mcp(fecha, "fecha")
+        except ValueError as exc:
+            return {"error": str(exc)}
+
+        fecha_obj = None
+        if fecha_txt:
+            try:
+                fecha_obj = date.fromisoformat(fecha_txt)
+            except ValueError:
+                return {"error": "La fecha debe tener formato YYYY-MM-DD."}
+
+        try:
+            res = calcular_equivalencias_trimonetarias(
+                monto_dec,
+                moneda_iso,
+                empresa=empresa,
+                fecha=fecha_obj,
+                codigo_tipo_tasa_base=tipo_base,
+                codigo_tipo_tasa_referencia=tipo_ref,
+            )
+        except (TasaCambioError, ValueError) as exc:
+            return {"error": str(exc)}
+
+        logger.info(
+            "finanzas_calcular_equivalencias_trimonetarias | actor=%s | tenant=%s | origen=%s",
+            ctx["actor_id"],
+            ctx["tenant_id"],
+            res["moneda_origen_iso"],
+        )
+        return {
+            "fecha": res["fecha"].isoformat(),
+            "moneda_origen_iso": res["moneda_origen_iso"],
+            "monto_origen": res["monto_origen"],
+            "moneda_base_iso": res["moneda_base_iso"],
+            "monto_base": res["monto_base"],
+            "tasa_base": _serializar_tasa_mcp(res["tasa_base"]),
+            "moneda_pais_iso": res["moneda_pais_iso"],
+            "monto_pais_fiscal": res["monto_pais_fiscal"],
+            "tasa_pais_fiscal": _serializar_tasa_mcp(res["tasa_pais_fiscal"]),
+            "moneda_referencia_activa": res["moneda_referencia_activa"],
+            "moneda_referencia_iso": res["moneda_referencia_iso"],
+            "monto_referencia": res["monto_referencia"],
+            "tasa_referencia": _serializar_tasa_mcp(res["tasa_referencia"]),
+        }
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Auto-discovery
 # ─────────────────────────────────────────────────────────────────────────────
@@ -469,5 +607,15 @@ MCP_TOOLS: List[Dict[str, Any]] = [
         "fn": finanzas_revertir_asignacion_pago,
         "name": "finanzas_revertir_asignacion_pago",
         "scope": f"{_SCOPE}:write",
+    },
+    {
+        "fn": finanzas_listar_tipos_tasa,
+        "name": "finanzas_listar_tipos_tasa",
+        "scope": f"{_SCOPE}:read",
+    },
+    {
+        "fn": finanzas_calcular_equivalencias_trimonetarias,
+        "name": "finanzas_calcular_equivalencias_trimonetarias",
+        "scope": f"{_SCOPE}:read",
     },
 ]

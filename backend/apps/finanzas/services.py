@@ -23,7 +23,15 @@ class TasaCambioError(Exception):
 _TIPO_TASA_PRIORIDAD = ["ESPECIAL_USUARIO", "FIJA", "PROMEDIO_MERCADO", "OFICIAL_BCV"]
 
 
-def obtener_tasa_cambio(moneda_origen, moneda_destino, empresa=None, fecha=None):
+def obtener_tasa_cambio(
+    moneda_origen,
+    moneda_destino,
+    empresa=None,
+    fecha=None,
+    *,
+    codigo_tipo_tasa: str | None = None,
+    solo_oficial_fiscal: bool = False,
+):
     """
     Busca la tasa de cambio más adecuada entre dos monedas para una fecha.
 
@@ -32,13 +40,17 @@ def obtener_tasa_cambio(moneda_origen, moneda_destino, empresa=None, fecha=None)
     2. Tasa global OFICIAL_BCV (id_empresa=None) para la fecha exacta.
     3. Tasa más reciente disponible (empresa-específica o global) dentro de los últimos 30 días.
 
+    Si se pasa ``codigo_tipo_tasa`` o ``solo_oficial_fiscal=True``, delega en
+    ``services_trimonetario.obtener_tasa_por_tipo`` (soporta tipos extensibles y par inverso).
     Si moneda_origen == moneda_destino devuelve tasa 1.0.
 
     Args:
-        moneda_origen:  Instancia Moneda o código ISO (str).
-        moneda_destino: Instancia Moneda o código ISO (str).
-        empresa:        Instancia Empresa o UUID; puede ser None para buscar solo tasas globales.
-        fecha:          date — fecha de referencia; default hoy (timezone.localdate()).
+        moneda_origen:       Instancia Moneda o código ISO (str).
+        moneda_destino:      Instancia Moneda o código ISO (str).
+        empresa:             Instancia Empresa o UUID; puede ser None para buscar solo tasas globales.
+        fecha:               date — fecha de referencia; default hoy (timezone.localdate()).
+        codigo_tipo_tasa:    Código del ``TipoTasaCambio`` deseado (opcional).
+        solo_oficial_fiscal: Fuerza el uso exclusivo de tasa oficial/fiscal (ej. BCV).
 
     Returns:
         TasaCambio — instancia con la mejor tasa disponible.
@@ -46,6 +58,18 @@ def obtener_tasa_cambio(moneda_origen, moneda_destino, empresa=None, fecha=None)
     Raises:
         TasaCambioError si no se encuentra ninguna tasa.
     """
+    if codigo_tipo_tasa or solo_oficial_fiscal:
+        from .services_trimonetario import obtener_tasa_por_tipo
+
+        return obtener_tasa_por_tipo(
+            moneda_origen,
+            moneda_destino,
+            empresa=empresa,
+            fecha=fecha,
+            codigo_tipo_tasa=codigo_tipo_tasa,
+            solo_oficial_fiscal=solo_oficial_fiscal,
+        )
+
     from .cache import normalizar_empresa_uuid, obtener_moneda_por_iso, obtener_tasa_cambio_cacheada
     from .models import TasaCambio
 
@@ -95,16 +119,27 @@ def obtener_tasa_cambio(moneda_origen, moneda_destino, empresa=None, fecha=None)
     )
 
 
-def convertir_monto(monto: Decimal, moneda_origen, moneda_destino, empresa=None, fecha=None) -> Decimal:
+def convertir_monto(
+    monto: Decimal,
+    moneda_origen,
+    moneda_destino,
+    empresa=None,
+    fecha=None,
+    *,
+    codigo_tipo_tasa: str | None = None,
+    solo_oficial_fiscal: bool = False,
+) -> Decimal:
     """
     Convierte un monto de moneda_origen a moneda_destino.
 
     Args:
-        monto:          Monto a convertir (Decimal o numérico).
-        moneda_origen:  Instancia Moneda o código ISO.
-        moneda_destino: Instancia Moneda o código ISO.
-        empresa:        Instancia Empresa o UUID; None para tasas globales.
-        fecha:          date; default hoy.
+        monto:               Monto a convertir (Decimal o numérico).
+        moneda_origen:       Instancia Moneda o código ISO.
+        moneda_destino:      Instancia Moneda o código ISO.
+        empresa:             Instancia Empresa o UUID; None para tasas globales.
+        fecha:               date; default hoy.
+        codigo_tipo_tasa:    Código del ``TipoTasaCambio`` deseado (opcional).
+        solo_oficial_fiscal: Fuerza tasa oficial/fiscal (ej. BCV).
 
     Returns:
         Decimal — monto convertido, redondeado a 4 decimales.
@@ -117,7 +152,14 @@ def convertir_monto(monto: Decimal, moneda_origen, moneda_destino, empresa=None,
     if monto < 0:
         raise ValueError("El monto a convertir no puede ser negativo.")
 
-    tasa = obtener_tasa_cambio(moneda_origen, moneda_destino, empresa=empresa, fecha=fecha)
+    tasa = obtener_tasa_cambio(
+        moneda_origen,
+        moneda_destino,
+        empresa=empresa,
+        fecha=fecha,
+        codigo_tipo_tasa=codigo_tipo_tasa,
+        solo_oficial_fiscal=solo_oficial_fiscal,
+    )
     resultado = monto * tasa.valor_tasa
     return resultado.quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
 

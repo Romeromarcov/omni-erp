@@ -66,9 +66,87 @@ class MonedaEmpresaActiva(models.Model):
     empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="monedas_activas")
     moneda = models.ForeignKey("Moneda", on_delete=models.CASCADE, related_name="empresas_activas")
     activa = models.BooleanField(default=True)
+    es_moneda_referencia = models.BooleanField(
+        default=False,
+        help_text="Moneda de referencia adicional activable por empresa (ej. USDT) para cálculos y reportería trimonetaria.",
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["empresa"],
+                condition=Q(es_moneda_referencia=True, activa=True),
+                name="uq_moneda_referencia_activa_por_empresa",
+            ),
+        ]
+
+
+class TipoTasaCambio(OmniBaseModel):
+    """Catálogo extensible de tipos de tasa de cambio por empresa o globales."""
+
+    id_tipo_tasa = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey(
+        "core.Empresa",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="tipos_tasa_cambio",
+        help_text="Null = tipo global del sistema (ej. OFICIAL_BCV).",
+    )
+    codigo = models.CharField(max_length=40)
+    nombre = models.CharField(max_length=100)
+    descripcion = models.TextField(blank=True, default="")
+    es_oficial_fiscal = models.BooleanField(
+        default=False,
+        help_text="Si es True, se usa obligatoriamente para cumplimiento fiscal/contable (ej. BCV).",
+    )
+    prioridad = models.PositiveSmallIntegerField(
+        default=100,
+        help_text="Menor valor = mayor prioridad en búsqueda por defecto.",
+    )
+
+    class Meta:
+        db_table = "finanzas_tipo_tasa_cambio"
+        verbose_name = "Tipo de Tasa de Cambio"
+        verbose_name_plural = "Tipos de Tasa de Cambio"
+        ordering = ["prioridad", "codigo"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["id_empresa", "codigo"],
+                condition=Q(id_empresa__isnull=False),
+                name="uq_tipo_tasa_empresa_codigo",
+            ),
+            models.UniqueConstraint(
+                fields=["codigo"],
+                condition=Q(id_empresa__isnull=True),
+                name="uq_tipo_tasa_global_codigo",
+            ),
+        ]
+
+    def clean(self) -> None:
+        super().clean()
+        codigo_norm = (self.codigo or "").strip().upper()
+        if not codigo_norm:
+            raise ValidationError({"codigo": "El código del tipo de tasa no puede estar vacío."})
+        self.codigo = codigo_norm
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        self.codigo = (self.codigo or "").strip().upper()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f"{self.nombre} ({self.codigo})"
 
 
 class TasaCambio(models.Model):
+    TIPO_TASA_CHOICES = [
+        ("OFICIAL_BCV", "Oficial BCV"),
+        ("ESPECIAL_USUARIO", "Especial Usuario"),
+        ("PROMEDIO_MERCADO", "Promedio Mercado"),
+        ("FIJA", "Fija"),
+        ("PERSONALIZADA", "Personalizada"),
+    ]
+
     id_tasa_cambio = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey(
         "core.Empresa",
@@ -79,14 +157,17 @@ class TasaCambio(models.Model):
     )
     id_moneda_origen = models.ForeignKey("Moneda", related_name="tasa_origen", on_delete=models.CASCADE)
     id_moneda_destino = models.ForeignKey("Moneda", related_name="tasa_destino", on_delete=models.CASCADE)
+    id_tipo_tasa = models.ForeignKey(
+        "TipoTasaCambio",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="tasas",
+        help_text="Tipo de tasa extensible (permite múltiples tasas personalizadas para el mismo par).",
+    )
     tipo_tasa = models.CharField(
-        max_length=20,
-        choices=[
-            ("OFICIAL_BCV", "Oficial BCV"),
-            ("ESPECIAL_USUARIO", "Especial Usuario"),
-            ("PROMEDIO_MERCADO", "Promedio Mercado"),
-            ("FIJA", "Fija"),
-        ],
+        max_length=40,
+        choices=TIPO_TASA_CHOICES,
     )
     valor_tasa = models.DecimalField(max_digits=18, decimal_places=8)
     fecha_tasa = models.DateField()

@@ -11,6 +11,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from .serializers_conciliacion_pagos import (
     AsignacionPagoSerializer,
@@ -277,15 +278,18 @@ from .models import (
     MonedaEmpresaActiva,
     MovimientoCajaBanco,
     TasaCambio,
+    TipoTasaCambio,
     TransaccionFinanciera,
 )
 from .serializers import (
     CuentaBancariaEmpresaSerializer,
+    EquivalenciasTrimonetariasInputSerializer,
     MetodoPagoSerializer,
     MonedaEmpresaActivaSerializer,
     MonedaSerializer,
     MovimientoCajaBancoSerializer,
     TasaCambioSerializer,
+    TipoTasaCambioSerializer,
     TransaccionFinancieraSerializer,
 )
 
@@ -435,6 +439,26 @@ class MonedaViewSet(_CatalogoTenantGuardMixin, BaseModelViewSet):
         return monedas_visibles
 
 
+class TipoTasaCambioViewSet(_CatalogoTenantGuardMixin, BaseModelViewSet):
+    _guard_empresa_field = "id_empresa"
+    _guard_global_flags = ()
+    _guard_recurso_nombre = "tipos de tasa de cambio"
+    _guard_auto_empresa_en_create = True
+    queryset = TipoTasaCambio.objects.all()
+    serializer_class = TipoTasaCambioSerializer
+    search_fields = ["codigo", "nombre", "descripcion"]
+
+    def get_queryset(self):
+        from django.db.models import Q
+
+        user = self.request.user
+        if getattr(user, "es_superusuario_omni", False):
+            return TipoTasaCambio.objects.all().order_by("prioridad", "codigo")
+        return TipoTasaCambio.objects.filter(
+            Q(id_empresa__isnull=True) | Q(id_empresa__in=get_empresas_visible(user))
+        ).order_by("prioridad", "codigo")
+
+
 class TasaCambioViewSet(_CatalogoTenantGuardMixin, BaseModelViewSet):
     _guard_empresa_field = "id_empresa"
     _guard_global_flags = ()
@@ -450,7 +474,7 @@ class TasaCambioViewSet(_CatalogoTenantGuardMixin, BaseModelViewSet):
 
         return TasaCambio.objects.filter(
             Q(id_empresa__isnull=True) | Q(id_empresa__in=get_empresas_visible(self.request.user))
-        ).select_related("id_moneda_origen", "id_moneda_destino", "id_usuario_registro")
+        ).select_related("id_moneda_origen", "id_moneda_destino", "id_usuario_registro", "id_tipo_tasa")
 
 
 from rest_framework.decorators import action
@@ -1722,3 +1746,101 @@ class PagoViewSet(IdempotentCreateMixin, BaseModelViewSet):
             return _responder_error_conciliacion(exc)
 
         return Response(SugerirDistribucionResponseSerializer(propuesta).data, status=status.HTTP_200_OK)
+
+
+def _serializar_tasa_meta_json(meta: dict | None) -> dict | None:
+    if meta is None:
+        return None
+    return {
+        "valor_tasa": str(meta["valor_tasa"]),
+        "tipo_tasa": meta["tipo_tasa"],
+        "fecha_tasa": meta["fecha_tasa"].isoformat() if meta["fecha_tasa"] else None,
+        "es_inversa": bool(meta["es_inversa"]),
+        "es_oficial_fiscal": bool(meta["es_oficial_fiscal"]),
+    }
+
+
+class EquivalenciasTrimonetariasView(APIView):
+    """Calcula equivalencias simultáneas Base + País/Fiscal (BCV) + Referencia."""
+
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(request_body=EquivalenciasTrimonetariasInputSerializer)
+    def post(self, request):
+        from apps.core.viewsets import get_empresa_primaria
+
+        from .services import TasaCambioError
+        from .services_trimonetario import calcular_equivalencias_trimonetarias
+
+        serializer = EquivalenciasTrimonetariasInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        datos = serializer.validated_data
+
+        empresa = get_empresa_primaria(request.user)
+        if empresa is None:
+            return Response({"error": "El usuario no tiene una empresa visible asignada."}, status=400)
+
+        moneda_raw = str(datos["moneda_origen"]).replace("\x00", "").strip()
+        moneda_arg: Moneda | str = moneda_raw
+        try:
+            moneda_uuid = uuid.UUID(moneda_raw)
+        except (ValueError, TypeError):
+            moneda_uuid = None
+
+        if moneda_uuid is not None:
+            moneda_obj = (
+                Moneda.objects.filter(id_moneda=moneda_uuid)
+                .filter(
+                    models.Q(es_generica=True)
+                    | models.Q(es_publica=True)
+                    | models.Q(empresa__isnull=True)
+                    | models.Q(empresa__in=get_empresas_visible(request.user))
+                )
+                .first()
+            )
+            if moneda_obj is None:
+                return Response({"error": "Moneda de origen no encontrada."}, status=404)
+            moneda_arg = moneda_obj
+
+        try:
+            resultado = calcular_equivalencias_trimonetarias(
+                datos["monto"],
+                moneda_arg,
+                empresa=empresa,
+                fecha=datos.get("fecha"),
+                codigo_tipo_tasa_base=datos.get("codigo_tipo_tasa_base") or None,
+                codigo_tipo_tasa_referencia=datos.get("codigo_tipo_tasa_referencia") or None,
+            )
+        except (TasaCambioError, ValueError) as exc:
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST)
+
+        return Response(
+            {
+                "fecha": resultado["fecha"].isoformat(),
+                "moneda_origen_id": resultado["moneda_origen_id"],
+                "moneda_origen_iso": resultado["moneda_origen_iso"],
+                "moneda_origen_simbolo": resultado["moneda_origen_simbolo"],
+                "monto_origen": str(resultado["monto_origen"]),
+                "moneda_base_id": resultado["moneda_base_id"],
+                "moneda_base_iso": resultado["moneda_base_iso"],
+                "moneda_base_simbolo": resultado["moneda_base_simbolo"],
+                "monto_base": str(resultado["monto_base"]) if resultado["monto_base"] is not None else None,
+                "tasa_base": _serializar_tasa_meta_json(resultado["tasa_base"]),
+                "moneda_pais_id": resultado["moneda_pais_id"],
+                "moneda_pais_iso": resultado["moneda_pais_iso"],
+                "moneda_pais_simbolo": resultado["moneda_pais_simbolo"],
+                "monto_pais_fiscal": (
+                    str(resultado["monto_pais_fiscal"]) if resultado["monto_pais_fiscal"] is not None else None
+                ),
+                "tasa_pais_fiscal": _serializar_tasa_meta_json(resultado["tasa_pais_fiscal"]),
+                "moneda_referencia_activa": resultado["moneda_referencia_activa"],
+                "moneda_referencia_id": resultado["moneda_referencia_id"],
+                "moneda_referencia_iso": resultado["moneda_referencia_iso"],
+                "moneda_referencia_simbolo": resultado["moneda_referencia_simbolo"],
+                "monto_referencia": (
+                    str(resultado["monto_referencia"]) if resultado["monto_referencia"] is not None else None
+                ),
+                "tasa_referencia": _serializar_tasa_meta_json(resultado["tasa_referencia"]),
+            },
+            status=status.HTTP_200_OK,
+        )
