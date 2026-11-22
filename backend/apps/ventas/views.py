@@ -14,14 +14,6 @@ from apps.core.idempotency import IdempotentCreateMixin, idempotent
 from apps.core.serializer_mixins import TenantFKScopeMixin
 from apps.core.viewsets import EmpresaInjectMixin, get_empresas_visible
 
-logger = logging.getLogger(__name__)
-
-
-def _empresas(request):
-    """Shortcut: devuelve empresas visibles para el usuario del request."""
-    return get_empresas_visible(request.user)
-
-
 from .models import (
     ComisionVenta,
     Cotizacion,
@@ -65,6 +57,13 @@ from .serializers import (
     NotaVentaSerializer,
     PedidoSerializer,
 )
+
+logger = logging.getLogger(__name__)
+
+
+def _empresas(request):
+    """Shortcut: devuelve empresas visibles para el usuario del request."""
+    return get_empresas_visible(request.user)
 
 
 class PedidoViewSet(TenantFKScopeMixin, EmpresaInjectMixin, viewsets.ModelViewSet):  # H-API-1

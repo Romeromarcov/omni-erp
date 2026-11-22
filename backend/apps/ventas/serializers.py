@@ -771,4 +771,4 @@ class ComisionVentaSerializer(serializers.ModelSerializer):
             "fecha_creacion",
             "id_empresa",
         ]
-        read_only_fields = [f.name for f in ComisionVenta._meta.concrete_fields]
+        read_only_fields = fields

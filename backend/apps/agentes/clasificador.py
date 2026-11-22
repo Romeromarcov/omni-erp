@@ -19,9 +19,10 @@ from __future__ import annotations
 
 import logging
 import time
+import uuid
 from dataclasses import dataclass, field
 from decimal import Decimal
-from typing import Optional
+from typing import Any, Optional
 
 from apps.core import llm_gateway
 
@@ -273,18 +274,18 @@ Responde SOLO con un JSON válido con esta estructura exacta:
 
     def _clasificar_fallback(self, descripcion: str) -> ResultadoClasificacion:
         categoria, confianza = _clasificar_por_keywords(descripcion)
-        alternativas = []
+        alternativas: list[dict[str, Any]] = []
         for cat in CATEGORIAS_CANONICAS:
             if cat != categoria:
                 _, c = _clasificar_por_keywords(f"{descripcion} {cat}")
                 if c > 0.40:
                     alternativas.append({"categoria": cat, "confianza": round(c * 0.6, 2)})
-        alternativas = sorted(alternativas, key=lambda x: -x["confianza"])[:2]
+        alternativas = sorted(alternativas, key=lambda x: -float(x["confianza"]))[:2]
 
         return ResultadoClasificacion(
             categoria=categoria,
             confianza=confianza,
-            razonamiento=f"Clasificado por coincidencia de palabras clave en la descripción.",
+            razonamiento="Clasificado por coincidencia de palabras clave en la descripción.",
             alternativas=alternativas,
             modelo_llm="fallback-keywords",
         )
@@ -356,7 +357,7 @@ Responde SOLO con un JSON válido con esta estructura exacta:
         from .models import PrediccionAgente
 
         qs = PrediccionAgente.objects.filter(
-            id_empresa=empresa_id,
+            id_empresa_id=uuid.UUID(str(empresa_id)),
             agente=cls.AGENTE_ID,
         )
         total = qs.count()

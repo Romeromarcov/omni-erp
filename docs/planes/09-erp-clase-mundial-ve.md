@@ -12,8 +12,8 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | **PLANIFICADO** — listo para ejecución incremental por olas/PRs focales (`R-PROC-2`) |
-| **Fecha** | 2026-11-21 (base verificada en `develop @ f4f0965`) |
+| **Estado** | **EN CURSO** — **Ola 1A (Motor Trimonetario y Multi-Tasa)** mergeada (`#318`); **Ola 6 (consolidación `PR-31..PR-35`)** en ejecución antes de Contabilidad Dual y siguientes olas (`R-PROC-2`) |
+| **Fecha** | 2026-11-22 (sincronizado con `develop @ 61d2001`, cierre `#288–#320`) |
 | **Apps involucradas** | `core`, `finanzas`, `contabilidad`, `tesoreria`, `fiscal`, `localizacion_ve`, `ventas`, `compras`, `inventario`, `almacenes`, `nomina`, `rrhh`, `control_asistencia`, `despacho`, `crm`, `proveedores`, `gestion_aprobaciones`, `personalizacion`, `configuracion_motor`, `agentes`, `integration_hub`, `migracion_datos` |
 | **Gate de cierre** | [`DEFINITION_OF_DONE.md`](../DEFINITION_OF_DONE.md) + aislamiento multi-tenant + RLS + paridad REST/MCP/UI |
 
@@ -128,13 +128,15 @@
 
 ## 4. Secuenciación Recomendada por Olas (PRs Focales `R-PROC-2`)
 
-| Ola | Fases / PRs sugeridos | Dependencia previa |
+| Ola | Fases / PRs sugeridos | Estado / Dependencia |
 |---|---|---|
-| **Ola 1 (P0)** | **Fase 1** (Trimonetario + `TipoTasaCambio` + Contabilidad Dual `FISCAL`/`GERENCIAL` + Analítica) + **Fase 2.1–2.2** (Perfil fiscal `Contacto` + `NotaDebitoFiscal`) | Ninguna *(nota: coordinar migración de `core` tras merge de `feat/connect-s5-s6-dedup-conversion`)* |
+| **Ola 1A (P0)** | **Fase 1.1** (Motor Trimonetario + `TipoTasaCambio` extensible con RLS + `es_moneda_referencia` + REST/MCP) | ✅ **COMPLETADA (`#318`)** |
+| **Ola 6 (Consolidación)** | **PR-31..PR-35** (`docs/mypy/ruff/TZ` → `strangler-fig l10n` en `fiscal`/`ventas`/`nomina` → `POST /api/sync/push/` optimista `CTF-008` → `SAAS_FAIL_CLOSED` + 2FA TOTP `Plan 05 P3-1` → smoke test live QA Connect→Odoo `crm.lead`) | 🔄 **EN CURSO (habilita base limpia para Ola 1B+)** |
+| **Ola 1B (P0)** | **Fase 1.2–1.3** (Contabilidad Dual `FISCAL`/`GERENCIAL` + Analítica + Pre-Conciliación) + **Fase 2.1–2.2** (Perfil fiscal `Contacto` + `NotaDebitoFiscal`) | Pendiente (post Ola 6) |
 | **Ola 2 (P0)** | **Fase 3.1–3.3** (Precios dinámicos por brecha + Nota Venta Gerencial + Crédito/Comisiones) + **Fase 7.1** (RBAC/ABAC + Ámbito Fiscal/Gerencial) | Ola 1 |
 | **Ola 3 (P1)** | **Fase 2.3–2.5** (Retenciones IVA `.txt`/ISLR `.xml` + Imprenta Digital Unidigital + Libro Inv.) + **Fase 4** (Nómina Dual VE LOTTT + Bonificaciones) | Ola 1 |
 | **Ola 4 (P1)** | **Fase 6** (Logística TMS IA/GPS/Delivery/ePOD) + **Fase 5** (Landed Costs + Costo Reposición + Conteo Físico + Barcode) | Ola 1 + Ola 2 |
-| **Ola 5 (P2)** | **Fase 7.2–7.4** (Portales independientes: Vendedores SFA, Clientes Self-Service, Conductores) + **Fase 3.4** (POS Offline FE `CTF-008`) | Ola 2 + Ola 4 |
-| **Ola 6 (P2/P3)** | **Fase 8** (WhatsApp/Chatter, Agentes IA operativos, RLS prod + firma apps, Migrador 1-Click Odoo) | Ola 3 + Ola 5 |
+| **Ola 5 (P2)** | **Fase 7.2–7.4** (Portales independientes: Vendedores SFA, Clientes Self-Service, Conductores) + cierre operativo campo `CTF-008` | Ola 2 + Ola 4 |
+| **Ola 6B / Fase 8 (P2/P3)** | **Fase 8** (WhatsApp/Chatter, Agentes IA operativos, RLS prod `CTF-012` + firma apps `CTF-010`, Migrador 1-Click Odoo) | Ola 3 + Ola 5 |
 
 Cada PR deberá cumplir íntegramente [`DEFINITION_OF_DONE.md`](../DEFINITION_OF_DONE.md) (`check`, `makemigrations --check --dry-run`, `mapa_superficie --check`, tests multi-tenant + RLS y `diff-cover ≥ 95 %`, `tsc -b`, `npm run lint`, `check:api-drift`, Vitest/Playwright) y recibir dictamen **`APROBADO`** de revisor independiente (`QA + Seguridad`) antes de merge a `develop`.

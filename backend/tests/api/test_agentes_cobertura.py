@@ -690,13 +690,14 @@ class TestChatTools:
         from tests.factories import ClienteFactory
         from apps.cuentas_por_cobrar.models import CuentaPorCobrar
 
+        hoy = timezone.localdate()
         cliente = ClienteFactory(id_empresa=empresa_a, razon_social="Deudor C.A.")
         CuentaPorCobrar.objects.create(
             cliente=cliente,
             empresa=empresa_a,
             monto=Decimal("200.00"),
-            fecha_emision=date.today() - timedelta(days=20),
-            fecha_vencimiento=date.today() - timedelta(days=5),
+            fecha_emision=hoy - timedelta(days=20),
+            fecha_vencimiento=hoy - timedelta(days=5),
             estado="pendiente",
         )
         res = chatmod._tool_saldo_cliente(self._ctx(user_a, empresa_a), cliente_id=str(cliente.id_cliente))

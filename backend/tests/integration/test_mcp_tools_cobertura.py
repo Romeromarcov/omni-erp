@@ -541,7 +541,7 @@ class TestCorrelativoFiscal:
 def cxc_vencida(empresa_a, cliente_a):
     from apps.cuentas_por_cobrar.models import CuentaPorCobrar
 
-    hoy = date.today()
+    hoy = timezone.localdate()
     return CuentaPorCobrar.objects.create(
         cliente=cliente_a,
         empresa=empresa_a,

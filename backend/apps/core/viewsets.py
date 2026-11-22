@@ -149,21 +149,6 @@ class SoftDeleteModelMixin:
         Necesario para /activar/ — el objeto está inactivo y no aparecería
         en el queryset normal filtrado por ActiveFilterMixin.
         """
-        # Obtiene el queryset sin filtro de activo (incluye inactivos)
-        queryset = self.filter_queryset(
-            self.get_queryset().model.objects.all() if hasattr(self.get_queryset(), "model") else self.get_queryset()
-        )
-        # Si el ViewSet tiene get_queryset con filtros de empresa, los aplicamos
-        # usando el queryset base del modelo pero con los filtros de empresa del ViewSet
-        # Para lograr esto correctamente, sobreescribimos sólo el filtro de activo:
-        base_qs = super().get_queryset() if hasattr(super(), "get_queryset") else queryset  # type: ignore[misc]
-        # Llamamos directamente al get_queryset del ViewSet padre para mantener
-        # los filtros de empresa, pero quitamos el filtro de activo
-        qs_sin_activo = self.get_queryset().model.objects.all()
-
-        # Re-aplicar los filtros propios del ViewSet (empresa, etc.) sin pasar por ActiveFilterMixin
-        # La forma más limpia: obtener el queryset sin filtro de activo
-        # tomando los filtros de empresa del ViewSet heredado.
         filter_kwargs = {self.lookup_field: self.kwargs[self.lookup_field]}
         obj = None
 
