@@ -942,8 +942,8 @@ class TestMonedaEmpresaActivaSerializerMetodos:
 
         fila, _ = MonedaEmpresaActiva.objects.get_or_create(empresa=empresa_a, moneda=moneda_usd)
         ser = MonedaEmpresaActivaSerializer()
-        # Empresa no tiene atributo moneda_base_id → None == id_moneda → False
-        assert ser.get_es_base(fila) is False
+        # empresa_a.id_moneda_base == moneda_usd → es_base debe ser True
+        assert ser.get_es_base(fila) is True
         assert ser.get_es_pais(fila) is False
 
     def test_es_pais_true_con_moneda_pais(self, empresa_a, moneda_usd):

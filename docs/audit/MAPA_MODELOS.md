@@ -123,6 +123,7 @@
 | finanzas | SesionCajaFisica | ✅ | ✅ | — |
 | finanzas | SesionDatafono | — | ✅ | — |
 | finanzas | TasaCambio | ✅ | ✅ | — |
+| finanzas | TipoTasaCambio | ✅ | ✅ | — |
 | finanzas | TransaccionDatafono | — | ✅ | — |
 | finanzas | TransaccionFinanciera | ✅ | ✅ | — |
 | fiscal | ConfiguracionFiscalEmpresa | ✅ | ✅ | — |
