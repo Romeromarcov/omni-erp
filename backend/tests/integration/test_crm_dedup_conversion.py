@@ -36,7 +36,13 @@ from apps.core import mcp_server, rls
 from apps.core.models import CapabilityToken, Contacto
 from apps.crm import mcp as crm_mcp
 from apps.crm.models import Cliente, Etapa, Lead
-from apps.crm.services import CrmError, asegurar_pipeline_empresa, crear_lead_crm
+from apps.crm.services import (
+    CrmError,
+    asegurar_pipeline_empresa,
+    crear_lead_crm,
+    mover_lead_etapa,
+    registrar_actividad_crm,
+)
 from apps.crm.services_conversion import anonimizar_lead, convertir_lead_a_cliente
 from apps.crm.services_dedup import resolver_o_vincular_contacto, vincular_lead_a_contacto
 from apps.finanzas.models import Moneda
@@ -1268,3 +1274,125 @@ class TestEdgeCasesYCoberturaS5S6:
         res_mcp = crm_mcp.crm_anonimizar_lead(tok_sin_actor, lead_id=str(lead_mcp.pk))
         assert res_mcp["anonimizado"] is True
         assert lead_cli_inact.pk is not None
+
+    def test_mcp_convertir_omite_vacios_y_hereda_datos_del_lead(self, empresa_a, user_a):
+        tok_write = _token(empresa_a, ["crm:write"], creado_por=user_a)
+        lead = crear_lead_crm(
+            empresa=empresa_a,
+            nombre="Pedro",
+            apellido="Pérez",
+            empresa_nombre="Industrias Herencia C.A.",
+            email="ventas@herencia.test",
+            telefono="+584125551122",
+            propietario=user_a,
+        )
+
+        # Al omitir email, telefono y nombre_comercial (defaults ""), deben heredarse del Lead
+        res = crm_mcp.crm_convertir_lead_cliente(
+            tok_write,
+            lead_id=str(lead.pk),
+            rif="J-31002200",
+        )
+        assert "error" not in res
+        cliente = Cliente.objects.get(pk=res["cliente_id"])
+        assert cliente.razon_social == "Industrias Herencia C.A."
+        assert cliente.nombre_comercial == "Industrias Herencia C.A."
+        assert cliente.email == "ventas@herencia.test"
+        assert cliente.telefono == "+584125551122"
+
+    def test_contacto_inactivo_y_mutaciones_en_lead_anonimizado_fallan_cerrado(self, empresa_a, user_a):
+        # 1) Lead vinculado a un Contacto inactivo debe fallar cerrado al convertir
+        contacto_inact = Contacto.objects.create(
+            id_empresa=empresa_a,
+            nombre="Contacto Inactivo",
+            email="inact_conv@alpha.test",
+            activo=False,
+        )
+        lead_c_inact = crear_lead_crm(
+            empresa=empresa_a,
+            nombre="Lead Contacto Inactivo",
+            email="inact_conv@alpha.test",
+            contacto=contacto_inact,
+            propietario=user_a,
+        )
+        with pytest.raises(CrmError, match="contacto vinculado al lead está inactivo"):
+            convertir_lead_a_cliente(lead_c_inact.pk, user_a, {"rif": "J-31003300"})
+
+        client = APIClient()
+        client.force_authenticate(user=user_a)
+        resp_c_inact = client.post(
+            f"/api/crm/leads/{lead_c_inact.pk}/convertir-cliente/",
+            {"rif": "J-31003300"},
+            format="json",
+        )
+        assert resp_c_inact.status_code == 400
+        assert "inactivo" in str(resp_c_inact.data.get("error", "")).lower()
+
+        # 2) Un lead anonimizado no puede cambiar de etapa ni registrar actividades (servicio, REST y MCP)
+        lead_anon = crear_lead_crm(
+            empresa=empresa_a,
+            nombre="Lead Anonimizado Bloqueado",
+            email="anon_bloq@alpha.test",
+            propietario=user_a,
+        )
+        etapa_destino = (
+            Etapa.objects.filter(
+                id_empresa=empresa_a,
+                pipeline=lead_anon.pipeline,
+                activo=True,
+            )
+            .exclude(pk=lead_anon.etapa_id)
+            .first()
+        )
+        assert etapa_destino is not None
+
+        anonimizar_lead(lead_anon.pk, user_a)
+        lead_anon.refresh_from_db()
+
+        with pytest.raises(CrmError, match="anonimizado"):
+            mover_lead_etapa(lead_anon, etapa_destino, user_a)
+        with pytest.raises(CrmError, match="anonimizado"):
+            registrar_actividad_crm(
+                empresa=empresa_a,
+                lead=lead_anon,
+                tipo="LLAMADA",
+                asunto="Intento inválido",
+                creado_por=user_a,
+            )
+
+        resp_mover = client.post(
+            f"/api/crm/leads/{lead_anon.pk}/mover-etapa/",
+            {"etapa": str(etapa_destino.pk)},
+            format="json",
+        )
+        assert resp_mover.status_code == 400
+        assert "anonimizado" in str(resp_mover.data.get("error", "")).lower()
+
+        resp_act = client.post(
+            "/api/crm/actividades/",
+            {
+                "id_empresa": str(empresa_a.pk),
+                "lead": str(lead_anon.pk),
+                "tipo": "NOTA",
+                "asunto": "Intento REST inválido",
+            },
+            format="json",
+        )
+        assert resp_act.status_code == 400
+        assert "anonimizado" in str(resp_act.data.get("error", "")).lower()
+
+        tok_write = _token(empresa_a, ["crm:write"], creado_por=user_a)
+        res_mcp_mover = crm_mcp.crm_mover_etapa_lead(
+            tok_write,
+            lead_id=str(lead_anon.pk),
+            etapa_id=str(etapa_destino.pk),
+        )
+        assert "anonimizado" in str(res_mcp_mover.get("error", "")).lower()
+
+        res_mcp_act = crm_mcp.crm_registrar_actividad(
+            tok_write,
+            lead_id=str(lead_anon.pk),
+            tipo="NOTA",
+            asunto="Intento MCP inválido",
+        )
+        assert "anonimizado" in str(res_mcp_act.get("error", "")).lower()

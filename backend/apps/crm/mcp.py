@@ -548,16 +548,21 @@ def crm_convertir_lead_cliente(
     lead_uuid = _parse_uuid_mcp(lead_id, "lead_id")
 
     datos: dict[str, Any] = {
-        "razon_social": _validar_texto_mcp(razon_social, "razon_social") or "",
-        "rif": _validar_texto_mcp(rif, "rif") or "",
-        "nombre_comercial": _validar_texto_mcp(nombre_comercial, "nombre_comercial") or "",
-        "email": _validar_texto_mcp(email, "email") or "",
-        "telefono": _validar_texto_mcp(telefono, "telefono") or "",
-        "direccion": _validar_texto_mcp(direccion, "direccion") or "",
-        "tipo_cliente": _validar_texto_mcp(tipo_cliente, "tipo_cliente") or "CONTADO",
+        "rif": (_validar_texto_mcp(rif, "rif") or "").strip(),
+        "tipo_cliente": (_validar_texto_mcp(tipo_cliente, "tipo_cliente") or "CONTADO").strip() or "CONTADO",
         "crear_cotizacion": bool(crear_cotizacion),
         "reutilizar_cliente_existente": bool(reutilizar_cliente_existente),
     }
+    for clave, valor_raw in (
+        ("razon_social", razon_social),
+        ("nombre_comercial", nombre_comercial),
+        ("email", email),
+        ("telefono", telefono),
+        ("direccion", direccion),
+    ):
+        valor_limpio = (_validar_texto_mcp(valor_raw, clave) or "").strip()
+        if valor_limpio:
+            datos[clave] = valor_limpio
 
     emp_str = str(emp_uuid) if emp_uuid is not None else None
     with _ctx(capability_token, f"{_SCOPE}:write", empresa_id=emp_str) as ctx:

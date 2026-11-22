@@ -341,8 +341,10 @@ const CrmPipelineKanbanPage: React.FC = () => {
       void qc.invalidateQueries({ queryKey: crmKeys.leadsAll(empresaId) });
       void qc.invalidateQueries({ queryKey: crmKeys.pipelinesAll(empresaId) });
       void qc.invalidateQueries({ queryKey: crmKeys.clientesAll() });
+      void qc.invalidateQueries({ queryKey: ventasKeys.clientes(empresaId) });
       if (res.cotizacion_id) {
         void qc.invalidateQueries({ queryKey: ventasKeys.cotizaciones.all() });
+        void qc.invalidateQueries({ queryKey: ['cotizaciones'] });
       }
     },
     onError: (err) => {
@@ -364,6 +366,7 @@ const CrmPipelineKanbanPage: React.FC = () => {
       setSuccessMsg('PII del lead anonimizada y auditada correctamente.');
       void qc.invalidateQueries({ queryKey: crmKeys.leadsAll(empresaId) });
       void qc.invalidateQueries({ queryKey: crmKeys.clientesAll() });
+      void qc.invalidateQueries({ queryKey: ventasKeys.clientes(empresaId) });
     },
     onError: (err) => {
       setAnonimizarError(mensajeDeError(err, 'No se pudo anonimizar el lead.'));
@@ -380,6 +383,7 @@ const CrmPipelineKanbanPage: React.FC = () => {
     setActividadForm(ACTIVIDAD_FORM_VACIO);
     setActividadError('');
     setConvertirOpen(false);
+    setConversionForm(CONVERSION_FORM_VACIO);
     setConversionError('');
     setAnonimizarOpen(false);
     setAnonimizarError('');
@@ -1146,6 +1150,7 @@ const CrmPipelineKanbanPage: React.FC = () => {
       <Dialog
         open={convertirOpen}
         onClose={() => {
+          setConversionForm(CONVERSION_FORM_VACIO);
           setConversionError('');
           setConvertirOpen(false);
         }}
@@ -1245,6 +1250,7 @@ const CrmPipelineKanbanPage: React.FC = () => {
             <Button
               type="button"
               onClick={() => {
+                setConversionForm(CONVERSION_FORM_VACIO);
                 setConversionError('');
                 setConvertirOpen(false);
               }}

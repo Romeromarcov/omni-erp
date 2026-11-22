@@ -355,6 +355,8 @@ def _resolver_contacto_para_conversion(
     contacto: Contacto | None
     if lead.contacto_id is not None:
         contacto = Contacto.objects.select_for_update().get(pk=lead.contacto_id)
+        if not contacto.activo:
+            raise CrmError("El contacto vinculado al lead está inactivo.")
     else:
         contacto = resolver_o_vincular_contacto(
             empresa,

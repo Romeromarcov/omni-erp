@@ -67,6 +67,8 @@ def mover_lead_etapa(
     lead_locked = Lead.objects.select_for_update().select_related("pipeline", "etapa").get(pk=lead.pk)
     if not lead_locked.activo:
         raise CrmError("No se puede mover un lead inactivo.")
+    if lead_locked.anonimizado:
+        raise CrmError("No se puede modificar un lead anonimizado.")
 
     etapa_obj = Etapa.objects.select_related("pipeline").filter(pk=nueva_etapa.pk).first()
     if etapa_obj is None or not etapa_obj.activo:
@@ -257,6 +259,8 @@ def registrar_actividad_crm(
     """Registra una ``Actividad`` sobre un ``Lead`` validando aislamiento multi-tenant."""
     if not lead.activo or lead.id_empresa_id != empresa.pk:
         raise CrmError("El lead no existe en la empresa o está inactivo.")
+    if lead.anonimizado:
+        raise CrmError("No se pueden registrar actividades en un lead anonimizado.")
 
     asunto_limpio = (asunto or "").strip()
     if not asunto_limpio:
