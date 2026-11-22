@@ -16,11 +16,12 @@ Endpoints:
 import logging
 from datetime import timedelta
 
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.decorators import method_decorator
-from drf_yasg.utils import swagger_auto_schema
+from drf_yasg.utils import no_body, swagger_auto_schema
 from rest_framework import filters, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -29,6 +30,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
+from apps.core.exceptions import domain_error_response
 from apps.core.viewsets import (
     BaseModelViewSet,
     NulSafeFilterMixin,
@@ -42,14 +44,17 @@ from .models import (
     ConectorInstancia,
     ConectorProveedor,
     EntidadSincronizada,
+    EventoOutbox,
     JobSincronizacion,
     LogDetalleSincronizacion,
 )
+from .outbox import OutboxError, reintentar_evento_outbox
 from .serializers import (
     ConectorInstanciaCreateSerializer,
     ConectorInstanciaSerializer,
     ConectorProveedorSerializer,
     EntidadSincronizadaSerializer,
+    EventoOutboxSerializer,
     JobSincronizacionSerializer,
     JobSincronizacionTriggerSerializer,
     LogDetalleSincronizacionSerializer,
@@ -653,6 +658,95 @@ class JobSincronizacionViewSet(NulSafeFilterMixin, ReadOnlyModelViewSet):
         job.save(update_fields=["estado", "completado_en"])
 
         return Response(JobSincronizacionSerializer(job).data)
+
+
+# ── Cola Outbox multi-tenant (Omni Connect S7–S9) ─────────────────────────────
+
+
+class EventoOutboxViewSet(NulSafeFilterMixin, ReadOnlyModelViewSet):
+    """Consulta multi-tenant de la cola Outbox y acción controlada de reintento (FALLIDO/DLQ)."""
+
+    serializer_class = EventoOutboxSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_value_regex = "[0-9a-fA-F-]{36}"
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ["tipo_evento", "entidad_tipo", "clave_idempotencia", "estado"]
+    ordering_fields = [
+        "fecha_creacion",
+        "fecha_actualizacion",
+        "proximo_intento_en",
+        "procesado_en",
+        "estado",
+        "tipo_evento",
+        "intentos",
+    ]
+    ordering = ["-fecha_creacion"]
+
+    def initial(self, request, *args, **kwargs):
+        super().initial(request, *args, **kwargs)
+        for key, values in request.query_params.lists():
+            if "\x00" in str(key):
+                raise ValidationError({"error": "Parámetro de consulta inválido."})
+            for val in values:
+                if isinstance(val, str) and "\x00" in val:
+                    raise ValidationError({str(key): "Parámetro de consulta inválido."})
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return EventoOutbox.objects.none()
+        empresas = get_empresas_visible(self.request.user)
+        qs = EventoOutbox.objects.filter(id_empresa__in=empresas, activo=True).order_by("-fecha_creacion")
+
+        estado_param = self.request.query_params.get("estado")
+        if estado_param:
+            estado_norm = estado_param.strip().upper()
+            estados_validos = set(EventoOutbox.Estado.values)
+            if estado_norm not in estados_validos:
+                raise ValidationError(
+                    {"estado": f"Estado inválido. Valores permitidos: {', '.join(sorted(estados_validos))}."}
+                )
+            qs = qs.filter(estado=estado_norm)
+
+        tipo_param = self.request.query_params.get("tipo_evento")
+        if tipo_param:
+            qs = qs.filter(tipo_evento=tipo_param.strip())
+
+        entidad_id_param = self.request.query_params.get("entidad_id")
+        if entidad_id_param:
+            qs = qs.filter(entidad_id=validar_uuid_param(entidad_id_param, "entidad_id"))
+
+        return qs
+
+    def get_object(self):
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        if lookup_url_kwarg in self.kwargs:
+            validar_uuid_param(self.kwargs[lookup_url_kwarg], self.lookup_field)
+        return super().get_object()
+
+    @swagger_auto_schema(
+        method="post",
+        operation_summary="Reintenta un evento Outbox en estado FALLIDO o DLQ",
+        request_body=no_body,
+        responses={
+            200: EventoOutboxSerializer,
+            400: "El evento no está en estado reintentable (FALLIDO o DLQ)",
+            404: "Evento outbox no encontrado",
+        },
+    )
+    @action(detail=True, methods=["post"], url_path="reintentar")
+    def reintentar(self, request, pk=None):
+        """Reencola un evento Outbox en ``FALLIDO`` o ``DLQ`` hacia ``PENDIENTE``."""
+        evento = self.get_object()
+        empresa_ids = list(get_empresas_visible(request.user).values_list("pk", flat=True))
+        try:
+            actualizado = reintentar_evento_outbox(evento.pk, empresa_ids=empresa_ids)
+        except (OutboxError, DjangoValidationError) as exc:
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST, key="error")
+
+        return Response(
+            EventoOutboxSerializer(actualizado, context=self.get_serializer_context()).data,
+            status=status.HTTP_200_OK,
+        )
 
 
 # ── Estado general del hub ────────────────────────────────────────────────────

@@ -4,6 +4,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     ConectorInstanciaViewSet,
     ConectorProveedorViewSet,
+    EventoOutboxViewSet,
     IntegrationHubStatusView,
     JobSincronizacionViewSet,
 )
@@ -12,6 +13,7 @@ router = DefaultRouter()
 router.register(r"proveedores", ConectorProveedorViewSet, basename="conector-proveedor")
 router.register(r"instancias", ConectorInstanciaViewSet, basename="conector-instancia")
 router.register(r"jobs", JobSincronizacionViewSet, basename="job-sincronizacion")
+router.register(r"outbox", EventoOutboxViewSet, basename="evento-outbox")
 
 urlpatterns = [
     path("", include(router.urls)),

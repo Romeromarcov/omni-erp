@@ -14,7 +14,14 @@ from django.utils import timezone
 from apps.connect.models import Perfil, Tarjeta
 from apps.core.exceptions import DomainError
 from apps.core.models import Contacto, Empresa, Usuarios
+from apps.core.uuid import uuid7
 from apps.core.validators import normalizar_email, normalizar_telefono
+from apps.integration_hub.outbox import (
+    ENTIDAD_CRM_LEAD,
+    EVENTO_CRM_LEAD_CAPTURADO,
+    EVENTO_CRM_LEAD_ETAPA_CAMBIADA,
+    encolar_evento_outbox,
+)
 from apps.tareas.models import Tarea
 
 from .models import Actividad, Etapa, Lead, Pipeline
@@ -87,9 +94,27 @@ def mover_lead_etapa(
         if not es_super and not get_empresas_visible(usuario).filter(pk=lead_locked.id_empresa_id).exists():
             raise CrmError("El usuario no tiene acceso a la empresa del lead.")
 
+    etapa_anterior_id = lead_locked.etapa_id
     lead_locked.etapa = etapa_obj
     lead_locked.full_clean()
     lead_locked.save(update_fields=["etapa", "fecha_actualizacion"])
+    encolar_evento_outbox(
+        lead_locked.id_empresa,
+        tipo_evento=EVENTO_CRM_LEAD_ETAPA_CAMBIADA,
+        entidad_tipo=ENTIDAD_CRM_LEAD,
+        entidad_id=lead_locked.id_lead,
+        payload={
+            "lead_id": str(lead_locked.id_lead),
+            "pipeline_id": str(lead_locked.pipeline_id),
+            "etapa_anterior_id": str(etapa_anterior_id),
+            "etapa_id": str(etapa_obj.id_etapa),
+            "etapa_nombre": etapa_obj.nombre,
+            "etapa_tipo": etapa_obj.tipo,
+        },
+        clave_idempotencia=f"{EVENTO_CRM_LEAD_ETAPA_CAMBIADA}:{lead_locked.id_lead}:{etapa_obj.id_etapa}:{uuid7()}"[
+            :120
+        ],
+    )
     return lead_locked
 
 
@@ -239,6 +264,24 @@ def crear_lead_crm(
     )
     lead.full_clean()
     lead.save()
+    encolar_evento_outbox(
+        empresa,
+        tipo_evento=EVENTO_CRM_LEAD_CAPTURADO,
+        entidad_tipo=ENTIDAD_CRM_LEAD,
+        entidad_id=lead.id_lead,
+        payload={
+            "lead_id": str(lead.id_lead),
+            "fuente": lead.fuente,
+            "perfil_id": str(lead.perfil_id) if lead.perfil_id else None,
+            "tarjeta_id": str(lead.tarjeta_id) if lead.tarjeta_id else None,
+            "pipeline_id": str(pipeline_obj.id_pipeline),
+            "etapa_id": str(etapa_obj.id_etapa),
+            "etapa_nombre": etapa_obj.nombre,
+            "etapa_tipo": etapa_obj.tipo,
+            "propietario_id": str(propietario.pk),
+        },
+        clave_idempotencia=f"{EVENTO_CRM_LEAD_CAPTURADO}:{lead.id_lead}",
+    )
     return lead
 
 

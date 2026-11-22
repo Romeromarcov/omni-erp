@@ -4,6 +4,7 @@ from .models import (
     ConectorInstancia,
     ConectorProveedor,
     EntidadSincronizada,
+    EventoOutbox,
     JobSincronizacion,
     LogDetalleSincronizacion,
 )
@@ -56,3 +57,21 @@ class LogDetalleSincronizacionAdmin(admin.ModelAdmin):
     list_display = ["operacion", "id_externo", "id_omni", "id_job", "creado_en"]
     list_filter = ["operacion"]
     readonly_fields = ["creado_en"]
+
+
+@admin.register(EventoOutbox)
+class EventoOutboxAdmin(admin.ModelAdmin):
+    list_display = [
+        "id_evento",
+        "id_empresa",
+        "tipo_evento",
+        "entidad_tipo",
+        "estado",
+        "intentos",
+        "max_intentos",
+        "proximo_intento_en",
+        "procesado_en",
+    ]
+    list_filter = ["estado", "tipo_evento", "entidad_tipo", "activo"]
+    search_fields = ["clave_idempotencia", "tipo_evento", "entidad_id"]
+    readonly_fields = ["id_evento", "fecha_creacion", "fecha_actualizacion", "procesado_en"]

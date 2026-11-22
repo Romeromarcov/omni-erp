@@ -41,6 +41,7 @@ _Total tools MCP: 17_
 | `gestion_aprobaciones.escalar_solicitudes_vencidas` | apps.gestion_aprobaciones.tasks |
 | `gestion_documental.eliminar_archivo_s3` | apps.gestion_documental.tasks |
 | `gestion_documental.limpiar_archivos_huerfanos` | apps.gestion_documental.tasks |
+| `integration_hub.despachar_outbox` | apps.integration_hub.tasks |
 | `integration_hub.ejecutar_job_sincronizacion` | apps.integration_hub.tasks |
 | `integration_hub.export_automatico_todos` | apps.integration_hub.tasks |
 | `integration_hub.exportar_instancia` | apps.integration_hub.tasks |
@@ -53,7 +54,7 @@ _Total tools MCP: 17_
 | `tareas.ejecutar_ciclo_empresa` | apps.tareas.tasks |
 | `tareas.ejecutar_ciclo_todos` | apps.tareas.tasks |
 
-_Total tareas Celery: 24_
+_Total tareas Celery: 25_
 
 ## Management commands
 

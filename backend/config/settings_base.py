@@ -647,6 +647,12 @@ CELERY_BEAT_SCHEDULE = {
         "task": "integration_hub.sync_cartera_odoo_todos",
         "schedule": _crontab(minute="*/30"),
     },
+    # Despacho periódico del Outbox multi-tenant (Omni Connect S8: skip_locked + backoff + DLQ).
+    "hub-despachar-outbox": {
+        "task": "integration_hub.despachar_outbox",
+        "schedule": _crontab(minute="*"),
+        "kwargs": {"limite": 50},
+    },
     # Ciclo operativo de Tareas (recurrencias + recordatorios/escalación) — 9:00 AM y 3:00 PM VET (ADR-015)
     "tareas-ciclo-manana": {
         "task": "tareas.ejecutar_ciclo_todos",

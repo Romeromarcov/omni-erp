@@ -16,6 +16,10 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import Any
 
+from django.core.exceptions import ValidationError as DjangoValidationError
+
+from apps.core.exceptions import sanitize_mcp_error
+
 logger = logging.getLogger(__name__)
 
 _SCOPE = "integration_hub"
@@ -83,6 +87,19 @@ MCP_CAPABILITIES = [
             "una entidad de un conector sin ejecutar la sincronización real."
         ),
         "requires_capabilities": ["integration_hub:read"],
+    },
+    {
+        "name": "integration_hub.listar_outbox",
+        "description": (
+            "Lista los eventos de la cola Outbox multi-tenant del Integration Hub, "
+            "filtrables por estado y tipo_evento."
+        ),
+        "requires_capabilities": ["integration_hub:read"],
+    },
+    {
+        "name": "integration_hub.reintentar_outbox",
+        "description": "Reencola un evento Outbox en estado FALLIDO o DLQ para un nuevo intento de despacho.",
+        "requires_capabilities": ["integration_hub:write"],
     },
 ]
 
@@ -459,6 +476,164 @@ def integration_hub_estado_sync(
         return res
 
 
+def _validar_sin_nul_mcp(valor: str | None, campo: str) -> str | None:
+    if valor is None:
+        return None
+    texto = str(valor)
+    if "\x00" in texto:
+        raise ValueError(f"El parámetro '{campo}' contiene caracteres inválidos.")
+    return texto
+
+
+def _parse_uuid_strict_mcp(raw: str, campo: str) -> uuid.UUID:
+    texto = _validar_sin_nul_mcp(raw, campo) or ""
+    parsed = _parse_uuid(texto)
+    if parsed is None:
+        raise ValueError(f"El parámetro '{campo}' no es un UUID válido.")
+    return parsed
+
+
+def _parse_optional_uuid_mcp(raw: str | None, campo: str) -> uuid.UUID | None:
+    if raw is None:
+        return None
+    texto = _validar_sin_nul_mcp(raw, campo) or ""
+    if not texto.strip():
+        return None
+    return _parse_uuid_strict_mcp(texto, campo)
+
+
+def _serializar_evento_outbox_mcp(evento) -> dict[str, Any]:
+    return {
+        "id_evento": str(evento.id_evento),
+        "id_empresa": str(evento.id_empresa_id),
+        "tipo_evento": evento.tipo_evento,
+        "entidad_tipo": evento.entidad_tipo,
+        "entidad_id": str(evento.entidad_id),
+        "clave_idempotencia": evento.clave_idempotencia,
+        "estado": evento.estado,
+        "intentos": evento.intentos,
+        "max_intentos": evento.max_intentos,
+        "proximo_intento_en": evento.proximo_intento_en.isoformat() if evento.proximo_intento_en else None,
+        "procesado_en": evento.procesado_en.isoformat() if evento.procesado_en else None,
+        "ultimo_error": evento.ultimo_error,
+    }
+
+
+def hub_listar_outbox(
+    capability_token: str,
+    empresa_id: str | None = None,
+    estado: str | None = None,
+    tipo_evento: str | None = None,
+    limit: int = 50,
+) -> dict[str, Any]:
+    """Lista eventos de la cola Outbox multi-tenant. Scope: ``integration_hub:read``."""
+    from apps.integration_hub.models import EventoOutbox  # noqa: PLC0415
+
+    try:
+        emp_uuid = _parse_optional_uuid_mcp(empresa_id, "empresa_id")
+        estado_val = _validar_sin_nul_mcp(estado, "estado")
+        tipo_val = _validar_sin_nul_mcp(tipo_evento, "tipo_evento")
+        estado_norm: str | None = None
+        if estado_val is not None and estado_val.strip():
+            estado_norm = estado_val.strip().upper()
+            if estado_norm not in set(EventoOutbox.Estado.values):
+                raise ValueError(f"Estado '{estado_val}' no válido.")
+        tope = max(1, min(int(limit), 200))
+    except ValueError as exc:
+        return {
+            "success": False,
+            "error": sanitize_mcp_error(
+                exc,
+                logger=logger,
+                tool_name="hub_listar_outbox",
+                controlled_types=(ValueError,),
+            ),
+            "eventos": [],
+        }
+
+    emp_str = str(emp_uuid) if emp_uuid is not None else None
+    with _ctx(capability_token, f"{_SCOPE}:read", empresa_id=emp_str) as ctx:
+        try:
+            qs = EventoOutbox.objects.filter(
+                id_empresa_id=ctx["empresa_id"],
+                activo=True,
+            ).order_by("-fecha_creacion")
+            if estado_norm is not None:
+                qs = qs.filter(estado=estado_norm)
+            if tipo_val is not None and tipo_val.strip():
+                qs = qs.filter(tipo_evento=tipo_val.strip())
+            eventos = list(qs[:tope])
+        except Exception as exc:  # noqa: BLE001
+            return {
+                "success": False,
+                "error": sanitize_mcp_error(exc, logger=logger, tool_name="hub_listar_outbox"),
+                "eventos": [],
+            }
+
+        logger.info(
+            "hub_listar_outbox | actor=%s | tenant=%s | count=%d",
+            ctx["actor_id"],
+            ctx["tenant_id"],
+            len(eventos),
+        )
+        return {
+            "success": True,
+            "eventos": [_serializar_evento_outbox_mcp(ev) for ev in eventos],
+        }
+
+
+def hub_reintentar_outbox(
+    capability_token: str,
+    empresa_id: str | None = None,
+    evento_id: str = "",
+) -> dict[str, Any]:
+    """Reencola un evento Outbox en estado ``FALLIDO`` o ``DLQ``. Scope: ``integration_hub:write``."""
+    from apps.integration_hub.outbox import OutboxError, reintentar_evento_outbox  # noqa: PLC0415
+
+    try:
+        emp_uuid = _parse_optional_uuid_mcp(empresa_id, "empresa_id")
+        evento_uuid = _parse_uuid_strict_mcp(evento_id, "evento_id")
+    except ValueError as exc:
+        return {
+            "success": False,
+            "error": sanitize_mcp_error(
+                exc,
+                logger=logger,
+                tool_name="hub_reintentar_outbox",
+                controlled_types=(ValueError,),
+            ),
+        }
+
+    emp_str = str(emp_uuid) if emp_uuid is not None else None
+    with _ctx(capability_token, f"{_SCOPE}:write", empresa_id=emp_str) as ctx:
+        try:
+            actualizado = reintentar_evento_outbox(
+                evento_uuid,
+                empresa_ids=[uuid.UUID(str(ctx["empresa_id"]))],
+            )
+        except Exception as exc:  # noqa: BLE001
+            return {
+                "success": False,
+                "error": sanitize_mcp_error(
+                    exc,
+                    logger=logger,
+                    tool_name="hub_reintentar_outbox",
+                    controlled_types=(OutboxError, DjangoValidationError, ValueError),
+                ),
+            }
+
+        logger.info(
+            "hub_reintentar_outbox | actor=%s | tenant=%s | evento=%s",
+            ctx["actor_id"],
+            ctx["tenant_id"],
+            actualizado.id_evento,
+        )
+        return {
+            "success": True,
+            "evento": _serializar_evento_outbox_mcp(actualizado),
+        }
+
+
 MCP_TOOLS: list[dict[str, Any]] = [
     {
         "fn": integration_hub_listar_conectores,
@@ -484,5 +659,15 @@ MCP_TOOLS: list[dict[str, Any]] = [
         "fn": integration_hub_estado_sync,
         "name": "integration_hub_estado_sync",
         "scope": f"{_SCOPE}:read",
+    },
+    {
+        "fn": hub_listar_outbox,
+        "name": "hub_listar_outbox",
+        "scope": f"{_SCOPE}:read",
+    },
+    {
+        "fn": hub_reintentar_outbox,
+        "name": "hub_reintentar_outbox",
+        "scope": f"{_SCOPE}:write",
     },
 ]

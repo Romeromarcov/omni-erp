@@ -157,6 +157,7 @@
 | integration_hub | ConectorInstancia | ✅ | ✅ | id_empresa+nombre |
 | integration_hub | ConectorProveedor | — | ✅ | — |
 | integration_hub | EntidadSincronizada | — | ✅ | id_instancia+tipo_entidad+id_externo |
+| integration_hub | EventoOutbox | ✅ | ✅ | — |
 | integration_hub | JobSincronizacion | — | ✅ | — |
 | integration_hub | LogDetalleSincronizacion | — | ✅ | — |
 | inventario | CategoriaProducto | ✅ | ✅ | — |
@@ -264,4 +265,4 @@
 | ventas | NotaVenta | ✅ | ✅ | id_empresa+numero_nota |
 | ventas | Pedido | ✅ | ✅ | id_empresa+numero_pedido |
 
-_Total modelos: 261_
+_Total modelos: 262_

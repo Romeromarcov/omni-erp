@@ -29,6 +29,11 @@ from apps.core.exceptions import DomainError
 from apps.core.models import Empresa, Usuarios
 from apps.crm.models import Etapa, Lead, Pipeline
 from apps.crm.services_dedup import resolver_o_vincular_contacto
+from apps.integration_hub.outbox import (
+    ENTIDAD_CRM_LEAD,
+    EVENTO_CRM_LEAD_CAPTURADO,
+    encolar_evento_outbox,
+)
 
 from .models import Perfil, Tarjeta, Toque
 from .validators import (
@@ -571,13 +576,6 @@ def capturar_lead_publico(
             lead.full_clean()
             lead.save()
 
-            _notificar_lead_capturado(
-                empresa=empresa,
-                propietario_id=propietario_id,
-                lead=lead,
-                perfil_slug=perfil_publico["slug"],
-            )
-
             event_payload = {
                 "lead_id": str(lead.id_lead),
                 "fuente": lead.fuente,
@@ -586,6 +584,27 @@ def capturar_lead_publico(
                 "pipeline_id": str(pipeline.id_pipeline),
                 "etapa_id": str(etapa.id_etapa),
             }
+            encolar_evento_outbox(
+                empresa,
+                tipo_evento=EVENTO_CRM_LEAD_CAPTURADO,
+                entidad_tipo=ENTIDAD_CRM_LEAD,
+                entidad_id=lead.id_lead,
+                payload={
+                    **event_payload,
+                    "etapa_nombre": etapa.nombre,
+                    "etapa_tipo": etapa.tipo,
+                    "propietario_id": str(propietario_id),
+                },
+                clave_idempotencia=f"{EVENTO_CRM_LEAD_CAPTURADO}:{lead.id_lead}",
+            )
+
+            _notificar_lead_capturado(
+                empresa=empresa,
+                propietario_id=propietario_id,
+                lead=lead,
+                perfil_slug=perfil_publico["slug"],
+            )
+
             transaction.on_commit(lambda: _emitir_evento_lead_capturado(event_payload, str(empresa_id)))
 
     return {

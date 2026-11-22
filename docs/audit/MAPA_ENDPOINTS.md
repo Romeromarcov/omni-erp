@@ -911,6 +911,12 @@
 | `^ordenes-produccion/(?P<pk>[^/.]+)/mrp\.(?P<format>[a-z0-9]+)/?$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
 | `^ordenes-produccion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
 | `^ordenes-produccion\.(?P<format>[a-z0-9]+)/?$` | OrdenProduccionViewSet | OrdenProduccion | ✅ | ✅ | IsAuthenticated |
+| `^outbox/$` | EventoOutboxViewSet | EventoOutbox | ✅ | ✅ | IsAuthenticated |
+| `^outbox/(?P<pk>[0-9a-fA-F-]{36})/$` | EventoOutboxViewSet | EventoOutbox | ✅ | ✅ | IsAuthenticated |
+| `^outbox/(?P<pk>[0-9a-fA-F-]{36})/reintentar/$` | EventoOutboxViewSet | EventoOutbox | ✅ | ✅ | IsAuthenticated |
+| `^outbox/(?P<pk>[0-9a-fA-F-]{36})/reintentar\.(?P<format>[a-z0-9]+)/?$` | EventoOutboxViewSet | EventoOutbox | ✅ | ✅ | IsAuthenticated |
+| `^outbox/(?P<pk>[0-9a-fA-F-]{36})\.(?P<format>[a-z0-9]+)/?$` | EventoOutboxViewSet | EventoOutbox | ✅ | ✅ | IsAuthenticated |
+| `^outbox\.(?P<format>[a-z0-9]+)/?$` | EventoOutboxViewSet | EventoOutbox | ✅ | ✅ | IsAuthenticated |
 | `^overrides-metodos-pago/$` | CajaMetodoPagoOverrideViewSet | CajaMetodoPagoOverride | — | ✅ | IsAuthenticated |
 | `^overrides-metodos-pago/(?P<pk>[^/.]+)/$` | CajaMetodoPagoOverrideViewSet | CajaMetodoPagoOverride | — | ✅ | IsAuthenticated |
 | `^overrides-metodos-pago/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CajaMetodoPagoOverrideViewSet | CajaMetodoPagoOverride | — | ✅ | IsAuthenticated |
@@ -1466,4 +1472,4 @@
 | `validar-cuenta-ve/` | ValidarCuentaVeView | — | — | — | IsAuthenticated |
 | `validar-referencia/` | ValidarReferenciaView | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 264_
+_Total ViewSets: 265_

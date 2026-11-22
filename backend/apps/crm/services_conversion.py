@@ -20,6 +20,12 @@ from apps.auditoria.models import LogAuditoria
 from apps.core.models import Contacto, Empresa, Usuarios
 from apps.core.viewsets import get_empresas_visible
 from apps.fiscal.services import siguiente_numero
+from apps.integration_hub.outbox import (
+    ENTIDAD_CRM_LEAD,
+    EVENTO_CRM_LEAD_ANONIMIZADO,
+    EVENTO_CRM_LEAD_CONVERTIDO,
+    encolar_evento_outbox,
+)
 
 from .models import Cliente, Etapa, Lead, validar_rif
 from .services import CrmError, validar_sin_nul_recursivo
@@ -266,6 +272,18 @@ def anonimizar_lead(
     actor_str = str(usuario_valido.pk) if usuario_valido is not None else "system"
     empresa_str = str(lead.id_empresa_id)
     lead_pk_str = str(lead.pk)
+    # Payload estrictamente sin PII para propagación de derecho al olvido (S7–S9).
+    encolar_evento_outbox(
+        lead.id_empresa,
+        tipo_evento=EVENTO_CRM_LEAD_ANONIMIZADO,
+        entidad_tipo=ENTIDAD_CRM_LEAD,
+        entidad_id=lead.pk,
+        payload={
+            "lead_id": lead_pk_str,
+            "anonimizado": True,
+        },
+        clave_idempotencia=f"{EVENTO_CRM_LEAD_ANONIMIZADO}:{lead_pk_str}",
+    )
     transaction.on_commit(
         lambda: _emitir_evento_crm("crm.lead.anonimizado", {"lead_id": lead_pk_str}, empresa_str, actor_str)
     )
@@ -706,6 +724,19 @@ def convertir_lead_a_cliente(
         "cliente_id": str(cliente.pk),
         "cotizacion_id": str(cotizacion.pk) if cotizacion is not None else None,
     }
+    encolar_evento_outbox(
+        empresa,
+        tipo_evento=EVENTO_CRM_LEAD_CONVERTIDO,
+        entidad_tipo=ENTIDAD_CRM_LEAD,
+        entidad_id=lead.pk,
+        payload={
+            **event_payload,
+            "etapa_id": str(etapa_ganada.pk),
+            "etapa_nombre": etapa_ganada.nombre,
+            "etapa_tipo": etapa_ganada.tipo,
+        },
+        clave_idempotencia=f"{EVENTO_CRM_LEAD_CONVERTIDO}:{lead.pk}",
+    )
     transaction.on_commit(lambda: _emitir_evento_crm("crm.lead.convertido", event_payload, empresa_str, actor_str))
 
     return {

@@ -33,6 +33,7 @@ import hashlib
 import html
 import json
 import logging
+import uuid
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from typing import TYPE_CHECKING, Any
@@ -83,6 +84,7 @@ class OdooConnector(BaseConnector):
         super().__init__(instancia)
         self._client: OdooXMLRPCClient | None = None
         self._write_client: OdooXMLRPCClient | None = None
+        self._connect_write_client: OdooXMLRPCClient | None = None
         self._model_fields_cache: dict[str, set[str]] = {}
 
     def _sanitizar_error_externo(self, exc: BaseException | str) -> str:
@@ -168,6 +170,54 @@ class OdooConnector(BaseConnector):
             return self._write_client
 
         return self._get_client()
+
+    def _get_connect_lead_write_client(self) -> OdooXMLRPCClient:
+        """Cliente XML-RPC fail-closed exclusivo para push de leads Connect hacia ``crm.lead``.
+
+        - Exige opt-in booleano estricto ``empujar_connect_leads=True``.
+        - Exige credenciales de escritura dedicadas ``write_user`` y ``write_api_key``
+          (NUNCA cae a las credenciales de lectura ``user``/``api_key``).
+        """
+        cfg = getattr(self, "_config", None) or {}
+        if cfg.get("empujar_connect_leads") is not True:
+            raise ConnectorConnectionError(
+                "Push de leads Connect deshabilitado en este conector (empujar_connect_leads debe ser True)."
+            )
+
+        write_user = str(cfg.get("write_user") or "").strip()
+        write_key = str(cfg.get("write_api_key") or "").strip()
+        if not write_user or not write_key:
+            raise ConnectorConnectionError(
+                "Push de leads Connect requiere credenciales de escritura dedicadas ('write_user' y 'write_api_key')."
+            )
+
+        connect_client = getattr(self, "_connect_write_client", None)
+        if connect_client is not None:
+            try:
+                if connect_client.ping():
+                    return connect_client
+            except Exception:
+                pass
+            self._connect_write_client = None
+
+        host = str(cfg.get("host") or "").strip()
+        db = str(cfg.get("db") or "").strip()
+        timeout = int(cfg.get("timeout", 30))
+        if not host:
+            raise ConnectorConnectionError("La configuración del conector Odoo está incompleta: falta 'host'.")
+        try:
+            self._connect_write_client = OdooXMLRPCClient(
+                host,
+                db,
+                write_user,
+                write_key,
+                timeout,
+                write_user=write_user,
+                write_api_key=write_key,
+            )
+        except OdooAuthError as exc:
+            raise ConnectorConnectionError(self._sanitizar_error_externo(exc)) from None
+        return self._connect_write_client
 
     def _get_model_fields(self, client: Any, model_name: str) -> set[str]:
         """Detecta y cachea los campos disponibles de un modelo Odoo (compatible v8–v18+)."""
@@ -1104,6 +1154,249 @@ class OdooConnector(BaseConnector):
         else:
             nuevo_id = client.crear_producto(vals)
             return str(nuevo_id)
+
+    def _instancia_persistida(self) -> bool:
+        from apps.integration_hub.models import ConectorInstancia
+
+        inst = getattr(self, "instancia", None)
+        return isinstance(inst, ConectorInstancia) and bool(inst.pk)
+
+    def _resolver_datos_lead_push(self, evento_o_datos: Any) -> dict[str, Any]:
+        """Normaliza entrada de ``push_lead`` (``EventoOutbox`` o ``dict``) enriqueciendo con ``crm.Lead``."""
+        from apps.crm.models import Lead
+        from apps.integration_hub.models import EventoOutbox
+
+        if isinstance(evento_o_datos, EventoOutbox):
+            tipo_evento = str(evento_o_datos.tipo_evento or "").strip()
+            payload = dict(evento_o_datos.payload or {})
+            lead_id_str = str(evento_o_datos.entidad_id or payload.get("lead_id") or "").strip()
+        elif isinstance(evento_o_datos, dict):
+            payload = dict(evento_o_datos)
+            tipo_evento = str(payload.get("tipo_evento") or "crm.lead.capturado").strip()
+            lead_id_str = str(payload.get("lead_id") or payload.get("id_lead") or "").strip()
+        else:
+            raise ConnectorDataError("push_lead requiere un EventoOutbox o un diccionario de datos.")
+
+        if not lead_id_str:
+            raise ConnectorDataError("push_lead requiere 'lead_id'.")
+
+        lead_obj: Lead | None = None
+        if self._instancia_persistida():
+            try:
+                lead_uuid = uuid.UUID(lead_id_str)
+            except (ValueError, TypeError):
+                lead_uuid = None
+            if lead_uuid is not None:
+                lead_obj = (
+                    Lead.objects.select_related("etapa", "pipeline")
+                    .filter(pk=lead_uuid, id_empresa_id=self.instancia.id_empresa_id)
+                    .first()
+                )
+
+        es_anonimizado = (
+            tipo_evento == "crm.lead.anonimizado"
+            or bool(payload.get("anonimizado") is True)
+            or bool(lead_obj is not None and lead_obj.anonimizado)
+        )
+
+        if lead_obj is not None and not es_anonimizado:
+            return {
+                "tipo_evento": tipo_evento,
+                "lead_id": lead_id_str,
+                "anonimizado": False,
+                "nombre": lead_obj.nombre or "",
+                "apellido": lead_obj.apellido or "",
+                "empresa_nombre": lead_obj.empresa_nombre or "",
+                "email": lead_obj.email or "",
+                "telefono": lead_obj.telefono or "",
+                "mensaje": lead_obj.mensaje or "",
+                "fuente": lead_obj.fuente or "",
+                "etapa_id": str(lead_obj.etapa_id) if lead_obj.etapa_id else "",
+                "etapa_nombre": lead_obj.etapa.nombre if lead_obj.etapa_id else "",
+                "pipeline_nombre": lead_obj.pipeline.nombre if lead_obj.pipeline_id else "",
+                "cliente_id": str(lead_obj.cliente_convertido_id)
+                if lead_obj.cliente_convertido_id
+                else str(payload.get("cliente_id") or ""),
+                "odoo_lead_id": payload.get("odoo_lead_id"),
+            }
+
+        return {
+            "tipo_evento": tipo_evento,
+            "lead_id": lead_id_str,
+            "anonimizado": es_anonimizado,
+            "nombre": str(payload.get("nombre") or "").strip(),
+            "apellido": str(payload.get("apellido") or "").strip(),
+            "empresa_nombre": str(payload.get("empresa_nombre") or "").strip(),
+            "email": str(payload.get("email") or "").strip(),
+            "telefono": str(payload.get("telefono") or "").strip(),
+            "mensaje": str(payload.get("mensaje") or "").strip(),
+            "fuente": str(payload.get("fuente") or "").strip(),
+            "etapa_id": str(payload.get("etapa_id") or "").strip(),
+            "etapa_nombre": str(payload.get("etapa_nombre") or "").strip(),
+            "pipeline_nombre": str(payload.get("pipeline_nombre") or "").strip(),
+            "cliente_id": str(payload.get("cliente_id") or "").strip(),
+            "odoo_lead_id": payload.get("odoo_lead_id"),
+        }
+
+    def _construir_vals_crm_lead(self, datos: dict[str, Any]) -> dict[str, Any]:
+        """Construye diccionario de campos exclusivamente para ``crm.lead`` (NUNCA ``res.partner``)."""
+        if datos["anonimizado"]:
+            return {
+                "name": "Contacto anonimizado",
+                "contact_name": "",
+                "email_from": False,
+                "phone": False,
+                "partner_name": False,
+                "description": "Anonimizado por solicitud de privacidad",
+            }
+
+        nombre_completo = f"{datos['nombre']} {datos['apellido']}".strip()
+        empresa_nombre = datos["empresa_nombre"]
+        if nombre_completo and empresa_nombre:
+            titulo = f"{nombre_completo} — {empresa_nombre}"
+        else:
+            titulo = nombre_completo or empresa_nombre or f"Lead Omni {datos['lead_id'][:8]}"
+
+        lineas_desc = [f"[OMNI-LEAD:{datos['lead_id']}]"]
+        if datos["fuente"]:
+            lineas_desc.append(f"Fuente: {datos['fuente']}")
+        if datos["pipeline_nombre"]:
+            lineas_desc.append(f"Pipeline: {datos['pipeline_nombre']}")
+        if datos["etapa_nombre"]:
+            lineas_desc.append(f"Etapa: {datos['etapa_nombre']}")
+        if datos["tipo_evento"] == "crm.lead.convertido" and datos["cliente_id"]:
+            lineas_desc.append(f"Convertido a cliente Omni: {datos['cliente_id']}")
+        if datos["mensaje"]:
+            lineas_desc.append(f"Mensaje: {datos['mensaje']}")
+
+        vals: dict[str, Any] = {
+            "name": titulo,
+            "description": "\n".join(lineas_desc),
+        }
+        if nombre_completo:
+            vals["contact_name"] = nombre_completo
+        if empresa_nombre:
+            vals["partner_name"] = empresa_nombre
+        if datos["email"]:
+            vals["email_from"] = datos["email"]
+        if datos["telefono"]:
+            vals["phone"] = datos["telefono"]
+
+        cfg = getattr(self, "_config", None) or {}
+        mapa_etapas = cfg.get("mapa_etapas_odoo")
+        if isinstance(mapa_etapas, dict):
+            stage_raw = mapa_etapas.get(datos["etapa_id"])
+            if stage_raw is None and datos["etapa_nombre"]:
+                stage_raw = mapa_etapas.get(datos["etapa_nombre"])
+            stage_id = OdooXMLRPCClient._m2o_id(stage_raw)
+            if stage_id is not None:
+                vals["stage_id"] = stage_id
+
+        return vals
+
+    def push_lead(self, evento_o_datos: Any) -> dict[str, Any]:
+        """Empuja o actualiza un lead Connect hacia ``crm.lead`` en Odoo de forma idempotente.
+
+        Reglas estrictas:
+        - Opt-in obligatorio ``empujar_connect_leads=True`` + credenciales de escritura
+          ``write_user``/``write_api_key`` (fail-closed).
+        - Opera EXCLUSIVAMENTE sobre ``crm.lead`` (NUNCA crea/actualiza ``res.partner``).
+        - Idempotente vía ``EntidadSincronizada`` (``tipo_entidad='crm_lead'``):
+          create la primera vez, update en eventos posteriores.
+        - Ante ``crm.lead.anonimizado``: limpia PII en Odoo si ya existía mapeo;
+          si nunca fue empujado, NO crea registro nuevo.
+        """
+        from apps.integration_hub.models import EntidadSincronizada
+
+        client = self._get_connect_lead_write_client()
+        datos = self._resolver_datos_lead_push(evento_o_datos)
+        lead_id = datos["lead_id"]
+
+        mapeo: EntidadSincronizada | None = None
+        if self._instancia_persistida():
+            mapeo = (
+                EntidadSincronizada.objects.filter(
+                    id_instancia=self.instancia,
+                    tipo_entidad="crm_lead",
+                    id_omni=lead_id,
+                    activo=True,
+                )
+                .order_by("-ultimo_sync")
+                .first()
+            )
+
+        odoo_lead_id: int | None = None
+        if mapeo is not None:
+            odoo_lead_id = OdooXMLRPCClient._m2o_id(mapeo.id_externo)
+        elif datos.get("odoo_lead_id") is not None:
+            odoo_lead_id = OdooXMLRPCClient._m2o_id(datos.get("odoo_lead_id"))
+
+        try:
+            if datos["anonimizado"]:
+                if odoo_lead_id is None:
+                    return {
+                        "accion": "omitido",
+                        "odoo_lead_id": None,
+                        "lead_id": lead_id,
+                        "motivo": "lead_no_sincronizado",
+                    }
+                vals_anon = self._construir_vals_crm_lead(datos)
+                client.actualizar_lead_crm(odoo_lead_id, vals_anon)
+                if mapeo is not None:
+                    mapeo.checksum = self._checksum(vals_anon)
+                    mapeo.metadatos = {
+                        **(mapeo.metadatos or {}),
+                        "anonimizado": True,
+                        "ultimo_evento": datos["tipo_evento"],
+                    }
+                    mapeo.save(update_fields=["checksum", "metadatos", "ultimo_sync"])
+                return {
+                    "accion": "anonimizado",
+                    "odoo_lead_id": odoo_lead_id,
+                    "lead_id": lead_id,
+                }
+
+            vals = self._construir_vals_crm_lead(datos)
+            checksum = self._checksum(vals)
+
+            if odoo_lead_id is None and hasattr(client, "buscar_lead_crm_por_tag"):
+                encontrado = client.buscar_lead_crm_por_tag(f"[OMNI-LEAD:{lead_id}]")
+                if isinstance(encontrado, int) and not isinstance(encontrado, bool) and encontrado > 0:
+                    odoo_lead_id = encontrado
+
+            if odoo_lead_id is not None:
+                client.actualizar_lead_crm(odoo_lead_id, vals)
+                accion = "actualizado"
+            else:
+                odoo_lead_id = int(client.crear_lead_crm(vals))
+                accion = "creado"
+
+            if self._instancia_persistida():
+                EntidadSincronizada.objects.update_or_create(
+                    id_instancia=self.instancia,
+                    tipo_entidad="crm_lead",
+                    id_externo=str(odoo_lead_id),
+                    defaults={
+                        "id_omni": lead_id,
+                        "modelo_omni": "apps.crm.models.Lead",
+                        "checksum": checksum,
+                        "metadatos": {
+                            "ultimo_evento": datos["tipo_evento"],
+                            "etapa_id": datos["etapa_id"],
+                        },
+                        "activo": True,
+                    },
+                )
+
+            return {
+                "accion": accion,
+                "odoo_lead_id": odoo_lead_id,
+                "lead_id": lead_id,
+            }
+        except OdooAuthError as exc:
+            raise ConnectorConnectionError(self._sanitizar_error_externo(exc)) from None
+        except OdooCallError as exc:
+            raise ConnectorDataError(self._sanitizar_error_externo(exc)) from None
 
     # ── Utilidades ────────────────────────────────────────────────────────────
 
