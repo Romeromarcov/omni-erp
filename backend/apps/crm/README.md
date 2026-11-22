@@ -30,4 +30,6 @@ Acciones personalizadas:
 | `POST pipelines/asegurar-predeterminado/` | Obtiene o inicializa el pipeline predeterminado con sus etapas base. |
 | `POST pipelines/{id}/reordenar-etapas/` | Reordena atómicamente las etapas activas del pipeline. |
 | `POST leads/{id}/mover-etapa/` | Mueve el lead a otra etapa dentro de su pipeline. |
+| `POST leads/{id}/convertir-cliente/` | Convierte atómica e idempotentemente el lead en `Cliente` (y cotización borrador opcional). |
+| `POST leads/{id}/anonimizar/` | Anonimiza la PII del lead (derecho al olvido) registrando auditoría. |
 | `POST actividades/{id}/completar/` | Marca o reabre una actividad como completada. |

@@ -1,4 +1,4 @@
-"""Herramientas MCP del módulo CRM ligero (Omni Connect S4, R-CODE-7).
+"""Herramientas MCP del módulo CRM ligero (Omni Connect S4 + S5 + S6, R-CODE-7).
 
 Herramientas expuestas:
   - ``crm_listar_pipelines`` (scope ``crm:read``)
@@ -6,6 +6,8 @@ Herramientas expuestas:
   - ``crm_crear_lead`` (scope ``crm:write``)
   - ``crm_mover_etapa_lead`` (scope ``crm:write``)
   - ``crm_registrar_actividad`` (scope ``crm:write``)
+  - ``crm_convertir_lead_cliente`` (scope ``crm:write``)
+  - ``crm_anonimizar_lead`` (scope ``crm:write``)
 """
 
 from __future__ import annotations
@@ -141,7 +143,28 @@ def _serializar_lead_mcp(lead) -> dict[str, Any]:
         "etapa_nombre": lead.etapa.nombre,
         "etapa_tipo": lead.etapa.tipo,
         "propietario_id": str(lead.propietario_id),
+        "contacto_id": str(lead.contacto_id) if lead.contacto_id else None,
+        "cliente_convertido_id": str(lead.cliente_convertido_id) if lead.cliente_convertido_id else None,
+        "anonimizado": bool(lead.anonimizado),
     }
+
+
+def _resolver_actor_token(capability_token: str, empresa):
+    from apps.core.models import CapabilityToken  # noqa: PLC0415
+
+    token_obj = (
+        CapabilityToken.objects.select_related("creado_por")
+        .filter(token=capability_token, empresa=empresa, activo=True)
+        .first()
+    )
+    if (
+        token_obj is not None
+        and token_obj.creado_por is not None
+        and token_obj.creado_por.is_active
+        and token_obj.creado_por.empresas.filter(pk=empresa.pk).exists()
+    ):
+        return token_obj.creado_por
+    return None
 
 
 def _serializar_actividad_mcp(act) -> dict[str, Any]:
@@ -500,10 +523,145 @@ def crm_registrar_actividad(
         return _serializar_actividad_mcp(actividad)
 
 
+def crm_convertir_lead_cliente(
+    capability_token: str,
+    empresa_id: str | None = None,
+    lead_id: str = "",
+    razon_social: str = "",
+    rif: str = "",
+    nombre_comercial: str = "",
+    email: str = "",
+    telefono: str = "",
+    direccion: str = "",
+    tipo_cliente: str = "CONTADO",
+    crear_cotizacion: bool = False,
+    reutilizar_cliente_existente: bool = True,
+) -> dict[str, Any]:
+    """Convierte atómica e idempotentemente un lead CRM en ``crm.Cliente`` (+ ``Cotizacion`` opcional).
+
+    Scope requerido: ``crm:write``
+    """
+    from apps.crm.services import CrmError  # noqa: PLC0415
+    from apps.crm.services_conversion import convertir_lead_a_cliente  # noqa: PLC0415
+
+    emp_uuid = _parse_optional_uuid_mcp(empresa_id, "empresa_id")
+    lead_uuid = _parse_uuid_mcp(lead_id, "lead_id")
+
+    datos: dict[str, Any] = {
+        "rif": (_validar_texto_mcp(rif, "rif") or "").strip(),
+        "tipo_cliente": (_validar_texto_mcp(tipo_cliente, "tipo_cliente") or "CONTADO").strip() or "CONTADO",
+        "crear_cotizacion": bool(crear_cotizacion),
+        "reutilizar_cliente_existente": bool(reutilizar_cliente_existente),
+    }
+    for clave, valor_raw in (
+        ("razon_social", razon_social),
+        ("nombre_comercial", nombre_comercial),
+        ("email", email),
+        ("telefono", telefono),
+        ("direccion", direccion),
+    ):
+        valor_limpio = (_validar_texto_mcp(valor_raw, clave) or "").strip()
+        if valor_limpio:
+            datos[clave] = valor_limpio
+
+    emp_str = str(emp_uuid) if emp_uuid is not None else None
+    with _ctx(capability_token, f"{_SCOPE}:write", empresa_id=emp_str) as ctx:
+        empresa = _resolver_empresa(ctx)
+        actor = _resolver_actor_token(capability_token, empresa)
+        try:
+            resultado = convertir_lead_a_cliente(
+                lead_uuid,
+                actor,
+                datos,
+                empresa_ids=[empresa.pk],
+            )
+        except (CrmError, DjangoValidationError, IntegrityError, ValueError) as exc:
+            return {
+                "error": sanitize_mcp_error(
+                    exc,
+                    logger=logger,
+                    tool_name="crm_convertir_lead_cliente",
+                    controlled_types=(CrmError, DjangoValidationError, ValueError),
+                )
+            }
+
+        lead_res = resultado["lead"]
+        cliente_res = resultado["cliente"]
+        cotizacion_res = resultado["cotizacion"]
+        logger.info(
+            "crm_convertir_lead_cliente | actor=%s | tenant=%s | lead=%s | cliente=%s | ya_convertido=%s",
+            ctx["actor_id"],
+            ctx["tenant_id"],
+            lead_res.id_lead,
+            cliente_res.id_cliente,
+            resultado["ya_convertido"],
+        )
+        return {
+            "ya_convertido": bool(resultado["ya_convertido"]),
+            "lead_id": str(lead_res.id_lead),
+            "cliente_id": str(cliente_res.id_cliente),
+            "razon_social": cliente_res.razon_social,
+            "rif": cliente_res.rif,
+            "etapa_id": str(lead_res.etapa_id),
+            "etapa_nombre": lead_res.etapa.nombre,
+            "cotizacion_id": str(cotizacion_res.id_cotizacion) if cotizacion_res is not None else None,
+            "numero_cotizacion": cotizacion_res.numero_cotizacion if cotizacion_res is not None else None,
+        }
+
+
+def crm_anonimizar_lead(
+    capability_token: str,
+    empresa_id: str | None = None,
+    lead_id: str = "",
+    motivo: str = "",
+) -> dict[str, Any]:
+    """Suprime la PII de un lead CRM (derecho al olvido) registrando auditoría sin PII.
+
+    Scope requerido: ``crm:write``
+    """
+    from apps.crm.services import CrmError  # noqa: PLC0415
+    from apps.crm.services_conversion import anonimizar_lead  # noqa: PLC0415
+
+    emp_uuid = _parse_optional_uuid_mcp(empresa_id, "empresa_id")
+    lead_uuid = _parse_uuid_mcp(lead_id, "lead_id")
+    motivo_val = _validar_texto_mcp(motivo, "motivo") or ""
+
+    emp_str = str(emp_uuid) if emp_uuid is not None else None
+    with _ctx(capability_token, f"{_SCOPE}:write", empresa_id=emp_str) as ctx:
+        empresa = _resolver_empresa(ctx)
+        actor = _resolver_actor_token(capability_token, empresa)
+        try:
+            lead_anon = anonimizar_lead(
+                lead_uuid,
+                actor,
+                empresa_ids=[empresa.pk],
+                request_meta={"motivo": motivo_val} if motivo_val else None,
+            )
+        except (CrmError, DjangoValidationError, IntegrityError, ValueError) as exc:
+            return {
+                "error": sanitize_mcp_error(
+                    exc,
+                    logger=logger,
+                    tool_name="crm_anonimizar_lead",
+                    controlled_types=(CrmError, DjangoValidationError, ValueError),
+                )
+            }
+
+        logger.info(
+            "crm_anonimizar_lead | actor=%s | tenant=%s | lead=%s",
+            ctx["actor_id"],
+            ctx["tenant_id"],
+            lead_anon.id_lead,
+        )
+        return _serializar_lead_mcp(lead_anon)
+
+
 MCP_TOOLS: list[dict[str, Any]] = [
     {"fn": crm_listar_pipelines, "name": "crm_listar_pipelines", "scope": f"{_SCOPE}:read"},
     {"fn": crm_listar_leads, "name": "crm_listar_leads", "scope": f"{_SCOPE}:read"},
     {"fn": crm_crear_lead, "name": "crm_crear_lead", "scope": f"{_SCOPE}:write"},
     {"fn": crm_mover_etapa_lead, "name": "crm_mover_etapa_lead", "scope": f"{_SCOPE}:write"},
     {"fn": crm_registrar_actividad, "name": "crm_registrar_actividad", "scope": f"{_SCOPE}:write"},
+    {"fn": crm_convertir_lead_cliente, "name": "crm_convertir_lead_cliente", "scope": f"{_SCOPE}:write"},
+    {"fn": crm_anonimizar_lead, "name": "crm_anonimizar_lead", "scope": f"{_SCOPE}:write"},
 ]

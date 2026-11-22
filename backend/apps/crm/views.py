@@ -32,10 +32,13 @@ from apps.core.viewsets import (
 from .models import Actividad, Cliente, ContactoCliente, DireccionCliente, Etapa, Lead, Pipeline
 from .serializers import (
     ActividadSerializer,
+    AnonimizarLeadInputSerializer,
     AsegurarPipelineInputSerializer,
     ClienteSerializer,
     CompletarActividadSerializer,
     ContactoClienteSerializer,
+    ConvertirLeadInputSerializer,
+    ConvertirLeadResponseSerializer,
     DireccionClienteSerializer,
     EtapaSerializer,
     LeadSerializer,
@@ -53,6 +56,7 @@ from .services import (
     reordenar_etapas_pipeline,
     validar_sin_nul_recursivo,
 )
+from .services_conversion import anonimizar_lead, convertir_lead_a_cliente
 
 
 def _empresas(request):
@@ -405,7 +409,15 @@ class EtapaViewSet(_BaseCrmConnectViewSet):
 
 def _annotar_leads_queryset(qs: Any) -> Any:
     ahora = timezone.now()
-    return qs.select_related("pipeline", "etapa", "propietario", "tarjeta", "perfil", "contacto").annotate(
+    return qs.select_related(
+        "pipeline",
+        "etapa",
+        "propietario",
+        "tarjeta",
+        "perfil",
+        "contacto",
+        "cliente_convertido",
+    ).annotate(
         actividades_pendientes_count=Count(
             "actividades",
             filter=Q(actividades__activo=True, actividades__completada=False),
@@ -544,6 +556,108 @@ class LeadViewSet(_BaseCrmConnectViewSet):
         lead_refrescado = _lead_serializable(lead_actualizado.pk, request.user) or lead_actualizado
         return Response(
             LeadSerializer(lead_refrescado, context=self.get_serializer_context()).data,
+            status=status.HTTP_200_OK,
+        )
+
+    @swagger_auto_schema(
+        method="post",
+        operation_summary="Anonimiza la PII de un lead conforme al derecho al olvido",
+        request_body=AnonimizarLeadInputSerializer,
+        responses={
+            200: LeadSerializer,
+            400: "Lead ya anonimizado o inválido",
+            404: "Lead no encontrado",
+        },
+    )
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="anonimizar",
+        serializer_class=AnonimizarLeadInputSerializer,
+    )
+    def anonimizar(self, request: Request, pk: str | None = None) -> Response:
+        lead = self.get_object()
+        payload_in = {} if request.data is None or request.data == "" else request.data
+        serializer = self.get_serializer(data=payload_in)
+        serializer.is_valid(raise_exception=True)
+        usuario = request.user if isinstance(request.user, Usuarios) else None
+        empresa_ids = list(_empresas(request).values_list("pk", flat=True))
+        request_meta = {
+            "REMOTE_ADDR": request.META.get("REMOTE_ADDR"),
+            "HTTP_USER_AGENT": request.META.get("HTTP_USER_AGENT"),
+            "motivo": serializer.validated_data.get("motivo", ""),
+        }
+        try:
+            lead_anon = anonimizar_lead(
+                lead.pk,
+                usuario,
+                empresa_ids=empresa_ids,
+                request_meta=request_meta,
+            )
+        except (CrmError, DjangoValidationError) as exc:
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST, key="error")
+
+        lead_refrescado = _lead_serializable(lead_anon.pk, request.user) or lead_anon
+        return Response(
+            LeadSerializer(lead_refrescado, context=self.get_serializer_context()).data,
+            status=status.HTTP_200_OK,
+        )
+
+    @swagger_auto_schema(
+        method="post",
+        operation_summary="Convierte atómica e idempotentemente un lead en cliente (+ cotización borrador opcional)",
+        request_body=ConvertirLeadInputSerializer,
+        responses={
+            200: ConvertirLeadResponseSerializer,
+            400: "Datos o estado inválido para convertir",
+            404: "Lead no encontrado",
+        },
+    )
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="convertir-cliente",
+        serializer_class=ConvertirLeadInputSerializer,
+    )
+    def convertir_cliente(self, request: Request, pk: str | None = None) -> Response:
+        lead = self.get_object()
+        payload_in = {} if request.data is None or request.data == "" else request.data
+        serializer = self.get_serializer(data=payload_in)
+        serializer.is_valid(raise_exception=True)
+        usuario = request.user if isinstance(request.user, Usuarios) else None
+        empresa_ids = list(_empresas(request).values_list("pk", flat=True))
+        request_meta = {
+            "REMOTE_ADDR": request.META.get("REMOTE_ADDR"),
+            "HTTP_USER_AGENT": request.META.get("HTTP_USER_AGENT"),
+        }
+        try:
+            resultado = convertir_lead_a_cliente(
+                lead.pk,
+                usuario,
+                serializer.validated_data,
+                empresa_ids=empresa_ids,
+                request_meta=request_meta,
+            )
+        except (CrmError, DjangoValidationError) as exc:
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST, key="error")
+        except IntegrityError:
+            return domain_error_response(
+                CrmError("Conflicto de unicidad o integridad al convertir el lead."),
+                status_code=status.HTTP_400_BAD_REQUEST,
+                key="error",
+            )
+
+        lead_refrescado = _lead_serializable(resultado["lead"].pk, request.user) or resultado["lead"]
+        cotizacion = resultado["cotizacion"]
+        ctx = self.get_serializer_context()
+        return Response(
+            {
+                "ya_convertido": bool(resultado["ya_convertido"]),
+                "lead": LeadSerializer(lead_refrescado, context=ctx).data,
+                "cliente": ClienteSerializer(resultado["cliente"], context=ctx).data,
+                "cotizacion_id": str(cotizacion.id_cotizacion) if cotizacion is not None else None,
+                "numero_cotizacion": cotizacion.numero_cotizacion if cotizacion is not None else None,
+            },
             status=status.HTTP_200_OK,
         )
 

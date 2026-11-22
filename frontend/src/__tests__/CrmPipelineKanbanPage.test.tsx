@@ -13,7 +13,7 @@ vi.mock('../utils/empresa', () => ({ getEmpresaId: () => 'emp-1' }));
 
 import { get, post, patch } from '../services/api';
 import { buildNavigation } from '../config/navigation';
-import { crmKeys } from '../lib/queryKeys';
+import { crmKeys, ventasKeys } from '../lib/queryKeys';
 import { crmRoutes } from '../routes/crmRoutes';
 import { crmCrmService } from '../services/crmCrmService';
 import CrmPipelineKanbanPage from '../pages/CRM/CrmPipelineKanbanPage';
@@ -126,13 +126,14 @@ const actividadPendienteMock = {
 
 function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
+  const result = render(
     <QueryClientProvider client={qc}>
       <MemoryRouter>
         <CrmPipelineKanbanPage />
       </MemoryRouter>
     </QueryClientProvider>,
   );
+  return { ...result, qc };
 }
 
 function mockApiDefault(opts?: { pipelines?: unknown[]; leads?: unknown[]; actividades?: unknown[] }) {
@@ -279,7 +280,7 @@ describe('CrmPipelineKanbanPage', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 
-  it('abre el detalle del lead, registra una actividad y la marca completada', async () => {
+  it('abre el detalle del lead, registra una actividad y la marca completada', { timeout: 15000 }, async () => {
     renderPage();
     await screen.findByText('Ana Martínez');
 
@@ -514,5 +515,299 @@ describe('CrmPipelineKanbanPage', () => {
       await screen.findByText(/Se muestran los primeros 1 de 520 leads del pipeline/i),
     ).toBeInTheDocument();
     spyKanban.mockRestore();
+  });
+
+  it('permite convertir un lead a cliente validando RIF y creando cotización borrador opcional', { timeout: 15000 }, async () => {
+    renderPage();
+    await screen.findByText('Ana Martínez');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Detalle' }));
+    const convertirBtn = await screen.findByRole('button', { name: 'Convertir a cliente' });
+    fireEvent.click(convertirBtn);
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByLabelText(/^Razón social/)).toHaveValue('Tech Norte C.A.');
+    expect(within(dialog).getByLabelText(/^Correo electrónico/)).toHaveValue('ana@technorte.test');
+    expect(within(dialog).getByLabelText(/^Teléfono/)).toHaveValue('+584121234567');
+
+    // RIF inválido bloquea el POST y muestra validación
+    fireEvent.change(within(dialog).getByLabelText(/^RIF/), { target: { value: 'X-999' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Confirmar conversión' }));
+    expect(
+      await within(dialog).findByText(/El RIF debe tener formato V\/J\/E\/G\/B\/P/i),
+    ).toBeInTheDocument();
+    expect(post).not.toHaveBeenCalled();
+
+    // Datos válidos + tipo CREDITO + cotización borrador
+    vi.mocked(post).mockResolvedValueOnce({
+      ya_convertido: false,
+      lead: {
+        ...leadMock,
+        etapa: 'et-3',
+        etapa_nombre: 'Ganado',
+        cliente_convertido: 'cli-1',
+        cliente_convertido_nombre: 'Tech Norte C.A.',
+        cliente_convertido_rif: 'J-40123456',
+        ya_convertido: true,
+      },
+      cliente: {
+        id_cliente: 'cli-1',
+        razon_social: 'Tech Norte C.A.',
+        rif: 'J-40123456',
+        id_empresa: 'emp-1',
+      },
+      cotizacion_id: 'cot-1',
+      numero_cotizacion: 'COT-00000001',
+    });
+
+    fireEvent.change(within(dialog).getByLabelText(/^RIF/), { target: { value: 'j-40123456' } });
+    fireEvent.change(within(dialog).getByLabelText(/^Dirección fiscal/), {
+      target: { value: 'Av. Bolívar, Valencia' },
+    });
+    fireEvent.mouseDown(within(dialog).getByLabelText('Tipo de cliente'));
+    fireEvent.click(await screen.findByRole('option', { name: 'Crédito' }));
+    fireEvent.click(within(dialog).getByLabelText('Crear cotización borrador'));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Confirmar conversión' }));
+
+    await waitFor(() =>
+      expect(post).toHaveBeenCalledWith('/crm/leads/lead-1/convertir-cliente/', {
+        razon_social: 'Tech Norte C.A.',
+        rif: 'J-40123456',
+        email: 'ana@technorte.test',
+        telefono: '+584121234567',
+        direccion: 'Av. Bolívar, Valencia',
+        tipo_cliente: 'CREDITO',
+        crear_cotizacion: true,
+      }),
+    );
+
+    expect(
+      await screen.findByText(/Lead convertido a cliente Tech Norte C.A\..*COT-00000001/i),
+    ).toBeInTheDocument();
+  });
+
+  it('permite anonimizar la PII de un lead con diálogo de confirmación explícita', { timeout: 15000 }, async () => {
+    renderPage();
+    await screen.findByText('Ana Martínez');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Detalle' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Anonimizar PII' }));
+
+    expect(await screen.findByText('Confirmar anonimización de PII')).toBeInTheDocument();
+
+    // Cancelar no dispara POST
+    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+    await waitFor(() =>
+      expect(screen.queryByText('Confirmar anonimización de PII')).not.toBeInTheDocument(),
+    );
+    expect(post).not.toHaveBeenCalled();
+
+    // Reabrir y confirmar
+    vi.mocked(post).mockResolvedValueOnce({
+      ...leadMock,
+      nombre: 'Contacto anonimizado',
+      apellido: '',
+      empresa_nombre: '',
+      email: '',
+      telefono: '',
+      mensaje: '',
+      anonimizado: true,
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Anonimizar PII' }));
+    expect(await screen.findByText('Confirmar anonimización de PII')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar anonimización' }));
+
+    await waitFor(() => expect(post).toHaveBeenCalledWith('/crm/leads/lead-1/anonimizar/', {}));
+    expect(
+      await screen.findByText('PII del lead anonimizada y auditada correctamente.'),
+    ).toBeInTheDocument();
+  });
+
+  it('muestra badges de convertido y anonimizado y deshabilita acciones incompatibles', { timeout: 15000 }, async () => {
+    const leadConvertido = {
+      ...leadMock,
+      id_lead: 'lead-conv',
+      nombre: 'Empresa Ganada',
+      apellido: '',
+      etapa: 'et-3',
+      etapa_nombre: 'Ganado',
+      cliente_convertido: 'cli-9',
+      cliente_convertido_nombre: 'Ganada S.A.',
+      cliente_convertido_rif: 'J-99887766',
+      ya_convertido: true,
+      anonimizado: false,
+    };
+    const leadAnonimizado = {
+      ...leadMock,
+      id_lead: 'lead-anon',
+      nombre: 'Contacto anonimizado',
+      apellido: '',
+      empresa_nombre: '',
+      email: '',
+      telefono: '',
+      mensaje: '',
+      ya_convertido: false,
+      anonimizado: true,
+    };
+    mockApiDefault({ leads: [leadConvertido, leadAnonimizado], actividades: [] });
+
+    renderPage();
+    expect(await screen.findByText('Empresa Ganada')).toBeInTheDocument();
+    expect(screen.getByText('Contacto anonimizado')).toBeInTheDocument();
+    expect(screen.getByText('Convertido')).toBeInTheDocument();
+    expect(screen.getByText('Anonimizado')).toBeInTheDocument();
+
+    // Lead convertido (en columna Ganado)
+    const cardConvertido = screen.getByText('Empresa Ganada').closest('.MuiCard-root') as HTMLElement;
+    fireEvent.click(within(cardConvertido).getByRole('button', { name: 'Detalle' }));
+    expect(await screen.findByText('Cliente: Ganada S.A. (J-99887766)')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Convertir a cliente' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Anonimizar PII' })).toBeEnabled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar detalle' }));
+
+    // Lead anonimizado (en columna Nuevo): ambas acciones y registro de actividades deshabilitados
+    const cardAnonimizado = screen.getByText('Contacto anonimizado').closest('.MuiCard-root') as HTMLElement;
+    fireEvent.click(within(cardAnonimizado).getByRole('button', { name: 'Detalle' }));
+    expect(
+      await screen.findByText(/Este lead fue anonimizado por derecho al olvido/i),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Convertir a cliente' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Anonimizar PII' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Registrar actividad' })).toBeDisabled();
+  });
+
+  it('muestra errores de backend en modal de conversión y diálogo de anonimización e invalida cachés de CRM y Ventas', { timeout: 15000 }, async () => {
+    const { qc } = renderPage();
+    const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
+    await screen.findByText('Ana Martínez');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Detalle' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Convertir a cliente' }));
+
+    const dialogConv = await screen.findByRole('dialog', { name: 'Convertir lead a cliente' });
+    fireEvent.change(within(dialogConv).getByLabelText(/^RIF/), { target: { value: 'J-40123456' } });
+
+    vi.mocked(post).mockRejectedValueOnce(
+      new Error(JSON.stringify({ error: 'Ya existe un cliente activo con ese RIF.' })),
+    );
+    fireEvent.click(within(dialogConv).getByRole('button', { name: 'Confirmar conversión' }));
+    expect(
+      await within(dialogConv).findByText('Ya existe un cliente activo con ese RIF.'),
+    ).toBeInTheDocument();
+
+    // Reintentar con éxito creando cotización -> invalida CRM y Ventas (clientes y cotizaciones)
+    vi.mocked(post).mockResolvedValueOnce({
+      ya_convertido: false,
+      lead: { ...leadMock, etapa: 'et-3', etapa_nombre: 'Ganado', ya_convertido: true },
+      cliente: {
+        id_cliente: 'cli-1',
+        razon_social: 'Tech Norte C.A.',
+        rif: 'J-40123456',
+        id_empresa: 'emp-1',
+      },
+      cotizacion_id: 'cot-1',
+      numero_cotizacion: 'COT-00000001',
+    });
+    fireEvent.click(within(dialogConv).getByLabelText('Crear cotización borrador'));
+    fireEvent.click(within(dialogConv).getByRole('button', { name: 'Confirmar conversión' }));
+
+    await waitFor(() =>
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: crmKeys.clientesAll() }),
+    );
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ventasKeys.clientes('emp-1') });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ventasKeys.cotizaciones.all() });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['cotizaciones'] });
+
+    // Error del backend en diálogo de anonimización
+    fireEvent.click(await screen.findByRole('button', { name: 'Anonimizar PII' }));
+    expect(await screen.findByText('Confirmar anonimización de PII')).toBeInTheDocument();
+    vi.mocked(post).mockRejectedValueOnce(
+      new Error(JSON.stringify({ error: 'El lead ya fue anonimizado previamente.' })),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar anonimización' }));
+    expect(await screen.findByText('El lead ya fue anonimizado previamente.')).toBeInTheDocument();
+  });
+
+  it('reinicia el formulario del modal de conversión al cancelar, reabrir o cambiar de lead', { timeout: 15000 }, async () => {
+    const leadDos = {
+      ...leadMock,
+      id_lead: 'lead-2',
+      nombre: 'Luis',
+      apellido: 'Gómez',
+      empresa_nombre: 'Servicios Sur C.A.',
+      email: 'luis@sur.test',
+      telefono: '+584149876543',
+    };
+    mockApiDefault({ leads: [leadMock, leadDos], actividades: [] });
+
+    renderPage();
+    await screen.findByText('Ana Martínez');
+    expect(screen.getByText('Luis Gómez')).toBeInTheDocument();
+
+    // Abrir modal en lead 1, ensuciar campos y disparar error local de RIF
+    const cardUno = screen.getByText('Ana Martínez').closest('.MuiCard-root') as HTMLElement;
+    fireEvent.click(within(cardUno).getByRole('button', { name: 'Detalle' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Convertir a cliente' }));
+
+    const dialog1 = await screen.findByRole('dialog', { name: 'Convertir lead a cliente' });
+    fireEvent.change(within(dialog1).getByLabelText(/^RIF/), { target: { value: 'BAD-1' } });
+    fireEvent.change(within(dialog1).getByLabelText(/^Dirección fiscal/), {
+      target: { value: 'Dirección temporal' },
+    });
+    fireEvent.mouseDown(within(dialog1).getByLabelText('Tipo de cliente'));
+    fireEvent.click(await screen.findByRole('option', { name: 'Crédito' }));
+    fireEvent.click(within(dialog1).getByLabelText('Crear cotización borrador'));
+    fireEvent.click(within(dialog1).getByRole('button', { name: 'Confirmar conversión' }));
+    expect(
+      await within(dialog1).findByText(/El RIF debe tener formato V\/J\/E\/G\/B\/P/i),
+    ).toBeInTheDocument();
+
+    // Cancelar limpia estado y error al reabrir en el mismo lead
+    fireEvent.click(within(dialog1).getByRole('button', { name: 'Cancelar' }));
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('dialog', { name: 'Convertir lead a cliente' }),
+      ).not.toBeInTheDocument(),
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Convertir a cliente' }));
+    const dialog1Reabierto = await screen.findByRole('dialog', {
+      name: 'Convertir lead a cliente',
+    });
+    expect(within(dialog1Reabierto).getByLabelText(/^Razón social/)).toHaveValue('Tech Norte C.A.');
+    expect(within(dialog1Reabierto).getByLabelText(/^RIF/)).toHaveValue('');
+    expect(within(dialog1Reabierto).getByLabelText(/^Dirección fiscal/)).toHaveValue('');
+    expect(within(dialog1Reabierto).getByLabelText('Tipo de cliente')).toHaveTextContent('Contado');
+    expect(within(dialog1Reabierto).getByLabelText('Crear cotización borrador')).not.toBeChecked();
+    expect(
+      within(dialog1Reabierto).queryByText(/El RIF debe tener formato/i),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(within(dialog1Reabierto).getByRole('button', { name: 'Cancelar' }));
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('dialog', { name: 'Convertir lead a cliente' }),
+      ).not.toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar detalle' }));
+    await waitFor(() =>
+      expect(screen.queryByText('Registrar actividad')).not.toBeInTheDocument(),
+    );
+
+    // Cambiar al lead 2 -> precarga exactamente los datos de lead 2 sin restos de lead 1
+    const cardDos = screen.getByText('Luis Gómez').closest('.MuiCard-root') as HTMLElement;
+    fireEvent.click(within(cardDos).getByRole('button', { name: 'Detalle' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Convertir a cliente' }));
+
+    const dialog2 = await screen.findByRole('dialog', { name: 'Convertir lead a cliente' });
+    expect(within(dialog2).getByLabelText(/^Razón social/)).toHaveValue('Servicios Sur C.A.');
+    expect(within(dialog2).getByLabelText(/^Correo electrónico/)).toHaveValue('luis@sur.test');
+    expect(within(dialog2).getByLabelText(/^Teléfono/)).toHaveValue('+584149876543');
+    expect(within(dialog2).getByLabelText(/^RIF/)).toHaveValue('');
+    expect(within(dialog2).getByLabelText(/^Dirección fiscal/)).toHaveValue('');
+    expect(within(dialog2).getByLabelText('Tipo de cliente')).toHaveTextContent('Contado');
+    expect(within(dialog2).getByLabelText('Crear cotización borrador')).not.toBeChecked();
   });
 });

@@ -66,6 +66,10 @@ class Cliente(OmniBaseModel, IntegrationFieldsMixin):
     def __str__(self):
         return self.razon_social
 
+    def clean(self):
+        super().clean()
+        validar_misma_empresa(self, contacto=self.contacto)
+
 
 class ContactoCliente(OmniBaseModel):
     id_contacto = models.UUIDField(primary_key=True, default=uuid7, editable=False)
@@ -253,6 +257,19 @@ class Lead(OmniBaseModel):
     consentimiento_fecha = models.DateTimeField(null=True, blank=True)
     consentimiento_texto = models.TextField(blank=True, default="")
 
+    # Trazabilidad de conversión (S6) y derecho al olvido (S5)
+    cliente_convertido = models.ForeignKey(
+        "crm.Cliente",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="leads_convertidos",
+    )
+    fecha_conversion = models.DateTimeField(null=True, blank=True)
+    cotizacion_convertida_id = models.UUIDField(null=True, blank=True)
+    anonimizado = models.BooleanField(default=False)
+    fecha_anonimizacion = models.DateTimeField(null=True, blank=True)
+
     class Meta:
         db_table = "crm_lead"
         verbose_name = "Lead"
@@ -276,6 +293,7 @@ class Lead(OmniBaseModel):
             models.Index(fields=["id_empresa", "propietario"]),
             models.Index(fields=["id_empresa", "email_normalizado"]),
             models.Index(fields=["id_empresa", "telefono_normalizado"]),
+            models.Index(fields=["id_empresa", "cliente_convertido"]),
             models.Index(fields=["id_empresa", "fecha_creacion"]),
         ]
 
@@ -291,6 +309,7 @@ class Lead(OmniBaseModel):
             tarjeta=self.tarjeta,
             perfil=self.perfil,
             contacto=self.contacto,
+            cliente_convertido=self.cliente_convertido,
         )
         if self.etapa_id and self.pipeline_id and self.etapa.pipeline_id != self.pipeline_id:
             raise ValidationError({"etapa": "La etapa no pertenece al pipeline del lead."})

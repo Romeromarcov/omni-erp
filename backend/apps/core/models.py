@@ -6,6 +6,7 @@ from django.db import models
 from django.utils import timezone
 
 from .base_models import IntegrationFieldsMixin, OmniBaseModel
+from .validators import normalizar_email, normalizar_telefono
 
 
 class Empresa(OmniBaseModel, IntegrationFieldsMixin):
@@ -870,6 +871,8 @@ class Contacto(OmniBaseModel):
     # Contacto
     email = models.EmailField(blank=True, default="")
     telefono = models.CharField(max_length=50, blank=True, default="")
+    email_normalizado = models.CharField(max_length=254, blank=True, default="")
+    telefono_normalizado = models.CharField(max_length=20, blank=True, default="")
     direccion_fiscal = models.TextField(blank=True, default="")
 
     # Geolocalización (capturada p. ej. desde el bot de Telegram) para ubicar al cliente en mapa/rutas.
@@ -919,8 +922,36 @@ class Contacto(OmniBaseModel):
         indexes = [
             models.Index(fields=["id_empresa", "es_cliente"]),
             models.Index(fields=["id_empresa", "es_proveedor"]),
+            models.Index(fields=["id_empresa", "email_normalizado"]),
+            models.Index(fields=["id_empresa", "telefono_normalizado"]),
             models.Index(fields=["rif"]),
         ]
+
+    def _sincronizar_normalizados(self) -> None:
+        self.email_normalizado = normalizar_email(self.email)
+        self.telefono_normalizado = normalizar_telefono(self.telefono)
+
+    def clean_fields(self, exclude=None):
+        if isinstance(self.email, str):
+            self.email = self.email.strip()
+        self._sincronizar_normalizados()
+        super().clean_fields(exclude=exclude)
+
+    def clean(self):
+        super().clean()
+        self._sincronizar_normalizados()
+
+    def save(self, *args, **kwargs):
+        self._sincronizar_normalizados()
+        update_fields = kwargs.get("update_fields")
+        if update_fields is not None:
+            uf = set(update_fields)
+            if "email" in uf:
+                uf.add("email_normalizado")
+            if "telefono" in uf:
+                uf.add("telefono_normalizado")
+            kwargs["update_fields"] = list(uf)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         if self.nombre_comercial:

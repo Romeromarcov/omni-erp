@@ -1,5 +1,29 @@
 # Validadores reutilizables para modelos y serializers
+import re
+
 from django.core.exceptions import ValidationError
+
+
+def normalizar_email(value: str | None) -> str:
+    """Normaliza correo electrónico (minúsculas y sin espacios laterales)."""
+    return (value or "").strip().lower()[:254]
+
+
+def normalizar_telefono(value: str | None, codigo_pais_default: str = "58") -> str:
+    """Normaliza teléfono a dígitos E.164 sin separadores (máx. 20 dígitos)."""
+    raw = (value or "").strip()
+    if not raw:
+        return ""
+    tiene_mas = raw.startswith("+")
+    digits = re.sub(r"\D", "", raw)
+    if not digits:
+        return ""
+    if not tiene_mas:
+        if digits.startswith("00") and len(digits) > 2:
+            digits = digits[2:]
+        elif digits.startswith("0") and codigo_pais_default:
+            digits = f"{codigo_pais_default}{digits[1:]}"
+    return digits[:20]
 
 
 def validate_positive(value):

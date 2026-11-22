@@ -5,6 +5,11 @@ import re
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 
+from apps.core.validators import (
+    normalizar_email as normalizar_email,
+    normalizar_telefono as normalizar_telefono,
+)
+
 # Slugs que colisionarían con rutas del sistema o serían engañosos en una URL
 # pública corta (omni.link/<slug>). Se aplican también como CheckConstraint.
 SLUGS_RESERVADOS = frozenset(
@@ -39,28 +44,6 @@ BOTONES_TELEFONO = frozenset({"whatsapp", "telefono"})
 BOTONES_CORREO = frozenset({"correo"})
 BOTONES_TIPOS = BOTONES_URL | BOTONES_TELEFONO | BOTONES_CORREO
 BOTONES_MAX = 30
-
-
-def normalizar_email(value: str | None) -> str:
-    """Normaliza correo electrónico (minúsculas y sin espacios laterales)."""
-    return (value or "").strip().lower()[:254]
-
-
-def normalizar_telefono(value: str | None, codigo_pais_default: str = "58") -> str:
-    """Normaliza teléfono a dígitos E.164 sin separadores (máx. 20 dígitos)."""
-    raw = (value or "").strip()
-    if not raw:
-        return ""
-    tiene_mas = raw.startswith("+")
-    digits = re.sub(r"\D", "", raw)
-    if not digits:
-        return ""
-    if not tiene_mas:
-        if digits.startswith("00") and len(digits) > 2:
-            digits = digits[2:]
-        elif digits.startswith("0") and codigo_pais_default:
-            digits = f"{codigo_pais_default}{digits[1:]}"
-    return digits[:20]
 
 
 def normalizar_slug(value: str | None) -> str:

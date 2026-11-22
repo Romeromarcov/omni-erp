@@ -9,6 +9,13 @@ export type CrmActividad = components['schemas']['Actividad'];
 export type TipoEtapa = NonNullable<CrmEtapa['tipo']>;
 export type FuenteLead = NonNullable<CrmLead['fuente']>;
 export type TipoActividad = NonNullable<CrmActividad['tipo']>;
+export type ConvertirLeadSchemaInput = components['schemas']['ConvertirLeadInput'];
+export type ConvertirLeadPayload = Partial<ConvertirLeadSchemaInput> & {
+  razon_social?: string;
+  rif: string;
+};
+export type ConvertirLeadResponse = components['schemas']['ConvertirLeadResponse'];
+export type AnonimizarLeadPayload = components['schemas']['AnonimizarLeadInput'];
 
 export interface CreatePipelinePayload {
   id_empresa?: string;
@@ -161,6 +168,24 @@ export const crmCrmService = {
 
   moverEtapaLead: async (leadId: string, etapaId: string): Promise<CrmLead> =>
     post<CrmLead>(`/crm/leads/${leadId}/mover-etapa/`, { etapa: etapaId }),
+
+  convertirLeadACliente: async (
+    leadId: string,
+    payload: ConvertirLeadPayload,
+  ): Promise<ConvertirLeadResponse> =>
+    post<ConvertirLeadResponse>(
+      `/crm/leads/${leadId}/convertir-cliente/`,
+      payload as unknown as Record<string, unknown>,
+    ),
+
+  anonimizarLead: async (
+    leadId: string,
+    payload?: AnonimizarLeadPayload,
+  ): Promise<CrmLead> =>
+    post<CrmLead>(
+      `/crm/leads/${leadId}/anonimizar/`,
+      (payload ?? {}) as unknown as Record<string, unknown>,
+    ),
 
   getActividades: async (params?: {
     empresa?: string | null;

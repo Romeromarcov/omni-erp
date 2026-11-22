@@ -689,6 +689,10 @@
 | `^leads/(?P<pk>[^/.]+)/$` | LeadViewSet | Lead | ✅ | ✅ | IsAuthenticated |
 | `^leads/(?P<pk>[^/.]+)/activar/$` | LeadViewSet | Lead | ✅ | ✅ | IsAuthenticated |
 | `^leads/(?P<pk>[^/.]+)/activar\.(?P<format>[a-z0-9]+)/?$` | LeadViewSet | Lead | ✅ | ✅ | IsAuthenticated |
+| `^leads/(?P<pk>[^/.]+)/anonimizar/$` | LeadViewSet | Lead | ✅ | ✅ | IsAuthenticated |
+| `^leads/(?P<pk>[^/.]+)/anonimizar\.(?P<format>[a-z0-9]+)/?$` | LeadViewSet | Lead | ✅ | ✅ | IsAuthenticated |
+| `^leads/(?P<pk>[^/.]+)/convertir-cliente/$` | LeadViewSet | Lead | ✅ | ✅ | IsAuthenticated |
+| `^leads/(?P<pk>[^/.]+)/convertir-cliente\.(?P<format>[a-z0-9]+)/?$` | LeadViewSet | Lead | ✅ | ✅ | IsAuthenticated |
 | `^leads/(?P<pk>[^/.]+)/desactivar/$` | LeadViewSet | Lead | ✅ | ✅ | IsAuthenticated |
 | `^leads/(?P<pk>[^/.]+)/desactivar\.(?P<format>[a-z0-9]+)/?$` | LeadViewSet | Lead | ✅ | ✅ | IsAuthenticated |
 | `^leads/(?P<pk>[^/.]+)/mover-etapa/$` | LeadViewSet | Lead | ✅ | ✅ | IsAuthenticated |

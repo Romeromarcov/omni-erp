@@ -955,7 +955,7 @@ class TestCrmMcpTools:
             "crm_mover_etapa_lead",
             "crm_registrar_actividad",
         }
-        assert {item["name"] for item in crm_mcp.MCP_TOOLS} == nombres_esperados
+        assert nombres_esperados <= {item["name"] for item in crm_mcp.MCP_TOOLS}
         assert set(mcp_server._DISCOVERED_TOOLS.keys()).issuperset(nombres_esperados)
         assert "apps.crm.mcp" in mcp_server._MCP_DEFAULT_MODULE_PATHS
         assert "apps.crm.mcp" in settings.MCP_AGENT_CAPABILITIES["module_paths"]

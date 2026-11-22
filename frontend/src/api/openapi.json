@@ -15071,6 +15071,94 @@
                 }
             ]
         },
+        "/crm/leads/{id_lead}/anonimizar/": {
+            "post": {
+                "operationId": "crm_leads_anonimizar",
+                "summary": "Anonimiza la PII de un lead conforme al derecho al olvido",
+                "description": "CRUD multi-tenant de ``crm.Lead`` con filtros Kanban y acción ``mover-etapa``.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/AnonimizarLeadInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Lead"
+                        }
+                    },
+                    "400": {
+                        "description": "Lead ya anonimizado o inválido"
+                    },
+                    "404": {
+                        "description": "Lead no encontrado"
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_lead",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Lead.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/crm/leads/{id_lead}/convertir-cliente/": {
+            "post": {
+                "operationId": "crm_leads_convertir_cliente",
+                "summary": "Convierte atómica e idempotentemente un lead en cliente (+ cotización borrador opcional)",
+                "description": "CRUD multi-tenant de ``crm.Lead`` con filtros Kanban y acción ``mover-etapa``.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ConvertirLeadInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ConvertirLeadResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Datos o estado inválido para convertir"
+                    },
+                    "404": {
+                        "description": "Lead no encontrado"
+                    }
+                },
+                "tags": [
+                    "crm"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_lead",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Lead.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
         "/crm/leads/{id_lead}/desactivar/": {
             "post": {
                 "operationId": "crm_leads_desactivar",
@@ -58467,6 +58555,56 @@
                     "format": "uuid",
                     "x-nullable": true
                 },
+                "cliente_convertido": {
+                    "title": "Cliente convertido",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "cliente_convertido_nombre": {
+                    "title": "Cliente convertido nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "cliente_convertido_rif": {
+                    "title": "Cliente convertido rif",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "fecha_conversion": {
+                    "title": "Fecha conversion",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "cotizacion_convertida_id": {
+                    "title": "Cotizacion convertida id",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "ya_convertido": {
+                    "title": "Ya convertido",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "anonimizado": {
+                    "title": "Anonimizado",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "fecha_anonimizacion": {
+                    "title": "Fecha anonimizacion",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
                 "consentimiento_aceptado": {
                     "title": "Consentimiento aceptado",
                     "type": "boolean"
@@ -58509,6 +58647,139 @@
                     "type": "string",
                     "format": "date-time",
                     "readOnly": true
+                }
+            }
+        },
+        "AnonimizarLeadInput": {
+            "type": "object",
+            "properties": {
+                "motivo": {
+                    "title": "Motivo",
+                    "type": "string",
+                    "maxLength": 300
+                }
+            }
+        },
+        "ConvertirLeadInput": {
+            "type": "object",
+            "properties": {
+                "razon_social": {
+                    "title": "Razon social",
+                    "type": "string",
+                    "maxLength": 255
+                },
+                "nombre_comercial": {
+                    "title": "Nombre comercial",
+                    "type": "string",
+                    "maxLength": 255
+                },
+                "rif": {
+                    "title": "Rif",
+                    "type": "string",
+                    "maxLength": 20
+                },
+                "email": {
+                    "title": "Email",
+                    "type": "string",
+                    "format": "email",
+                    "maxLength": 254
+                },
+                "telefono": {
+                    "title": "Telefono",
+                    "type": "string",
+                    "maxLength": 50
+                },
+                "direccion": {
+                    "title": "Direccion",
+                    "type": "string"
+                },
+                "tipo_cliente": {
+                    "title": "Tipo cliente",
+                    "type": "string",
+                    "enum": [
+                        "CONTADO",
+                        "CREDITO"
+                    ],
+                    "default": "CONTADO"
+                },
+                "limite_credito": {
+                    "title": "Limite credito",
+                    "type": "string",
+                    "format": "decimal",
+                    "default": "0.00"
+                },
+                "dias_credito": {
+                    "title": "Dias credito",
+                    "type": "integer",
+                    "default": 0,
+                    "maximum": 3650,
+                    "minimum": 0
+                },
+                "reutilizar_cliente_existente": {
+                    "title": "Reutilizar cliente existente",
+                    "type": "boolean",
+                    "default": true
+                },
+                "crear_cotizacion": {
+                    "title": "Crear cotizacion",
+                    "type": "boolean",
+                    "default": false
+                },
+                "id_moneda": {
+                    "title": "Id moneda",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "fecha_cotizacion": {
+                    "title": "Fecha cotizacion",
+                    "type": "string",
+                    "format": "date",
+                    "x-nullable": true
+                },
+                "fecha_vencimiento": {
+                    "title": "Fecha vencimiento",
+                    "type": "string",
+                    "format": "date",
+                    "x-nullable": true
+                },
+                "observaciones_cotizacion": {
+                    "title": "Observaciones cotizacion",
+                    "type": "string"
+                }
+            }
+        },
+        "ConvertirLeadResponse": {
+            "required": [
+                "ya_convertido",
+                "lead",
+                "cliente",
+                "cotizacion_id",
+                "numero_cotizacion"
+            ],
+            "type": "object",
+            "properties": {
+                "ya_convertido": {
+                    "title": "Ya convertido",
+                    "type": "boolean"
+                },
+                "lead": {
+                    "$ref": "#/definitions/Lead"
+                },
+                "cliente": {
+                    "$ref": "#/definitions/Cliente"
+                },
+                "cotizacion_id": {
+                    "title": "Cotizacion id",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "numero_cotizacion": {
+                    "title": "Numero cotizacion",
+                    "type": "string",
+                    "minLength": 1,
+                    "x-nullable": true
                 }
             }
         },
@@ -60045,7 +60316,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-21T17:21:47.818728-04:00"
+                    "default": "2026-11-21T19:13:43.468500-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",
