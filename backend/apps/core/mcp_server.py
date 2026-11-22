@@ -1139,11 +1139,43 @@ def omni_buscar_contacto(
         return resultados
 
 
+def core_estado_mfa_usuario(capability_token: str, usuario_id: str) -> dict:
+    """
+    Consulta el estado 2FA/TOTP de un usuario del tenant sin exponer secretos ni códigos.
+
+    Scope requerido: `core:read`
+    """
+    from apps.core.models import ConfiguracionMFA, Usuarios  # noqa: PLC0415
+
+    with mcp_tenant_context(capability_token, "core:read") as context:
+        try:
+            usuario_uuid = uuid.UUID(str(usuario_id).strip())
+        except (ValueError, TypeError, AttributeError) as exc:
+            raise ValueError("usuario_id debe ser un UUID válido.") from exc
+
+        usuario = Usuarios.objects.filter(
+            pk=usuario_uuid,
+            empresas__id_empresa=context["empresa_id"],
+        ).first()
+        if usuario is None:
+            raise PermissionError("Usuario no encontrado dentro del tenant autorizado.")
+
+        config = ConfiguracionMFA.objects.filter(usuario=usuario).first()
+        habilitado = bool(config and config.habilitado)
+        return {
+            "usuario_id": str(usuario.pk),
+            "habilitado": habilitado,
+            "confirmado_en": config.confirmado_en.isoformat() if (config and config.confirmado_en) else None,
+            "codigos_respaldo_restantes": len(config.codigos_respaldo) if (config and habilitado) else 0,
+        }
+
+
 # ── Registrar herramientas con MCP cuando el SDK esté disponible ─────────────
 
 if MCP_AVAILABLE and mcp is not None:
     omni_ping = mcp.tool()(omni_ping)
     omni_get_empresas = mcp.tool()(omni_get_empresas)
+    core_estado_mfa_usuario = mcp.tool()(core_estado_mfa_usuario)
     omni_get_clientes = mcp.tool()(omni_get_clientes)
     omni_get_saldo_cliente = mcp.tool()(omni_get_saldo_cliente)
     omni_get_cxc_aging = mcp.tool()(omni_get_cxc_aging)

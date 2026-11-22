@@ -180,6 +180,7 @@ CONTENT_SECURITY_POLICY = {
 # Off por defecto (fail-open). Se activa primero en staging para validar el
 # flujo 402 end-to-end antes de producción.
 SAAS_VERIFICAR_SUSCRIPCION = os.environ.get("SAAS_VERIFICAR_SUSCRIPCION", "False") == "True"
+SAAS_FAIL_CLOSED = os.environ.get("SAAS_FAIL_CLOSED", "False") == "True"
 
 # --- Row Level Security (P0-1 plan de hardening) ---
 # Gobierna únicamente si el middleware aplica el enforcement por request. Las

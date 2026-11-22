@@ -4,6 +4,7 @@ import ProfileForm from '../../../components/ProfileForm';
 import RoleList from '../../../components/RoleList';
 import PageLayout from '../../../components/PageLayout';
 import { PageHeader, SectionTitle } from '../../../components/ui';
+import { MfaConfigSection } from '../../../components/auth/MfaConfigSection';
 
 type Role = { id: number; name: string };
 type User = {
@@ -54,6 +55,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ user, onUpdate }) => {
             <Button variant="contained">Guardar nueva contraseña</Button>
           </Stack>
         )}
+        <MfaConfigSection />
       </Stack>
     </PageLayout>
   );

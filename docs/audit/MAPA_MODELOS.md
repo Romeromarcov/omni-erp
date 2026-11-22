@@ -52,6 +52,7 @@
 | core | CapabilityToken | ✅ | — | — |
 | core | ClaveIdempotencia | ✅ | ✅ | — |
 | core | ConfiguracionFlujoDocumentos | ✅ | ✅ | id_empresa+tipo_documento+paso |
+| core | ConfiguracionMFA | — | ✅ | — |
 | core | Contacto | ✅ | ✅ | — |
 | core | Departamento | ✅ | ✅ | id_empresa+nombre_departamento |
 | core | Dispositivo | ✅ | ✅ | fingerprint+empresa |
@@ -266,4 +267,4 @@
 | ventas | NotaVenta | ✅ | ✅ | id_empresa+numero_nota |
 | ventas | Pedido | ✅ | ✅ | id_empresa+numero_pedido |
 
-_Total modelos: 263_
+_Total modelos: 264_

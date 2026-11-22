@@ -20,6 +20,14 @@ from apps.core.auth_views import (
     user_profile_view,
     verify_token_view,
 )
+from apps.core.mfa_views import (
+    mfa_confirmar_view,
+    mfa_desactivar_view,
+    mfa_estado_view,
+    mfa_iniciar_view,
+    mfa_regenerar_codigos_view,
+    mfa_verificar_view,
+)
 
 # Info a nivel de módulo para que `generate_swagger` (DEFAULT_INFO) y el contract
 # testing (schemathesis) puedan resolver el esquema OpenAPI.
@@ -67,6 +75,12 @@ urlpatterns = [
     path("api/auth/profile/", user_profile_view, name="user_profile"),
     path("api/auth/profile/update/", update_profile_view, name="update_profile"),
     path("api/auth/change-password/", change_password_view, name="change_password"),
+    path("api/auth/mfa/estado/", mfa_estado_view, name="mfa_estado"),
+    path("api/auth/mfa/iniciar/", mfa_iniciar_view, name="mfa_iniciar"),
+    path("api/auth/mfa/confirmar/", mfa_confirmar_view, name="mfa_confirmar"),
+    path("api/auth/mfa/desactivar/", mfa_desactivar_view, name="mfa_desactivar"),
+    path("api/auth/mfa/regenerar-codigos/", mfa_regenerar_codigos_view, name="mfa_regenerar_codigos"),
+    path("api/auth/mfa/verificar/", mfa_verificar_view, name="mfa_verificar"),
     # Modules
     path("api/core/", include("apps.core.urls")),
     path("api/configuracion/", include("apps.configuracion_motor.urls")),

@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import json
 import logging
+import uuid
 
 from django.http import HttpResponse
 
@@ -106,10 +107,51 @@ class SuscripcionActivaMiddleware:
             return None
         return None
 
+    @staticmethod
+    def _resolver_empresa(request, user):
+        """
+        Resuelve la empresa activa del usuario respetando ``X-Empresa-ID`` si
+        el usuario pertenece a ella. Ante header ajeno o malformado cae en
+        ``user.empresas.first()`` (nunca confía en un tenant externo).
+        """
+        if not hasattr(user, "empresas"):
+            return None
+
+        raw_header = None
+        headers = getattr(request, "headers", None)
+        if headers is not None:
+            raw_header = headers.get("X-Empresa-ID")
+        if raw_header is None:
+            raw_header = getattr(request, "META", {}).get("HTTP_X_EMPRESA_ID")
+
+        if raw_header:
+            raw_str = str(raw_header).strip()
+            if "\x00" not in raw_str:
+                try:
+                    empresa_uuid = uuid.UUID(raw_str)
+                except (ValueError, TypeError):
+                    logger.warning(
+                        "saas_middleware | user=%s | X-Empresa-ID inválido, usando fallback",
+                        getattr(user, "pk", None),
+                    )
+                else:
+                    empresa_match = user.empresas.filter(pk=empresa_uuid).first()
+                    if empresa_match is not None:
+                        return empresa_match
+                    logger.warning(
+                        "saas_middleware | user=%s | X-Empresa-ID ajeno rechazado, usando fallback",
+                        getattr(user, "pk", None),
+                    )
+
+        return user.empresas.first()
+
     def _verificar_suscripcion(self, request) -> HttpResponse | None:
         """
-        Verifica la suscripción. Retorna None si OK, o HttpResponse 402 si falla.
+        Verifica la suscripción. Retorna None si OK, 402 si no hay plan activo,
+        o 503 si ocurre un error interno con SAAS_FAIL_CLOSED=True.
         """
+        from django.conf import settings
+
         try:
             from apps.saas.models import suscripcion_activa
 
@@ -121,7 +163,7 @@ class SuscripcionActivaMiddleware:
             if getattr(user, "es_superusuario_omni", False):
                 return None
 
-            empresa = user.empresas.first() if hasattr(user, "empresas") else None
+            empresa = self._resolver_empresa(request, user)
             if empresa is None:
                 return None  # usuario sin empresa → no verificar
 
@@ -145,7 +187,16 @@ class SuscripcionActivaMiddleware:
                 )
         except Exception as exc:
             logger.error("saas_middleware ERROR: %s", exc, exc_info=True)
-            # BUG-06 — Política fail-open: ante un error interno se permite el paso.
-            # Justificación: disponibilidad > control de billing. La verificación
-            # solo se activa con SAAS_VERIFICAR_SUSCRIPCION=True (staging primero).
+            if getattr(settings, "SAAS_FAIL_CLOSED", False):
+                return HttpResponse(
+                    content=json.dumps(
+                        {
+                            "detail": "No se pudo verificar la suscripción en este momento. Intente nuevamente.",
+                            "codigo": "SERVICIO_SUSCRIPCION_NO_DISPONIBLE",
+                        }
+                    ),
+                    content_type="application/json",
+                    status=503,
+                )
+            # Política fail-open (default): ante error interno permite paso si SAAS_FAIL_CLOSED=False.
         return None

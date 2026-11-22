@@ -847,6 +847,108 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/mfa/confirmar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Valida el primer código TOTP y activa 2FA devolviendo códigos de respaldo una sola vez. */
+        post: operations["auth_mfa_confirmar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/mfa/desactivar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Desactiva 2FA exigiendo contraseña actual + código TOTP o de respaldo válido. */
+        post: operations["auth_mfa_desactivar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/mfa/estado/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Retorna el estado de 2FA/TOTP del usuario autenticado (sin exponer secretos). */
+        get: operations["auth_mfa_estado_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/mfa/iniciar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Genera secreto pendiente y QR SVG para configurar TOTP. */
+        post: operations["auth_mfa_iniciar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/mfa/regenerar-codigos/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Rota los 8 códigos de respaldo tras verificar un TOTP vigente. */
+        post: operations["auth_mfa_regenerar-codigos_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/mfa/verificar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Completa el login validando ``mfa_token`` efímero + código TOTP o de respaldo. */
+        post: operations["auth_mfa_verificar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/profile/": {
         parameters: {
             query?: never;
@@ -16055,6 +16157,22 @@ export interface components {
              */
             id_usuario?: string | null;
         };
+        MfaCodigoInput: {
+            /** Codigo */
+            codigo: string;
+        };
+        MfaDesactivarInput: {
+            /** Password */
+            password: string;
+            /** Codigo */
+            codigo: string;
+        };
+        MfaVerificarInput: {
+            /** Mfa token */
+            mfa_token: string;
+            /** Codigo */
+            codigo: string;
+        };
         CustomTokenObtainPair: {
             /** Username */
             username: string;
@@ -19278,6 +19396,11 @@ export interface components {
              */
             localizacion_mercado_activa?: boolean;
             /**
+             * Requerir mfa admins
+             * @description Si True, se recomienda/exige 2FA TOTP para administradores y superusuarios de esta empresa.
+             */
+            requerir_mfa_admins?: boolean;
+            /**
              * Empresa Matriz
              * Format: uuid
              */
@@ -21262,7 +21385,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-22T13:29:46.971291-04:00
+             * @default 2026-11-22T14:41:23.472161-04:00
              */
             fecha_despacho: string;
             /**
@@ -29890,6 +30013,11 @@ export interface components {
                 "application/json": components["schemas"]["Sucursal"];
             };
         };
+        MfaCodigoInput: {
+            content: {
+                "application/json": components["schemas"]["MfaCodigoInput"];
+            };
+        };
         MonedaEmpresaActiva: {
             content: {
                 "application/json": components["schemas"]["MonedaEmpresaActiva"];
@@ -32172,6 +32300,124 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    auth_mfa_confirmar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["MfaCodigoInput"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MfaCodigoInput"];
+                };
+            };
+        };
+    };
+    auth_mfa_desactivar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MfaDesactivarInput"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MfaDesactivarInput"];
+                };
+            };
+        };
+    };
+    auth_mfa_estado_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    auth_mfa_iniciar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "auth_mfa_regenerar-codigos_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["MfaCodigoInput"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MfaCodigoInput"];
+                };
+            };
+        };
+    };
+    auth_mfa_verificar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MfaVerificarInput"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MfaVerificarInput"];
+                };
             };
         };
     };
