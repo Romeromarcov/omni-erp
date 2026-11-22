@@ -59,6 +59,7 @@ from apps.integration_hub.connectors.odoo.client import (
     OdooAuthError,
     OdooCallError,
     OdooXMLRPCClient,
+    sanitizar_error_odoo,
 )
 from apps.integration_hub.connectors.odoo.connector import OdooConnector
 from apps.integration_hub.connectors.registry import registry
@@ -70,18 +71,23 @@ from apps.integration_hub.models import (
 )
 from apps.integration_hub.outbox import (
     ENTIDAD_CRM_LEAD,
+    EVENTO_CRM_LEAD_ACTUALIZADO,
     EVENTO_CRM_LEAD_ANONIMIZADO,
     EVENTO_CRM_LEAD_CAPTURADO,
     EVENTO_CRM_LEAD_CONVERTIDO,
     EVENTO_CRM_LEAD_ETAPA_CAMBIADA,
     OUTBOX_BACKOFF_MAX_SEGUNDOS,
     OutboxError,
+    _secretos_instancias,
+    _try_advisory_lock_entidad,
     calcular_backoff_segundos,
+    construir_clave_idempotencia_unica,
     despachar_lote_outbox,
     encolar_evento_outbox,
     reintentar_evento_outbox,
     sanitizar_error_outbox,
 )
+from apps.integration_hub.serializers import ConectorInstanciaSerializer
 from apps.integration_hub.tasks import despachar_outbox
 from apps.integration_hub.views import EventoOutboxViewSet
 from tests.connect.builders import consentimiento, crear_etapa, crear_lead, crear_perfil, crear_pipeline, crear_tarjeta
@@ -328,7 +334,7 @@ class TestPublicacionAtomicaOutbox:
         assert ev1.pk == ev2.pk
         assert EventoOutbox.objects.filter(id_empresa=empresa_a, clave_idempotencia=f"idem:{eid}").count() == 1
 
-        # Sin clave_idempotencia genera una clave válida automáticamente
+        # Sin clave_idempotencia genera una clave válida automáticamente sin truncar uuid7().hex
         ev_auto = encolar_evento_outbox(
             empresa_a,
             tipo_evento=EVENTO_CRM_LEAD_CAPTURADO,
@@ -337,6 +343,22 @@ class TestPublicacionAtomicaOutbox:
             payload={},
         )
         assert ev_auto.clave_idempotencia.startswith(f"{EVENTO_CRM_LEAD_CAPTURADO}:")
+        clave_larga = construir_clave_idempotencia_unica("a" * 110)
+        assert len(clave_larga) == 120
+        assert len(clave_larga.rsplit(":", 1)[1]) == 32
+
+        # NUL en tipo_evento / entidad_tipo / clave_idempotencia se rechaza ANTES de consultar SQL
+        with patch.object(EventoOutbox.objects, "filter") as mock_filter_nul:
+            with pytest.raises(DjangoValidationError) as exc_nul_pre:
+                encolar_evento_outbox(
+                    empresa_a,
+                    tipo_evento="crm.lead\x00.capturado",
+                    entidad_tipo="crm\x00.Lead",
+                    entidad_id=eid,
+                    clave_idempotencia="clave\x00mala",
+                )
+        assert {"tipo_evento", "entidad_tipo", "clave_idempotencia"} <= set(exc_nul_pre.value.message_dict)
+        mock_filter_nul.assert_not_called()
 
         # UUID inválido o con NUL lanza ValidationError
         with pytest.raises(DjangoValidationError):
@@ -668,10 +690,15 @@ class TestOdooClientYConnectorPushLead:
         with pytest.raises(ConnectorConnectionError, match="write_user"):
             OdooConnector(inst_no_write).push_lead({"lead_id": str(uuid.uuid4()), "nombre": "Test"})
 
-        # 3. Sin host -> ConnectorConnectionError
+        # 3. Sin host -> ConnectorConnectionError; HTTP en DEBUG=False -> M-SEC-2 exige https://
         inst_no_host = _crear_instancia_odoo(empresa_a, proveedor_odoo, host="")
         with pytest.raises(ConnectorConnectionError, match="host"):
             OdooConnector(inst_no_host).push_lead({"lead_id": str(uuid.uuid4()), "nombre": "Test"})
+
+        inst_http = _crear_instancia_odoo(empresa_a, proveedor_odoo, host="http://odoo-test.example.invalid")
+        with override_settings(DEBUG=False):
+            with pytest.raises(ConnectorConnectionError, match="https://"):
+                OdooConnector(inst_http).push_lead({"lead_id": str(uuid.uuid4()), "nombre": "Test"})
 
         # 4. Error de autenticación Odoo -> ConnectorConnectionError sanitizado (sin secret)
         inst_ok = _crear_instancia_odoo(empresa_a, proveedor_odoo)
@@ -825,9 +852,10 @@ class TestOdooClientYConnectorPushLead:
         mapeo.refresh_from_db()
         assert mapeo.metadatos["anonimizado"] is True
 
-        # 5. Anonimización sobre lead NUNCA sincronizado -> NO crea ni actualiza en Odoo
+        # 5. Anonimización sobre lead NUNCA sincronizado (ni en BD ni en Odoo) -> solo lectura search, cero create/write
         calls_antes = len(cli.calls)
         lead_nunca_sync = uuid.uuid4()
+        cli._search_result = []
         res_omit = conn.push_lead(
             {
                 "tipo_evento": EVENTO_CRM_LEAD_ANONIMIZADO,
@@ -841,7 +869,36 @@ class TestOdooClientYConnectorPushLead:
             "lead_id": str(lead_nunca_sync),
             "motivo": "lead_no_sincronizado",
         }
-        assert len(cli.calls) == calls_antes
+        nuevas_calls_omit = cli.calls[calls_antes:]
+        assert [(c[0], c[1]) for c in nuevas_calls_omit] == [("crm.lead", "search")]
+
+        # 5b. Anonimización con fallo parcial previo (existe en Odoo vía tag, sin EntidadSincronizada local)
+        calls_antes_tag = len(cli.calls)
+        lead_huerfano_odoo = uuid.uuid4()
+        cli._search_result = [712]
+        res_anon_tag = conn.push_lead(
+            {
+                "tipo_evento": EVENTO_CRM_LEAD_ANONIMIZADO,
+                "lead_id": str(lead_huerfano_odoo),
+                "anonimizado": True,
+            }
+        )
+        assert res_anon_tag == {
+            "accion": "anonimizado",
+            "odoo_lead_id": 712,
+            "lead_id": str(lead_huerfano_odoo),
+        }
+        nuevas_calls_tag = cli.calls[calls_antes_tag:]
+        assert [(c[0], c[1]) for c in nuevas_calls_tag] == [("crm.lead", "search"), ("crm.lead", "write")]
+        assert nuevas_calls_tag[1][2][0] == [712]
+        assert nuevas_calls_tag[1][2][1]["email_from"] is False
+        mapeo_anon_rec = EntidadSincronizada.objects.get(
+            id_instancia=inst,
+            tipo_entidad="crm_lead",
+            id_externo="712",
+            id_omni=str(lead_huerfano_odoo),
+        )
+        assert mapeo_anon_rec.metadatos["anonimizado"] is True
 
         # 6. Recuperación idempotente vía buscar_lead_crm_por_tag (p. ej. tras timeout sin guardar EntidadSincronizada)
         lead_recuperado_id = str(uuid.uuid4())
@@ -894,6 +951,19 @@ class TestDispatcherOutboxCelery:
             f"Fallo conectando con {DUMMY_WRITE_KEY}",
             secrets=(DUMMY_WRITE_KEY,),
         )
+        # Enmascaramiento de secretos entrecomillados (JSON/key=val) y tokens Bearer (R-CODE-8)
+        san_quoted = sanitizar_error_odoo(
+            "Error {\"api_key\": \"ci-only-dummy-key-json-1\", 'password': 'mi secreto', "
+            'write_api_key="ci-only-dummy-key-q2"} Authorization: Bearer ci-only-dummy-key-bearer-1'
+        )
+        for filtrado in (
+            "ci-only-dummy-key-json-1",
+            "mi secreto",
+            "ci-only-dummy-key-q2",
+            "ci-only-dummy-key-bearer-1",
+        ):
+            assert filtrado not in san_quoted
+        assert "Bearer ***" in san_quoted
         assert (
             sanitizar_error_outbox("SELECT * FROM usuarios WHERE password=abc") == "Error despachando evento outbox."
         )
@@ -1035,6 +1105,107 @@ class TestDispatcherOutboxCelery:
         ev_lock.refresh_from_db()
         assert ev_lock.estado == EventoOutbox.Estado.PENDIENTE
 
+    def test_poison_pill_config_corrupta_no_bloquea_otro_tenant(
+        self, empresa_a, empresa_b, user_a, user_b, proveedor_odoo
+    ):
+        inst_a = _crear_instancia_odoo(empresa_a, proveedor_odoo, empujar_connect_leads=True)
+        inst_b = _crear_instancia_odoo(empresa_b, proveedor_odoo, empujar_connect_leads=True)
+        lead_a = crear_lead_crm(empresa=empresa_a, nombre="Lead Corrupto A", propietario=user_a)
+        lead_b = crear_lead_crm(empresa=empresa_b, nombre="Lead Sano B", propietario=user_b)
+
+        ev_a = EventoOutbox.objects.get(entidad_id=lead_a.pk)
+        ev_b = EventoOutbox.objects.get(entidad_id=lead_b.pk)
+
+        cli_b = _RecordingOdooClient(write_enabled=True, next_id=915)
+        orig_get_config = ConectorInstancia.get_config
+
+        def _fake_get_config(self_inst):
+            if self_inst.pk == inst_a.pk:
+                return "gAAAAAB-fernet-token-corrupto-sin-descifrar"
+            return orig_get_config(self_inst)
+
+        def _fake_get_connector(instancia):
+            conn = OdooConnector(instancia)
+            conn._connect_write_client = cli_b
+            return conn
+
+        with (
+            patch.object(ConectorInstancia, "get_config", _fake_get_config),
+            patch.object(registry, "get_connector", side_effect=_fake_get_connector),
+        ):
+            # También cubre _secretos_instancias cuando get_config devuelve str no-dict
+            assert _secretos_instancias([inst_a]) == []
+            res = despachar_lote_outbox(limite=50)
+
+        assert res["fallidos"] == 1
+        assert res["enviados"] == 1
+        ev_a.refresh_from_db()
+        ev_b.refresh_from_db()
+        assert ev_a.estado == EventoOutbox.Estado.FALLIDO
+        assert ev_a.intentos == 1
+        assert "Configuración inválida" in ev_a.ultimo_error
+        assert ev_b.estado == EventoOutbox.Estado.ENVIADO
+        assert EntidadSincronizada.objects.filter(
+            id_instancia=inst_b,
+            tipo_entidad="crm_lead",
+            id_externo="915",
+            id_omni=str(lead_b.pk),
+        ).exists()
+
+    def test_multiples_destinos_savepoint_aisla_entidad_sincronizada_del_primero(
+        self, empresa_a, user_a, proveedor_odoo
+    ):
+        inst_1 = _crear_instancia_odoo(empresa_a, proveedor_odoo, empujar_connect_leads=True)
+        inst_2 = _crear_instancia_odoo(empresa_a, proveedor_odoo, empujar_connect_leads=True)
+        lead = crear_lead_crm(empresa=empresa_a, nombre="Lead Dos Destinos", propietario=user_a)
+        ev = EventoOutbox.objects.get(entidad_id=lead.pk)
+
+        cli_1 = _RecordingOdooClient(write_enabled=True, next_id=921)
+
+        def _fake_get_connector(instancia):
+            if instancia.pk == inst_1.pk:
+                conn_ok = OdooConnector(instancia)
+                conn_ok._connect_write_client = cli_1
+                return conn_ok
+            conn_fail = MagicMock()
+            conn_fail.push_lead.side_effect = ConnectorConnectionError("Odoo 2 caído")
+            return conn_fail
+
+        with patch.object(registry, "get_connector", side_effect=_fake_get_connector):
+            res = despachar_lote_outbox(limite=50)
+
+        assert res["fallidos"] == 1
+        ev.refresh_from_db()
+        assert ev.estado == EventoOutbox.Estado.FALLIDO
+        # El savepoint independiente preserva EntidadSincronizada del destino 1 aunque el destino 2 falló
+        assert EntidadSincronizada.objects.filter(
+            id_instancia=inst_1,
+            tipo_entidad="crm_lead",
+            id_externo="921",
+            id_omni=str(lead.pk),
+        ).exists()
+        assert not EntidadSincronizada.objects.filter(id_instancia=inst_2, tipo_entidad="crm_lead").exists()
+
+    def test_advisory_lock_por_entidad_serializa_eventos_del_mismo_lead(self, empresa_a, user_a, proveedor_odoo):
+        _crear_instancia_odoo(empresa_a, proveedor_odoo, empujar_connect_leads=True)
+        lead = crear_lead_crm(empresa=empresa_a, nombre="Lead Lock Entidad", propietario=user_a)
+        ev = EventoOutbox.objects.get(entidad_id=lead.pk)
+
+        # Cuando otro worker mantiene el advisory lock del mismo lead_id, el evento se omite sin pasar a PROCESANDO
+        with patch("apps.integration_hub.outbox._try_advisory_lock_entidad", return_value=False) as mock_lock:
+            res = despachar_lote_outbox(limite=20)
+        mock_lock.assert_called_once_with(empresa_a.pk, ENTIDAD_CRM_LEAD, lead.pk)
+        assert res["omitidos_bloqueo"] == 1
+        assert res["procesados"] == 0
+        ev.refresh_from_db()
+        assert ev.estado == EventoOutbox.Estado.PENDIENTE
+
+        # Ejecución real de pg_try_advisory_xact_lock + fallback vendor no-postgresql
+        with transaction.atomic():
+            assert _try_advisory_lock_entidad(empresa_a.pk, ENTIDAD_CRM_LEAD, lead.pk) is True
+        with patch.object(connection, "vendor", "sqlite"):
+            assert _try_advisory_lock_entidad(empresa_a.pk, ENTIDAD_CRM_LEAD, lead.pk) is True
+
 
 # ── 5. REST API + Serializers + Paridad MCP (S7–S9) ──────────────────────────
 
@@ -1060,6 +1231,24 @@ class TestOutboxRestYMcp:
         )
         assert resp_bad_flag.status_code == 400
 
+        # Rechaza empujar_connect_leads=True sin write_user / write_api_key (fail-fast 400 en serializer)
+        resp_sin_write = client.post(
+            f"{BASE_HUB}/instancias/",
+            {
+                "id_proveedor": str(proveedor_odoo.pk),
+                "nombre": "Odoo Sin Write Creds",
+                "configuracion": {
+                    "host": TEST_ODOO_HOST,
+                    "user": "reader@example.invalid",
+                    "api_key": DUMMY_READ_KEY,
+                    "empujar_connect_leads": True,
+                },
+            },
+            format="json",
+        )
+        assert resp_sin_write.status_code == 400
+        assert "write_user" in str(resp_sin_write.data["configuracion"])
+
         resp_bad_map = client.post(
             f"{BASE_HUB}/instancias/",
             {
@@ -1069,6 +1258,8 @@ class TestOutboxRestYMcp:
                     "host": TEST_ODOO_HOST,
                     "user": "reader@example.invalid",
                     "api_key": DUMMY_READ_KEY,
+                    "write_user": "writer@example.invalid",
+                    "write_api_key": DUMMY_WRITE_KEY,
                     "empujar_connect_leads": True,
                     "mapa_etapas_odoo": ["invalido"],
                 },
@@ -1076,6 +1267,23 @@ class TestOutboxRestYMcp:
             format="json",
         )
         assert resp_bad_map.status_code == 400
+        assert "mapa_etapas_odoo" in str(resp_bad_map.data["configuracion"])
+
+        # Consistencia estricta is True en configuracion_publica si en BD quedó un string truthy
+        inst_str_flag = _crear_instancia_odoo(empresa_a, proveedor_odoo, empujar_connect_leads="true")
+        assert (
+            ConectorInstanciaSerializer(inst_str_flag).data["configuracion_publica"]["empujar_connect_leads"] is False
+        )
+
+        # PATCH sin enviar empujar_connect_leads conserva el valor existente (rama existente.get)
+        inst_ok = _crear_instancia_odoo(empresa_a, proveedor_odoo, empujar_connect_leads=True)
+        resp_patch_keep = client.patch(
+            f"{BASE_HUB}/instancias/{inst_ok.pk}/",
+            {"configuracion": {"host": TEST_ODOO_HOST, "user": "reader@example.invalid"}},
+            format="json",
+        )
+        assert resp_patch_keep.status_code == 200
+        assert resp_patch_keep.data["configuracion_publica"]["empujar_connect_leads"] is True
 
         resp_ok = client.post(
             f"{BASE_HUB}/instancias/",
@@ -1177,6 +1385,48 @@ class TestOutboxRestYMcp:
         assert r_ok_retry.data["ultimo_error"] == ""
         assert r_ok_retry.data["procesado_en"] is None
 
+        # PATCH sobre Lead en /api/crm/leads/{pk}/ encola EVENTO_CRM_LEAD_ACTUALIZADO sin PII
+        lead_patch = crear_lead_crm(
+            empresa=empresa_a,
+            nombre="Luis",
+            apellido="Méndez",
+            email="luis.mendez@ejemplo.test",
+            telefono="0414-7778899",
+            propietario=user_a,
+        )
+        r_patch_lead = client_a.patch(
+            f"/api/crm/leads/{lead_patch.pk}/",
+            {"empresa_nombre": "Importadora Méndez", "mensaje": "Llamar mañana"},
+            format="json",
+        )
+        assert r_patch_lead.status_code == 200
+        ev_act = EventoOutbox.objects.get(
+            id_empresa=empresa_a,
+            tipo_evento=EVENTO_CRM_LEAD_ACTUALIZADO,
+            entidad_id=lead_patch.pk,
+        )
+        payload_act_dump = json.dumps(ev_act.payload, ensure_ascii=False).lower()
+        assert ev_act.payload["lead_id"] == str(lead_patch.pk)
+        for pii in ("luis", "méndez", "0414", "7778899", "importadora", "llamar"):
+            assert pii not in payload_act_dump
+
+        # PATCH sobre lead anonimizado no genera EVENTO_CRM_LEAD_ACTUALIZADO adicional
+        anonimizar_lead(lead_patch.pk, user_a)
+        total_act_antes = EventoOutbox.objects.filter(
+            id_empresa=empresa_a,
+            tipo_evento=EVENTO_CRM_LEAD_ACTUALIZADO,
+            entidad_id=lead_patch.pk,
+        ).count()
+        client_a.patch(f"/api/crm/leads/{lead_patch.pk}/", {"mensaje": ""}, format="json")
+        assert (
+            EventoOutbox.objects.filter(
+                id_empresa=empresa_a,
+                tipo_evento=EVENTO_CRM_LEAD_ACTUALIZADO,
+                entidad_id=lead_patch.pk,
+            ).count()
+            == total_act_antes
+        )
+
         # Helper directo con UUID inválido / evento inexistente + swagger_fake_view
         with pytest.raises(OutboxError):
             reintentar_evento_outbox("uuid-malo", empresa_ids=[empresa_a.pk])
@@ -1227,10 +1477,12 @@ class TestOutboxRestYMcp:
         assert res_list_blank_emp["success"] is True
         assert any(row["id_evento"] == str(ev_a.pk) for row in res_list_blank_emp["eventos"])
 
-        # Listado con validaciones inválidas (estado, UUID, NUL)
+        # Listado con validaciones inválidas (estado, UUID, NUL, limit=None y limit=True)
         assert hub_mcp.hub_listar_outbox(tok_read, estado="INVALIDO")["success"] is False
         assert hub_mcp.hub_listar_outbox(tok_read, empresa_id="no-uuid")["success"] is False
         assert hub_mcp.hub_listar_outbox(tok_read, tipo_evento="crm\x00bad")["success"] is False
+        assert hub_mcp.hub_listar_outbox(tok_read, limit=None)["success"] is False  # type: ignore[arg-type]
+        assert hub_mcp.hub_listar_outbox(tok_read, limit=True)["success"] is False
 
         # Cross-tenant empresa_id -> PermissionError
         with pytest.raises(PermissionError):

@@ -33,7 +33,10 @@ _defuse_xmlrpc()
 
 logger = logging.getLogger(__name__)
 
-_SECRET_KV_RX = re.compile(r"(?i)\b(api_key|write_api_key|password|passwd|secret|token)\s*([:=])\s*([^\s,;\"']+)")
+_SECRET_KV_RX = re.compile(
+    r"""(?i)(["']?\b(?:api_key|write_api_key|password|passwd|secret|token)\b["']?\s*[:=]\s*)(?:"[^"]*"|'[^']*'|[^\s,;"'\}]+)"""
+)
+_BEARER_RX = re.compile(r"(?i)\b(Bearer)\s+\S+")
 _URL_CREDS_RX = re.compile(r"(https?://)[^/\s@]+@")
 
 
@@ -53,7 +56,8 @@ def sanitizar_error_odoo(exc_or_msg: Any, secrets: Iterable[str] = ()) -> str:
         msg = msg.replace(sec, "***")
 
     msg = _URL_CREDS_RX.sub(r"\1***@", msg)
-    msg = _SECRET_KV_RX.sub(r"\1\2***", msg)
+    msg = _SECRET_KV_RX.sub(r"\1***", msg)
+    msg = _BEARER_RX.sub(r"\1 ***", msg)
 
     if "Traceback (most recent call last):" in msg:
         primera_linea = msg.split("Traceback (most recent call last):", 1)[0].strip()

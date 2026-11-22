@@ -28,6 +28,12 @@ from apps.core.viewsets import (
     get_empresas_visible,
     validar_uuid_param,
 )
+from apps.integration_hub.outbox import (
+    ENTIDAD_CRM_LEAD,
+    EVENTO_CRM_LEAD_ACTUALIZADO,
+    construir_clave_idempotencia_unica,
+    encolar_evento_outbox,
+)
 
 from .models import Actividad, Cliente, ContactoCliente, DireccionCliente, Etapa, Lead, Pipeline
 from .serializers import (
@@ -528,7 +534,24 @@ class LeadViewSet(_BaseCrmConnectViewSet):
             raise ValidationError({"id_empresa": "La empresa del lead es inmutable."})
         for campo, valor in data.items():
             setattr(instancia, campo, valor)
-        self._guardar_validado(instancia)
+        with transaction.atomic():
+            self._guardar_validado(instancia)
+            if not instancia.anonimizado:
+                encolar_evento_outbox(
+                    instancia.id_empresa,
+                    tipo_evento=EVENTO_CRM_LEAD_ACTUALIZADO,
+                    entidad_tipo=ENTIDAD_CRM_LEAD,
+                    entidad_id=instancia.id_lead,
+                    payload={
+                        "lead_id": str(instancia.id_lead),
+                        "pipeline_id": str(instancia.pipeline_id),
+                        "etapa_id": str(instancia.etapa_id),
+                        "fuente": instancia.fuente,
+                    },
+                    clave_idempotencia=construir_clave_idempotencia_unica(
+                        f"{EVENTO_CRM_LEAD_ACTUALIZADO}:{instancia.id_lead.hex}"
+                    ),
+                )
 
     @swagger_auto_schema(
         method="post",

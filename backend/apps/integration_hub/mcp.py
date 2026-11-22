@@ -538,15 +538,17 @@ def hub_listar_outbox(
             estado_norm = estado_val.strip().upper()
             if estado_norm not in set(EventoOutbox.Estado.values):
                 raise ValueError(f"Estado '{estado_val}' no válido.")
+        if isinstance(limit, bool):
+            raise ValueError("El parámetro 'limit' debe ser un entero positivo.")
         tope = max(1, min(int(limit), 200))
-    except ValueError as exc:
+    except (ValueError, TypeError) as exc:
         return {
             "success": False,
             "error": sanitize_mcp_error(
                 exc,
                 logger=logger,
                 tool_name="hub_listar_outbox",
-                controlled_types=(ValueError,),
+                controlled_types=(ValueError, TypeError),
             ),
             "eventos": [],
         }

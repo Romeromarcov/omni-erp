@@ -14,12 +14,12 @@ from django.utils import timezone
 from apps.connect.models import Perfil, Tarjeta
 from apps.core.exceptions import DomainError
 from apps.core.models import Contacto, Empresa, Usuarios
-from apps.core.uuid import uuid7
 from apps.core.validators import normalizar_email, normalizar_telefono
 from apps.integration_hub.outbox import (
     ENTIDAD_CRM_LEAD,
     EVENTO_CRM_LEAD_CAPTURADO,
     EVENTO_CRM_LEAD_ETAPA_CAMBIADA,
+    construir_clave_idempotencia_unica,
     encolar_evento_outbox,
 )
 from apps.tareas.models import Tarea
@@ -111,9 +111,9 @@ def mover_lead_etapa(
             "etapa_nombre": etapa_obj.nombre,
             "etapa_tipo": etapa_obj.tipo,
         },
-        clave_idempotencia=f"{EVENTO_CRM_LEAD_ETAPA_CAMBIADA}:{lead_locked.id_lead}:{etapa_obj.id_etapa}:{uuid7()}"[
-            :120
-        ],
+        clave_idempotencia=construir_clave_idempotencia_unica(
+            f"{EVENTO_CRM_LEAD_ETAPA_CAMBIADA}:{lead_locked.id_lead.hex}:{etapa_obj.id_etapa.hex}"
+        ),
     )
     return lead_locked
 

@@ -200,11 +200,12 @@ class OdooConnector(BaseConnector):
                 pass
             self._connect_write_client = None
 
-        host = str(cfg.get("host") or "").strip()
+        host_raw = str(cfg.get("host") or "").strip()
         db = str(cfg.get("db") or "").strip()
         timeout = int(cfg.get("timeout", 30))
-        if not host:
+        if not host_raw:
             raise ConnectorConnectionError("La configuración del conector Odoo está incompleta: falta 'host'.")
+        host = self._odoo_base_url({"host": host_raw})
         try:
             self._connect_write_client = OdooXMLRPCClient(
                 host,
@@ -1333,6 +1334,14 @@ class OdooConnector(BaseConnector):
 
         try:
             if datos["anonimizado"]:
+                if odoo_lead_id is None and hasattr(client, "buscar_lead_crm_por_tag"):
+                    encontrado_anon = client.buscar_lead_crm_por_tag(f"[OMNI-LEAD:{lead_id}]")
+                    if (
+                        isinstance(encontrado_anon, int)
+                        and not isinstance(encontrado_anon, bool)
+                        and encontrado_anon > 0
+                    ):
+                        odoo_lead_id = encontrado_anon
                 if odoo_lead_id is None:
                     return {
                         "accion": "omitido",
@@ -1342,14 +1351,31 @@ class OdooConnector(BaseConnector):
                     }
                 vals_anon = self._construir_vals_crm_lead(datos)
                 client.actualizar_lead_crm(odoo_lead_id, vals_anon)
+                checksum_anon = self._checksum(vals_anon)
                 if mapeo is not None:
-                    mapeo.checksum = self._checksum(vals_anon)
+                    mapeo.checksum = checksum_anon
                     mapeo.metadatos = {
                         **(mapeo.metadatos or {}),
                         "anonimizado": True,
                         "ultimo_evento": datos["tipo_evento"],
                     }
                     mapeo.save(update_fields=["checksum", "metadatos", "ultimo_sync"])
+                elif self._instancia_persistida():
+                    EntidadSincronizada.objects.update_or_create(
+                        id_instancia=self.instancia,
+                        tipo_entidad="crm_lead",
+                        id_externo=str(odoo_lead_id),
+                        defaults={
+                            "id_omni": lead_id,
+                            "modelo_omni": "apps.crm.models.Lead",
+                            "checksum": checksum_anon,
+                            "metadatos": {
+                                "anonimizado": True,
+                                "ultimo_evento": datos["tipo_evento"],
+                            },
+                            "activo": True,
+                        },
+                    )
                 return {
                     "accion": "anonimizado",
                     "odoo_lead_id": odoo_lead_id,

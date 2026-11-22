@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import uuid
 from collections.abc import Iterable, Sequence
@@ -9,7 +10,7 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, connection, transaction
 from django.utils import timezone
 
 from apps.core import rls
@@ -80,6 +81,14 @@ def _parsear_uuid(valor: uuid.UUID | str, campo: str) -> uuid.UUID:
         raise DjangoValidationError({campo: f"'{valor}' no es un UUID válido."}) from exc
 
 
+def construir_clave_idempotencia_unica(prefijo: str) -> str:
+    """Construye una clave ``<=120`` chars acotando el prefijo sin truncar ``uuid7().hex``."""
+    sufijo = uuid7().hex
+    max_prefijo = 120 - 1 - len(sufijo)
+    base = str(prefijo or "").strip()[:max_prefijo]
+    return f"{base}:{sufijo}" if base else sufijo
+
+
 @transaction.atomic
 def encolar_evento_outbox(
     empresa: Empresa,
@@ -94,13 +103,28 @@ def encolar_evento_outbox(
 ) -> EventoOutbox:
     """Inserta o reutiliza idempotentemente un ``EventoOutbox`` dentro de la transacción activa."""
     entidad_uuid = _parsear_uuid(entidad_id, "entidad_id")
-    tipo_limpio = str(tipo_evento or "").strip()
-    entidad_tipo_limpia = str(entidad_tipo or "").strip()
 
-    if clave_idempotencia is not None and str(clave_idempotencia).strip():
-        clave = str(clave_idempotencia).strip()
+    tipo_raw = "" if tipo_evento is None else str(tipo_evento)
+    entidad_raw = "" if entidad_tipo is None else str(entidad_tipo)
+    clave_raw = "" if clave_idempotencia is None else str(clave_idempotencia)
+
+    errores_nul: dict[str, str] = {}
+    if "\x00" in tipo_raw:
+        errores_nul["tipo_evento"] = "tipo_evento contiene caracteres inválidos."
+    if "\x00" in entidad_raw:
+        errores_nul["entidad_tipo"] = "entidad_tipo contiene caracteres inválidos."
+    if "\x00" in clave_raw:
+        errores_nul["clave_idempotencia"] = "clave_idempotencia contiene caracteres inválidos."
+    if errores_nul:
+        raise DjangoValidationError(errores_nul)
+
+    tipo_limpio = tipo_raw.strip()
+    entidad_tipo_limpia = entidad_raw.strip()
+
+    if clave_raw.strip():
+        clave = clave_raw.strip()
     else:
-        clave = f"{tipo_limpio}:{entidad_tipo_limpia}:{entidad_uuid}:{uuid7()}"[:120]
+        clave = construir_clave_idempotencia_unica(f"{tipo_limpio}:{entidad_tipo_limpia}:{entidad_uuid.hex}")
 
     existente = EventoOutbox.objects.filter(
         id_empresa=empresa,
@@ -185,6 +209,22 @@ def reintentar_evento_outbox(
     return evento
 
 
+def _try_advisory_lock_entidad(
+    empresa_id: uuid.UUID,
+    entidad_tipo: str,
+    entidad_id: uuid.UUID,
+) -> bool:
+    """Serializa el despacho concurrente por entidad sin bloquear (PostgreSQL advisory xact lock)."""
+    if connection.vendor != "postgresql":
+        return True
+    clave_lock = f"outbox-entity:{empresa_id}:{entidad_tipo}:{entidad_id}".encode("utf-8")
+    lock_key = int.from_bytes(hashlib.sha256(clave_lock).digest()[:8], "big", signed=True)
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT pg_try_advisory_xact_lock(%s)", [lock_key])
+        row = cursor.fetchone()
+    return bool(row and row[0])
+
+
 def _destinos_opt_in_evento(evento: EventoOutbox) -> list[ConectorInstancia]:
     """Retorna conectores activos de la empresa con opt-in explícito para el tipo de evento."""
     if evento.tipo_evento not in EVENTOS_CRM_LEAD and evento.entidad_tipo != ENTIDAD_CRM_LEAD:
@@ -198,15 +238,24 @@ def _destinos_opt_in_evento(evento: EventoOutbox) -> list[ConectorInstancia]:
             id_proveedor__codigo="odoo",
         )
         .exclude(estado="inactivo")
-        .order_by("fecha_creacion")
+        .order_by("fecha_creacion", "id_conector")
     )
-    return [inst for inst in instancias if inst.get_config().get("empujar_connect_leads") is True]
+    destinos: list[ConectorInstancia] = []
+    for inst in instancias:
+        cfg = inst.get_config()
+        if not isinstance(cfg, dict):
+            raise OutboxError(f"Configuración inválida o indescifrable en el conector '{inst.nombre}'.")
+        if cfg.get("empujar_connect_leads") is True:
+            destinos.append(inst)
+    return destinos
 
 
 def _secretos_instancias(instancias: Iterable[ConectorInstancia]) -> list[str]:
     secretos: list[str] = []
     for inst in instancias:
         cfg = inst.get_config()
+        if not isinstance(cfg, dict):
+            continue
         for clave in _SECRET_CONFIG_KEYS:
             val = cfg.get(clave)
             if isinstance(val, str) and val.strip():
@@ -229,7 +278,7 @@ def despachar_lote_outbox(
                 estado__in=[EventoOutbox.Estado.PENDIENTE, EventoOutbox.Estado.FALLIDO],
                 proximo_intento_en__lte=ahora_ref,
             )
-            .order_by("proximo_intento_en", "fecha_creacion")
+            .order_by("proximo_intento_en", "fecha_creacion", "id_evento")
             .values_list("id_empresa_id", "id_evento")[:tope]
         )
 
@@ -257,31 +306,36 @@ def despachar_lote_outbox(
                     omitidos_bloqueo += 1
                     continue
 
+                if not _try_advisory_lock_entidad(empresa_id, evento.entidad_tipo, evento.entidad_id):
+                    omitidos_bloqueo += 1
+                    continue
+
                 evento.estado = EventoOutbox.Estado.PROCESANDO
                 evento.save(update_fields=["estado", "fecha_actualizacion"])
 
-                destinos = _destinos_opt_in_evento(evento)
-                if not destinos:
-                    evento.estado = EventoOutbox.Estado.ENVIADO
-                    evento.procesado_en = ahora_ref
-                    evento.ultimo_error = ""
-                    evento.full_clean()
-                    evento.save(
-                        update_fields=[
-                            "estado",
-                            "procesado_en",
-                            "ultimo_error",
-                            "fecha_actualizacion",
-                        ]
-                    )
-                    enviados += 1
-                    sin_destino += 1
-                    continue
-
-                secretos = _secretos_instancias(destinos)
+                secretos: list[str] = []
                 try:
-                    with transaction.atomic():
-                        for instancia in destinos:
+                    destinos = _destinos_opt_in_evento(evento)
+                    if not destinos:
+                        evento.estado = EventoOutbox.Estado.ENVIADO
+                        evento.procesado_en = ahora_ref
+                        evento.ultimo_error = ""
+                        evento.full_clean()
+                        evento.save(
+                            update_fields=[
+                                "estado",
+                                "procesado_en",
+                                "ultimo_error",
+                                "fecha_actualizacion",
+                            ]
+                        )
+                        enviados += 1
+                        sin_destino += 1
+                        continue
+
+                    secretos = _secretos_instancias(destinos)
+                    for instancia in destinos:
+                        with transaction.atomic():
                             conector = registry.get_connector(instancia)
                             conector.push_lead(evento)
                 except Exception as exc:  # noqa: BLE001 — fallos transitorios o de configuración pasan a backoff/DLQ

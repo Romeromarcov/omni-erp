@@ -127,7 +127,7 @@ class ConectorInstanciaSerializer(serializers.ModelSerializer):
             # api_key, write_api_key, password, service_account: nunca (R-CODE-8)
         }
         if "empujar_connect_leads" in cfg:
-            pub["empujar_connect_leads"] = bool(cfg.get("empujar_connect_leads", False))
+            pub["empujar_connect_leads"] = cfg.get("empujar_connect_leads") is True
         return pub
 
 
@@ -281,6 +281,20 @@ class ConectorInstanciaCreateSerializer(serializers.ModelSerializer):
             configuracion.get("empujar_connect_leads"), bool
         ):
             raise serializers.ValidationError({"configuracion": "empujar_connect_leads debe ser un valor booleano."})
+
+        if "empujar_connect_leads" in configuracion:
+            empujar_connect_leads_final = configuracion.get("empujar_connect_leads")
+        else:
+            empujar_connect_leads_final = existente.get("empujar_connect_leads", False)
+
+        if empujar_connect_leads_final is True and (not write_user_final or not write_key_final):
+            raise serializers.ValidationError(
+                {
+                    "configuracion": (
+                        "Activar 'empujar_connect_leads' requiere configurar 'write_user' y 'write_api_key'."
+                    )
+                }
+            )
 
         if "mapa_etapas_odoo" in configuracion and configuracion.get("mapa_etapas_odoo") is not None:
             if not isinstance(configuracion.get("mapa_etapas_odoo"), dict):
