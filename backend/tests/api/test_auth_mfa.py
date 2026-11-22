@@ -369,7 +369,9 @@ def test_edge_cases_mfa_fields_servicio_y_vistas(usuario, empresa):
         == 400
     )
     assert (
-        client.post("/api/auth/mfa/desactivar/", {"password": TEST_CRED, "codigo": "123456"}, format="json").status_code
+        client.post(
+            "/api/auth/mfa/desactivar/", {"password": TEST_CRED, "codigo": "123456"}, format="json"
+        ).status_code
         == 400
     )
     assert client.post("/api/auth/mfa/regenerar-codigos/", {}, format="json").status_code == 400
@@ -414,4 +416,3 @@ def test_edge_cases_mfa_fields_servicio_y_vistas(usuario, empresa):
         ).status_code
         == 401
     )
-

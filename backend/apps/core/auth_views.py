@@ -171,7 +171,9 @@ def _login_rls_context(user):
     return rls.rls_tenant_context(visible_ids)
 
 
-def _abrir_sesion_caja_si_aplica(dispositivo_info: dict, accion_info: dict, user, device_ip: str, device_user_agent: str) -> None:
+def _abrir_sesion_caja_si_aplica(
+    dispositivo_info: dict, accion_info: dict, user, device_ip: str, device_user_agent: str
+) -> None:
     if accion_info["accion"] not in ("abrir_sesion_automatico", "abrir_sesion"):
         return
     try:
