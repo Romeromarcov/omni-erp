@@ -347,6 +347,7 @@ export default function ConnectTarjetasPage() {
 
     setQrDownloading(true);
     let tempUrl: string | null = null;
+    let deferredRevoke = false;
     try {
       const blob =
         qrTarget.kind === 'mi-perfil'
@@ -354,10 +355,13 @@ export default function ConnectTarjetasPage() {
           : await getTarjetaQrBlob(qrTarget.tarjeta.id_tarjeta, formato);
       tempUrl = URL.createObjectURL(blob);
       dispararDescargaUrl(tempUrl, filename);
+      const urlToRevoke = tempUrl;
+      deferredRevoke = true;
+      window.setTimeout(() => URL.revokeObjectURL(urlToRevoke), 1000);
     } catch (err) {
       setQrError(mensajeDeError(err, 'No se pudo descargar el código QR.'));
     } finally {
-      if (tempUrl) {
+      if (tempUrl && !deferredRevoke) {
         URL.revokeObjectURL(tempUrl);
       }
       setQrDownloading(false);
@@ -429,7 +433,11 @@ export default function ConnectTarjetasPage() {
               startIcon={<LinkOutlined />}
               onClick={() => {
                 setAsignarError(null);
-                setAsignarPerfilId(row.perfil ?? '');
+                const perfilValido =
+                  row.perfil && perfilesActivos.some((p) => p.id_perfil === row.perfil)
+                    ? row.perfil
+                    : '';
+                setAsignarPerfilId(perfilValido);
                 setAsignarActivar(true);
                 setAsignarTarget(row);
               }}
@@ -652,7 +660,11 @@ export default function ConnectTarjetasPage() {
                 label="Perfil Connect"
                 required
                 fullWidth
-                value={asignarPerfilId}
+                value={
+                  perfilesActivos.some((p) => p.id_perfil === asignarPerfilId)
+                    ? asignarPerfilId
+                    : ''
+                }
                 onChange={(e) => setAsignarPerfilId(e.target.value)}
               >
                 {perfilesActivos.map((perfil) => (

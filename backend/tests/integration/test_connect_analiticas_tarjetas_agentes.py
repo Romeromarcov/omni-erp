@@ -1190,3 +1190,207 @@ class TestCoberturaBordesS10S12:
         ej_err.refresh_from_db()
         assert ej_err.estado == "fallido"
         assert "no encontrado" in ej_err.mensaje_error.lower()
+
+    def test_hallazgos_ronda1_seguridad_y_bordes(self, empresa_a, user_a, perfil_a):
+        from django.http import QueryDict
+        from rest_framework.exceptions import ValidationError as DRFValidationError
+
+        from apps.connect.views import _validar_payload_sin_nul
+
+        client_a = _auth_client(user_a)
+        anon = APIClient()
+
+        # ── Hallazgo 1: PERDIDA irreversible + bloqueo de transiciones vía PATCH + ACTIVA con activo=False
+        r_crea = client_a.post(
+            "/api/connect/tarjetas/",
+            {"uid_chip": "04F1E2D3C4", "tipo": "METAL", "perfil": str(perfil_a.pk)},
+            format="json",
+        )
+        assert r_crea.status_code == 201
+        tid = r_crea.json()["id_tarjeta"]
+
+        # Crear ACTIVA con activo=False -> 400
+        assert (
+            client_a.post(
+                "/api/connect/tarjetas/",
+                {"uid_chip": "04F1E2D3C5", "perfil": str(perfil_a.pk), "estado": "ACTIVA", "activo": False},
+                format="json",
+            ).status_code
+            == 400
+        )
+
+        # Cambiar estado arbitrariamente vía PATCH desde INVENTARIO -> 400
+        assert client_a.patch(f"/api/connect/tarjetas/{tid}/", {"estado": "ACTIVA"}, format="json").status_code == 400
+
+        # Activar por acción y rechazar PATCH activo=False en ACTIVA -> 400
+        assert client_a.post(f"/api/connect/tarjetas/{tid}/activar/").status_code == 200
+        assert client_a.patch(f"/api/connect/tarjetas/{tid}/", {"activo": False}, format="json").status_code == 400
+
+        # ── Hallazgo 3: DELETE (activo=False) -> POST activar/ SIN ?incluir_inactivos=true -> 200
+        assert client_a.delete(f"/api/connect/tarjetas/{tid}/").status_code == 204
+        r_react = client_a.post(f"/api/connect/tarjetas/{tid}/activar/")
+        assert r_react.status_code == 200
+        assert r_react.json()["activo"] is True
+        assert r_react.json()["estado"] == "ACTIVA"
+
+        # Marcar PERDIDA y verificar que PATCH NO puede revertir estado, perfil ni uid_chip
+        assert client_a.post(f"/api/connect/tarjetas/{tid}/marcar-perdida/").status_code == 200
+        assert client_a.patch(f"/api/connect/tarjetas/{tid}/", {"estado": "ACTIVA"}, format="json").status_code == 400
+        assert (
+            client_a.patch(f"/api/connect/tarjetas/{tid}/", {"estado": "INVENTARIO"}, format="json").status_code == 400
+        )
+        assert client_a.patch(f"/api/connect/tarjetas/{tid}/", {"perfil": None}, format="json").status_code == 400
+        assert (
+            client_a.patch(f"/api/connect/tarjetas/{tid}/", {"uid_chip": "0411223344"}, format="json").status_code
+            == 400
+        )
+        # Editar solo notas en PERDIDA sí está permitido; acceso público sigue 404
+        assert (
+            client_a.patch(f"/api/connect/tarjetas/{tid}/", {"notas": "Extraviada"}, format="json").status_code == 200
+        )
+        assert anon.get(f"/api/public/connect/{perfil_a.slug}/?uid=04F1E2D3C4").status_code == 404
+
+        # ── Hallazgo 2: BOLA intra-tenant en TarjetaViewSet y MCP connect_gestionar_tarjeta
+        user_otro = Usuarios.objects.create_user(username="vendedor_otro_r1", password="x", email="vo@alpha.test")
+        user_otro.empresas.add(empresa_a)
+        perfil_otro = Perfil.objects.create(
+            id_empresa=empresa_a,
+            usuario=user_otro,
+            slug="vendedor-otro-r1",
+            nombre_publico="Otro Vendedor",
+        )
+        user_admin = Usuarios.objects.create_user(
+            username="admin_alpha_r1", password="x", email="adm@alpha.test", is_staff=True
+        )
+        user_admin.empresas.add(empresa_a)
+
+        client_otro = _auth_client(user_otro)
+        client_admin = _auth_client(user_admin)
+
+        r_t_prop = client_a.post(
+            "/api/connect/tarjetas/",
+            {"uid_chip": "04B01A0001", "perfil": str(perfil_a.pk)},
+            format="json",
+        )
+        assert r_t_prop.status_code == 201
+        t_prop_id = r_t_prop.json()["id_tarjeta"]
+
+        # No-admin NO puede crear tarjeta para perfil ajeno ni operar tarjeta ajena -> 403
+        assert (
+            client_otro.post(
+                "/api/connect/tarjetas/",
+                {"uid_chip": "04B01A0002", "perfil": str(perfil_a.pk)},
+                format="json",
+            ).status_code
+            == 403
+        )
+        assert (
+            client_otro.patch(f"/api/connect/tarjetas/{t_prop_id}/", {"notas": "hack"}, format="json").status_code
+            == 403
+        )
+        assert client_otro.post(f"/api/connect/tarjetas/{t_prop_id}/activar/").status_code == 403
+        assert client_otro.post(f"/api/connect/tarjetas/{t_prop_id}/desactivar/").status_code == 403
+        assert client_otro.post(f"/api/connect/tarjetas/{t_prop_id}/marcar-perdida/").status_code == 403
+        assert (
+            client_otro.post(
+                f"/api/connect/tarjetas/{t_prop_id}/asignar/",
+                {"perfil_id": str(perfil_otro.pk)},
+                format="json",
+            ).status_code
+            == 403
+        )
+        assert client_otro.delete(f"/api/connect/tarjetas/{t_prop_id}/").status_code == 403
+
+        # Tarjeta sin asignar en inventario: no-admin no puede asignarla a perfil ajeno, sí al propio
+        t_inv = Tarjeta.objects.create(id_empresa=empresa_a, uid_chip="04B01A0003", tipo=Tarjeta.Tipo.PVC)
+        assert (
+            client_otro.post(
+                f"/api/connect/tarjetas/{t_inv.pk}/asignar/",
+                {"perfil_id": str(perfil_a.pk)},
+                format="json",
+            ).status_code
+            == 403
+        )
+        assert (
+            client_otro.post(
+                f"/api/connect/tarjetas/{t_inv.pk}/asignar/",
+                {"perfil_id": str(perfil_otro.pk), "activar": True},
+                format="json",
+            ).status_code
+            == 200
+        )
+
+        # Admin SÍ puede operar tarjeta ajena en REST -> 200
+        assert client_admin.post(f"/api/connect/tarjetas/{t_prop_id}/activar/").status_code == 200
+        assert client_admin.post(f"/api/connect/tarjetas/{t_prop_id}/desactivar/").status_code == 200
+
+        # MCP connect_gestionar_tarjeta: no-admin bloqueado en tarjeta/perfil ajeno; admin y propietario permitidos
+        tok_otro = _mcp_token(empresa_a, ["connect:write"], creado_por=user_otro)
+        tok_admin = _mcp_token(empresa_a, ["connect:write"], creado_por=user_admin)
+        with pytest.raises(PermissionError):
+            connect_gestionar_tarjeta(tok_otro, str(t_prop_id), accion="activar")
+        t_inv2 = Tarjeta.objects.create(id_empresa=empresa_a, uid_chip="04B01A0004", tipo=Tarjeta.Tipo.PVC)
+        with pytest.raises(PermissionError):
+            connect_gestionar_tarjeta(tok_otro, str(t_inv2.pk), accion="asignar", perfil_id=str(perfil_a.pk))
+
+        res_mcp_adm = connect_gestionar_tarjeta(tok_admin, str(t_prop_id), accion="activar")
+        assert res_mcp_adm["estado"] == "ACTIVA"
+        res_mcp_own = connect_gestionar_tarjeta(tok_otro, str(t_inv.pk), accion="desactivar")
+        assert res_mcp_own["estado"] == "DESACTIVADA"
+
+        # ── Hallazgo 4: Errores 4xx/404 con Accept: image/svg+xml o image/png devuelven JSON válido
+        for accept_hdr in ("image/svg+xml", "image/png"):
+            r_fmt = client_a.get(f"/api/connect/tarjetas/{t_prop_id}/qr/?formato=webp", HTTP_ACCEPT=accept_hdr)
+            assert r_fmt.status_code == 400
+            assert r_fmt["Content-Type"].startswith("application/json")
+            body_fmt = r_fmt.json()
+            assert "formato" in body_fmt and "ErrorDetail" not in r_fmt.content.decode("utf-8")
+
+            r_sin_perf = client_a.get(f"/api/connect/tarjetas/{t_inv2.pk}/qr/", HTTP_ACCEPT=accept_hdr)
+            assert r_sin_perf.status_code == 400
+            assert r_sin_perf["Content-Type"].startswith("application/json")
+            assert "detail" in r_sin_perf.json()
+
+            r_404 = client_admin.get("/api/connect/perfiles/mi-perfil/qr/", HTTP_ACCEPT=accept_hdr)
+            assert r_404.status_code == 404
+            assert r_404["Content-Type"].startswith("application/json")
+            assert "detail" in r_404.json()
+
+        # ── Hallazgo 5: OverflowError y rango > 365 días en analíticas -> 400
+        assert client_a.get("/api/connect/analiticas/?hasta=9999-12-31").status_code == 400
+        assert client_a.get("/api/connect/analiticas/?hasta=0001-01-01&dias=30").status_code == 400
+        assert client_a.get("/api/connect/analiticas/?desde=2024-01-01&hasta=2026-12-31").status_code == 400
+
+        # ── Hallazgo 6: Allowlist siguiente_actividad y recorte razonamiento[:1000] en LLM calificador
+        lead_llm = _crear_lead(empresa_a, user_a, perfil=perfil_a, mensaje="Quiero cotizar pronto")
+        gw_malo = MagicMock()
+        gw_malo.disponible.return_value = True
+        gw_malo.generate.return_value = SimpleNamespace(
+            text=json.dumps(
+                {
+                    "prioridad": "ALTA",
+                    "score": 88,
+                    "confianza": 0.9,
+                    "siguiente_actividad": "EJECUTAR_COMANDO_RARO",
+                    "razonamiento": "R" * 1500,
+                }
+            ),
+            model="test-gw",
+        )
+        res_cal = ejecutar_connect_calificador(empresa_a, lead_llm.id_lead, usuario=user_a, gateway=gw_malo)
+        assert res_cal["siguiente_actividad"] in {"LLAMADA", "WHATSAPP", "CORREO", "NOTA", "NINGUNA"}
+        assert len(res_cal["razonamiento"]) == 1000
+
+        # ── Hallazgo 7: _validar_dimensiones captura TypeError/ValueError -> ConnectError
+        with pytest.raises(ConnectError):
+            generar_qr_svg("https://omni.link/c/ok", scale="no-entero")  # type: ignore[arg-type]
+        with pytest.raises(ConnectError):
+            generar_qr_png("https://omni.link/c/ok", border=None)  # type: ignore[arg-type]
+
+        # ── Hallazgo 9: _validar_payload_sin_nul revisa todos los valores de QueryDict
+        qd_nul = QueryDict("notas=ok&notas=bad%00val")
+        with pytest.raises(DRFValidationError):
+            _validar_payload_sin_nul(qd_nul)
+        qd_key_nul = QueryDict("bad%00key=ok")
+        with pytest.raises(DRFValidationError):
+            _validar_payload_sin_nul(qd_key_nul)

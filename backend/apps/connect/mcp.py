@@ -408,14 +408,16 @@ def connect_gestionar_tarjeta(
     Acciones soportadas: ``asignar``, ``activar``, ``desactivar``, ``marcar_perdida``.
     Scope requerido: ``connect:write``
     """
-    from apps.connect.models import Tarjeta  # noqa: PLC0415
+    from apps.connect.models import Perfil, Tarjeta  # noqa: PLC0415
     from apps.connect.services import (  # noqa: PLC0415
         ConnectError,
         activar_tarjeta,
         asignar_tarjeta,
         desactivar_tarjeta,
         marcar_tarjeta_perdida,
+        usuario_es_admin_empresa,
     )
+    from apps.core.models import CapabilityToken  # noqa: PLC0415
 
     empresa_str: str | None = None
     if empresa_id is not None and str(empresa_id) != "":
@@ -432,6 +434,21 @@ def connect_gestionar_tarjeta(
         tarjeta = Tarjeta.objects.select_related("perfil").filter(pk=tarjeta_uuid, id_empresa=empresa).first()
         if tarjeta is None:
             return {"error": "Tarjeta no encontrada en la empresa."}
+
+        token_obj = (
+            CapabilityToken.objects.select_related("creado_por")
+            .filter(token=capability_token, empresa=empresa, activo=True)
+            .first()
+        )
+        actor_usuario = token_obj.creado_por if token_obj is not None else None
+        actor_es_admin = True if actor_usuario is None else usuario_es_admin_empresa(actor_usuario, empresa.pk)
+        if actor_usuario is not None and not actor_es_admin:
+            if tarjeta.perfil is not None and tarjeta.perfil.usuario_id != actor_usuario.pk:
+                raise PermissionError("No tienes permiso para gestionar una tarjeta asignada a otro usuario.")
+            if accion_val == "asignar" and perfil_uuid is not None:
+                perfil_destino = Perfil.objects.filter(pk=perfil_uuid, id_empresa=empresa).first()
+                if perfil_destino is not None and perfil_destino.usuario_id != actor_usuario.pk:
+                    raise PermissionError("No tienes permiso para asignar una tarjeta al perfil de otro usuario.")
 
         try:
             if accion_val == "asignar":

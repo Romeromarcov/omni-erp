@@ -42,6 +42,7 @@ MODULO_ORIGEN_CONNECT = "connect"
 MODELO_ORIGEN_PREDICCION = "agentes.PrediccionAgente"
 
 _PRIORIDADES_VALIDAS = frozenset({"ALTA", "MEDIA", "BAJA"})
+_ACTIVIDADES_VALIDAS = frozenset({"LLAMADA", "WHATSAPP", "CORREO", "NOTA", "NINGUNA"})
 _CANALES_VALIDOS = frozenset({"WHATSAPP", "EMAIL", "LLAMADA", "NINGUNO"})
 _ACCIONES_VALIDAS = frozenset({"ENVIO_EXTERNO", "TAREA_INTERNA", "NO_CONTACTAR"})
 
@@ -565,14 +566,16 @@ def _refinar_calificador_con_llm(empresa, datos_lead: dict[str, Any], base: dict
         conf_raw = float(parsed.get("confianza", base["confianza"]))
         conf_final = max(0.0, min(1.0, conf_raw))
         siguiente = str(parsed.get("siguiente_actividad", base["siguiente_actividad"])).strip().upper()
-        razon = str(parsed.get("razonamiento", base["razonamiento"])).strip() or base["razonamiento"]
+        if siguiente not in _ACTIVIDADES_VALIDAS:
+            siguiente = base["siguiente_actividad"]
+        razon = (str(parsed.get("razonamiento", base["razonamiento"])).strip() or base["razonamiento"])[:1000]
         return {
             **base,
             "prioridad": prioridad,
             "score": score_final,
             "score_decimal": format(Decimal(score_final).quantize(Decimal("0.01")), ".2f"),
             "confianza": conf_final,
-            "siguiente_actividad": siguiente or base["siguiente_actividad"],
+            "siguiente_actividad": siguiente,
             "razonamiento": razon,
             "modelo_llm": str(resp.model or "llm"),
         }

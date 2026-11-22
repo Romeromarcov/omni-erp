@@ -21186,7 +21186,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-22T01:22:05.176527-04:00
+             * @default 2026-11-22T02:31:30.460439-04:00
              */
             fecha_despacho: string;
             /**
@@ -36352,6 +36352,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Sin permiso */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Tarjeta no encontrada */
             404: {
                 headers: {
@@ -36387,6 +36394,13 @@ export interface operations {
             };
             /** @description Datos o estado inválido */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin permiso */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -36428,6 +36442,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Sin permiso */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Tarjeta no encontrada */
             404: {
                 headers: {
@@ -36456,6 +36477,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Tarjeta"];
                 };
+            };
+            /** @description Sin permiso */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Tarjeta no encontrada */
             404: {

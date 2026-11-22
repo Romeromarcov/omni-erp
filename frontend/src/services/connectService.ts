@@ -416,7 +416,7 @@ export async function getTarjetaQrBlob(
   const accept = formato === 'png' ? 'image/png' : 'image/svg+xml';
   return fetchBlob(
     `/connect/tarjetas/${encodeURIComponent(tarjetaId)}/qr/?formato=${encodeURIComponent(formato)}`,
-    { headers: { Accept: accept } },
+    { headers: { Accept: `${accept}, application/json` } },
   );
 }
 
@@ -428,7 +428,7 @@ export async function getMiPerfilQrBlob(
   if (empresaId) qs.set('empresa_id', empresaId);
   const accept = formato === 'png' ? 'image/png' : 'image/svg+xml';
   return fetchBlob(`/connect/perfiles/mi-perfil/qr/?${qs.toString()}`, {
-    headers: { Accept: accept },
+    headers: { Accept: `${accept}, application/json` },
   });
 }
 

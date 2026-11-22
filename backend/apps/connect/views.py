@@ -9,6 +9,7 @@ from typing import Any
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import permissions, status
@@ -150,6 +151,22 @@ class VCardRenderer(BaseRenderer):
         return str(data or "").encode(self.charset)
 
 
+def _es_error_render_qr(data: Any, renderer_context: Any) -> bool:
+    if isinstance(data, (dict, list)):
+        return True
+    response = renderer_context.get("response") if isinstance(renderer_context, Mapping) else None
+    return bool(response is not None and getattr(response, "status_code", 200) >= 400)
+
+
+def _render_error_json_qr(data: Any, accepted_media_type: str | None, renderer_context: Any) -> bytes:
+    if isinstance(renderer_context, Mapping):
+        response = renderer_context.get("response")
+        if response is not None:
+            response["Content-Type"] = "application/json; charset=utf-8"
+            response.content_type = "application/json; charset=utf-8"
+    return JSONRenderer().render(data, "application/json", renderer_context)
+
+
 class SvgRenderer(BaseRenderer):
     """Permite negociación ``Accept: image/svg+xml`` en descargas QR."""
 
@@ -158,6 +175,8 @@ class SvgRenderer(BaseRenderer):
     charset = "utf-8"
 
     def render(self, data: Any, accepted_media_type: str | None = None, renderer_context: Any = None) -> bytes:
+        if _es_error_render_qr(data, renderer_context):
+            return _render_error_json_qr(data, accepted_media_type, renderer_context)
         if isinstance(data, bytes):
             return data
         if isinstance(data, str):
@@ -174,6 +193,8 @@ class PngRenderer(BaseRenderer):
     render_style = "binary"
 
     def render(self, data: Any, accepted_media_type: str | None = None, renderer_context: Any = None) -> bytes:
+        if _es_error_render_qr(data, renderer_context):
+            return _render_error_json_qr(data, accepted_media_type, renderer_context)
         if isinstance(data, bytes):
             return data
         return bytes(str(data or ""), "utf-8")
@@ -207,7 +228,12 @@ def _validar_request_sin_nul(request: Request, slug: str | None = None) -> None:
 
 
 def _validar_payload_sin_nul(data: Any, campo: str = "error") -> None:
-    if isinstance(data, Mapping):
+    if hasattr(data, "lists"):
+        for key, values in data.lists():
+            if "\x00" in str(key):
+                raise ValidationError({campo: "Parámetro inválido."})
+            _validar_payload_sin_nul(values, str(key))
+    elif isinstance(data, Mapping):
         for key, val in data.items():
             if "\x00" in str(key):
                 raise ValidationError({campo: "Parámetro inválido."})
@@ -787,8 +813,37 @@ class TarjetaViewSet(NulSafeFilterMixin, ActiveFilterMixin, BaseModelViewSet):
             validar_uuid_param(self.kwargs[lookup_url_kwarg], self.lookup_field)
         return super().get_object()
 
+    def _get_object_any_state(self) -> Tarjeta:
+        """Recupera una tarjeta visible del tenant sin exigir ``activo=True`` (permite reactivar/operar inactivas)."""
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        raw_pk = self.kwargs.get(lookup_url_kwarg, "")
+        pk_val = validar_uuid_param(raw_pk, self.lookup_field)
+        empresas = get_empresas_visible(self.request.user)
+        qs = Tarjeta.objects.filter(id_empresa__in=empresas).select_related("id_empresa", "perfil")
+        obj = get_object_or_404(qs, **{self.lookup_field: pk_val})
+        self.check_object_permissions(self.request, obj)
+        return obj
+
+    def _verificar_permisos_tarjeta(
+        self,
+        *,
+        empresa_id: uuid.UUID,
+        tarjeta: Tarjeta | None = None,
+        perfil_destino: Perfil | None = None,
+    ) -> None:
+        user = self.request.user
+        es_admin = usuario_es_admin_empresa(user, empresa_id)
+        if es_admin:
+            return
+        if tarjeta is not None and tarjeta.perfil is not None and str(tarjeta.perfil.usuario_id) != str(user.pk):
+            raise PermissionDenied("No tienes permiso para gestionar una tarjeta asignada a otro usuario.")
+        if perfil_destino is not None and str(perfil_destino.usuario_id) != str(user.pk):
+            raise PermissionDenied("No tienes permiso para asignar una tarjeta al perfil de otro usuario.")
+
     def _guardar_tarjeta_validada(self, instancia: Tarjeta) -> None:
         if instancia.estado == Tarjeta.Estado.ACTIVA:
+            if not instancia.activo:
+                raise ValidationError({"activo": "Una tarjeta activa no puede guardarse como inactiva."})
             if instancia.perfil is None or not instancia.perfil.activo:
                 raise ValidationError(
                     {"perfil": "Una tarjeta activa debe tener un perfil activo asignado en la misma empresa."}
@@ -810,6 +865,7 @@ class TarjetaViewSet(NulSafeFilterMixin, ActiveFilterMixin, BaseModelViewSet):
         perfil = data.get("perfil")
         if perfil is not None and (perfil.id_empresa_id != empresa.pk or not perfil.activo):
             raise ValidationError({"perfil": "El perfil debe estar activo y pertenecer a la misma empresa."})
+        self._verificar_permisos_tarjeta(empresa_id=empresa.pk, perfil_destino=perfil)
 
         instancia = Tarjeta(
             id_empresa=empresa,
@@ -832,11 +888,38 @@ class TarjetaViewSet(NulSafeFilterMixin, ActiveFilterMixin, BaseModelViewSet):
             nuevo_perfil = data["perfil"]
             if nuevo_perfil.id_empresa_id != instancia.id_empresa_id or not nuevo_perfil.activo:
                 raise ValidationError({"perfil": "El perfil debe estar activo y pertenecer a la misma empresa."})
+
+        self._verificar_permisos_tarjeta(
+            empresa_id=instancia.id_empresa_id,
+            tarjeta=instancia,
+            perfil_destino=data.get("perfil"),
+        )
+
+        if instancia.estado == Tarjeta.Estado.PERDIDA:
+            if "estado" in data and data["estado"] != instancia.estado:
+                raise ValidationError({"estado": "Una tarjeta marcada como PERDIDA no puede cambiar de estado."})
+            if "perfil" in data and data["perfil"] != instancia.perfil:
+                raise ValidationError({"perfil": "Una tarjeta marcada como PERDIDA no puede reasignarse."})
+            if "uid_chip" in data and data["uid_chip"] != instancia.uid_chip:
+                raise ValidationError(
+                    {"uid_chip": "No se puede modificar el UID de una tarjeta marcada como PERDIDA."}
+                )
+        elif "estado" in data and data["estado"] != instancia.estado:
+            raise ValidationError(
+                {
+                    "estado": (
+                        "Las transiciones de estado deben realizarse mediante las acciones "
+                        "asignar, activar, desactivar o marcar-perdida."
+                    )
+                }
+            )
+
         for campo, valor in data.items():
             setattr(instancia, campo, valor)
         self._guardar_tarjeta_validada(instancia)
 
     def perform_destroy(self, instance: Tarjeta) -> None:
+        self._verificar_permisos_tarjeta(empresa_id=instance.id_empresa_id, tarjeta=instance)
         if instance.estado != Tarjeta.Estado.PERDIDA:
             instance.estado = Tarjeta.Estado.DESACTIVADA
         instance.activo = False
@@ -846,14 +929,25 @@ class TarjetaViewSet(NulSafeFilterMixin, ActiveFilterMixin, BaseModelViewSet):
         method="post",
         operation_summary="Asigna una tarjeta física a un perfil activo (opcionalmente activándola)",
         request_body=TarjetaAsignarInputSerializer,
-        responses={200: TarjetaSerializer, 400: "Datos o estado inválido", 404: "Tarjeta no encontrada"},
+        responses={
+            200: TarjetaSerializer,
+            400: "Datos o estado inválido",
+            403: "Sin permiso",
+            404: "Tarjeta no encontrada",
+        },
     )
     @action(detail=True, methods=["post"], url_path="asignar")
     def asignar(self, request: Request, pk: str | None = None) -> Response:
-        tarjeta = self.get_object()
+        tarjeta = self._get_object_any_state()
         serializer = TarjetaAsignarInputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         datos = serializer.validated_data
+        perfil_destino = Perfil.objects.filter(pk=datos["perfil_id"], id_empresa_id=tarjeta.id_empresa_id).first()
+        self._verificar_permisos_tarjeta(
+            empresa_id=tarjeta.id_empresa_id,
+            tarjeta=tarjeta,
+            perfil_destino=perfil_destino,
+        )
         try:
             actualizada = asignar_tarjeta(
                 tarjeta,
@@ -869,11 +963,17 @@ class TarjetaViewSet(NulSafeFilterMixin, ActiveFilterMixin, BaseModelViewSet):
     @swagger_auto_schema(
         method="post",
         operation_summary="Activa una tarjeta física con perfil activo asignado",
-        responses={200: TarjetaSerializer, 400: "Estado o perfil inválido", 404: "Tarjeta no encontrada"},
+        responses={
+            200: TarjetaSerializer,
+            400: "Estado o perfil inválido",
+            403: "Sin permiso",
+            404: "Tarjeta no encontrada",
+        },
     )
     @action(detail=True, methods=["post"], url_path="activar")
     def activar(self, request: Request, pk: str | None = None) -> Response:
-        tarjeta = self.get_object()
+        tarjeta = self._get_object_any_state()
+        self._verificar_permisos_tarjeta(empresa_id=tarjeta.id_empresa_id, tarjeta=tarjeta)
         try:
             actualizada = activar_tarjeta(tarjeta)
         except ConnectError as exc:
@@ -885,11 +985,12 @@ class TarjetaViewSet(NulSafeFilterMixin, ActiveFilterMixin, BaseModelViewSet):
     @swagger_auto_schema(
         method="post",
         operation_summary="Desactiva una tarjeta física bloqueando su acceso público",
-        responses={200: TarjetaSerializer, 400: "Estado inválido", 404: "Tarjeta no encontrada"},
+        responses={200: TarjetaSerializer, 400: "Estado inválido", 403: "Sin permiso", 404: "Tarjeta no encontrada"},
     )
     @action(detail=True, methods=["post"], url_path="desactivar")
     def desactivar(self, request: Request, pk: str | None = None) -> Response:
-        tarjeta = self.get_object()
+        tarjeta = self._get_object_any_state()
+        self._verificar_permisos_tarjeta(empresa_id=tarjeta.id_empresa_id, tarjeta=tarjeta)
         try:
             actualizada = desactivar_tarjeta(tarjeta)
         except ConnectError as exc:
@@ -901,11 +1002,12 @@ class TarjetaViewSet(NulSafeFilterMixin, ActiveFilterMixin, BaseModelViewSet):
     @swagger_auto_schema(
         method="post",
         operation_summary="Marca una tarjeta como PERDIDA revocando inmediatamente su acceso público",
-        responses={200: TarjetaSerializer, 404: "Tarjeta no encontrada"},
+        responses={200: TarjetaSerializer, 403: "Sin permiso", 404: "Tarjeta no encontrada"},
     )
     @action(detail=True, methods=["post"], url_path="marcar-perdida")
     def marcar_perdida(self, request: Request, pk: str | None = None) -> Response:
-        tarjeta = self.get_object()
+        tarjeta = self._get_object_any_state()
+        self._verificar_permisos_tarjeta(empresa_id=tarjeta.id_empresa_id, tarjeta=tarjeta)
         try:
             actualizada = marcar_tarjeta_perdida(tarjeta)
         except ConnectError as exc:
@@ -935,7 +1037,7 @@ class TarjetaViewSet(NulSafeFilterMixin, ActiveFilterMixin, BaseModelViewSet):
         renderer_classes=[JSONRenderer, SvgRenderer, PngRenderer],
     )
     def qr(self, request: Request, pk: str | None = None) -> HttpResponse | Response:
-        tarjeta = self.get_object()
+        tarjeta = self._get_object_any_state()
         if tarjeta.perfil is None:
             return domain_error_response(
                 ConnectError("La tarjeta debe tener un perfil asignado para generar su código QR."),

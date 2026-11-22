@@ -94,8 +94,13 @@ def _obtener_matriz_qr(contenido: str) -> list[list[bool]]:
 def _validar_dimensiones(scale: int, border: int) -> tuple[int, int]:
     if isinstance(scale, bool) or isinstance(border, bool):
         raise ConnectError("Los parámetros 'scale' y 'border' deben ser enteros.")
-    scale_int = max(_SCALE_MIN, min(int(scale), _SCALE_MAX))
-    border_int = max(_BORDER_MIN, min(int(border), _BORDER_MAX))
+    try:
+        scale_val = int(scale)
+        border_val = int(border)
+    except (TypeError, ValueError) as exc:
+        raise ConnectError("Los parámetros 'scale' y 'border' deben ser enteros.") from exc
+    scale_int = max(_SCALE_MIN, min(scale_val, _SCALE_MAX))
+    border_int = max(_BORDER_MIN, min(border_val, _BORDER_MAX))
     return scale_int, border_int
 
 

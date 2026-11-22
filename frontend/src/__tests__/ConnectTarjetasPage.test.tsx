@@ -324,10 +324,10 @@ describe('ConnectTarjetasPage', () => {
     const img = await within(qrDialog).findByAltText(/vista previa qr tarjeta 04DEADBEEF/i);
     expect(img).toHaveAttribute('src', 'blob:mock-qr-1');
     expect(fetchBlob).toHaveBeenCalledWith('/connect/tarjetas/tarj-2/qr/?formato=svg', {
-      headers: { Accept: 'image/svg+xml' },
+      headers: { Accept: 'image/svg+xml, application/json' },
     });
 
-    // Descargar SVG (reutiliza previewUrl) y descargar PNG (fetchBlob png + revoca tempUrl)
+    // Descargar SVG (reutiliza previewUrl) y descargar PNG (fetchBlob png + revoca tempUrl diferido)
     fireEvent.click(within(qrDialog).getByRole('button', { name: /descargar svg/i }));
     expect(clickSpy).toHaveBeenCalledTimes(1);
 
@@ -335,11 +335,16 @@ describe('ConnectTarjetasPage', () => {
     fireEvent.click(within(qrDialog).getByRole('button', { name: /descargar png/i }));
     await waitFor(() => {
       expect(fetchBlob).toHaveBeenCalledWith('/connect/tarjetas/tarj-2/qr/?formato=png', {
-        headers: { Accept: 'image/png' },
+        headers: { Accept: 'image/png, application/json' },
       });
     });
     expect(clickSpy).toHaveBeenCalledTimes(2);
-    expect(revokeObjectUrlMock).toHaveBeenCalledWith('blob:mock-qr-2');
+    await waitFor(
+      () => {
+        expect(revokeObjectUrlMock).toHaveBeenCalledWith('blob:mock-qr-2');
+      },
+      { timeout: 2000 },
+    );
 
     // Cambiar vista previa a PNG revoca el URL anterior
     vi.mocked(fetchBlob).mockResolvedValueOnce(new Blob(['png-preview'], { type: 'image/png' }));
@@ -368,7 +373,7 @@ describe('ConnectTarjetasPage', () => {
     const qrPerfilDialog = screen.getByRole('dialog');
     expect(await within(qrPerfilDialog).findByText('Aún no tienes perfil')).toBeInTheDocument();
     expect(fetchBlob).toHaveBeenCalledWith('/connect/perfiles/mi-perfil/qr/?formato=svg&empresa_id=emp-1', {
-      headers: { Accept: 'image/svg+xml' },
+      headers: { Accept: 'image/svg+xml, application/json' },
     });
 
     // Cambiar a PNG dispara segundo intento exitoso y luego desmontamos el árbol completo
@@ -380,8 +385,24 @@ describe('ConnectTarjetasPage', () => {
     expect(revokeObjectUrlMock).toHaveBeenCalledWith('blob:mock-qr-4');
   });
 
-  it('monta /connect/tarjetas a través de connectRoutes', async () => {
-    vi.mocked(get).mockResolvedValue([]);
+  it('monta /connect/tarjetas a través de connectRoutes y filtra perfil inactivo al abrir asignación', async () => {
+    const tarjetaConPerfilInactivo: ConnectTarjeta = {
+      ...tarjetaActiva,
+      id_tarjeta: 'tarj-inact-perf',
+      perfil: 'perf-inactivo',
+      perfil_slug: 'viejo',
+      perfil_nombre: 'Inactivo',
+      estado: 'DESACTIVADA',
+    };
+    vi.mocked(get).mockImplementation(async (url: string) => {
+      if (url.startsWith('/connect/perfiles/')) {
+        return [
+          ...perfilesFixture,
+          { ...perfilesFixture[0], id_perfil: 'perf-inactivo', activo: false },
+        ];
+      }
+      return [tarjetaConPerfilInactivo];
+    });
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
       <QueryClientProvider client={qc}>
@@ -391,5 +412,10 @@ describe('ConnectTarjetasPage', () => {
       </QueryClientProvider>,
     );
     expect(await screen.findByRole('heading', { name: /tarjetas nfc y códigos qr/i })).toBeInTheDocument();
+    const fila = (await screen.findByText('04DEADBEEF')).closest('tr')!;
+    fireEvent.click(within(fila).getByRole('button', { name: /asignar/i }));
+    const dialog = screen.getByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: /guardar asignación/i }));
+    expect(await within(dialog).findByText(/selecciona un perfil activo/i)).toBeInTheDocument();
   });
 });

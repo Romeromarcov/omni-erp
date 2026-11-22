@@ -8064,6 +8064,9 @@
                     "400": {
                         "description": "Estado o perfil inválido"
                     },
+                    "403": {
+                        "description": "Sin permiso"
+                    },
                     "404": {
                         "description": "Tarjeta no encontrada"
                     }
@@ -8107,6 +8110,9 @@
                     },
                     "400": {
                         "description": "Datos o estado inválido"
+                    },
+                    "403": {
+                        "description": "Sin permiso"
                     },
                     "404": {
                         "description": "Tarjeta no encontrada"
@@ -8152,6 +8158,9 @@
                     "400": {
                         "description": "Estado inválido"
                     },
+                    "403": {
+                        "description": "Sin permiso"
+                    },
                     "404": {
                         "description": "Tarjeta no encontrada"
                     }
@@ -8192,6 +8201,9 @@
                         "schema": {
                             "$ref": "#/definitions/Tarjeta"
                         }
+                    },
+                    "403": {
+                        "description": "Sin permiso"
                     },
                     "404": {
                         "description": "Tarjeta no encontrada"
@@ -61421,7 +61433,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-22T01:22:05.176527-04:00"
+                    "default": "2026-11-22T02:31:30.460439-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",

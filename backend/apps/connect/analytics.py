@@ -109,25 +109,33 @@ def obtener_analiticas_connect(
     perfil_uuid = _parse_perfil_id(perfil_id)
 
     hoy = timezone.localdate()
-    if fecha_desde is None and fecha_hasta is None:
-        fecha_hasta = hoy
-        fecha_desde = fecha_hasta - timedelta(days=dias_norm - 1)
-    elif fecha_desde is not None and fecha_hasta is None:
-        fecha_hasta = hoy
-    elif fecha_desde is None and fecha_hasta is not None:
-        fecha_desde = fecha_hasta - timedelta(days=dias_norm - 1)
+    try:
+        if fecha_desde is None and fecha_hasta is None:
+            fecha_hasta = hoy
+            fecha_desde = fecha_hasta - timedelta(days=dias_norm - 1)
+        elif fecha_desde is not None and fecha_hasta is None:
+            fecha_hasta = hoy
+        elif fecha_desde is None and fecha_hasta is not None:
+            fecha_desde = fecha_hasta - timedelta(days=dias_norm - 1)
+    except OverflowError as exc:
+        raise ConnectError("Rango de fechas fuera de los límites permitidos.") from exc
 
     assert fecha_desde is not None and fecha_hasta is not None  # noqa: S101 — narrowing para mypy
     if fecha_desde > fecha_hasta:
         raise ConnectError("La fecha 'desde' no puede ser posterior a 'hasta'.")
+    if (fecha_hasta - fecha_desde).days > _DIAS_MAX:
+        raise ConnectError(f"El rango de fechas no puede exceder {_DIAS_MAX} días.")
 
     if perfil_uuid is not None:
         if not Perfil.objects.filter(pk=perfil_uuid, id_empresa=empresa).exists():
             raise PerfilNoEncontradoError("Perfil no encontrado en la empresa.")
 
     tz = timezone.get_current_timezone()
-    inicio_dt = timezone.make_aware(datetime.combine(fecha_desde, time.min), tz)
-    fin_dt = timezone.make_aware(datetime.combine(fecha_hasta + timedelta(days=1), time.min), tz)
+    try:
+        inicio_dt = timezone.make_aware(datetime.combine(fecha_desde, time.min), tz)
+        fin_dt = timezone.make_aware(datetime.combine(fecha_hasta + timedelta(days=1), time.min), tz)
+    except OverflowError as exc:
+        raise ConnectError("Rango de fechas fuera de los límites permitidos.") from exc
 
     toques_qs = Toque.objects.filter(
         id_empresa=empresa,
