@@ -11,6 +11,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from .serializers_conciliacion_pagos import (
     AsignacionPagoSerializer,
@@ -1759,7 +1760,7 @@ def _serializar_tasa_meta_json(meta: dict | None) -> dict | None:
     }
 
 
-class EquivalenciasTrimonetariasView(viewsets.views.APIView):
+class EquivalenciasTrimonetariasView(APIView):
     """Calcula equivalencias simultáneas Base + País/Fiscal (BCV) + Referencia."""
 
     permission_classes = [IsAuthenticated]

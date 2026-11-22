@@ -80,7 +80,7 @@ def _aplicar_filtros_tipo(
     solo_oficial_fiscal: bool,
 ) -> Any:
     if solo_oficial_fiscal:
-        qs = qs.filter(Q(id_tipo_tasa__es_oficial_fiscal=True) | Q(tipo_tasa="OFICIAL_BCV"))
+        qs = qs.filter(Q(id_tipo_tasa__es_oficial_fiscal=True) | Q(id_tipo_tasa__isnull=True, tipo_tasa="OFICIAL_BCV"))
     if codigo_upper:
         qs = qs.filter(Q(id_tipo_tasa__codigo=codigo_upper) | Q(tipo_tasa=codigo_upper))
     return qs
@@ -218,13 +218,13 @@ def obtener_tasa_por_tipo(
     )
 
 
-def _serializar_meta_tasa(tasa: TasaCambio, *, solo_oficial_fiscal: bool = False) -> dict[str, Any]:
-    tipo_codigo = tasa.id_tipo_tasa.codigo if tasa.id_tipo_tasa_id and tasa.id_tipo_tasa else tasa.tipo_tasa
-    es_oficial = bool(
-        solo_oficial_fiscal
-        or (tasa.id_tipo_tasa_id and tasa.id_tipo_tasa and tasa.id_tipo_tasa.es_oficial_fiscal)
-        or tasa.tipo_tasa == "OFICIAL_BCV"
-    )
+def _serializar_meta_tasa(tasa: TasaCambio) -> dict[str, Any]:
+    if tasa.id_tipo_tasa_id and tasa.id_tipo_tasa is not None:
+        tipo_codigo = tasa.id_tipo_tasa.codigo
+        es_oficial = bool(tasa.id_tipo_tasa.es_oficial_fiscal)
+    else:
+        tipo_codigo = tasa.tipo_tasa
+        es_oficial = tasa.tipo_tasa == "OFICIAL_BCV"
     return {
         "valor_tasa": tasa.valor_tasa.quantize(_OCHO_DECIMALES, rounding=ROUND_HALF_UP),
         "tipo_tasa": tipo_codigo,
@@ -255,7 +255,7 @@ def _convertir_con_tasa(
         solo_oficial_fiscal=solo_oficial_fiscal,
     )
     monto_convertido = (monto * tasa.valor_tasa).quantize(_CUATRO_DECIMALES, rounding=ROUND_HALF_UP)
-    return monto_convertido, _serializar_meta_tasa(tasa, solo_oficial_fiscal=solo_oficial_fiscal)
+    return monto_convertido, _serializar_meta_tasa(tasa)
 
 
 def calcular_equivalencias_trimonetarias(
@@ -280,6 +280,8 @@ def calcular_equivalencias_trimonetarias(
         monto_dec = Decimal(str(monto))
     except (InvalidOperation, ValueError, TypeError) as exc:
         raise ValueError("El monto debe ser un número decimal válido.") from exc
+    if not monto_dec.is_finite():
+        raise ValueError("El monto debe ser un número finito.")
     if monto_dec < _CERO:
         raise ValueError("El monto a convertir no puede ser negativo.")
     monto_dec = monto_dec.quantize(_CUATRO_DECIMALES, rounding=ROUND_HALF_UP)

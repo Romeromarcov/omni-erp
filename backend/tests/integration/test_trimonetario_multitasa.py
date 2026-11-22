@@ -460,3 +460,94 @@ class TestEquivalenciasAPIyMCP:
         assert eq["monto_pais_fiscal"] == Decimal("88889.0000")
         assert eq["monto_referencia"] == Decimal("102.0000")
         assert eq["moneda_referencia_iso"] == "USDT"
+        assert isinstance(eq["tasa_pais_fiscal"]["fecha_tasa"], str)
+
+        # Byte NUL rechazado de forma controlada (R-CODE-8)
+        err_nul = finanzas_calcular_equivalencias_trimonetarias(
+            str(token.token),
+            str(empresa_trimonetaria.id_empresa),
+            "10.00",
+            "USD\x00",
+        )
+        assert "inválidos" in err_nul["error"]
+
+    def test_hardening_r1_idor_fiscal_y_nan(
+        self, client_a, user_a, empresa_trimonetaria, empresa_b, moneda_usd, moneda_ves, escenario_tasas_ve
+    ):
+        # 1. IDOR en MonedaEmpresaActivaSerializer: moneda privada de B rechazada para A
+        moneda_privada_b = Moneda.objects.create(
+            codigo_iso="PRVX",
+            nombre="Privada X",
+            simbolo="PX",
+            tipo_moneda="crypto",
+            es_generica=False,
+            es_publica=False,
+            empresa=empresa_b,
+        )
+        resp_idor = client_a.post(
+            "/api/finanzas/monedas-empresa-activas/",
+            {
+                "empresa": str(empresa_trimonetaria.id_empresa),
+                "moneda": str(moneda_privada_b.id_moneda),
+                "activa": True,
+            },
+            format="json",
+        )
+        assert resp_idor.status_code == 400
+        assert "moneda" in resp_idor.json()
+
+        # 2. Usuario de empresa no puede crear TipoTasaCambio con es_oficial_fiscal=True
+        resp_fiscal_flag = client_a.post(
+            "/api/finanzas/tipos-tasa-cambio/",
+            {"codigo": "FAKE_BCV", "nombre": "Fake BCV", "es_oficial_fiscal": True},
+            format="json",
+        )
+        assert resp_fiscal_flag.status_code == 400
+
+        # 3. TasaCambio rechaza id_tipo_tasa no fiscal marcado manualmente como OFICIAL_BCV
+        resp_bypass = client_a.post(
+            "/api/finanzas/tasas-cambio/",
+            {
+                "id_empresa": str(empresa_trimonetaria.id_empresa),
+                "id_moneda_origen": str(moneda_usd.id_moneda),
+                "id_moneda_destino": str(moneda_ves.id_moneda),
+                "id_tipo_tasa": str(escenario_tasas_ve["tipo_usdt"].id_tipo_tasa),
+                "tipo_tasa": "OFICIAL_BCV",
+                "valor_tasa": "1350.00000000",
+                "fecha_tasa": escenario_tasas_ve["fecha"].isoformat(),
+            },
+            format="json",
+        )
+        assert resp_bypass.status_code == 400
+
+        # 4. PATCH con tipo_tasa vacío sin id_tipo_tasa rechazado
+        tasa_propia = TasaCambio.objects.create(
+            id_empresa=empresa_trimonetaria,
+            id_moneda_origen=moneda_usd,
+            id_moneda_destino=moneda_ves,
+            tipo_tasa="FIJA",
+            valor_tasa=Decimal("900.00000000"),
+            fecha_tasa=escenario_tasas_ve["fecha"],
+        )
+        resp_patch_vacio = client_a.patch(
+            f"/api/finanzas/tasas-cambio/{tasa_propia.id_tasa_cambio}/",
+            {"tipo_tasa": ""},
+            format="json",
+        )
+        assert resp_patch_vacio.status_code == 400
+
+        # 5. NaN / Infinity rechazados como ValueError limpio
+        with pytest.raises(ValueError, match="finito"):
+            calcular_equivalencias_trimonetarias(
+                Decimal("NaN"),
+                "USD",
+                empresa=empresa_trimonetaria,
+                fecha=escenario_tasas_ve["fecha"],
+            )
+        with pytest.raises(ValueError, match="finito"):
+            calcular_equivalencias_trimonetarias(
+                Decimal("Infinity"),
+                "USD",
+                empresa=empresa_trimonetaria,
+                fecha=escenario_tasas_ve["fecha"],
+            )

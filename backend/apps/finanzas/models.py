@@ -139,6 +139,14 @@ class TipoTasaCambio(OmniBaseModel):
 
 
 class TasaCambio(models.Model):
+    TIPO_TASA_CHOICES = [
+        ("OFICIAL_BCV", "Oficial BCV"),
+        ("ESPECIAL_USUARIO", "Especial Usuario"),
+        ("PROMEDIO_MERCADO", "Promedio Mercado"),
+        ("FIJA", "Fija"),
+        ("PERSONALIZADA", "Personalizada"),
+    ]
+
     id_tasa_cambio = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey(
         "core.Empresa",
@@ -159,13 +167,7 @@ class TasaCambio(models.Model):
     )
     tipo_tasa = models.CharField(
         max_length=40,
-        choices=[
-            ("OFICIAL_BCV", "Oficial BCV"),
-            ("ESPECIAL_USUARIO", "Especial Usuario"),
-            ("PROMEDIO_MERCADO", "Promedio Mercado"),
-            ("FIJA", "Fija"),
-            ("PERSONALIZADA", "Personalizada"),
-        ],
+        choices=TIPO_TASA_CHOICES,
     )
     valor_tasa = models.DecimalField(max_digits=18, decimal_places=8)
     fecha_tasa = models.DateField()

@@ -81,7 +81,10 @@ class MetodoPagoEmpresaActivaSerializer(serializers.ModelSerializer):
 
 
 from django.db import transaction
+from django.db.models import Q
 from rest_framework import serializers
+
+from apps.core.models import Empresa
 
 from .models import (
     CuentaBancariaEmpresa,
@@ -206,7 +209,7 @@ class TipoTasaCambioSerializer(serializers.ModelSerializer):
     """Serializer para tipos de tasa de cambio extensibles por empresa o globales."""
 
     id_empresa = serializers.PrimaryKeyRelatedField(
-        queryset=Moneda._meta.get_field("empresa").related_model.objects.all(),
+        queryset=Empresa.objects.all(),
         required=False,
         allow_null=True,
     )
@@ -238,12 +241,18 @@ class TipoTasaCambioSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         user = getattr(request, "user", None) if request else None
         es_super = bool(getattr(user, "es_superusuario_omni", False))
+        inst = self.instance if isinstance(self.instance, TipoTasaCambio) else None
 
-        if self.instance is not None and self.instance.id_empresa_id is None and not es_super:
+        if inst is not None and inst.id_empresa_id is None and not es_super:
             raise serializers.ValidationError("No tiene permiso para modificar un tipo de tasa global del sistema.")
 
-        if self.instance is not None:
-            empresa = self.instance.id_empresa
+        if not es_super and attrs.get("es_oficial_fiscal"):
+            raise serializers.ValidationError(
+                {"es_oficial_fiscal": "Solo un superusuario puede marcar un tipo de tasa como oficial/fiscal."}
+            )
+
+        if inst is not None:
+            empresa = inst.id_empresa
             if es_super and "id_empresa" in attrs:
                 empresa = attrs["id_empresa"]
         else:
@@ -258,12 +267,12 @@ class TipoTasaCambioSerializer(serializers.ModelSerializer):
                         {"id_empresa": "El usuario no tiene una empresa visible asignada."}
                     )
 
-        codigo = attrs.get("codigo", getattr(self.instance, "codigo", ""))
+        codigo = attrs.get("codigo", inst.codigo if inst is not None else "")
         codigo = (codigo or "").strip().upper()
         if codigo:
             qs = TipoTasaCambio.objects.filter(codigo=codigo, id_empresa=empresa)
-            if self.instance is not None:
-                qs = qs.exclude(pk=self.instance.pk)
+            if inst is not None:
+                qs = qs.exclude(pk=inst.pk)
             if qs.exists():
                 raise serializers.ValidationError(
                     {"codigo": f"Ya existe un tipo de tasa con el código '{codigo}' para este alcance."}
@@ -297,7 +306,7 @@ class TasaCambioSerializer(serializers.ModelSerializer):
     tipo_tasa_codigo = serializers.SerializerMethodField()
     tipo_tasa_nombre = serializers.CharField(source="id_tipo_tasa.nombre", read_only=True)
     tipo_tasa = serializers.ChoiceField(
-        choices=TasaCambio._meta.get_field("tipo_tasa").choices,
+        choices=TasaCambio.TIPO_TASA_CHOICES,
         required=False,
         allow_blank=True,
     )
@@ -310,22 +319,47 @@ class TasaCambioSerializer(serializers.ModelSerializer):
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         request = self.context.get("request")
         user = getattr(request, "user", None) if request else None
-        tipo_obj = attrs.get("id_tipo_tasa", getattr(self.instance, "id_tipo_tasa", None))
+        inst = self.instance if isinstance(self.instance, TasaCambio) else None
+        tipo_obj = attrs.get("id_tipo_tasa", inst.id_tipo_tasa if inst is not None else None)
+        tasa_empresa = attrs.get("id_empresa", inst.id_empresa if inst is not None else None)
 
-        if tipo_obj is not None and user is not None and not getattr(user, "es_superusuario_omni", False):
-            from apps.core.viewsets import get_empresas_visible
+        if tipo_obj is not None:
+            if user is not None and not getattr(user, "es_superusuario_omni", False):
+                from apps.core.viewsets import get_empresas_visible
 
-            if tipo_obj.id_empresa_id is not None and tipo_obj.id_empresa_id not in set(
-                get_empresas_visible(user).values_list("id_empresa", flat=True)
+                if tipo_obj.id_empresa_id is not None and tipo_obj.id_empresa_id not in set(
+                    get_empresas_visible(user).values_list("id_empresa", flat=True)
+                ):
+                    raise serializers.ValidationError({"id_tipo_tasa": "El tipo de tasa no pertenece a su empresa."})
+            if (
+                tasa_empresa is not None
+                and tipo_obj.id_empresa_id is not None
+                and tipo_obj.id_empresa_id != tasa_empresa.pk
             ):
-                raise serializers.ValidationError({"id_tipo_tasa": "El tipo de tasa no pertenece a su empresa."})
+                raise serializers.ValidationError(
+                    {"id_tipo_tasa": "El tipo de tasa no pertenece a la empresa de la tasa de cambio."}
+                )
 
+        tipo_legacy_presente = "tipo_tasa" in attrs
         tipo_legacy = attrs.get("tipo_tasa")
-        if tipo_obj is not None and not tipo_legacy:
-            codigo = (tipo_obj.codigo or "").strip().upper()
-            attrs["tipo_tasa"] = codigo if codigo in _TIPOS_TASA_LEGACY_VALIDOS else "PERSONALIZADA"
-        elif self.instance is None and not tipo_legacy and tipo_obj is None:
-            raise serializers.ValidationError({"tipo_tasa": "Debe especificar tipo_tasa o id_tipo_tasa."})
+        if tipo_obj is not None:
+            if tipo_legacy == "OFICIAL_BCV" and not tipo_obj.es_oficial_fiscal:
+                raise serializers.ValidationError(
+                    {"tipo_tasa": "Un tipo de tasa no oficial/fiscal no puede marcarse como OFICIAL_BCV."}
+                )
+            if not tipo_legacy:
+                codigo = (tipo_obj.codigo or "").strip().upper()
+                if codigo == "OFICIAL_BCV" and tipo_obj.es_oficial_fiscal:
+                    attrs["tipo_tasa"] = "OFICIAL_BCV"
+                elif codigo in _TIPOS_TASA_LEGACY_VALIDOS and codigo != "OFICIAL_BCV":
+                    attrs["tipo_tasa"] = codigo
+                else:
+                    attrs["tipo_tasa"] = "PERSONALIZADA"
+        else:
+            if tipo_legacy_presente and not tipo_legacy:
+                raise serializers.ValidationError({"tipo_tasa": "Debe especificar tipo_tasa o id_tipo_tasa."})
+            if inst is None and not tipo_legacy:
+                raise serializers.ValidationError({"tipo_tasa": "Debe especificar tipo_tasa o id_tipo_tasa."})
         return attrs
 
     class Meta:
@@ -979,33 +1013,60 @@ class MonedaEmpresaActivaSerializer(serializers.ModelSerializer):
                 activa=True,
             ).exclude(pk=instancia.pk).update(es_moneda_referencia=False)
 
-    def create(self, validated_data):
-        # Asignar empresa si no viene en el payload (opcional, según tu lógica)
-        request = self.context.get("request")
-        if request and not validated_data.get("empresa"):
-            user = request.user
-            empresas = getattr(user, "empresas", None)
-            if empresas and empresas.exists():
-                validated_data["empresa"] = empresas.first()
+    def _resolver_moneda_visible(self, moneda_uuid, empresa):
+        from .models import Moneda
 
-        # Obtener la instancia de Moneda usando el UUID recibido
+        request = self.context.get("request")
+        user = getattr(request, "user", None) if request else None
+        qs = Moneda.objects.filter(id_moneda=moneda_uuid)
+        if user is not None and getattr(user, "is_authenticated", False):
+            if not getattr(user, "es_superusuario_omni", False):
+                from apps.core.viewsets import get_empresas_visible
+
+                qs = qs.filter(
+                    Q(es_generica=True)
+                    | Q(es_publica=True)
+                    | Q(empresa__isnull=True)
+                    | Q(empresa__in=get_empresas_visible(user))
+                )
+        elif empresa is not None:
+            qs = qs.filter(Q(es_generica=True) | Q(es_publica=True) | Q(empresa__isnull=True) | Q(empresa=empresa))
+        else:
+            qs = qs.filter(Q(es_generica=True) | Q(es_publica=True) | Q(empresa__isnull=True))
+
+        moneda = qs.first()
+        if moneda is None:
+            raise serializers.ValidationError({"moneda": "Moneda no encontrada"})
+        return moneda
+
+    def create(self, validated_data):
+        # Asignar empresa si no viene en el payload (usando empresa primaria del usuario)
+        request = self.context.get("request")
+        user = getattr(request, "user", None) if request else None
+        if not validated_data.get("empresa") and user is not None and getattr(user, "is_authenticated", False):
+            from apps.core.viewsets import get_empresa_primaria
+
+            primaria = get_empresa_primaria(user)
+            if primaria is not None:
+                validated_data["empresa"] = primaria
+
+        empresa = validated_data.get("empresa")
+        if empresa is None:
+            raise serializers.ValidationError({"empresa": "Debe especificar una empresa válida."})
+
+        # Obtener la instancia de Moneda visible usando el UUID recibido
         moneda_value = validated_data.pop("moneda", None)
         if isinstance(moneda_value, dict) and "id_moneda" in moneda_value:
             moneda_uuid = moneda_value["id_moneda"]
         else:
             moneda_uuid = moneda_value
         if moneda_uuid:
-            from .models import Moneda
-
-            try:
-                validated_data["moneda"] = Moneda.objects.get(id_moneda=moneda_uuid)
-            except Moneda.DoesNotExist:
-                raise serializers.ValidationError({"moneda": "Moneda no encontrada"})
+            validated_data["moneda"] = self._resolver_moneda_visible(moneda_uuid, empresa)
 
         with transaction.atomic():
             if validated_data.get("es_moneda_referencia") and validated_data.get("activa", True):
                 MonedaEmpresaActiva.objects.filter(
-                    empresa=validated_data["empresa"],
+                    empresa=empresa,
                     es_moneda_referencia=True,
                     activa=True,
                 ).update(es_moneda_referencia=False)
@@ -1014,25 +1075,21 @@ class MonedaEmpresaActivaSerializer(serializers.ModelSerializer):
             return instancia
 
     def update(self, instance, validated_data):
+        target_empresa = validated_data.get("empresa", instance.empresa)
         moneda_value = validated_data.pop("moneda", None)
         if isinstance(moneda_value, dict) and "id_moneda" in moneda_value:
             moneda_uuid = moneda_value["id_moneda"]
         else:
             moneda_uuid = moneda_value
         if moneda_uuid:
-            from .models import Moneda
-
-            try:
-                validated_data["moneda"] = Moneda.objects.get(id_moneda=moneda_uuid)
-            except Moneda.DoesNotExist:
-                raise serializers.ValidationError({"moneda": "Moneda no encontrada"})
+            validated_data["moneda"] = self._resolver_moneda_visible(moneda_uuid, target_empresa)
 
         with transaction.atomic():
             nuevo_ref = validated_data.get("es_moneda_referencia", instance.es_moneda_referencia)
             nuevo_activa = validated_data.get("activa", instance.activa)
             if nuevo_ref and nuevo_activa:
                 MonedaEmpresaActiva.objects.filter(
-                    empresa=instance.empresa,
+                    empresa=target_empresa,
                     es_moneda_referencia=True,
                     activa=True,
                 ).exclude(pk=instance.pk).update(es_moneda_referencia=False)
