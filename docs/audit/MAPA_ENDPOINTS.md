@@ -993,8 +993,12 @@
 | `^pedidos\.(?P<format>[a-z0-9]+)/?$` | PedidoViewSet | Pedido | ✅ | ✅ | IsAuthenticated |
 | `^perfiles/$` | PerfilViewSet | Perfil | ✅ | ✅ | IsAuthenticated |
 | `^perfiles/(?P<pk>[^/.]+)/$` | PerfilViewSet | Perfil | ✅ | ✅ | IsAuthenticated |
+| `^perfiles/(?P<pk>[^/.]+)/qr/$` | PerfilViewSet | Perfil | ✅ | ✅ | IsAuthenticated |
+| `^perfiles/(?P<pk>[^/.]+)/qr\.(?P<format>[a-z0-9]+)/?$` | PerfilViewSet | Perfil | ✅ | ✅ | IsAuthenticated |
 | `^perfiles/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PerfilViewSet | Perfil | ✅ | ✅ | IsAuthenticated |
 | `^perfiles/mi-perfil/$` | PerfilViewSet | Perfil | ✅ | ✅ | IsAuthenticated |
+| `^perfiles/mi-perfil/qr/$` | PerfilViewSet | Perfil | ✅ | ✅ | IsAuthenticated |
+| `^perfiles/mi-perfil/qr\.(?P<format>[a-z0-9]+)/?$` | PerfilViewSet | Perfil | ✅ | ✅ | IsAuthenticated |
 | `^perfiles/mi-perfil\.(?P<format>[a-z0-9]+)/?$` | PerfilViewSet | Perfil | ✅ | ✅ | IsAuthenticated |
 | `^perfiles\.(?P<format>[a-z0-9]+)/?$` | PerfilViewSet | Perfil | ✅ | ✅ | IsAuthenticated |
 | `^periodos-contables/$` | PeriodoContableViewSet | PeriodoContable | ✅ | ✅ | IsAuthenticated |
@@ -1090,10 +1094,14 @@
 | `^predicciones/analizar-personalizacion\.(?P<format>[a-z0-9]+)/?$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
 | `^predicciones/analizar-reorden/$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
 | `^predicciones/analizar-reorden\.(?P<format>[a-z0-9]+)/?$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
+| `^predicciones/calificar-lead-connect/$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
+| `^predicciones/calificar-lead-connect\.(?P<format>[a-z0-9]+)/?$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
 | `^predicciones/clasificar-gasto/$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
 | `^predicciones/clasificar-gasto\.(?P<format>[a-z0-9]+)/?$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
 | `^predicciones/metricas-clasificador/$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
 | `^predicciones/metricas-clasificador\.(?P<format>[a-z0-9]+)/?$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
+| `^predicciones/proponer-seguimiento-connect/$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
+| `^predicciones/proponer-seguimiento-connect\.(?P<format>[a-z0-9]+)/?$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
 | `^predicciones/sugerencias-activas/$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
 | `^predicciones/sugerencias-activas\.(?P<format>[a-z0-9]+)/?$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
 | `^predicciones\.(?P<format>[a-z0-9]+)/?$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
@@ -1337,6 +1345,20 @@
 | `^suscripciones/activa/$` | SuscripcionViewSet | Suscripcion | ✅ | ✅ | IsAuthenticated |
 | `^suscripciones/activa\.(?P<format>[a-z0-9]+)/?$` | SuscripcionViewSet | Suscripcion | ✅ | ✅ | IsAuthenticated |
 | `^suscripciones\.(?P<format>[a-z0-9]+)/?$` | SuscripcionViewSet | Suscripcion | ✅ | ✅ | IsAuthenticated |
+| `^tarjetas/$` | TarjetaViewSet | Tarjeta | ✅ | ✅ | IsAuthenticated |
+| `^tarjetas/(?P<pk>[^/.]+)/$` | TarjetaViewSet | Tarjeta | ✅ | ✅ | IsAuthenticated |
+| `^tarjetas/(?P<pk>[^/.]+)/activar/$` | TarjetaViewSet | Tarjeta | ✅ | ✅ | IsAuthenticated |
+| `^tarjetas/(?P<pk>[^/.]+)/activar\.(?P<format>[a-z0-9]+)/?$` | TarjetaViewSet | Tarjeta | ✅ | ✅ | IsAuthenticated |
+| `^tarjetas/(?P<pk>[^/.]+)/asignar/$` | TarjetaViewSet | Tarjeta | ✅ | ✅ | IsAuthenticated |
+| `^tarjetas/(?P<pk>[^/.]+)/asignar\.(?P<format>[a-z0-9]+)/?$` | TarjetaViewSet | Tarjeta | ✅ | ✅ | IsAuthenticated |
+| `^tarjetas/(?P<pk>[^/.]+)/desactivar/$` | TarjetaViewSet | Tarjeta | ✅ | ✅ | IsAuthenticated |
+| `^tarjetas/(?P<pk>[^/.]+)/desactivar\.(?P<format>[a-z0-9]+)/?$` | TarjetaViewSet | Tarjeta | ✅ | ✅ | IsAuthenticated |
+| `^tarjetas/(?P<pk>[^/.]+)/marcar-perdida/$` | TarjetaViewSet | Tarjeta | ✅ | ✅ | IsAuthenticated |
+| `^tarjetas/(?P<pk>[^/.]+)/marcar-perdida\.(?P<format>[a-z0-9]+)/?$` | TarjetaViewSet | Tarjeta | ✅ | ✅ | IsAuthenticated |
+| `^tarjetas/(?P<pk>[^/.]+)/qr/$` | TarjetaViewSet | Tarjeta | ✅ | ✅ | IsAuthenticated |
+| `^tarjetas/(?P<pk>[^/.]+)/qr\.(?P<format>[a-z0-9]+)/?$` | TarjetaViewSet | Tarjeta | ✅ | ✅ | IsAuthenticated |
+| `^tarjetas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | TarjetaViewSet | Tarjeta | ✅ | ✅ | IsAuthenticated |
+| `^tarjetas\.(?P<format>[a-z0-9]+)/?$` | TarjetaViewSet | Tarjeta | ✅ | ✅ | IsAuthenticated |
 | `^tasas-cambio/$` | TasaCambioViewSet | TasaCambio | ✅ | ✅ | IsAuthenticated |
 | `^tasas-cambio/(?P<pk>[^/.]+)/$` | TasaCambioViewSet | TasaCambio | ✅ | ✅ | IsAuthenticated |
 | `^tasas-cambio/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | TasaCambioViewSet | TasaCambio | ✅ | ✅ | IsAuthenticated |
@@ -1426,6 +1448,7 @@
 | `^vinculos-documento/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | VinculoDocumentoViewSet | VinculoDocumento | — | ✅ | IsAuthenticated |
 | `^vinculos-documento\.(?P<format>[a-z0-9]+)/?$` | VinculoDocumentoViewSet | VinculoDocumento | — | ✅ | IsAuthenticated |
 | `agente/` | CobranzaAgenteView | — | — | — | IsAuthenticated |
+| `analiticas/` | ConnectAnaliticasView | — | — | — | IsAuthenticated |
 | `api/auth/change-password/` | change_password_view | — | — | — | IsAuthenticated |
 | `api/auth/login/` | login_view | — | — | — | AllowAny |
 | `api/auth/logout/` | logout_view | — | — | — | IsAuthenticated |
@@ -1472,4 +1495,4 @@
 | `validar-cuenta-ve/` | ValidarCuentaVeView | — | — | — | IsAuthenticated |
 | `validar-referencia/` | ValidarReferenciaView | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 265_
+_Total ViewSets: 267_

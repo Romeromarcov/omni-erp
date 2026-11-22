@@ -1067,6 +1067,41 @@
             },
             "parameters": []
         },
+        "/agentes/predicciones/calificar-lead-connect/": {
+            "post": {
+                "operationId": "agentes_predicciones_calificar_lead_connect",
+                "summary": "POST /api/agentes/predicciones/calificar-lead-connect/",
+                "description": "Valida pertenencia multi-tenant del lead y encola ``connect_calificador`` (HTTP 202).",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CalificarLeadConnectInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/EjecucionAgente"
+                        }
+                    },
+                    "403": {
+                        "description": "Sin empresa asignada"
+                    },
+                    "404": {
+                        "description": "Lead no encontrado"
+                    }
+                },
+                "tags": [
+                    "agentes"
+                ]
+            },
+            "parameters": []
+        },
         "/agentes/predicciones/clasificar-gasto/": {
             "post": {
                 "operationId": "agentes_predicciones_clasificar_gasto",
@@ -1163,6 +1198,41 @@
                                 }
                             }
                         }
+                    }
+                },
+                "tags": [
+                    "agentes"
+                ]
+            },
+            "parameters": []
+        },
+        "/agentes/predicciones/proponer-seguimiento-connect/": {
+            "post": {
+                "operationId": "agentes_predicciones_proponer_seguimiento_connect",
+                "summary": "POST /api/agentes/predicciones/proponer-seguimiento-connect/",
+                "description": "Valida pertenencia multi-tenant del lead y encola ``connect_seguimiento`` (HTTP 202).\nToda propuesta de envío externo crea obligatoriamente una ``SolicitudAprobacion``\n(``CONNECT_ENVIO_EXTERNO``) sin enviar mensajes directamente.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ProponerSeguimientoConnectInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/EjecucionAgente"
+                        }
+                    },
+                    "403": {
+                        "description": "Sin empresa asignada"
+                    },
+                    "404": {
+                        "description": "Lead no encontrado"
                     }
                 },
                 "tags": [
@@ -7310,6 +7380,75 @@
                 }
             ]
         },
+        "/connect/analiticas/": {
+            "get": {
+                "operationId": "connect_analiticas_list",
+                "summary": "Analíticas agregadas de toques, leads y conversión de Omni Connect",
+                "description": "GET /api/connect/analiticas/ — Analíticas agregadas multi-tenant de Omni Connect (S10).",
+                "parameters": [
+                    {
+                        "name": "empresa_id",
+                        "in": "query",
+                        "description": "UUID de la empresa visible activa (opcional).",
+                        "required": false,
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    {
+                        "name": "desde",
+                        "in": "query",
+                        "description": "Fecha inicial inclusive (YYYY-MM-DD).",
+                        "required": false,
+                        "type": "string",
+                        "format": "date"
+                    },
+                    {
+                        "name": "hasta",
+                        "in": "query",
+                        "description": "Fecha final inclusive (YYYY-MM-DD).",
+                        "required": false,
+                        "type": "string",
+                        "format": "date"
+                    },
+                    {
+                        "name": "dias",
+                        "in": "query",
+                        "description": "Ventana en días (1..365, defecto 30) si no se especifica rango completo.",
+                        "required": false,
+                        "type": "integer"
+                    },
+                    {
+                        "name": "perfil_id",
+                        "in": "query",
+                        "description": "UUID de un perfil Connect de la empresa para filtrar métricas.",
+                        "required": false,
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ConnectAnaliticas"
+                        }
+                    },
+                    "400": {
+                        "description": "Parámetros de rango o filtros inválidos"
+                    },
+                    "403": {
+                        "description": "Sin acceso a la empresa solicitada"
+                    },
+                    "404": {
+                        "description": "Perfil no encontrado en la empresa"
+                    }
+                },
+                "tags": [
+                    "connect"
+                ]
+            },
+            "parameters": []
+        },
         "/connect/perfiles/": {
             "get": {
                 "operationId": "connect_perfiles_list",
@@ -7503,6 +7642,78 @@
             },
             "parameters": []
         },
+        "/connect/perfiles/mi-perfil/qr/": {
+            "get": {
+                "operationId": "connect_perfiles_mi-perfil_mi_perfil_qr",
+                "summary": "Genera y descarga el código QR (SVG o PNG) del perfil propio del usuario",
+                "description": "CRUD multi-tenant de perfiles digitales Connect y gestión de ``mi-perfil``.",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    },
+                    {
+                        "name": "empresa_id",
+                        "in": "query",
+                        "description": "UUID de la empresa visible activa (opcional).",
+                        "required": false,
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    {
+                        "name": "formato",
+                        "in": "query",
+                        "description": "Formato de salida del código QR: svg (defecto) o png.",
+                        "required": false,
+                        "type": "string",
+                        "enum": [
+                            "svg",
+                            "png"
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Código QR en formato SVG o PNG",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Formato inválido"
+                    },
+                    "404": {
+                        "description": "Perfil no configurado"
+                    }
+                },
+                "produces": [
+                    "application/json",
+                    "image/svg+xml",
+                    "image/png"
+                ],
+                "tags": [
+                    "connect"
+                ]
+            },
+            "parameters": []
+        },
         "/connect/perfiles/{id_perfil}/": {
             "get": {
                 "operationId": "connect_perfiles_read",
@@ -7588,6 +7799,465 @@
                     "name": "id_perfil",
                     "in": "path",
                     "description": "Un Cadena UUID que identifique este Perfil Connect.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/connect/perfiles/{id_perfil}/qr/": {
+            "get": {
+                "operationId": "connect_perfiles_qr",
+                "summary": "Genera y descarga el código QR (SVG o PNG) del perfil Connect",
+                "description": "CRUD multi-tenant de perfiles digitales Connect y gestión de ``mi-perfil``.",
+                "parameters": [
+                    {
+                        "name": "formato",
+                        "in": "query",
+                        "description": "Formato de salida del código QR: svg (defecto) o png.",
+                        "required": false,
+                        "type": "string",
+                        "enum": [
+                            "svg",
+                            "png"
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Código QR en formato SVG o PNG",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Formato o perfil inválido"
+                    },
+                    "404": {
+                        "description": "Perfil no encontrado"
+                    }
+                },
+                "produces": [
+                    "application/json",
+                    "image/svg+xml",
+                    "image/png"
+                ],
+                "tags": [
+                    "connect"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_perfil",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Perfil Connect.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/connect/tarjetas/": {
+            "get": {
+                "operationId": "connect_tarjetas_list",
+                "description": "CRUD multi-tenant y ciclo de vida de tarjetas NFC físicas (Plan 07 S11).",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/Tarjeta"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "connect"
+                ]
+            },
+            "post": {
+                "operationId": "connect_tarjetas_create",
+                "description": "CRUD multi-tenant y ciclo de vida de tarjetas NFC físicas (Plan 07 S11).",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Tarjeta"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Tarjeta"
+                        }
+                    }
+                },
+                "tags": [
+                    "connect"
+                ]
+            },
+            "parameters": []
+        },
+        "/connect/tarjetas/{id_tarjeta}/": {
+            "get": {
+                "operationId": "connect_tarjetas_read",
+                "description": "CRUD multi-tenant y ciclo de vida de tarjetas NFC físicas (Plan 07 S11).",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Tarjeta"
+                        }
+                    }
+                },
+                "tags": [
+                    "connect"
+                ]
+            },
+            "put": {
+                "operationId": "connect_tarjetas_update",
+                "description": "CRUD multi-tenant y ciclo de vida de tarjetas NFC físicas (Plan 07 S11).",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Tarjeta"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Tarjeta"
+                        }
+                    }
+                },
+                "tags": [
+                    "connect"
+                ]
+            },
+            "patch": {
+                "operationId": "connect_tarjetas_partial_update",
+                "description": "CRUD multi-tenant y ciclo de vida de tarjetas NFC físicas (Plan 07 S11).",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Tarjeta"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Tarjeta"
+                        }
+                    }
+                },
+                "tags": [
+                    "connect"
+                ]
+            },
+            "delete": {
+                "operationId": "connect_tarjetas_delete",
+                "description": "CRUD multi-tenant y ciclo de vida de tarjetas NFC físicas (Plan 07 S11).",
+                "parameters": [],
+                "responses": {
+                    "204": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "connect"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_tarjeta",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Tarjeta Connect.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/connect/tarjetas/{id_tarjeta}/activar/": {
+            "post": {
+                "operationId": "connect_tarjetas_activar",
+                "summary": "Activa una tarjeta física con perfil activo asignado",
+                "description": "CRUD multi-tenant y ciclo de vida de tarjetas NFC físicas (Plan 07 S11).",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Tarjeta"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Tarjeta"
+                        }
+                    },
+                    "400": {
+                        "description": "Estado o perfil inválido"
+                    },
+                    "404": {
+                        "description": "Tarjeta no encontrada"
+                    }
+                },
+                "tags": [
+                    "connect"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_tarjeta",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Tarjeta Connect.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/connect/tarjetas/{id_tarjeta}/asignar/": {
+            "post": {
+                "operationId": "connect_tarjetas_asignar",
+                "summary": "Asigna una tarjeta física a un perfil activo (opcionalmente activándola)",
+                "description": "CRUD multi-tenant y ciclo de vida de tarjetas NFC físicas (Plan 07 S11).",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/TarjetaAsignarInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Tarjeta"
+                        }
+                    },
+                    "400": {
+                        "description": "Datos o estado inválido"
+                    },
+                    "404": {
+                        "description": "Tarjeta no encontrada"
+                    }
+                },
+                "tags": [
+                    "connect"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_tarjeta",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Tarjeta Connect.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/connect/tarjetas/{id_tarjeta}/desactivar/": {
+            "post": {
+                "operationId": "connect_tarjetas_desactivar",
+                "summary": "Desactiva una tarjeta física bloqueando su acceso público",
+                "description": "CRUD multi-tenant y ciclo de vida de tarjetas NFC físicas (Plan 07 S11).",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Tarjeta"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Tarjeta"
+                        }
+                    },
+                    "400": {
+                        "description": "Estado inválido"
+                    },
+                    "404": {
+                        "description": "Tarjeta no encontrada"
+                    }
+                },
+                "tags": [
+                    "connect"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_tarjeta",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Tarjeta Connect.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/connect/tarjetas/{id_tarjeta}/marcar-perdida/": {
+            "post": {
+                "operationId": "connect_tarjetas_marcar_perdida",
+                "summary": "Marca una tarjeta como PERDIDA revocando inmediatamente su acceso público",
+                "description": "CRUD multi-tenant y ciclo de vida de tarjetas NFC físicas (Plan 07 S11).",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Tarjeta"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Tarjeta"
+                        }
+                    },
+                    "404": {
+                        "description": "Tarjeta no encontrada"
+                    }
+                },
+                "tags": [
+                    "connect"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_tarjeta",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Tarjeta Connect.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/connect/tarjetas/{id_tarjeta}/qr/": {
+            "get": {
+                "operationId": "connect_tarjetas_qr",
+                "summary": "Genera y descarga el código QR (SVG o PNG) asociado a la tarjeta",
+                "description": "CRUD multi-tenant y ciclo de vida de tarjetas NFC físicas (Plan 07 S11).",
+                "parameters": [
+                    {
+                        "name": "formato",
+                        "in": "query",
+                        "description": "Formato de salida del código QR: svg (defecto) o png.",
+                        "required": false,
+                        "type": "string",
+                        "enum": [
+                            "svg",
+                            "png"
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Código QR en formato SVG o PNG",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Tarjeta sin perfil asignado o formato inválido"
+                    },
+                    "404": {
+                        "description": "Tarjeta no encontrada"
+                    }
+                },
+                "produces": [
+                    "application/json",
+                    "image/svg+xml",
+                    "image/png"
+                ],
+                "tags": [
+                    "connect"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_tarjeta",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Tarjeta Connect.",
                     "required": true,
                     "type": "string",
                     "format": "uuid"
@@ -51299,7 +51969,9 @@
                         "clasificador_gastos",
                         "cobranza_estratega",
                         "reorden_sugeridor",
-                        "personalizacion_capa2"
+                        "personalizacion_capa2",
+                        "connect_calificador",
+                        "connect_seguimiento"
                     ],
                     "readOnly": true
                 },
@@ -51399,7 +52071,9 @@
                         "clasificador_gastos",
                         "cobranza_estratega",
                         "reorden_sugeridor",
-                        "personalizacion_capa2"
+                        "personalizacion_capa2",
+                        "connect_calificador",
+                        "connect_seguimiento"
                     ]
                 },
                 "input_texto": {
@@ -51518,6 +52192,19 @@
                 }
             }
         },
+        "CalificarLeadConnectInput": {
+            "required": [
+                "lead_id"
+            ],
+            "type": "object",
+            "properties": {
+                "lead_id": {
+                    "title": "Lead id",
+                    "type": "string",
+                    "format": "uuid"
+                }
+            }
+        },
         "ClasificarGastoInput": {
             "required": [
                 "gasto_id"
@@ -51533,6 +52220,19 @@
                     "title": "Aplicar",
                     "type": "boolean",
                     "default": false
+                }
+            }
+        },
+        "ProponerSeguimientoConnectInput": {
+            "required": [
+                "lead_id"
+            ],
+            "type": "object",
+            "properties": {
+                "lead_id": {
+                    "title": "Lead id",
+                    "type": "string",
+                    "format": "uuid"
                 }
             }
         },
@@ -54593,6 +55293,175 @@
                 }
             }
         },
+        "ConnectAnaliticasPeriodo": {
+            "type": "object",
+            "properties": {
+                "desde": {
+                    "title": "Desde",
+                    "type": "string",
+                    "format": "date",
+                    "readOnly": true
+                },
+                "hasta": {
+                    "title": "Hasta",
+                    "type": "string",
+                    "format": "date",
+                    "readOnly": true
+                },
+                "dias": {
+                    "title": "Dias",
+                    "type": "integer",
+                    "readOnly": true
+                }
+            }
+        },
+        "ConnectAnaliticasSerieDia": {
+            "type": "object",
+            "properties": {
+                "fecha": {
+                    "title": "Fecha",
+                    "type": "string",
+                    "format": "date",
+                    "readOnly": true
+                },
+                "toques": {
+                    "title": "Toques",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "leads": {
+                    "title": "Leads",
+                    "type": "integer",
+                    "readOnly": true
+                }
+            }
+        },
+        "ConnectAnaliticasTopPerfil": {
+            "type": "object",
+            "properties": {
+                "id_perfil": {
+                    "title": "Id perfil",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "slug": {
+                    "title": "Slug",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "nombre_publico": {
+                    "title": "Nombre publico",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "toques": {
+                    "title": "Toques",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "visitantes_unicos": {
+                    "title": "Visitantes unicos",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "leads": {
+                    "title": "Leads",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "leads_convertidos": {
+                    "title": "Leads convertidos",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "tasa_conversion_pct": {
+                    "title": "Tasa conversion pct",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                }
+            }
+        },
+        "ConnectAnaliticas": {
+            "type": "object",
+            "properties": {
+                "periodo": {
+                    "$ref": "#/definitions/ConnectAnaliticasPeriodo"
+                },
+                "perfil_id": {
+                    "title": "Perfil id",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "total_toques": {
+                    "title": "Total toques",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "visitantes_unicos": {
+                    "title": "Visitantes unicos",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "total_leads": {
+                    "title": "Total leads",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "leads_convertidos": {
+                    "title": "Leads convertidos",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "tasa_conversion_pct": {
+                    "title": "Tasa conversion pct",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "tasa_cierre_pct": {
+                    "title": "Tasa cierre pct",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "por_origen": {
+                    "title": "Por origen",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    },
+                    "readOnly": true
+                },
+                "por_dispositivo": {
+                    "title": "Por dispositivo",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    },
+                    "readOnly": true
+                },
+                "serie_diaria": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ConnectAnaliticasSerieDia"
+                    },
+                    "readOnly": true
+                },
+                "top_perfiles": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ConnectAnaliticasTopPerfil"
+                    },
+                    "readOnly": true
+                }
+            }
+        },
         "Perfil": {
             "required": [
                 "slug",
@@ -54772,6 +55641,117 @@
                     "type": "string",
                     "format": "date-time",
                     "readOnly": true
+                }
+            }
+        },
+        "Tarjeta": {
+            "required": [
+                "uid_chip"
+            ],
+            "type": "object",
+            "properties": {
+                "id_tarjeta": {
+                    "title": "Id tarjeta",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "perfil": {
+                    "title": "Perfil",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "perfil_slug": {
+                    "title": "Perfil slug",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "perfil_nombre": {
+                    "title": "Perfil nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "uid_chip": {
+                    "title": "Uid chip",
+                    "type": "string",
+                    "maxLength": 20,
+                    "minLength": 1
+                },
+                "tipo": {
+                    "title": "Tipo",
+                    "type": "string",
+                    "enum": [
+                        "PVC",
+                        "METAL",
+                        "PULSERA"
+                    ]
+                },
+                "estado": {
+                    "title": "Estado",
+                    "type": "string",
+                    "enum": [
+                        "INVENTARIO",
+                        "ACTIVA",
+                        "DESACTIVADA",
+                        "PERDIDA"
+                    ]
+                },
+                "fecha_activacion": {
+                    "title": "Fecha activacion",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "notas": {
+                    "title": "Notas",
+                    "type": "string",
+                    "maxLength": 255
+                },
+                "activo": {
+                    "title": "Activo",
+                    "description": "Indica si el registro está activo (False = borrado lógico).",
+                    "type": "boolean"
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_actualizacion": {
+                    "title": "Fecha de Actualización",
+                    "description": "Fecha y hora de la última modificación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
+        "TarjetaAsignarInput": {
+            "required": [
+                "perfil_id"
+            ],
+            "type": "object",
+            "properties": {
+                "perfil_id": {
+                    "title": "Perfil id",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "activar": {
+                    "title": "Activar",
+                    "type": "boolean",
+                    "default": false
                 }
             }
         },
@@ -60441,7 +61421,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-21T23:14:01.358854-04:00"
+                    "default": "2026-11-22T01:22:05.176527-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",

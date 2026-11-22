@@ -3,6 +3,9 @@
 Herramientas expuestas:
   - ``connect_mi_perfil`` (scope ``connect:read``)
   - ``connect_actualizar_perfil`` (scope ``connect:write``)
+  - ``connect_analiticas`` (scope ``connect:read``)
+  - ``connect_listar_tarjetas`` (scope ``connect:read``)
+  - ``connect_gestionar_tarjeta`` (scope ``connect:write``)
 """
 
 from __future__ import annotations
@@ -264,6 +267,206 @@ def connect_actualizar_perfil(
         return _serializar_perfil_mcp(perfil)
 
 
+def _serializar_tarjeta_mcp(tarjeta) -> dict[str, Any]:
+    return {
+        "id_tarjeta": str(tarjeta.id_tarjeta),
+        "id_empresa": str(tarjeta.id_empresa_id),
+        "perfil_id": str(tarjeta.perfil_id) if tarjeta.perfil_id else None,
+        "perfil_slug": tarjeta.perfil.slug if tarjeta.perfil_id and tarjeta.perfil else None,
+        "uid_chip": tarjeta.uid_chip,
+        "tipo": tarjeta.tipo,
+        "estado": tarjeta.estado,
+        "fecha_activacion": tarjeta.fecha_activacion.isoformat() if tarjeta.fecha_activacion else None,
+        "notas": tarjeta.notas,
+        "activo": tarjeta.activo,
+    }
+
+
+def _resolver_empresa_mcp(ctx: dict[str, Any]):
+    from apps.core.models import Empresa  # noqa: PLC0415
+
+    empresa_uuid = uuid.UUID(str(ctx["empresa_id"]))
+    empresa = Empresa.objects.filter(pk=empresa_uuid, activo=True).first()
+    if empresa is None:
+        raise PermissionError("Empresa no encontrada o inactiva.")
+    return empresa
+
+
+def connect_analiticas(
+    capability_token: str,
+    empresa_id: str | None = None,
+    desde: str | None = None,
+    hasta: str | None = None,
+    perfil_id: str | None = None,
+    dias: int = 30,
+) -> dict[str, Any]:
+    """Consulta las analíticas agregadas de toques, leads y conversión de Omni Connect.
+
+    Scope requerido: ``connect:read``
+    """
+    from apps.connect.analytics import obtener_analiticas_connect  # noqa: PLC0415
+    from apps.connect.services import ConnectError  # noqa: PLC0415
+
+    empresa_str: str | None = None
+    if empresa_id is not None and str(empresa_id) != "":
+        empresa_str = str(_parse_uuid_mcp(str(empresa_id), "empresa_id"))
+
+    desde_val = _validar_texto_mcp(desde, "desde")
+    hasta_val = _validar_texto_mcp(hasta, "hasta")
+    perfil_str: str | None = None
+    if perfil_id is not None and str(perfil_id).strip() != "":
+        perfil_str = str(_parse_uuid_mcp(str(perfil_id), "perfil_id"))
+
+    with _ctx(capability_token, f"{_SCOPE}:read", empresa_id=empresa_str) as ctx:
+        empresa = _resolver_empresa_mcp(ctx)
+        try:
+            resultado = obtener_analiticas_connect(
+                empresa,
+                desde=desde_val,
+                hasta=hasta_val,
+                perfil_id=perfil_str,
+                dias=dias,
+            )
+        except Exception as exc:  # noqa: BLE001
+            return {
+                "error": sanitize_mcp_error(
+                    exc,
+                    logger=logger,
+                    tool_name="connect_analiticas",
+                    controlled_types=(ConnectError, ValueError),
+                )
+            }
+
+        logger.info(
+            "connect_analiticas | actor=%s | tenant=%s | toques=%d | leads=%d",
+            ctx["actor_id"],
+            ctx["tenant_id"],
+            resultado["total_toques"],
+            resultado["total_leads"],
+        )
+        return resultado
+
+
+def connect_listar_tarjetas(
+    capability_token: str,
+    empresa_id: str | None = None,
+    estado: str | None = None,
+    perfil_id: str | None = None,
+    incluir_inactivos: bool = False,
+    limite: int = 50,
+) -> dict[str, Any]:
+    """Lista las tarjetas físicas NFC de Omni Connect de la empresa.
+
+    Scope requerido: ``connect:read``
+    """
+    from apps.connect.models import Tarjeta  # noqa: PLC0415
+
+    empresa_str: str | None = None
+    if empresa_id is not None and str(empresa_id) != "":
+        empresa_str = str(_parse_uuid_mcp(str(empresa_id), "empresa_id"))
+
+    estado_val = _validar_texto_mcp(estado, "estado")
+    perfil_uuid: uuid.UUID | None = None
+    if perfil_id is not None and str(perfil_id).strip() != "":
+        perfil_uuid = _parse_uuid_mcp(str(perfil_id), "perfil_id")
+    if isinstance(limite, bool):
+        raise ValueError("El parámetro 'limite' debe ser un entero válido.")
+    tope = max(1, min(int(limite), 200))
+
+    with _ctx(capability_token, f"{_SCOPE}:read", empresa_id=empresa_str) as ctx:
+        empresa = _resolver_empresa_mcp(ctx)
+        qs = Tarjeta.objects.filter(id_empresa=empresa).select_related("perfil")
+        if not incluir_inactivos:
+            qs = qs.filter(activo=True)
+        if estado_val and estado_val.strip():
+            qs = qs.filter(estado=estado_val.strip().upper())
+        if perfil_uuid is not None:
+            qs = qs.filter(perfil_id=perfil_uuid)
+        items = list(qs.order_by("-fecha_creacion")[:tope])
+        logger.info(
+            "connect_listar_tarjetas | actor=%s | tenant=%s | total=%d",
+            ctx["actor_id"],
+            ctx["tenant_id"],
+            len(items),
+        )
+        return {
+            "tarjetas": [_serializar_tarjeta_mcp(t) for t in items],
+            "total": len(items),
+        }
+
+
+def connect_gestionar_tarjeta(
+    capability_token: str,
+    tarjeta_id: str,
+    accion: str,
+    empresa_id: str | None = None,
+    perfil_id: str | None = None,
+    activar: bool = False,
+) -> dict[str, Any]:
+    """Ejecuta una transición de ciclo de vida sobre una tarjeta NFC de la empresa.
+
+    Acciones soportadas: ``asignar``, ``activar``, ``desactivar``, ``marcar_perdida``.
+    Scope requerido: ``connect:write``
+    """
+    from apps.connect.models import Tarjeta  # noqa: PLC0415
+    from apps.connect.services import (  # noqa: PLC0415
+        ConnectError,
+        activar_tarjeta,
+        asignar_tarjeta,
+        desactivar_tarjeta,
+        marcar_tarjeta_perdida,
+    )
+
+    empresa_str: str | None = None
+    if empresa_id is not None and str(empresa_id) != "":
+        empresa_str = str(_parse_uuid_mcp(str(empresa_id), "empresa_id"))
+
+    tarjeta_uuid = _parse_uuid_mcp(tarjeta_id, "tarjeta_id")
+    accion_val = (_validar_texto_mcp(accion, "accion") or "").strip().lower()
+    perfil_uuid: uuid.UUID | None = None
+    if perfil_id is not None and str(perfil_id).strip() != "":
+        perfil_uuid = _parse_uuid_mcp(str(perfil_id), "perfil_id")
+
+    with _ctx(capability_token, f"{_SCOPE}:write", empresa_id=empresa_str) as ctx:
+        empresa = _resolver_empresa_mcp(ctx)
+        tarjeta = Tarjeta.objects.select_related("perfil").filter(pk=tarjeta_uuid, id_empresa=empresa).first()
+        if tarjeta is None:
+            return {"error": "Tarjeta no encontrada en la empresa."}
+
+        try:
+            if accion_val == "asignar":
+                if perfil_uuid is None:
+                    return {"error": "Se requiere perfil_id para asignar la tarjeta."}
+                actualizada = asignar_tarjeta(tarjeta, perfil_id=perfil_uuid, activar=bool(activar))
+            elif accion_val == "activar":
+                actualizada = activar_tarjeta(tarjeta)
+            elif accion_val == "desactivar":
+                actualizada = desactivar_tarjeta(tarjeta)
+            elif accion_val in ("marcar_perdida", "marcar-perdida"):
+                actualizada = marcar_tarjeta_perdida(tarjeta)
+            else:
+                return {"error": "Acción no soportada. Use: asignar, activar, desactivar o marcar_perdida."}
+        except Exception as exc:  # noqa: BLE001
+            return {
+                "error": sanitize_mcp_error(
+                    exc,
+                    logger=logger,
+                    tool_name="connect_gestionar_tarjeta",
+                    controlled_types=(ConnectError, DjangoValidationError, ValueError),
+                )
+            }
+
+        logger.info(
+            "connect_gestionar_tarjeta | actor=%s | tenant=%s | tarjeta=%s | accion=%s | estado=%s",
+            ctx["actor_id"],
+            ctx["tenant_id"],
+            actualizada.id_tarjeta,
+            accion_val,
+            actualizada.estado,
+        )
+        return _serializar_tarjeta_mcp(actualizada)
+
+
 MCP_TOOLS: list[dict[str, Any]] = [
     {
         "fn": connect_mi_perfil,
@@ -273,6 +476,21 @@ MCP_TOOLS: list[dict[str, Any]] = [
     {
         "fn": connect_actualizar_perfil,
         "name": "connect_actualizar_perfil",
+        "scope": f"{_SCOPE}:write",
+    },
+    {
+        "fn": connect_analiticas,
+        "name": "connect_analiticas",
+        "scope": f"{_SCOPE}:read",
+    },
+    {
+        "fn": connect_listar_tarjetas,
+        "name": "connect_listar_tarjetas",
+        "scope": f"{_SCOPE}:read",
+    },
+    {
+        "fn": connect_gestionar_tarjeta,
+        "name": "connect_gestionar_tarjeta",
         "scope": f"{_SCOPE}:write",
     },
 ]

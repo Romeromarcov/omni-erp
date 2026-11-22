@@ -7,10 +7,23 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | EN CURSO — `S1` (esquema + RLS) ✅ cerrada en PR `#261`; `S2–S12` planificadas |
-| **Fecha** | 2026-11-17 (verificado sobre `origin/develop @ ff2bdb6`) |
+| **Estado** | ✅ COMPLETADO 100% — `S1`–`S12` cerradas (`#261` + PR-26..PR-30) |
+| **Fecha** | 2026-11-22 (cierre integral `S1`–`S12`) |
 | **Apps involucradas** | `apps/connect`, `apps/crm`, `apps/core`, `apps/ventas`, `apps/tareas`, `apps/integration_hub`, `apps/agentes`, `apps/gestion_aprobaciones` |
-| **Esfuerzo estimado** | ~4–6 semanas en PRs pequeños y focales (R-PROC-2) hacia `develop` |
+| **Entrega** | 6 PRs focales (`#261`, PR-26 `#313`, PR-27 `#314`, PR-28 `#315`, PR-29 `#316`, PR-30 `S10–S12`) |
+
+---
+
+## Resumen de cierre (`S1`–`S12` — 100% completado)
+
+| Bloque | Historias | PR | Alcance entregado |
+|---|---|---|---|
+| Base de esquema | `S1` | `#261` | Modelos `connect` (`Perfil`, `Tarjeta`, `Toque`) y `crm` (`Pipeline`, `Etapa`, `Lead`) con RLS forzada (`apps/core/rls.py`) y validadores `validar_botones` / `normalizar_uid_chip`. |
+| Perfil público y leads | `S2`–`S3` | **PR-26** (`#313`) | Endpoints públicos `AllowAny` (`/api/public/connect/<slug>/`, `vcard/`, `leads/`) con `rls_bypass()` acotado, `ip_hash` HMAC, consentimiento obligatorio, anti-spam (`ConnectLeadThrottle` + honeypot), `/c/:slug` y editor `/connect/perfil`. |
+| Actividades y Kanban | `S4` | **PR-27** (`#314`) | Modelo `crm.Actividad` (+ RLS), ViewSets/acciones Kanban (`mover_etapa`, `reordenar`, `resumen_kanban`), paridad MCP (`crm_*`) y tablero interactivo `/crm/pipeline`. |
+| Dedup y conversión | `S5`–`S6` | **PR-28** (`#315`) | Normalización e índices en `core.Contacto`, deduplicación multi-tenant, anonimización PII (derecho al olvido) y conversión atómica `Lead` → `crm.Cliente` (+ borrador `ventas.Cotizacion` opcional) + MCP. |
+| Outbox y Odoo `crm.lead` | `S7`–`S9` | **PR-29** (`#316`) | `integration_hub.EventoOutbox` multi-tenant + RLS, dispatcher Celery idempotente con advisory lock/backoff y `push_lead` opt-in hacia `crm.lead` en Odoo (`OdooXMLRPCClient`). |
+| Analíticas, tarjetas y agentes IA | `S10`–`S12` | **PR-30** (`feat/connect-s10-s12-analiticas-tarjetas-agentes`) | Analíticas ORM agregadas (`GET /api/connect/analiticas/`, `/connect/analiticas`) + purga Celery Beat (`connect.purgar_toques_antiguos`); CRUD + ciclo de vida de tarjetas NFC y códigos QR SVG/PNG (`/connect/tarjetas`); agentes `connect_calificador` y `connect_seguimiento` en `apps/agentes` con gate obligatorio `gestion_aprobaciones` (`CONNECT_ENVIO_EXTERNO`), MCP y evals dorados (`tests_eval/test_eval_connect.py`). |
 
 ---
 

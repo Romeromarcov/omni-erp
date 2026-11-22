@@ -648,3 +648,80 @@ def usuario_es_admin_empresa(usuario: Any, empresa_id: uuid.UUID | None = None) 
     if empresa_id is not None:
         qs = qs.filter(Q(id_rol__id_empresa_id=empresa_id) | Q(id_rol__id_empresa__isnull=True))
     return qs.exists()
+
+
+@transaction.atomic
+def asignar_tarjeta(
+    tarjeta: Tarjeta,
+    *,
+    perfil_id: uuid.UUID,
+    activar: bool = False,
+) -> Tarjeta:
+    """Asigna una tarjeta física a un ``Perfil`` activo de la misma empresa (S11)."""
+    bloqueada = Tarjeta.objects.select_for_update().get(pk=tarjeta.pk, id_empresa_id=tarjeta.id_empresa_id)
+    if bloqueada.estado == Tarjeta.Estado.PERDIDA:
+        raise ConnectError("No se puede asignar una tarjeta marcada como perdida.")
+
+    perfil = Perfil.objects.filter(
+        pk=perfil_id,
+        id_empresa_id=bloqueada.id_empresa_id,
+        activo=True,
+    ).first()
+    if perfil is None:
+        raise ConnectError("El perfil no existe en la empresa o está inactivo.")
+
+    bloqueada.perfil = perfil
+    if activar:
+        bloqueada.estado = Tarjeta.Estado.ACTIVA
+        bloqueada.activo = True
+        if bloqueada.fecha_activacion is None:
+            bloqueada.fecha_activacion = timezone.now()
+    bloqueada.full_clean()
+    bloqueada.save()
+    return bloqueada
+
+
+@transaction.atomic
+def activar_tarjeta(tarjeta: Tarjeta) -> Tarjeta:
+    """Activa una tarjeta con perfil asignado activo, fijando ``fecha_activacion`` (S11)."""
+    bloqueada = (
+        Tarjeta.objects.select_for_update(of=("self",))
+        .select_related("perfil")
+        .get(pk=tarjeta.pk, id_empresa_id=tarjeta.id_empresa_id)
+    )
+    if bloqueada.estado == Tarjeta.Estado.PERDIDA:
+        raise ConnectError("No se puede activar una tarjeta marcada como perdida.")
+    if bloqueada.perfil is None or not bloqueada.perfil.activo:
+        raise ConnectError("La tarjeta requiere un perfil activo asignado para poder activarse.")
+    if bloqueada.perfil.id_empresa_id != bloqueada.id_empresa_id:
+        raise ConnectError("El perfil asignado no pertenece a la empresa de la tarjeta.")
+
+    bloqueada.estado = Tarjeta.Estado.ACTIVA
+    bloqueada.activo = True
+    if bloqueada.fecha_activacion is None:
+        bloqueada.fecha_activacion = timezone.now()
+    bloqueada.full_clean()
+    bloqueada.save()
+    return bloqueada
+
+
+@transaction.atomic
+def desactivar_tarjeta(tarjeta: Tarjeta) -> Tarjeta:
+    """Desactiva temporalmente una tarjeta física (bloquea acceso público por UID)."""
+    bloqueada = Tarjeta.objects.select_for_update().get(pk=tarjeta.pk, id_empresa_id=tarjeta.id_empresa_id)
+    if bloqueada.estado == Tarjeta.Estado.PERDIDA:
+        raise ConnectError("Una tarjeta perdida no puede cambiar a desactivada.")
+    bloqueada.estado = Tarjeta.Estado.DESACTIVADA
+    bloqueada.full_clean()
+    bloqueada.save()
+    return bloqueada
+
+
+@transaction.atomic
+def marcar_tarjeta_perdida(tarjeta: Tarjeta) -> Tarjeta:
+    """Marca la tarjeta como ``PERDIDA`` revocando inmediatamente el acceso público por UID."""
+    bloqueada = Tarjeta.objects.select_for_update().get(pk=tarjeta.pk, id_empresa_id=tarjeta.id_empresa_id)
+    bloqueada.estado = Tarjeta.Estado.PERDIDA
+    bloqueada.full_clean()
+    bloqueada.save()
+    return bloqueada

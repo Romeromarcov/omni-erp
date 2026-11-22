@@ -5,6 +5,16 @@ from apps.core.uuid import uuid7
 from django.db import models
 
 
+AGENTE_CHOICES = [
+    ("clasificador_gastos", "Clasificador de Gastos"),
+    ("cobranza_estratega", "Estratega de Cobranza"),
+    ("reorden_sugeridor", "Sugeridor de Reorden"),
+    ("personalizacion_capa2", "Personalización Capa 2"),
+    ("connect_calificador", "Calificador de Leads Connect"),
+    ("connect_seguimiento", "Seguimiento Comercial Connect"),
+]
+
+
 class NivelAutonomia(models.TextChoices):
     """
     Niveles de autonomía de un agente (R-PROC-8).
@@ -36,12 +46,7 @@ class ConfigAgente(models.Model):
     )
     agente = models.CharField(
         max_length=50,
-        choices=[
-            ("clasificador_gastos", "Clasificador de Gastos"),
-            ("cobranza_estratega", "Estratega de Cobranza"),
-            ("reorden_sugeridor", "Sugeridor de Reorden"),
-            ("personalizacion_capa2", "Personalización Capa 2"),
-        ],
+        choices=AGENTE_CHOICES,
         db_index=True,
     )
     nivel_autonomia = models.CharField(
@@ -78,12 +83,7 @@ class PrediccionAgente(models.Model):
     Nunca modifica datos de negocio; solo observa y predice.
     """
 
-    AGENTE_CHOICES = [
-        ("clasificador_gastos", "Clasificador de Gastos"),
-        ("cobranza_estratega", "Estratega de Cobranza"),
-        ("reorden_sugeridor", "Sugeridor de Reorden"),
-        ("personalizacion_capa2", "Personalización Capa 2"),
-    ]
+    AGENTE_CHOICES = AGENTE_CHOICES
     RESULTADO_CHOICES = [
         ("aceptada", "Aceptada por humano"),
         ("rechazada", "Rechazada por humano"),
@@ -121,6 +121,10 @@ class PrediccionAgente(models.Model):
         ]
         ordering = ["-fecha_prediccion"]
 
+    @property
+    def nombre_modelo_aprobacion(self) -> str:
+        return "agentes.PrediccionAgente"
+
     def __str__(self):
         return f"{self.agente}:{self.categoria_predicha}({self.confianza:.0%})"
 
@@ -150,7 +154,7 @@ class EjecucionAgente(models.Model):
     )
     agente = models.CharField(
         max_length=50,
-        choices=PrediccionAgente.AGENTE_CHOICES,
+        choices=AGENTE_CHOICES,
         db_index=True,
     )
     estado = models.CharField(

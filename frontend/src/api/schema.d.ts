@@ -389,6 +389,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/agentes/predicciones/calificar-lead-connect/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST /api/agentes/predicciones/calificar-lead-connect/
+         * @description Valida pertenencia multi-tenant del lead y encola ``connect_calificador`` (HTTP 202).
+         */
+        post: operations["agentes_predicciones_calificar_lead_connect"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/agentes/predicciones/clasificar-gasto/": {
         parameters: {
             query?: never;
@@ -424,6 +444,28 @@ export interface paths {
         get: operations["agentes_predicciones_metricas_clasificador"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agentes/predicciones/proponer-seguimiento-connect/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST /api/agentes/predicciones/proponer-seguimiento-connect/
+         * @description Valida pertenencia multi-tenant del lead y encola ``connect_seguimiento`` (HTTP 202).
+         *     Toda propuesta de envío externo crea obligatoriamente una ``SolicitudAprobacion``
+         *     (``CONNECT_ENVIO_EXTERNO``) sin enviar mensajes directamente.
+         */
+        post: operations["agentes_predicciones_proponer_seguimiento_connect"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2334,6 +2376,26 @@ export interface paths {
         patch: operations["configuracion_tipos-documento_partial_update"];
         trace?: never;
     };
+    "/connect/analiticas/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Analíticas agregadas de toques, leads y conversión de Omni Connect
+         * @description GET /api/connect/analiticas/ — Analíticas agregadas multi-tenant de Omni Connect (S10).
+         */
+        get: operations["connect_analiticas_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/connect/perfiles/": {
         parameters: {
             query?: never;
@@ -2376,6 +2438,26 @@ export interface paths {
         patch: operations["connect_perfiles_mi-perfil_partial_update"];
         trace?: never;
     };
+    "/connect/perfiles/mi-perfil/qr/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Genera y descarga el código QR (SVG o PNG) del perfil propio del usuario
+         * @description CRUD multi-tenant de perfiles digitales Connect y gestión de ``mi-perfil``.
+         */
+        get: operations["connect_perfiles_mi-perfil_mi_perfil_qr"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/connect/perfiles/{id_perfil}/": {
         parameters: {
             query?: never;
@@ -2397,6 +2479,185 @@ export interface paths {
         head?: never;
         /** @description CRUD multi-tenant de perfiles digitales Connect y gestión de ``mi-perfil``. */
         patch: operations["connect_perfiles_partial_update"];
+        trace?: never;
+    };
+    "/connect/perfiles/{id_perfil}/qr/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Perfil Connect. */
+                id_perfil: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * Genera y descarga el código QR (SVG o PNG) del perfil Connect
+         * @description CRUD multi-tenant de perfiles digitales Connect y gestión de ``mi-perfil``.
+         */
+        get: operations["connect_perfiles_qr"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connect/tarjetas/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description CRUD multi-tenant y ciclo de vida de tarjetas NFC físicas (Plan 07 S11). */
+        get: operations["connect_tarjetas_list"];
+        put?: never;
+        /** @description CRUD multi-tenant y ciclo de vida de tarjetas NFC físicas (Plan 07 S11). */
+        post: operations["connect_tarjetas_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connect/tarjetas/{id_tarjeta}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Tarjeta Connect. */
+                id_tarjeta: string;
+            };
+            cookie?: never;
+        };
+        /** @description CRUD multi-tenant y ciclo de vida de tarjetas NFC físicas (Plan 07 S11). */
+        get: operations["connect_tarjetas_read"];
+        /** @description CRUD multi-tenant y ciclo de vida de tarjetas NFC físicas (Plan 07 S11). */
+        put: operations["connect_tarjetas_update"];
+        post?: never;
+        /** @description CRUD multi-tenant y ciclo de vida de tarjetas NFC físicas (Plan 07 S11). */
+        delete: operations["connect_tarjetas_delete"];
+        options?: never;
+        head?: never;
+        /** @description CRUD multi-tenant y ciclo de vida de tarjetas NFC físicas (Plan 07 S11). */
+        patch: operations["connect_tarjetas_partial_update"];
+        trace?: never;
+    };
+    "/connect/tarjetas/{id_tarjeta}/activar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Tarjeta Connect. */
+                id_tarjeta: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Activa una tarjeta física con perfil activo asignado
+         * @description CRUD multi-tenant y ciclo de vida de tarjetas NFC físicas (Plan 07 S11).
+         */
+        post: operations["connect_tarjetas_activar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connect/tarjetas/{id_tarjeta}/asignar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Tarjeta Connect. */
+                id_tarjeta: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Asigna una tarjeta física a un perfil activo (opcionalmente activándola)
+         * @description CRUD multi-tenant y ciclo de vida de tarjetas NFC físicas (Plan 07 S11).
+         */
+        post: operations["connect_tarjetas_asignar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connect/tarjetas/{id_tarjeta}/desactivar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Tarjeta Connect. */
+                id_tarjeta: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Desactiva una tarjeta física bloqueando su acceso público
+         * @description CRUD multi-tenant y ciclo de vida de tarjetas NFC físicas (Plan 07 S11).
+         */
+        post: operations["connect_tarjetas_desactivar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connect/tarjetas/{id_tarjeta}/marcar-perdida/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Tarjeta Connect. */
+                id_tarjeta: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Marca una tarjeta como PERDIDA revocando inmediatamente su acceso público
+         * @description CRUD multi-tenant y ciclo de vida de tarjetas NFC físicas (Plan 07 S11).
+         */
+        post: operations["connect_tarjetas_marcar_perdida"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connect/tarjetas/{id_tarjeta}/qr/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Tarjeta Connect. */
+                id_tarjeta: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * Genera y descarga el código QR (SVG o PNG) asociado a la tarjeta
+         * @description CRUD multi-tenant y ciclo de vida de tarjetas NFC físicas (Plan 07 S11).
+         */
+        get: operations["connect_tarjetas_qr"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/contabilidad/asientos-contables/": {
@@ -15269,7 +15530,7 @@ export interface components {
              * Agente
              * @enum {string}
              */
-            readonly agente?: "clasificador_gastos" | "cobranza_estratega" | "reorden_sugeridor" | "personalizacion_capa2";
+            readonly agente?: "clasificador_gastos" | "cobranza_estratega" | "reorden_sugeridor" | "personalizacion_capa2" | "connect_calificador" | "connect_seguimiento";
             /**
              * Estado
              * @enum {string}
@@ -15321,7 +15582,7 @@ export interface components {
              * Agente
              * @enum {string}
              */
-            agente: "clasificador_gastos" | "cobranza_estratega" | "reorden_sugeridor" | "personalizacion_capa2";
+            agente: "clasificador_gastos" | "cobranza_estratega" | "reorden_sugeridor" | "personalizacion_capa2" | "connect_calificador" | "connect_seguimiento";
             /** Input texto */
             input_texto: string;
             /**
@@ -15397,6 +15658,13 @@ export interface components {
              */
             persistir: boolean;
         };
+        CalificarLeadConnectInput: {
+            /**
+             * Lead id
+             * Format: uuid
+             */
+            lead_id: string;
+        };
         ClasificarGastoInput: {
             /**
              * Gasto id
@@ -15408,6 +15676,13 @@ export interface components {
              * @default false
              */
             aplicar: boolean;
+        };
+        ProponerSeguimientoConnectInput: {
+            /**
+             * Lead id
+             * Format: uuid
+             */
+            lead_id: string;
         };
         Almacen: {
             /**
@@ -17137,6 +17412,82 @@ export interface components {
             /** Ultimo correlativo */
             ultimo_correlativo?: number;
         };
+        ConnectAnaliticasPeriodo: {
+            /**
+             * Desde
+             * Format: date
+             */
+            readonly desde?: string;
+            /**
+             * Hasta
+             * Format: date
+             */
+            readonly hasta?: string;
+            /** Dias */
+            readonly dias?: number;
+        };
+        ConnectAnaliticasSerieDia: {
+            /**
+             * Fecha
+             * Format: date
+             */
+            readonly fecha?: string;
+            /** Toques */
+            readonly toques?: number;
+            /** Leads */
+            readonly leads?: number;
+        };
+        ConnectAnaliticasTopPerfil: {
+            /**
+             * Id perfil
+             * Format: uuid
+             */
+            readonly id_perfil?: string;
+            /** Slug */
+            readonly slug?: string;
+            /** Nombre publico */
+            readonly nombre_publico?: string;
+            /** Toques */
+            readonly toques?: number;
+            /** Visitantes unicos */
+            readonly visitantes_unicos?: number;
+            /** Leads */
+            readonly leads?: number;
+            /** Leads convertidos */
+            readonly leads_convertidos?: number;
+            /** Tasa conversion pct */
+            readonly tasa_conversion_pct?: string;
+        };
+        ConnectAnaliticas: {
+            periodo?: components["schemas"]["ConnectAnaliticasPeriodo"];
+            /**
+             * Perfil id
+             * Format: uuid
+             */
+            readonly perfil_id?: string | null;
+            /** Total toques */
+            readonly total_toques?: number;
+            /** Visitantes unicos */
+            readonly visitantes_unicos?: number;
+            /** Total leads */
+            readonly total_leads?: number;
+            /** Leads convertidos */
+            readonly leads_convertidos?: number;
+            /** Tasa conversion pct */
+            readonly tasa_conversion_pct?: string;
+            /** Tasa cierre pct */
+            readonly tasa_cierre_pct?: string;
+            /** Por origen */
+            readonly por_origen?: {
+                [key: string]: number;
+            };
+            /** Por dispositivo */
+            readonly por_dispositivo?: {
+                [key: string]: number;
+            };
+            readonly serie_diaria?: components["schemas"]["ConnectAnaliticasSerieDia"][];
+            readonly top_perfiles?: components["schemas"]["ConnectAnaliticasTopPerfil"][];
+        };
         Perfil: {
             /**
              * Id perfil
@@ -17246,6 +17597,75 @@ export interface components {
              * @description Fecha y hora de la última modificación del registro.
              */
             readonly fecha_actualizacion?: string;
+        };
+        Tarjeta: {
+            /**
+             * Id tarjeta
+             * Format: uuid
+             */
+            readonly id_tarjeta?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa?: string;
+            /**
+             * Perfil
+             * Format: uuid
+             */
+            perfil?: string | null;
+            /** Perfil slug */
+            readonly perfil_slug?: string;
+            /** Perfil nombre */
+            readonly perfil_nombre?: string;
+            /** Uid chip */
+            uid_chip: string;
+            /**
+             * Tipo
+             * @enum {string}
+             */
+            tipo?: "PVC" | "METAL" | "PULSERA";
+            /**
+             * Estado
+             * @enum {string}
+             */
+            estado?: "INVENTARIO" | "ACTIVA" | "DESACTIVADA" | "PERDIDA";
+            /**
+             * Fecha activacion
+             * Format: date-time
+             */
+            readonly fecha_activacion?: string | null;
+            /** Notas */
+            notas?: string;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        TarjetaAsignarInput: {
+            /**
+             * Perfil id
+             * Format: uuid
+             */
+            perfil_id: string;
+            /**
+             * Activar
+             * @default false
+             */
+            activar: boolean;
         };
         DetalleAsiento: {
             /**
@@ -20766,7 +21186,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-21T23:14:01.358854-04:00
+             * @default 2026-11-22T01:22:05.176527-04:00
              */
             fecha_despacho: string;
             /**
@@ -29673,6 +30093,11 @@ export interface components {
                 "application/json": components["schemas"]["TipoDocumento"];
             };
         };
+        Tarjeta: {
+            content: {
+                "application/json": components["schemas"]["Tarjeta"];
+            };
+        };
         DetalleAsiento: {
             content: {
                 "application/json": components["schemas"]["DetalleAsiento"];
@@ -30751,6 +31176,43 @@ export interface operations {
             };
         };
     };
+    agentes_predicciones_calificar_lead_connect: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CalificarLeadConnectInput"];
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EjecucionAgente"];
+                };
+            };
+            /** @description Sin empresa asignada */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Lead no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     agentes_predicciones_clasificar_gasto: {
         parameters: {
             query?: never;
@@ -30806,6 +31268,43 @@ export interface operations {
                         results: components["schemas"]["PrediccionAgente"][];
                     };
                 };
+            };
+        };
+    };
+    agentes_predicciones_proponer_seguimiento_connect: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProponerSeguimientoConnectInput"];
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EjecucionAgente"];
+                };
+            };
+            /** @description Sin empresa asignada */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Lead no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -35320,6 +35819,57 @@ export interface operations {
             };
         };
     };
+    connect_analiticas_list: {
+        parameters: {
+            query?: {
+                /** @description UUID de la empresa visible activa (opcional). */
+                empresa_id?: string;
+                /** @description Fecha inicial inclusive (YYYY-MM-DD). */
+                desde?: string;
+                /** @description Fecha final inclusive (YYYY-MM-DD). */
+                hasta?: string;
+                /** @description Ventana en días (1..365, defecto 30) si no se especifica rango completo. */
+                dias?: number;
+                /** @description UUID de un perfil Connect de la empresa para filtrar métricas. */
+                perfil_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectAnaliticas"];
+                };
+            };
+            /** @description Parámetros de rango o filtros inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Sin acceso a la empresa solicitada */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Perfil no encontrado en la empresa */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     connect_perfiles_list: {
         parameters: {
             query?: {
@@ -35462,6 +36012,53 @@ export interface operations {
             };
         };
     };
+    "connect_perfiles_mi-perfil_mi_perfil_qr": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+                /** @description UUID de la empresa visible activa (opcional). */
+                empresa_id?: string;
+                /** @description Formato de salida del código QR: svg (defecto) o png. */
+                formato?: "svg" | "png";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Código QR en formato SVG o PNG */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                    "image/svg+xml": string;
+                    "image/png": string;
+                };
+            };
+            /** @description Formato inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Perfil no configurado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     connect_perfiles_read: {
         parameters: {
             query?: never;
@@ -35545,6 +36142,369 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Perfil"];
                 };
+            };
+        };
+    };
+    connect_perfiles_qr: {
+        parameters: {
+            query?: {
+                /** @description Formato de salida del código QR: svg (defecto) o png. */
+                formato?: "svg" | "png";
+            };
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Perfil Connect. */
+                id_perfil: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Código QR en formato SVG o PNG */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                    "image/svg+xml": string;
+                    "image/png": string;
+                };
+            };
+            /** @description Formato o perfil inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Perfil no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    connect_tarjetas_list: {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["Tarjeta"][];
+                    };
+                };
+            };
+        };
+    };
+    connect_tarjetas_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Tarjeta"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tarjeta"];
+                };
+            };
+        };
+    };
+    connect_tarjetas_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Tarjeta Connect. */
+                id_tarjeta: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tarjeta"];
+                };
+            };
+        };
+    };
+    connect_tarjetas_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Tarjeta Connect. */
+                id_tarjeta: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Tarjeta"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tarjeta"];
+                };
+            };
+        };
+    };
+    connect_tarjetas_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Tarjeta Connect. */
+                id_tarjeta: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    connect_tarjetas_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Tarjeta Connect. */
+                id_tarjeta: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Tarjeta"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tarjeta"];
+                };
+            };
+        };
+    };
+    connect_tarjetas_activar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Tarjeta Connect. */
+                id_tarjeta: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Tarjeta"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tarjeta"];
+                };
+            };
+            /** @description Estado o perfil inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tarjeta no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    connect_tarjetas_asignar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Tarjeta Connect. */
+                id_tarjeta: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TarjetaAsignarInput"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tarjeta"];
+                };
+            };
+            /** @description Datos o estado inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tarjeta no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    connect_tarjetas_desactivar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Tarjeta Connect. */
+                id_tarjeta: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Tarjeta"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tarjeta"];
+                };
+            };
+            /** @description Estado inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tarjeta no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    connect_tarjetas_marcar_perdida: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Tarjeta Connect. */
+                id_tarjeta: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Tarjeta"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tarjeta"];
+                };
+            };
+            /** @description Tarjeta no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    connect_tarjetas_qr: {
+        parameters: {
+            query?: {
+                /** @description Formato de salida del código QR: svg (defecto) o png. */
+                formato?: "svg" | "png";
+            };
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Tarjeta Connect. */
+                id_tarjeta: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Código QR en formato SVG o PNG */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                    "image/svg+xml": string;
+                    "image/png": string;
+                };
+            };
+            /** @description Tarjeta sin perfil asignado o formato inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tarjeta no encontrada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

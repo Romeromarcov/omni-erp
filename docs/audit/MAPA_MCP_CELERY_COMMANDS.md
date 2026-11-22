@@ -34,6 +34,7 @@ _Total tools MCP: 17_
 | `auditoria.registrar_evento` | apps.auditoria.tasks |
 | `bots_ingest.sincronizar_odoo` | apps.bots_ingest.tasks |
 | `config.celery.debug_task` | config.celery |
+| `connect.purgar_toques_antiguos` | apps.connect.tasks |
 | `core.log_evento` | apps.core.tasks |
 | `core.ping` | apps.core.tasks |
 | `cxc_lubrikca.sync` | apps.cxc_lubrikca.tasks |
@@ -54,7 +55,7 @@ _Total tools MCP: 17_
 | `tareas.ejecutar_ciclo_empresa` | apps.tareas.tasks |
 | `tareas.ejecutar_ciclo_todos` | apps.tareas.tasks |
 
-_Total tareas Celery: 25_
+_Total tareas Celery: 26_
 
 ## Management commands
 

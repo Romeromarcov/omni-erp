@@ -403,6 +403,10 @@ REST_FRAMEWORK = {
 
 # Secreto opcional para HMAC de IPs en Omni Connect (fallback: SECRET_KEY).
 CONNECT_IP_HASH_SECRET = os.environ.get("CONNECT_IP_HASH_SECRET", "")
+# Retención de toques NFC/QR/enlace en días para purga programada (Plan 07 S10).
+CONNECT_TOQUES_RETENCION_DIAS = int(os.environ.get("CONNECT_TOQUES_RETENCION_DIAS", "365"))
+# URL base pública usada al generar códigos QR de perfiles/tarjetas Connect (Plan 07 S11).
+CONNECT_PUBLIC_BASE_URL = os.environ.get("CONNECT_PUBLIC_BASE_URL", "https://omni.link").rstrip("/")
 
 # drf-yasg — DEFAULT_INFO permite `manage.py generate_swagger` (esquema OpenAPI
 # para el contract testing con schemathesis). USE_COMPAT_RENDERERS=False silencia
@@ -668,6 +672,11 @@ CELERY_BEAT_SCHEDULE = {
     "aprobaciones-escalar-vencidas": {
         "task": "gestion_aprobaciones.escalar_solicitudes_vencidas",
         "schedule": _crontab(minute=0),
+    },
+    # Purga periódica de toques antiguos de Omni Connect — Plan 07 S10 (diaria 03:30 UTC)
+    "connect-purgar-toques-antiguos": {
+        "task": "connect.purgar_toques_antiguos",
+        "schedule": _crontab(hour=3, minute=30),
     },
 }
 

@@ -105,7 +105,11 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
       id: 'connect',
       label: 'Omni Connect',
       icon: <ContactPageOutlined />,
-      items: [{ label: 'Mi perfil digital', path: '/connect/perfil' }],
+      items: [
+        { label: 'Mi perfil digital', path: '/connect/perfil' },
+        { label: 'Tarjetas NFC y QR', path: '/connect/tarjetas' },
+        { label: 'Analíticas', path: '/connect/analiticas' },
+      ],
     },
     {
       id: 'servicio-cliente',

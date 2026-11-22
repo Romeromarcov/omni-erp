@@ -11,7 +11,7 @@ from django.db import IntegrityError, transaction
 from django.http import HttpResponse
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import status
+from rest_framework import permissions, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import AllowAny
@@ -23,6 +23,7 @@ from rest_framework.views import APIView
 from apps.core.exceptions import domain_error_response
 from apps.core.models import Empresa, Usuarios
 from apps.core.viewsets import (
+    ActiveFilterMixin,
     BaseModelViewSet,
     NulSafeFilterMixin,
     get_empresa_primaria,
@@ -30,21 +31,35 @@ from apps.core.viewsets import (
     validar_uuid_param,
 )
 
-from .models import Perfil
+from .analytics import obtener_analiticas_connect
+from .models import Perfil, Tarjeta
+from .qr import (
+    construir_url_publica_perfil,
+    generar_qr_png,
+    generar_qr_svg,
+    sanitizar_nombre_archivo_qr,
+)
 from .serializers import (
+    ConnectAnaliticasSerializer,
     MiPerfilSerializer,
     PerfilSerializer,
     PublicLeadCreateResponseSerializer,
     PublicLeadCreateSerializer,
     PublicPerfilSerializer,
+    TarjetaAsignarInputSerializer,
+    TarjetaSerializer,
 )
 from .services import (
     TEXTO_CONSENTIMIENTO_DEFAULT,
     ConnectError,
     ConsentimientoRequeridoError,
     PerfilNoEncontradoError,
+    activar_tarjeta,
+    asignar_tarjeta,
     capturar_lead_publico,
+    desactivar_tarjeta,
     generar_vcard,
+    marcar_tarjeta_perdida,
     obtener_ip_cliente,
     registrar_toque_publico,
     resolver_origen_publico,
@@ -76,6 +91,48 @@ _EMPRESA_ID_PARAM = openapi.Parameter(
     format=openapi.FORMAT_UUID,
     required=False,
 )
+_FORMATO_QR_PARAM = openapi.Parameter(
+    "formato",
+    openapi.IN_QUERY,
+    description="Formato de salida del código QR: svg (defecto) o png.",
+    type=openapi.TYPE_STRING,
+    enum=["svg", "png"],
+    required=False,
+)
+_ANALITICAS_PARAMS = [
+    _EMPRESA_ID_PARAM,
+    openapi.Parameter(
+        "desde",
+        openapi.IN_QUERY,
+        description="Fecha inicial inclusive (YYYY-MM-DD).",
+        type=openapi.TYPE_STRING,
+        format=openapi.FORMAT_DATE,
+        required=False,
+    ),
+    openapi.Parameter(
+        "hasta",
+        openapi.IN_QUERY,
+        description="Fecha final inclusive (YYYY-MM-DD).",
+        type=openapi.TYPE_STRING,
+        format=openapi.FORMAT_DATE,
+        required=False,
+    ),
+    openapi.Parameter(
+        "dias",
+        openapi.IN_QUERY,
+        description="Ventana en días (1..365, defecto 30) si no se especifica rango completo.",
+        type=openapi.TYPE_INTEGER,
+        required=False,
+    ),
+    openapi.Parameter(
+        "perfil_id",
+        openapi.IN_QUERY,
+        description="UUID de un perfil Connect de la empresa para filtrar métricas.",
+        type=openapi.TYPE_STRING,
+        format=openapi.FORMAT_UUID,
+        required=False,
+    ),
+]
 
 
 class VCardRenderer(BaseRenderer):
@@ -91,6 +148,51 @@ class VCardRenderer(BaseRenderer):
         if isinstance(data, str):
             return data.encode(self.charset)
         return str(data or "").encode(self.charset)
+
+
+class SvgRenderer(BaseRenderer):
+    """Permite negociación ``Accept: image/svg+xml`` en descargas QR."""
+
+    media_type = "image/svg+xml"
+    format = "svg"
+    charset = "utf-8"
+
+    def render(self, data: Any, accepted_media_type: str | None = None, renderer_context: Any = None) -> bytes:
+        if isinstance(data, bytes):
+            return data
+        if isinstance(data, str):
+            return data.encode(self.charset)
+        return str(data or "").encode(self.charset)
+
+
+class PngRenderer(BaseRenderer):
+    """Permite negociación ``Accept: image/png`` en descargas QR."""
+
+    media_type = "image/png"
+    format = "png"
+    charset = None
+    render_style = "binary"
+
+    def render(self, data: Any, accepted_media_type: str | None = None, renderer_context: Any = None) -> bytes:
+        if isinstance(data, bytes):
+            return data
+        return bytes(str(data or ""), "utf-8")
+
+
+def _respuesta_qr(url: str, *, nombre_base: str, formato_raw: str | None) -> HttpResponse:
+    formato = (formato_raw or "svg").strip().lower()
+    if formato not in ("svg", "png"):
+        raise ValidationError({"formato": "Formato inválido. Use 'svg' o 'png'."})
+    filename = sanitizar_nombre_archivo_qr(nombre_base)
+    if formato == "png":
+        contenido_png = generar_qr_png(url)
+        resp = HttpResponse(contenido_png, content_type="image/png")
+        resp["Content-Disposition"] = f'inline; filename="{filename}.png"'
+        return resp
+    contenido_svg = generar_qr_svg(url)
+    resp = HttpResponse(contenido_svg, content_type="image/svg+xml; charset=utf-8")
+    resp["Content-Disposition"] = f'inline; filename="{filename}.svg"'
+    return resp
 
 
 def _validar_request_sin_nul(request: Request, slug: str | None = None) -> None:
@@ -518,3 +620,334 @@ class PerfilViewSet(NulSafeFilterMixin, BaseModelViewSet):
             perfil.activo = True
         self._guardar_perfil_validado(perfil)
         return Response(MiPerfilSerializer(perfil).data, status=status.HTTP_200_OK)
+
+    @swagger_auto_schema(
+        method="get",
+        operation_summary="Genera y descarga el código QR (SVG o PNG) del perfil Connect",
+        manual_parameters=[_FORMATO_QR_PARAM],
+        produces=["image/svg+xml", "image/png"],
+        responses={
+            200: openapi.Response(
+                description="Código QR en formato SVG o PNG",
+                schema=openapi.Schema(type=openapi.TYPE_STRING),
+            ),
+            400: "Formato o perfil inválido",
+            404: "Perfil no encontrado",
+        },
+    )
+    @action(
+        detail=True,
+        methods=["get"],
+        url_path="qr",
+        renderer_classes=[JSONRenderer, SvgRenderer, PngRenderer],
+    )
+    def qr(self, request: Request, pk: str | None = None) -> HttpResponse | Response:
+        _validar_request_sin_nul(request)
+        perfil = self.get_object()
+        try:
+            url = construir_url_publica_perfil(perfil.slug, origen="QR")
+            return _respuesta_qr(
+                url,
+                nombre_base=f"qr-{perfil.slug}",
+                formato_raw=request.query_params.get("formato"),
+            )
+        except ConnectError as exc:
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail")
+
+    @swagger_auto_schema(
+        method="get",
+        operation_summary="Genera y descarga el código QR (SVG o PNG) del perfil propio del usuario",
+        manual_parameters=[_EMPRESA_ID_PARAM, _FORMATO_QR_PARAM],
+        produces=["image/svg+xml", "image/png"],
+        responses={
+            200: openapi.Response(
+                description="Código QR en formato SVG o PNG",
+                schema=openapi.Schema(type=openapi.TYPE_STRING),
+            ),
+            400: "Formato inválido",
+            404: "Perfil no configurado",
+        },
+    )
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="mi-perfil/qr",
+        renderer_classes=[JSONRenderer, SvgRenderer, PngRenderer],
+    )
+    def mi_perfil_qr(self, request: Request) -> HttpResponse | Response:
+        _validar_request_sin_nul(request)
+        empresa = _resolver_empresa_usuario(request)
+        user = request.user
+        if not isinstance(user, Usuarios):
+            raise PermissionDenied("Se requiere un usuario autenticado.")
+        perfil = Perfil.objects.filter(id_empresa=empresa, usuario=user).first()
+        if perfil is None:
+            return Response(
+                {"detail": "Aún no tienes perfil Connect configurado en esta empresa."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        try:
+            url = construir_url_publica_perfil(perfil.slug, origen="QR")
+            return _respuesta_qr(
+                url,
+                nombre_base=f"qr-{perfil.slug}",
+                formato_raw=request.query_params.get("formato"),
+            )
+        except ConnectError as exc:
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail")
+
+
+class ConnectAnaliticasView(NulSafeFilterMixin, APIView):
+    """GET /api/connect/analiticas/ — Analíticas agregadas multi-tenant de Omni Connect (S10)."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_summary="Analíticas agregadas de toques, leads y conversión de Omni Connect",
+        manual_parameters=_ANALITICAS_PARAMS,
+        responses={
+            200: ConnectAnaliticasSerializer,
+            400: "Parámetros de rango o filtros inválidos",
+            403: "Sin acceso a la empresa solicitada",
+            404: "Perfil no encontrado en la empresa",
+        },
+    )
+    def get(self, request: Request) -> Response:
+        _validar_request_sin_nul(request)
+        empresa = _resolver_empresa_usuario(request)
+        desde = request.query_params.get("desde")
+        hasta = request.query_params.get("hasta")
+        dias_raw = request.query_params.get("dias")
+        perfil_raw = request.query_params.get("perfil_id")
+        perfil_uuid = validar_uuid_param(perfil_raw, "perfil_id") if perfil_raw else None
+
+        try:
+            datos = obtener_analiticas_connect(
+                empresa,
+                desde=desde,
+                hasta=hasta,
+                perfil_id=perfil_uuid,
+                dias=dias_raw if dias_raw is not None else 30,
+            )
+        except PerfilNoEncontradoError as exc:
+            return domain_error_response(exc, status_code=status.HTTP_404_NOT_FOUND, key="detail")
+        except ConnectError as exc:
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail")
+        except DjangoValidationError as exc:
+            raise _manejar_django_validation(exc) from exc
+
+        return Response(ConnectAnaliticasSerializer(datos).data, status=status.HTTP_200_OK)
+
+
+class TarjetaViewSet(NulSafeFilterMixin, ActiveFilterMixin, BaseModelViewSet):
+    """CRUD multi-tenant y ciclo de vida de tarjetas NFC físicas (Plan 07 S11)."""
+
+    queryset = Tarjeta.objects.all()
+    serializer_class = TarjetaSerializer
+    search_fields = ["uid_chip", "notas", "perfil__slug", "perfil__nombre_publico"]
+    ordering_fields = ["fecha_creacion", "estado", "tipo", "uid_chip"]
+    ordering = ["-fecha_creacion"]
+
+    def initial(self, request: Request, *args: Any, **kwargs: Any) -> None:
+        super().initial(request, *args, **kwargs)
+        _validar_request_sin_nul(request)
+        if request.method in ("POST", "PUT", "PATCH"):
+            _validar_payload_sin_nul(request.data)
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return Tarjeta.objects.none()
+        qs = super().get_queryset()
+        empresas = get_empresas_visible(self.request.user)
+        qs = qs.filter(id_empresa__in=empresas).select_related("id_empresa", "perfil")
+
+        empresa_param = self.request.query_params.get("empresa") or self.request.query_params.get("empresa_id")
+        if empresa_param:
+            empresa_uuid = validar_uuid_param(empresa_param, "empresa_id")
+            qs = qs.filter(id_empresa_id=empresa_uuid)
+
+        perfil_param = self.request.query_params.get("perfil") or self.request.query_params.get("perfil_id")
+        if perfil_param:
+            perfil_uuid = validar_uuid_param(perfil_param, "perfil_id")
+            qs = qs.filter(perfil_id=perfil_uuid)
+
+        estado_param = self.request.query_params.get("estado")
+        if estado_param:
+            qs = qs.filter(estado=estado_param.strip().upper())
+
+        tipo_param = self.request.query_params.get("tipo")
+        if tipo_param:
+            qs = qs.filter(tipo=tipo_param.strip().upper())
+
+        return qs
+
+    def get_object(self):
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        if lookup_url_kwarg in self.kwargs:
+            validar_uuid_param(self.kwargs[lookup_url_kwarg], self.lookup_field)
+        return super().get_object()
+
+    def _guardar_tarjeta_validada(self, instancia: Tarjeta) -> None:
+        if instancia.estado == Tarjeta.Estado.ACTIVA:
+            if instancia.perfil is None or not instancia.perfil.activo:
+                raise ValidationError(
+                    {"perfil": "Una tarjeta activa debe tener un perfil activo asignado en la misma empresa."}
+                )
+        try:
+            with transaction.atomic():
+                instancia.full_clean()
+                instancia.save()
+        except DjangoValidationError as exc:
+            raise _manejar_django_validation(exc) from exc
+        except IntegrityError as exc:
+            raise ValidationError({"uid_chip": "Ya existe una tarjeta registrada con ese UID de chip."}) from exc
+
+    def perform_create(self, serializer) -> None:
+        data = serializer.validated_data
+        empresa = data.get("id_empresa") or get_empresa_primaria(self.request.user)
+        if empresa is None:
+            raise PermissionDenied("El usuario no tiene empresa asignada.")
+        perfil = data.get("perfil")
+        if perfil is not None and (perfil.id_empresa_id != empresa.pk or not perfil.activo):
+            raise ValidationError({"perfil": "El perfil debe estar activo y pertenecer a la misma empresa."})
+
+        instancia = Tarjeta(
+            id_empresa=empresa,
+            perfil=perfil,
+            uid_chip=data["uid_chip"],
+            tipo=data.get("tipo", Tarjeta.Tipo.PVC),
+            estado=data.get("estado", Tarjeta.Estado.INVENTARIO),
+            notas=data.get("notas", ""),
+            activo=bool(data.get("activo", True)),
+        )
+        self._guardar_tarjeta_validada(instancia)
+        serializer.instance = instancia
+
+    def perform_update(self, serializer) -> None:
+        instancia: Tarjeta = serializer.instance
+        data = serializer.validated_data
+        if "id_empresa" in data and data["id_empresa"].pk != instancia.id_empresa_id:
+            raise ValidationError({"id_empresa": "La empresa de una tarjeta Connect es inmutable."})
+        if "perfil" in data and data["perfil"] is not None:
+            nuevo_perfil = data["perfil"]
+            if nuevo_perfil.id_empresa_id != instancia.id_empresa_id or not nuevo_perfil.activo:
+                raise ValidationError({"perfil": "El perfil debe estar activo y pertenecer a la misma empresa."})
+        for campo, valor in data.items():
+            setattr(instancia, campo, valor)
+        self._guardar_tarjeta_validada(instancia)
+
+    def perform_destroy(self, instance: Tarjeta) -> None:
+        if instance.estado != Tarjeta.Estado.PERDIDA:
+            instance.estado = Tarjeta.Estado.DESACTIVADA
+        instance.activo = False
+        instance.save(update_fields=["estado", "activo", "fecha_actualizacion"])
+
+    @swagger_auto_schema(
+        method="post",
+        operation_summary="Asigna una tarjeta física a un perfil activo (opcionalmente activándola)",
+        request_body=TarjetaAsignarInputSerializer,
+        responses={200: TarjetaSerializer, 400: "Datos o estado inválido", 404: "Tarjeta no encontrada"},
+    )
+    @action(detail=True, methods=["post"], url_path="asignar")
+    def asignar(self, request: Request, pk: str | None = None) -> Response:
+        tarjeta = self.get_object()
+        serializer = TarjetaAsignarInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        datos = serializer.validated_data
+        try:
+            actualizada = asignar_tarjeta(
+                tarjeta,
+                perfil_id=datos["perfil_id"],
+                activar=bool(datos.get("activar", False)),
+            )
+        except ConnectError as exc:
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail")
+        except DjangoValidationError as exc:
+            raise _manejar_django_validation(exc) from exc
+        return Response(TarjetaSerializer(actualizada).data, status=status.HTTP_200_OK)
+
+    @swagger_auto_schema(
+        method="post",
+        operation_summary="Activa una tarjeta física con perfil activo asignado",
+        responses={200: TarjetaSerializer, 400: "Estado o perfil inválido", 404: "Tarjeta no encontrada"},
+    )
+    @action(detail=True, methods=["post"], url_path="activar")
+    def activar(self, request: Request, pk: str | None = None) -> Response:
+        tarjeta = self.get_object()
+        try:
+            actualizada = activar_tarjeta(tarjeta)
+        except ConnectError as exc:
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail")
+        except DjangoValidationError as exc:
+            raise _manejar_django_validation(exc) from exc
+        return Response(TarjetaSerializer(actualizada).data, status=status.HTTP_200_OK)
+
+    @swagger_auto_schema(
+        method="post",
+        operation_summary="Desactiva una tarjeta física bloqueando su acceso público",
+        responses={200: TarjetaSerializer, 400: "Estado inválido", 404: "Tarjeta no encontrada"},
+    )
+    @action(detail=True, methods=["post"], url_path="desactivar")
+    def desactivar(self, request: Request, pk: str | None = None) -> Response:
+        tarjeta = self.get_object()
+        try:
+            actualizada = desactivar_tarjeta(tarjeta)
+        except ConnectError as exc:
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail")
+        except DjangoValidationError as exc:
+            raise _manejar_django_validation(exc) from exc
+        return Response(TarjetaSerializer(actualizada).data, status=status.HTTP_200_OK)
+
+    @swagger_auto_schema(
+        method="post",
+        operation_summary="Marca una tarjeta como PERDIDA revocando inmediatamente su acceso público",
+        responses={200: TarjetaSerializer, 404: "Tarjeta no encontrada"},
+    )
+    @action(detail=True, methods=["post"], url_path="marcar-perdida")
+    def marcar_perdida(self, request: Request, pk: str | None = None) -> Response:
+        tarjeta = self.get_object()
+        try:
+            actualizada = marcar_tarjeta_perdida(tarjeta)
+        except ConnectError as exc:
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail")
+        except DjangoValidationError as exc:
+            raise _manejar_django_validation(exc) from exc
+        return Response(TarjetaSerializer(actualizada).data, status=status.HTTP_200_OK)
+
+    @swagger_auto_schema(
+        method="get",
+        operation_summary="Genera y descarga el código QR (SVG o PNG) asociado a la tarjeta",
+        manual_parameters=[_FORMATO_QR_PARAM],
+        produces=["image/svg+xml", "image/png"],
+        responses={
+            200: openapi.Response(
+                description="Código QR en formato SVG o PNG",
+                schema=openapi.Schema(type=openapi.TYPE_STRING),
+            ),
+            400: "Tarjeta sin perfil asignado o formato inválido",
+            404: "Tarjeta no encontrada",
+        },
+    )
+    @action(
+        detail=True,
+        methods=["get"],
+        url_path="qr",
+        renderer_classes=[JSONRenderer, SvgRenderer, PngRenderer],
+    )
+    def qr(self, request: Request, pk: str | None = None) -> HttpResponse | Response:
+        tarjeta = self.get_object()
+        if tarjeta.perfil is None:
+            return domain_error_response(
+                ConnectError("La tarjeta debe tener un perfil asignado para generar su código QR."),
+                status_code=status.HTTP_400_BAD_REQUEST,
+                key="detail",
+            )
+        try:
+            url = construir_url_publica_perfil(tarjeta.perfil.slug, uid=tarjeta.uid_chip)
+            return _respuesta_qr(
+                url,
+                nombre_base=f"qr-{tarjeta.perfil.slug}-{tarjeta.uid_chip}",
+                formato_raw=request.query_params.get("formato"),
+            )
+        except ConnectError as exc:
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail")
