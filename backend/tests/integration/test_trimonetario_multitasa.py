@@ -185,10 +185,14 @@ class TestTipoTasaCambioAPIyAislamiento:
         assert str(tipo_a.id_tipo_tasa) not in ids_b
 
         # Empresa B no puede editar ni eliminar el de Empresa A ni el global
-        assert client_b.patch(f"{self.URL}{tipo_a.id_tipo_tasa}/", {"nombre": "Hack"}, format="json").status_code == 404
+        assert (
+            client_b.patch(f"{self.URL}{tipo_a.id_tipo_tasa}/", {"nombre": "Hack"}, format="json").status_code == 404
+        )
         assert client_b.delete(f"{self.URL}{tipo_a.id_tipo_tasa}/").status_code == 404
         assert (
-            client_a.patch(f"{self.URL}{tipo_global.id_tipo_tasa}/", {"nombre": "Hack Global"}, format="json").status_code
+            client_a.patch(
+                f"{self.URL}{tipo_global.id_tipo_tasa}/", {"nombre": "Hack Global"}, format="json"
+            ).status_code
             == 403
         )
         assert client_a.delete(f"{self.URL}{tipo_global.id_tipo_tasa}/").status_code == 403
@@ -428,9 +432,7 @@ class TestEquivalenciasAPIyMCP:
         assert data["tipo_tasa_codigo"] == "USDT_P2P"
         assert data["tipo_tasa_nombre"] == "Tasa Mercado USDT P2P"
 
-    def test_mcp_tools_trimonetario(
-        self, empresa_trimonetaria, moneda_usdt, escenario_tasas_ve
-    ):
+    def test_mcp_tools_trimonetario(self, empresa_trimonetaria, moneda_usdt, escenario_tasas_ve):
         MonedaEmpresaActiva.objects.update_or_create(
             empresa=empresa_trimonetaria,
             moneda=moneda_usdt,

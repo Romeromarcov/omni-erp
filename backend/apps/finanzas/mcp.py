@@ -490,9 +490,11 @@ def finanzas_calcular_equivalencias_trimonetarias(
     from apps.finanzas.services_trimonetario import calcular_equivalencias_trimonetarias  # noqa: PLC0415
 
     with _ctx(capability_token, f"{_SCOPE}:read", empresa_id=empresa_id) as ctx:
-        empresa = Empresa.objects.select_related("id_moneda_base", "id_moneda_pais").filter(
-            id_empresa=empresa_id, activo=True
-        ).first()
+        empresa = (
+            Empresa.objects.select_related("id_moneda_base", "id_moneda_pais")
+            .filter(id_empresa=empresa_id, activo=True)
+            .first()
+        )
         if empresa is None:
             return {"error": "Empresa no encontrada o inactiva."}
 
