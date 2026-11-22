@@ -22,6 +22,7 @@ Uso:
 from __future__ import annotations
 
 import logging
+import uuid
 from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Any
@@ -200,7 +201,7 @@ class OmniAgente:
         try:
             from apps.agentes.models import ConfigAgente  # noqa: PLC0415
 
-            cfg = ConfigAgente.objects.get(id_empresa=empresa_id, agente=self.AGENTE_ID)
+            cfg = ConfigAgente.objects.get(id_empresa_id=uuid.UUID(str(empresa_id)), agente=self.AGENTE_ID)
             return {
                 "nivel_autonomia": cfg.nivel_autonomia,
                 "umbral_confianza_minimo": cfg.umbral_confianza_minimo,

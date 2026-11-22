@@ -9,7 +9,7 @@ de esfuerzo, dependencias y **Definition of Done** alineado al gate de cierre
 > Estos planes NO sustituyen al Plan Maestro: lo aterrizan en frentes de trabajo paralelos.
 > Cuando un plan se ejecuta, su deuda diferida se rastrea con un CTF en [`../ctf/`](../ctf/).
 
-## Roadmap por features (ejecución autónoma) — verificado 2026-11-17 (`develop @ ff2bdb6`)
+## Roadmap por features (ejecución autónoma) — verificado 2026-11-22 (`develop @ 61d2001`, cierre `#288–#320`)
 
 > Unidad = **feature** (no sprint ni fecha). Solo es DONE lo que un test/comando confirma en verde.
 > Un agente ejecuta cada feature PENDING sin bloqueantes por su cuenta (ver Plan Maestro §5.1-bis:
@@ -25,11 +25,13 @@ de esfuerzo, dependencias y **Definition of Done** alineado al gate de cierre
 | Services de costeo real + MRP básico (1.I) | ✅ DONE (`c412772` + `#235` + `#244`) | `costeo_real_orden`, `calcular_mrp`, `CostoProduccion` + UI crear OF/consumir/BOM/rutas + E2E `produccion-completa.flow` | — |
 | UI módulos API-only (15 apps + 9 sub-módulos) | ✅ DONE (PRs `#215–#247`) | Páginas en sidebar con TanStack Query + rhf/zod + `toList()` + E2E Playwright cross-módulo | — |
 | Ratchet cobertura frontend >80 % | ✅ DONE (`vite.config.ts`) | Thresholds globales `statements: 83`, `lines: 85`, `services >= 91 %`; Vitest verde en CI | — |
-| Offline POS — cerrar ciclo frontend (CTF-008) | PENDING | `PosPage` encola `VentaOffline` en `salesOutbox` y hace flush al reconectar (`client_uuid→id_nota_venta`); test FE | ninguno (backend `#171` y hooks `#156/#160/#161` listos) |
-| `localizacion_ve` — 4 adapters faltantes + flags | PENDING | `GeneradorDocumentoLegalVE`/`LibroLegalVE`/`ProveedorTasasVE`/`MetodosPagoLocalesVE` registrados; test de registry y empresa no-VE | ninguno (framework REAL_DONE) |
-| Limpieza y estabilización (Plan 06 Fases 1–4) | EN CURSO | `1.3` pines/audits y `3.6` Node 24 ✅ (`#289`), `3.5` ✅ (`#288`); restan `str(e)` (1.1), `ruff` (3.3), barrido `# noqa`/`eslint-disable` (3.4), Decimal FE (4.2) | 2.2/2.3/4.3 requieren owner |
-| Omni Connect S2–S12 (Plan 07) | PENDING (S1 ✅ `#261`) | Perfil público NFC, captura lead, `crm.Actividad` + Kanban, dedup `core.Contacto`, conversión `Cliente`, outbox + Odoo `crm.lead`, agentes | ninguno (S2–S6) / credenciales Odoo (S9) |
-| Conciliación N:M `AsignacionPago` + Paridad ERP Odoo (Plan 08) | PENDING | `finanzas.AsignacionPago` N:M + saldo a favor `core.Contacto`; diarios/reversión/cierre/reportes contables; procurement RFQ→OC; reabastecimiento/lotes | ninguno (Bloque A + B core) / Odoo real (`CTF-011`) |
+| Offline POS — ciclo frontend + push optimista (`CTF-008`) | 🔶 EN PROGRESO (ciclo FE POS ✅; falta push optimista) | `PosPage` + `salesOutbox` + `useOutboxFlush` integrados ✅; resta `POST /api/sync/push/` optimista (Ola 6 PR-33) y pruebas de campo 8–24h | ninguno (`backend` `#171` y FE POS listos) |
+| `localizacion_ve` — 6/6 adapters + strangler fig | 🔶 EN PROGRESO (6/6 puertos ✅ `#312`; resta strangler fig) | `localizacion_ve` 6/6 puertos registrados (`#312`); resta cablear callers de `fiscal`/`ventas`/`nomina` vía `get_localizacion(empresa)` (Ola 6 PR-32) | ninguno |
+| Limpieza y estabilización (Plan 06 Fases 1–4) | ✅ AUTOMATIZABLE CERRADO (`#288–#302`) | Fases automatizables cerradas (`#288–#302`); higiene residual mypy/ruff/TZ en Ola 6 PR-31; restan ítems OWNER (`CTF-012` / backups / Railway) | `2.2`/`2.3`/`4.3` requieren owner |
+| Omni Connect S1–S12 (Plan 07) | ✅ DONE (`S1–S12` 100 %, `#261` + `#313–#317`) | Perfil público NFC/QR, captura lead, `crm.Actividad` + Kanban, dedup `core.Contacto`, conversión `Cliente`, outbox + Odoo `crm.lead`, analíticas + agentes IA (`#313–#317`) | smoke test live QA en Ola 6 PR-35 |
+| Conciliación N:M `AsignacionPago` + Paridad ERP Odoo (Plan 08) | ✅ DONE (`100 %` Bloques A + B + `CTF-011`) | `finanzas.AsignacionPago` N:M + saldo a favor `core.Contacto`; diarios/reversión/cierre/reportes contables; procurement RFQ→OC; reabastecimiento/lotes; cierre `CTF-011` | — |
+| Ola 6 — Consolidación técnica y hardening (`PR-31..PR-35`) | 🔄 EN CURSO | PR-31 sync roadmap + mypy/ruff/TZ; PR-32 strangler-fig `fiscal`/`ventas`/`nomina`; PR-33 `POST /api/sync/push/` optimista (`CTF-008`); PR-34 `SAAS_FAIL_CLOSED` + 2FA TOTP (`Plan 05 P3-1`); PR-35 smoke live QA Connect→Odoo `crm.lead` | — |
+| Plan 09 — ERP Clase Mundial VE (Trimonetario + Dual + TMS + Portales) | 🔄 EN CURSO (Ola 1A ✅ `#318`) | Motor Trimonetario/Multi-Tasa (`TipoTasaCambio`, `es_moneda_referencia`, `#318`) ✅; Contabilidad Dual, Blindaje SENIAT, Nómina Dual, Logística TMS y Portales planificados | tras cierre de Ola 6 |
 | RLS en producción (CTF-012 / Plan 06 Fase 2) | OWNER/BLOCKED | rol BD `omni_app` no-dueño + `bypass='off'` + `RLS_ENABLED=True` en staging→prod; suite RLS verde | rol BD + secret (owner) |
 | Backups con restore probado (P0-9 / P1-7) | OWNER/BLOCKED | `backup.yml` + `restore-test.yml` (`#96`) listos; falta bucket + secrets en GitHub Actions | secrets `BACKUP_*` (owner) |
 | Billing SaaS (Plan C4) · Push Odoo (D3, CTF-011) · Firma de apps (CTF-010) | OWNER/BLOCKED | ver plan respectivo | credenciales/decisión owner |
@@ -39,28 +41,25 @@ de esfuerzo, dependencias y **Definition of Done** alineado al gate de cierre
 | Plan | Archivo | Objetivo | Esfuerzo | Estado |
 |------|---------|----------|----------|--------|
 | **0** | [`00-piloto-distribuidora.md`](00-piloto-distribuidora.md) | Arrancar la distribuidora en producción (online): `.exe` + primeros usuarios + seguimiento por API | — | **EN CURSO — siguiente hito (1.F).** Software listo; restan carga de datos reales + operación 30 días (acción de owner/datos) |
-| **A** | [`01-offline-first.md`](01-offline-first.md) | Offline-first real (ADR-001) por niveles | ~6–8 semanas | EN PROGRESO parcial (backend `#171` + hooks listos; falta ciclo FE POS — [CTF-008](../ctf/CTF-008.md)) |
-| **B** | [`02-apps-multiplataforma.md`](02-apps-multiplataforma.md) | Apps firmadas + CI de empaquetado (Windows → Android → desktop; iOS futuro) | ~3–4 semanas | PLANIFICADO ([CTF-010](../ctf/CTF-010.md)) |
-| **C** | [`03-panel-saas.md`](03-panel-saas.md) | Consola del proveedor SaaS (planes, tenants, suscripciones, signup) | ~2.5 semanas (+ billing futuro) | **COMPLETADO (MVP)** — C1–C3 ✅; falta toggle en staging; C4 (billing) diferido |
-| **D** | [`04-cobranza-standalone-lubrikca-odoo.md`](04-cobranza-standalone-lubrikca-odoo.md) | Standalone de Cobranza en Lubrikca integrado a Odoo por el Hub (+ app `cxc_lubrikca`) | ~2–3 semanas | **COMPLETADO (MVP + `cxc_lubrikca` Fases 0–6 ✅ `#256`/`#258`, staging desplegado)**; falta go-live prod y D3 ([CTF-011](../ctf/CTF-011.md)) |
-| **05** | [`05-seguridad-hardening.md`](05-seguridad-hardening.md) | Hardening de seguridad y resiliencia (RLS, CI de CVEs, gateway LLM, idempotencia, 2FA…) | ~3–4 semanas | **EN CURSO** — P0-1 infra ✅ (activación [CTF-012](../ctf/CTF-012.md)); P1-1..P1-4, P2-1, P2-5 ✅; P1-7/P2-3/P2-4 parciales; P1-5/P1-6/P2-2/P2-6/P3 abiertos |
-| **06** | [`06-limpieza-y-estabilizacion.md`](06-limpieza-y-estabilizacion.md) | Limpieza y estabilización: runner, monedas, `uuid7` monótono, RLS real, higiene del repo | ~3–4 semanas (PRs pequeños) | **EN CURSO** — Fase 0 ✅, 1.2/3.2/3.5/4.1 ✅; Fases 1–4 restantes en curso |
-| **07** | [`07-omni-connect.md`](07-omni-connect.md) | Omni Connect (tarjetas NFC + perfil público + CRM ligero + outbox Odoo + agentes) — ADR-014 | ~4–6 semanas (S2–S12) | **EN CURSO** — S1 esquema ✅ (`#261`); S2–S12 planificadas en detalle |
-| **08** | [`08-conciliacion-pagos-y-paridad-odoo.md`](08-conciliacion-pagos-y-paridad-odoo.md) | Conciliación N:M `AsignacionPago` sobre `core.Contacto` + Paridad ERP estilo Odoo (contabilidad, compras/aprobaciones, inventario/almacenes, banca/Hub) | ~5–7 semanas (PRs focales) | **COMPLETADO (100 % ✅)** — Bloques A + B + cierre `CTF-011` mergeados en `develop` |
-| **09** | [`09-erp-clase-mundial-ve.md`](09-erp-clase-mundial-ve.md) | ERP Clase Mundial VE: Motor Trimonetario (USD/VES/USDT) + Multi-Tasa, Contabilidad Dual (`FISCAL`/`GERENCIAL`), Blindaje SENIAT + Imprenta Digital, Precios por Brecha, Nómina Dual VE, Logística TMS IA/GPS/Delivery, Supply Chain, RBAC Granular y Portales (Vendedores, Clientes, Conductores) | 6 Olas (PRs focales) | **PLANIFICADO** — derivado de auditoría Odoo 18+e VE (`develop @ f4f0965`) |
+| **A** | [`01-offline-first.md`](01-offline-first.md) | Offline-first real (ADR-001) por niveles | ~6–8 semanas | **EN PROGRESO** (POS offline FE ✅; resta push optimista de ediciones en Ola 6 PR-33 y pruebas campo 8–24h — [CTF-008](../ctf/CTF-008.md)) |
+| **B** | [`02-apps-multiplataforma.md`](02-apps-multiplataforma.md) | Apps firmadas + CI de empaquetado (Windows → Android → desktop; iOS futuro) | ~3–4 semanas | **AVANZADO** — AppImage/updater implementados; pendiente firma de apps en CI ([CTF-010](../ctf/CTF-010.md)) |
+| **C** | [`03-panel-saas.md`](03-panel-saas.md) | Consola del proveedor SaaS (planes, tenants, suscripciones, signup) | ~2.5 semanas (+ billing futuro) | **COMPLETADO (MVP)** — C1–C3 ✅; hardening `SAAS_FAIL_CLOSED` en Ola 6 PR-34; C4 (billing) diferido |
+| **D** | [`04-cobranza-standalone-lubrikca-odoo.md`](04-cobranza-standalone-lubrikca-odoo.md) | Standalone de Cobranza en Lubrikca integrado a Odoo por el Hub (+ app `cxc_lubrikca`) | ~2–3 semanas | **COMPLETADO (MVP + `cxc_lubrikca` Fases 0–6 ✅ `#256`/`#258`, staging desplegado)**; falta go-live prod y D3 ([CTF-011](../ctf/CTF-011.md) cerrado en Plan 08) |
+| **05** | [`05-seguridad-hardening.md`](05-seguridad-hardening.md) | Hardening de seguridad y resiliencia (RLS, CI de CVEs, gateway LLM, idempotencia, 2FA…) | ~3–4 semanas | **EN CURSO** — P0-1 infra ✅ ([CTF-012](../ctf/CTF-012.md)); P1–P2 automatizables ✅; **P3-1 (2FA/TOTP)** en Ola 6 PR-34; restan ítems owner |
+| **06** | [`06-limpieza-y-estabilizacion.md`](06-limpieza-y-estabilizacion.md) | Limpieza y estabilización: runner, monedas, `uuid7` monótono, RLS real, higiene del repo | ~3–4 semanas (PRs pequeños) | **AUTOMATIZABLE CERRADO (`#288–#302`)** — deuda residual mypy/ruff/TZ en Ola 6 PR-31; restan ítems exclusivos de owner |
+| **07** | [`07-omni-connect.md`](07-omni-connect.md) | Omni Connect (tarjetas NFC + perfil público + CRM ligero + outbox Odoo + agentes) — ADR-014 | ~4–6 semanas (S2–S12) | **COMPLETADO (`100 %` ✅)** — S1 (`#261`) + S2–S12 (`#313–#317`); smoke live QA Connect→Odoo en Ola 6 PR-35 |
+| **08** | [`08-conciliacion-pagos-y-paridad-odoo.md`](08-conciliacion-pagos-y-paridad-odoo.md) | Conciliación N:M `AsignacionPago` sobre `core.Contacto` + Paridad ERP estilo Odoo (contabilidad, compras/aprobaciones, inventario/almacenes, banca/Hub) | ~5–7 semanas (PRs focales) | **COMPLETADO (`100 %` ✅)** — Bloques A + B + cierre `CTF-011` mergeados en `develop` |
+| **09** | [`09-erp-clase-mundial-ve.md`](09-erp-clase-mundial-ve.md) | ERP Clase Mundial VE: Motor Trimonetario (USD/VES/USDT) + Multi-Tasa, Contabilidad Dual (`FISCAL`/`GERENCIAL`), Blindaje SENIAT + Imprenta Digital, Precios por Brecha, Nómina Dual VE, Logística TMS IA/GPS/Delivery, Supply Chain, RBAC Granular y Portales (Vendedores, Clientes, Conductores) | 6 Olas (PRs focales) | **EN CURSO** — **Ola 1A** (Motor Trimonetario y Multi-Tasa ✅ `#318`); **Ola 6** (`PR-31..PR-35`) en ejecución antes de Contabilidad Dual |
 
 ## Secuenciación recomendada
 
 ```
-Ahora ─┬─ Plan 0 (distribuidora online 1.F)     ← operación/datos, días
-       ├─ Plan D / CxC Lubrikca go-live         ← validación Odoo real + promote develop→main
-       ├─ Plan 06 (estabilización + RLS real)   ← endurece base de producción
-       ├─ Plan 08 Bloque A (AsignacionPago N:M) ← desbloquea pagos multi-factura y Hub Odoo
-       └─ Plan 07 (Omni Connect S2–S6)          ← captura NFC + CRM ligero + conversión Cliente
-Luego ─┬─ Plan 08 Bloque B (paridad Odoo ERP)   ← contabilidad, compras/aprobaciones, inventario, banca/Hub
-       ├─ Offline POS FE (CTF-008) + l10n_ve    ← 4 adapters + flags por capa
-       └─ Plan B (Windows firmado + CI, Android)
-Futuro ── iOS · Billing/medición LLM · offline Nivel 3 · Plan 05 P3 (2FA/RAG/WS)
+Ahora ─┬─ Ola 6 (PR-31..PR-35)                  ← roadmap+mypy/ruff → l10n strangler-fig → sync push CTF-008 → 2FA/SaaS → smoke Odoo QA
+       ├─ Plan 0 (distribuidora online 1.F)     ← operación/datos, días (acción owner)
+       └─ Plan D / CxC Lubrikca go-live         ← validación Odoo real + promote develop→main
+Luego ─┬─ Plan 09 Ola 1B–6                      ← Contabilidad Dual, Blindaje SENIAT, Precios Brecha, Nómina Dual VE, TMS IA/GPS, Portales
+       └─ Plan B / RLS prod / Backups (OWNER)   ← firma de apps (CTF-010), rol omni_app (CTF-012), secrets BACKUP_*
+Futuro ── iOS · Billing/medición LLM · offline Nivel 3
 ```
 
 ## Deuda asociada (CTF)

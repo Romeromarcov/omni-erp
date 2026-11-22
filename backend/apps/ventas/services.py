@@ -24,8 +24,6 @@ from decimal import ROUND_HALF_UP, Decimal
 from django.db import models, transaction
 from django.utils import timezone
 
-logger = logging.getLogger(__name__)
-
 from apps.contabilidad.services import AsientoError, MapeoContableNoEncontrado, generar_asiento
 from apps.core.services import FlujoError as FlujoError, verificar_paso_flujo  # re-export explícito para callers
 from apps.inventario.services import (
@@ -36,6 +34,8 @@ from apps.inventario.services import (
     registrar_movimiento,
     reservar_stock,
 )
+
+logger = logging.getLogger(__name__)
 
 
 # ── obtener_precio (M4) ───────────────────────────────────────────────────────
@@ -112,7 +112,7 @@ PedidoConfirmacionError = VentaError
 
 
 @transaction.atomic
-def confirmar_pedido(pedido, almacen, usuario, generar_cxc: bool = None) -> dict:
+def confirmar_pedido(pedido, almacen, usuario, generar_cxc: bool | None = None) -> dict:
     """
     Aprueba el pedido y reserva stock (cantidad_comprometida).
     NO crea MovimientoInventario — el stock físico sale en entregar_nota_venta().
@@ -514,7 +514,11 @@ def confirmar_nota_venta(nota_venta, almacen, usuario, *, permitir_stock_negativ
 
 @transaction.atomic
 def emitir_factura_fiscal(
-    nota_venta, numero_control: str = None, numero_factura: str = None, moneda=None, usuario=None
+    nota_venta,
+    numero_control: str | None = None,
+    numero_factura: str | None = None,
+    moneda=None,
+    usuario=None,
 ) -> dict:
     """
     Crea la FacturaFiscal desde la NotaVenta y genera el asiento contable (R-CODE-11).
@@ -825,7 +829,7 @@ def registrar_devolucion_pos(
     if factura is not None and factura.estado == "ANULADA":
         raise VentaError("La factura de la venta está ANULADA; no se puede emitir nota de crédito.")
 
-    motivos_validos = {m for m, _ in DevolucionVenta._meta.get_field("motivo_devolucion").choices}
+    motivos_validos = {m for m, _ in (DevolucionVenta._meta.get_field("motivo_devolucion").choices or ())}
     if motivo not in motivos_validos:
         raise VentaError(f"Motivo de devolución inválido: {motivo!r}. Válidos: {sorted(motivos_validos)}")
 
@@ -953,6 +957,7 @@ def registrar_devolucion_pos(
     # ── 2. Nota de crédito (fiscal si la venta fue fiscal) ───────────────────
     nota_credito_fiscal = None
     nota_credito_venta = None
+    nota_credito: NotaCreditoFiscal | NotaCreditoVenta
     if factura is not None:
         nota_credito_fiscal = NotaCreditoFiscal.objects.create(
             id_empresa=empresa,
@@ -986,6 +991,7 @@ def registrar_devolucion_pos(
                 for detalle, cantidad, subtotal, iva_linea in lineas_calculadas
             ]
         )
+        nota_credito = nota_credito_fiscal
     else:
         nota_credito_venta = NotaCreditoVenta.objects.create(
             id_empresa=empresa,
@@ -1014,11 +1020,11 @@ def registrar_devolucion_pos(
         )
         devolucion.id_nota_credito_generada = nota_credito_venta
         devolucion.save(update_fields=["id_nota_credito_generada"])
+        nota_credito = nota_credito_venta
 
     # ── 3. Reverso del dinero (Pago EGRESO en la caja de la sesión) ──────────
     # Mismo mecanismo del cobro POS (Pago + registrar_efectos_pago): la
     # TransaccionFinanciera EGRESO queda asociada a la caja física de la sesión.
-    nota_credito = nota_credito_fiscal or nota_credito_venta
     pago = Pago.objects.create(
         id_empresa=empresa,
         tipo_operacion="EGRESO",

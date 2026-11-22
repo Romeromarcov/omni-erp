@@ -1,15 +1,6 @@
 # apps/core/serializers.py
 from rest_framework import serializers
 
-
-class BaseModelSerializer(serializers.ModelSerializer):
-    """Serializer base para lógica común y validaciones reutilizables."""
-
-    def validate(self, data):
-        # Lógica de validación global aquí si aplica
-        return super().validate(data)
-
-
 from .models import (
     Departamento,
     Dispositivo,
@@ -22,6 +13,14 @@ from .models import (
     UsuarioRoles,
     Usuarios,
 )
+
+
+class BaseModelSerializer(serializers.ModelSerializer):
+    """Serializer base para lógica común y validaciones reutilizables."""
+
+    def validate(self, data):
+        # Lógica de validación global aquí si aplica
+        return super().validate(data)
 
 
 class EmpresaSerializer(BaseModelSerializer):

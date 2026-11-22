@@ -208,7 +208,6 @@ def login_view(request):
 
                 # Información de dispositivo
                 dispositivo_info = None
-                sesion_abierta = False
 
                 if device_fingerprint:
                     try:
@@ -305,7 +304,6 @@ def login_view(request):
                                             "nombre": caja_fisica.nombre,
                                         },
                                     }
-                                    sesion_abierta = True
 
                                 except Exception as e:
                                     logger.error(f"Error abriendo sesión automáticamente: {e}", exc_info=True)
@@ -333,7 +331,6 @@ def login_view(request):
                                             "nombre": caja_fisica.nombre,
                                         },
                                     }
-                                    sesion_abierta = True
 
                                 except Exception as e:
                                     logger.error(f"Error abriendo sesión automáticamente: {e}", exc_info=True)
