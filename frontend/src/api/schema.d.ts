@@ -9540,6 +9540,64 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/integration-hub/outbox/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Consulta multi-tenant de la cola Outbox y acción controlada de reintento (FALLIDO/DLQ). */
+        get: operations["integration-hub_outbox_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/integration-hub/outbox/{id_evento}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_evento: string;
+            };
+            cookie?: never;
+        };
+        /** @description Consulta multi-tenant de la cola Outbox y acción controlada de reintento (FALLIDO/DLQ). */
+        get: operations["integration-hub_outbox_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/integration-hub/outbox/{id_evento}/reintentar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_evento: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reintenta un evento Outbox en estado FALLIDO o DLQ
+         * @description Reencola un evento Outbox en ``FALLIDO`` o ``DLQ`` hacia ``PENDIENTE``.
+         */
+        post: operations["integration-hub_outbox_reintentar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/integration-hub/proveedores/": {
         parameters: {
             query?: never;
@@ -20708,7 +20766,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-21T19:13:43.468500-04:00
+             * @default 2026-11-21T23:14:01.358854-04:00
              */
             fecha_despacho: string;
             /**
@@ -23662,6 +23720,69 @@ export interface components {
              * @description Fecha ISO desde la cual sincronizar (opcional).
              */
             desde?: string | null;
+        };
+        EventoOutbox: {
+            /**
+             * Id evento
+             * Format: uuid
+             */
+            readonly id_evento?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /** Tipo evento */
+            readonly tipo_evento?: string;
+            /** Entidad tipo */
+            readonly entidad_tipo?: string;
+            /**
+             * Entidad id
+             * Format: uuid
+             */
+            readonly entidad_id?: string;
+            /** Clave idempotencia */
+            readonly clave_idempotencia?: string;
+            /** Payload */
+            readonly payload?: Record<string, never>;
+            /**
+             * Estado
+             * @enum {string}
+             */
+            readonly estado?: "PENDIENTE" | "PROCESANDO" | "ENVIADO" | "FALLIDO" | "DLQ";
+            /** Intentos */
+            readonly intentos?: number;
+            /** Max intentos */
+            readonly max_intentos?: number;
+            /**
+             * Proximo intento en
+             * Format: date-time
+             */
+            readonly proximo_intento_en?: string;
+            /**
+             * Procesado en
+             * Format: date-time
+             */
+            readonly procesado_en?: string | null;
+            /** Ultimo error */
+            readonly ultimo_error?: string;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            readonly activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
         };
         ConectorProveedor: {
             /**
@@ -51944,6 +52065,95 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["JobSincronizacion"];
                 };
+            };
+        };
+    };
+    "integration-hub_outbox_list": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["EventoOutbox"][];
+                    };
+                };
+            };
+        };
+    };
+    "integration-hub_outbox_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_evento: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventoOutbox"];
+                };
+            };
+        };
+    };
+    "integration-hub_outbox_reintentar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id_evento: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventoOutbox"];
+                };
+            };
+            /** @description El evento no está en estado reintentable (FALLIDO o DLQ) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Evento outbox no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

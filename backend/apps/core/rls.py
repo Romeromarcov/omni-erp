@@ -385,6 +385,7 @@ RLS_TABLES = {
     "integracion_b2b_configuracionintegracion": "id_empresa_id",
     # integration_hub
     "integration_hub_conectorinstancia": "id_empresa",
+    "integration_hub_evento_outbox": "id_empresa_id",
     # inventario
     "inventario_categoria_producto": "id_empresa_id",
     "inventario_conversion_unidad_medida": "id_empresa_id",

@@ -15,6 +15,7 @@ Seguridad (R-CODE-8):
 
 from __future__ import annotations
 
+import html
 import logging
 import re
 import xmlrpc.client  # nosec B411
@@ -32,7 +33,10 @@ _defuse_xmlrpc()
 
 logger = logging.getLogger(__name__)
 
-_SECRET_KV_RX = re.compile(r"(?i)\b(api_key|write_api_key|password|passwd|secret|token)\s*([:=])\s*([^\s,;\"']+)")
+_SECRET_KV_RX = re.compile(
+    r"""(?i)(["']?\b(?:api_key|write_api_key|password|passwd|secret|token)\b["']?\s*[:=]\s*)(?:"[^"]*"|'[^']*'|[^\s,;"'\}]+)"""
+)
+_BEARER_RX = re.compile(r"(?i)\b(Bearer)\s+\S+")
 _URL_CREDS_RX = re.compile(r"(https?://)[^/\s@]+@")
 
 
@@ -52,7 +56,8 @@ def sanitizar_error_odoo(exc_or_msg: Any, secrets: Iterable[str] = ()) -> str:
         msg = msg.replace(sec, "***")
 
     msg = _URL_CREDS_RX.sub(r"\1***@", msg)
-    msg = _SECRET_KV_RX.sub(r"\1\2***", msg)
+    msg = _SECRET_KV_RX.sub(r"\1***", msg)
+    msg = _BEARER_RX.sub(r"\1 ***", msg)
 
     if "Traceback (most recent call last):" in msg:
         primera_linea = msg.split("Traceback (most recent call last):", 1)[0].strip()
@@ -116,6 +121,8 @@ class OdooXMLRPCClient:
         ventas = client.call("sale.order", "search_read", [[["state", "=", "sale"]]])
     """
 
+    _CRM_LEAD_MODEL = "crm.lead"
+
     def __init__(
         self,
         host: str,
@@ -123,6 +130,9 @@ class OdooXMLRPCClient:
         user: str,
         api_key: str,
         timeout: int = 30,
+        *,
+        write_user: str | None = None,
+        write_api_key: str | None = None,
     ):
         # Normaliza el host a esquema://dominio, tolerando que el usuario pegue
         # la URL del navegador (p. ej. .../web/login) — ver normalize_odoo_host.
@@ -131,6 +141,15 @@ class OdooXMLRPCClient:
         self._user = user.strip()
         self._api_key = api_key  # No loguear
         self._timeout = timeout
+
+        self._write_user = str(write_user or "").strip()
+        self._write_api_key = str(write_api_key or "").strip()
+        if bool(self._write_user) != bool(self._write_api_key):
+            raise OdooAuthError(
+                "Configuración de escritura asimétrica: 'write_user' y 'write_api_key' deben configurarse juntos."
+            )
+        self._write_enabled = bool(self._write_user and self._write_api_key)
+        self._write_uid: int | None = None
 
         self._common_url = f"{self._host}/xmlrpc/2/common"
         self._object_url = f"{self._host}/xmlrpc/2/object"
@@ -201,6 +220,8 @@ class OdooXMLRPCClient:
         Raises:
             OdooCallError: si el llamado falla en Odoo
         """
+        if self._models is None:
+            raise OdooCallError("Cliente Odoo no autenticado.")
         try:
             result = self._models.execute_kw(
                 self._db,
@@ -215,13 +236,13 @@ class OdooXMLRPCClient:
         except xmlrpc.client.Fault as fault:
             detalle = sanitizar_error_odoo(
                 f"Odoo fault en {model}.{method}: {fault.faultCode} — {fault.faultString}",
-                secrets=(self._api_key,),
+                secrets=(self._api_key, getattr(self, "_write_api_key", "")),
             )
             raise OdooCallError(detalle) from fault
         except Exception as exc:
             detalle = sanitizar_error_odoo(
                 f"Error en {model}.{method}: {type(exc).__name__}: {exc}",
-                secrets=(self._api_key,),
+                secrets=(self._api_key, getattr(self, "_write_api_key", "")),
             )
             raise OdooCallError(detalle) from exc
 
@@ -1000,3 +1021,126 @@ class OdooXMLRPCClient:
         clean = {k: v for k, v in vals.items() if v is not None}
         result = self.call("account.payment", "create", [clean])
         return result[0] if isinstance(result, list) else result
+
+    # ── Escritura exclusiva de leads Connect (crm.lead — NUNCA res.partner) ───
+
+    def _assert_write_mode(self) -> None:
+        """Exige modo escritura explícito con ``write_user`` y ``write_api_key`` (fail-closed)."""
+        write_user = str(getattr(self, "_write_user", "") or "").strip()
+        write_key = str(getattr(self, "_write_api_key", "") or "").strip()
+        write_enabled = bool(getattr(self, "_write_enabled", False))
+        if not write_enabled or not write_user or not write_key:
+            raise OdooCallError(
+                "Modo escritura deshabilitado en OdooXMLRPCClient: requiere 'write_user' y 'write_api_key'."
+            )
+
+    @classmethod
+    def _preparar_vals_lead_crm(cls, vals: dict[str, Any], *, modelo: str = _CRM_LEAD_MODEL) -> dict[str, Any]:
+        """Valida modelo estrictamente ``crm.lead``, prohíbe ``partner_id`` y escapa HTML en ``description``."""
+        if modelo != cls._CRM_LEAD_MODEL:
+            raise OdooCallError("Operación de leads Connect restringida exclusivamente al modelo 'crm.lead'.")
+        if not isinstance(vals, dict) or not vals:
+            raise OdooCallError("Los valores para 'crm.lead' deben ser un diccionario no vacío.")
+        if "partner_id" in vals:
+            raise OdooCallError("No se permite referenciar 'res.partner' (partner_id) en leads Connect.")
+
+        clean: dict[str, Any] = {}
+        for clave, valor in vals.items():
+            if valor is None:
+                continue
+            if "\x00" in str(clave) or (isinstance(valor, str) and "\x00" in valor):
+                raise OdooCallError("Los valores para 'crm.lead' contienen caracteres inválidos.")
+            if clave == "description" and isinstance(valor, str):
+                clean[clave] = html.escape(valor, quote=True)
+            else:
+                clean[clave] = valor
+
+        if not clean:
+            raise OdooCallError("No hay campos válidos para escribir en 'crm.lead'.")
+        return clean
+
+    def _execute_crm_lead_write(self, method: str, domain: list[Any]) -> Any:
+        """Ejecuta escritura estrictamente sobre ``crm.lead`` usando credenciales de escritura."""
+        self._assert_write_mode()
+        write_user = str(getattr(self, "_write_user", "") or "").strip()
+        write_key = str(getattr(self, "_write_api_key", "") or "").strip()
+        same_creds = write_user == getattr(self, "_user", "") and write_key == getattr(self, "_api_key", "")
+        models_proxy = getattr(self, "_models", None)
+
+        if same_creds or models_proxy is None:
+            return self.call(self._CRM_LEAD_MODEL, method, domain)
+
+        if getattr(self, "_write_uid", None) is None:
+            try:
+                common = xmlrpc.client.ServerProxy(self._common_url, allow_none=True)
+                uid = common.authenticate(self._db, write_user, write_key, {})
+                uid_int = self._m2o_id(uid)
+                if uid_int is None:
+                    raise OdooAuthError(
+                        f"Autenticación de escritura Odoo fallida para '{write_user}' en '{self._host}'."
+                    )
+                self._write_uid = uid_int
+            except OdooAuthError:
+                raise
+            except Exception as exc:
+                raise OdooAuthError(
+                    sanitizar_error_odoo(
+                        f"Error de autenticación de escritura con Odoo en '{self._host}': {type(exc).__name__}",
+                        secrets=(getattr(self, "_api_key", ""), write_key),
+                    )
+                ) from None
+
+        try:
+            return models_proxy.execute_kw(
+                self._db,
+                self._write_uid,
+                write_key,
+                self._CRM_LEAD_MODEL,
+                method,
+                domain,
+                {},
+            )
+        except xmlrpc.client.Fault as fault:
+            detalle = sanitizar_error_odoo(
+                f"Odoo fault en {self._CRM_LEAD_MODEL}.{method}: {fault.faultCode} — {fault.faultString}",
+                secrets=(getattr(self, "_api_key", ""), write_key),
+            )
+            raise OdooCallError(detalle) from fault
+        except Exception as exc:
+            detalle = sanitizar_error_odoo(
+                f"Error en {self._CRM_LEAD_MODEL}.{method}: {type(exc).__name__}: {exc}",
+                secrets=(getattr(self, "_api_key", ""), write_key),
+            )
+            raise OdooCallError(detalle) from exc
+
+    def buscar_lead_crm_por_tag(self, tag: str) -> int | None:
+        """Busca un ``crm.lead`` existente por etiqueta de trazabilidad ``[OMNI-LEAD:<uuid>]``."""
+        tag_limpio = str(tag or "").strip()
+        if not tag_limpio or "\x00" in tag_limpio:
+            return None
+        encontrados = self.call(
+            self._CRM_LEAD_MODEL,
+            "search",
+            [[["description", "ilike", tag_limpio]]],
+            {"limit": 1},
+        )
+        if not encontrados:
+            return None
+        primero = encontrados[0]
+        raw_id = primero["id"] if isinstance(primero, dict) else primero
+        return self._m2o_id(raw_id)
+
+    def crear_lead_crm(self, vals: dict[str, Any]) -> int:
+        """Crea un registro estrictamente en ``crm.lead`` (nunca ``res.partner``) en modo escritura."""
+        clean = self._preparar_vals_lead_crm(vals, modelo=self._CRM_LEAD_MODEL)
+        result = self._execute_crm_lead_write("create", [clean])
+        lead_id = result[0] if isinstance(result, list) else result
+        return int(lead_id)
+
+    def actualizar_lead_crm(self, odoo_lead_id: int, vals: dict[str, Any]) -> bool:
+        """Actualiza un registro existente estrictamente en ``crm.lead`` (nunca ``res.partner``)."""
+        if isinstance(odoo_lead_id, bool) or not isinstance(odoo_lead_id, int) or odoo_lead_id <= 0:
+            raise OdooCallError("odoo_lead_id debe ser un entero positivo.")
+        clean = self._preparar_vals_lead_crm(vals, modelo=self._CRM_LEAD_MODEL)
+        result = self._execute_crm_lead_write("write", [[odoo_lead_id], clean])
+        return bool(result)

@@ -31247,6 +31247,131 @@
                 }
             ]
         },
+        "/integration-hub/outbox/": {
+            "get": {
+                "operationId": "integration-hub_outbox_list",
+                "description": "Consulta multi-tenant de la cola Outbox y acción controlada de reintento (FALLIDO/DLQ).",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/EventoOutbox"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "integration-hub"
+                ]
+            },
+            "parameters": []
+        },
+        "/integration-hub/outbox/{id_evento}/": {
+            "get": {
+                "operationId": "integration-hub_outbox_read",
+                "description": "Consulta multi-tenant de la cola Outbox y acción controlada de reintento (FALLIDO/DLQ).",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/EventoOutbox"
+                        }
+                    }
+                },
+                "tags": [
+                    "integration-hub"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_evento",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        },
+        "/integration-hub/outbox/{id_evento}/reintentar/": {
+            "post": {
+                "operationId": "integration-hub_outbox_reintentar",
+                "summary": "Reintenta un evento Outbox en estado FALLIDO o DLQ",
+                "description": "Reencola un evento Outbox en ``FALLIDO`` o ``DLQ`` hacia ``PENDIENTE``.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/EventoOutbox"
+                        }
+                    },
+                    "400": {
+                        "description": "El evento no está en estado reintentable (FALLIDO o DLQ)"
+                    },
+                    "404": {
+                        "description": "Evento outbox no encontrado"
+                    }
+                },
+                "tags": [
+                    "integration-hub"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_evento",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        },
         "/integration-hub/proveedores/": {
             "get": {
                 "operationId": "integration-hub_proveedores_list",
@@ -60316,7 +60441,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-21T19:13:43.468500-04:00"
+                    "default": "2026-11-21T23:14:01.358854-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",
@@ -65240,6 +65365,113 @@
                     "type": "string",
                     "format": "date",
                     "x-nullable": true
+                }
+            }
+        },
+        "EventoOutbox": {
+            "type": "object",
+            "properties": {
+                "id_evento": {
+                    "title": "Id evento",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "tipo_evento": {
+                    "title": "Tipo evento",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "entidad_tipo": {
+                    "title": "Entidad tipo",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "entidad_id": {
+                    "title": "Entidad id",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "clave_idempotencia": {
+                    "title": "Clave idempotencia",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "payload": {
+                    "title": "Payload",
+                    "type": "object",
+                    "readOnly": true
+                },
+                "estado": {
+                    "title": "Estado",
+                    "type": "string",
+                    "enum": [
+                        "PENDIENTE",
+                        "PROCESANDO",
+                        "ENVIADO",
+                        "FALLIDO",
+                        "DLQ"
+                    ],
+                    "readOnly": true
+                },
+                "intentos": {
+                    "title": "Intentos",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "max_intentos": {
+                    "title": "Max intentos",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "proximo_intento_en": {
+                    "title": "Proximo intento en",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "procesado_en": {
+                    "title": "Procesado en",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "ultimo_error": {
+                    "title": "Ultimo error",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "activo": {
+                    "title": "Activo",
+                    "description": "Indica si el registro está activo (False = borrado lógico).",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_actualizacion": {
+                    "title": "Fecha de Actualización",
+                    "description": "Fecha y hora de la última modificación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
                 }
             }
         },

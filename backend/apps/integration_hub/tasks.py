@@ -419,3 +419,25 @@ def sync_cartera_odoo(empresa_id: str):
     except Exception as exc:
         logger.exception("sync_cartera_odoo error: %s", exc)
         return {"error": str(exc)}
+
+
+@shared_task(name="integration_hub.despachar_outbox")
+def despachar_outbox(limite: int = 50):
+    """Despacha un lote de eventos pendientes/fallidos del Outbox multi-tenant.
+
+    Internamente usa ``rls.rls_bypass()`` acotado al descubrimiento de IDs y
+    ``rls.rls_tenant_context([empresa_id])`` + ``select_for_update(skip_locked=True)``
+    para aislar y bloquear cada evento por empresa.
+    """
+    from apps.integration_hub.outbox import despachar_lote_outbox
+
+    resultado = despachar_lote_outbox(limite=limite)
+    logger.info(
+        "despachar_outbox: procesados=%d enviados=%d fallidos=%d dlq=%d sin_destino=%d",
+        resultado["procesados"],
+        resultado["enviados"],
+        resultado["fallidos"],
+        resultado["dlq"],
+        resultado["sin_destino"],
+    )
+    return resultado

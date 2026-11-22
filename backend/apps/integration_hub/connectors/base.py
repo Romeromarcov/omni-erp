@@ -189,6 +189,10 @@ class BaseConnector(ABC):
         """Publica una gestión de cobranza en el sistema externo. Retorna su ID externo."""
         raise ConnectorNotSupportedError(f"{self.PROVIDER_NAME} no soporta push de gestiones de cobranza")
 
+    def push_lead(self, datos: Any) -> dict[str, Any]:
+        """Publica o actualiza un lead CRM en el sistema externo."""
+        raise ConnectorNotSupportedError(f"{self.PROVIDER_NAME} no soporta push de leads")
+
     def push_entidades(self, tipo_entidad: str, registros: list[dict]) -> "SyncResult":
         """
         Exporta un lote de registros canónicos al sistema externo de destino.

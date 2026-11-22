@@ -10,6 +10,7 @@ from .models import (
     ConectorInstancia,
     ConectorProveedor,
     EntidadSincronizada,
+    EventoOutbox,
     JobSincronizacion,
     LogDetalleSincronizacion,
 )
@@ -113,7 +114,7 @@ class ConectorInstanciaSerializer(serializers.ModelSerializer):
         """Retorna solo campos seguros de configuracion (sin secretos — R-CODE-8)."""
         cfg = obj.get_config()
         diario_default = cfg.get("diario_pagos_default_id")
-        return {
+        pub = {
             "host": cfg.get("host", ""),
             "db": cfg.get("db", ""),
             "user": cfg.get("user", ""),
@@ -125,6 +126,9 @@ class ConectorInstanciaSerializer(serializers.ModelSerializer):
             "diario_pagos_default_id": diario_default if diario_default not in ("", None) else None,
             # api_key, write_api_key, password, service_account: nunca (R-CODE-8)
         }
+        if "empujar_connect_leads" in cfg:
+            pub["empujar_connect_leads"] = cfg.get("empujar_connect_leads") is True
+        return pub
 
 
 class ConectorInstanciaCreateSerializer(serializers.ModelSerializer):
@@ -272,6 +276,29 @@ class ConectorInstanciaCreateSerializer(serializers.ModelSerializer):
 
         if "push_habilitado" in configuracion and not isinstance(configuracion.get("push_habilitado"), bool):
             raise serializers.ValidationError({"configuracion": "push_habilitado debe ser un valor booleano."})
+
+        if "empujar_connect_leads" in configuracion and not isinstance(
+            configuracion.get("empujar_connect_leads"), bool
+        ):
+            raise serializers.ValidationError({"configuracion": "empujar_connect_leads debe ser un valor booleano."})
+
+        if "empujar_connect_leads" in configuracion:
+            empujar_connect_leads_final = configuracion.get("empujar_connect_leads")
+        else:
+            empujar_connect_leads_final = existente.get("empujar_connect_leads", False)
+
+        if empujar_connect_leads_final is True and (not write_user_final or not write_key_final):
+            raise serializers.ValidationError(
+                {
+                    "configuracion": (
+                        "Activar 'empujar_connect_leads' requiere configurar 'write_user' y 'write_api_key'."
+                    )
+                }
+            )
+
+        if "mapa_etapas_odoo" in configuracion and configuracion.get("mapa_etapas_odoo") is not None:
+            if not isinstance(configuracion.get("mapa_etapas_odoo"), dict):
+                raise serializers.ValidationError({"configuracion": "mapa_etapas_odoo debe ser un objeto JSON."})
 
         if "diario_pagos_default_id" in configuracion:
             diario_val = configuracion.get("diario_pagos_default_id")
@@ -469,5 +496,31 @@ class EntidadSincronizadaSerializer(serializers.ModelSerializer):
             "modelo_omni",
             "ultimo_sync",
             "activo",
+        ]
+        read_only_fields = fields
+
+
+class EventoOutboxSerializer(serializers.ModelSerializer):
+    """Serializer de solo lectura para eventos de la cola Outbox multi-tenant."""
+
+    class Meta:
+        model = EventoOutbox
+        fields = [
+            "id_evento",
+            "id_empresa",
+            "tipo_evento",
+            "entidad_tipo",
+            "entidad_id",
+            "clave_idempotencia",
+            "payload",
+            "estado",
+            "intentos",
+            "max_intentos",
+            "proximo_intento_en",
+            "procesado_en",
+            "ultimo_error",
+            "activo",
+            "fecha_creacion",
+            "fecha_actualizacion",
         ]
         read_only_fields = fields
