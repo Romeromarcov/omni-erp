@@ -482,7 +482,9 @@ def _serializar_tasa_mcp(meta: dict | None) -> dict | None:
     fecha_tasa = meta.get("fecha_tasa")
     return {
         **meta,
-        "fecha_tasa": fecha_tasa.isoformat() if hasattr(fecha_tasa, "isoformat") else fecha_tasa,
+        "fecha_tasa": (
+            fecha_tasa.isoformat() if fecha_tasa is not None and hasattr(fecha_tasa, "isoformat") else fecha_tasa
+        ),
     }
 
 
