@@ -1118,6 +1118,7 @@ class MonedaEmpresaActivaSerializer(serializers.ModelSerializer):
             "es_base",
             "es_pais",
         ]
+        validators = []
 
 
 class CajaUsuarioSerializer(serializers.ModelSerializer):
