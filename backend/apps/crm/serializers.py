@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
 from typing import Any
 
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -10,8 +11,8 @@ from drf_yasg.utils import swagger_serializer_method
 from rest_framework import serializers
 
 from apps.connect.models import Perfil, Tarjeta
-from apps.connect.validators import normalizar_email, normalizar_telefono
 from apps.core.models import Contacto, Empresa, Usuarios
+from apps.core.validators import normalizar_email, normalizar_telefono
 from apps.tareas.models import Tarea
 
 from .models import Actividad, Cliente, ContactoCliente, DireccionCliente, Etapa, Lead, Pipeline
@@ -244,6 +245,9 @@ class LeadSerializer(_NulSafeSerializerMixin, serializers.ModelSerializer):
     propietario_nombre = serializers.SerializerMethodField(read_only=True)
     actividades_pendientes = serializers.SerializerMethodField(read_only=True)
     actividades_vencidas = serializers.SerializerMethodField(read_only=True)
+    cliente_convertido_nombre = serializers.SerializerMethodField(read_only=True)
+    cliente_convertido_rif = serializers.SerializerMethodField(read_only=True)
+    ya_convertido = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Lead
@@ -269,6 +273,14 @@ class LeadSerializer(_NulSafeSerializerMixin, serializers.ModelSerializer):
             "propietario",
             "propietario_nombre",
             "contacto",
+            "cliente_convertido",
+            "cliente_convertido_nombre",
+            "cliente_convertido_rif",
+            "fecha_conversion",
+            "cotizacion_convertida_id",
+            "ya_convertido",
+            "anonimizado",
+            "fecha_anonimizacion",
             "consentimiento_aceptado",
             "consentimiento_fecha",
             "consentimiento_texto",
@@ -286,6 +298,14 @@ class LeadSerializer(_NulSafeSerializerMixin, serializers.ModelSerializer):
             "etapa_nombre",
             "etapa_tipo",
             "propietario_nombre",
+            "cliente_convertido",
+            "cliente_convertido_nombre",
+            "cliente_convertido_rif",
+            "fecha_conversion",
+            "cotizacion_convertida_id",
+            "ya_convertido",
+            "anonimizado",
+            "fecha_anonimizacion",
             "actividades_pendientes",
             "actividades_vencidas",
             "fecha_creacion",
@@ -310,6 +330,18 @@ class LeadSerializer(_NulSafeSerializerMixin, serializers.ModelSerializer):
             return int(anotado)
         return obj.actividades.filter(activo=True, completada=False, fecha_vencimiento__lt=timezone.now()).count()
 
+    @swagger_serializer_method(serializer_or_field=serializers.CharField())
+    def get_cliente_convertido_nombre(self, obj: Lead) -> str:
+        return obj.cliente_convertido.razon_social if obj.cliente_convertido_id and obj.cliente_convertido else ""
+
+    @swagger_serializer_method(serializer_or_field=serializers.CharField())
+    def get_cliente_convertido_rif(self, obj: Lead) -> str:
+        return obj.cliente_convertido.rif if obj.cliente_convertido_id and obj.cliente_convertido else ""
+
+    @swagger_serializer_method(serializer_or_field=serializers.BooleanField())
+    def get_ya_convertido(self, obj: Lead) -> bool:
+        return bool(obj.cliente_convertido_id)
+
     def validate_nombre(self, value: str) -> str:
         limpio = (value or "").strip()
         if not limpio:
@@ -318,6 +350,8 @@ class LeadSerializer(_NulSafeSerializerMixin, serializers.ModelSerializer):
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         inst = self.instance if isinstance(self.instance, Lead) else None
+        if inst is not None and inst.anonimizado:
+            raise serializers.ValidationError({"detail": "No se puede modificar un lead anonimizado."})
         if inst is not None and "id_empresa" in attrs and attrs["id_empresa"].pk != inst.id_empresa_id:
             raise serializers.ValidationError({"id_empresa": "La empresa del lead es inmutable."})
 
@@ -404,6 +438,52 @@ class MoverEtapaSerializer(_NulSafeSerializerMixin, serializers.Serializer):
     """Payload para mover un lead a otra etapa dentro de su pipeline."""
 
     etapa = serializers.PrimaryKeyRelatedField(queryset=Etapa.objects.filter(activo=True), required=True)
+
+
+class AnonimizarLeadInputSerializer(_NulSafeSerializerMixin, serializers.Serializer):
+    """Payload opcional para anonimizar PII de un ``Lead`` (derecho al olvido)."""
+
+    motivo = serializers.CharField(required=False, allow_blank=True, max_length=300)
+
+
+class ConvertirLeadInputSerializer(_NulSafeSerializerMixin, serializers.Serializer):
+    """Payload para convertir un ``Lead`` en ``crm.Cliente`` (+ ``Cotizacion`` opcional)."""
+
+    razon_social = serializers.CharField(required=False, allow_blank=True, max_length=255)
+    nombre_comercial = serializers.CharField(required=False, allow_blank=True, max_length=255)
+    rif = serializers.CharField(required=False, allow_blank=True, max_length=20)
+    email = serializers.EmailField(required=False, allow_blank=True, max_length=254)
+    telefono = serializers.CharField(required=False, allow_blank=True, max_length=50)
+    direccion = serializers.CharField(required=False, allow_blank=True)
+    tipo_cliente = serializers.ChoiceField(
+        choices=[("CONTADO", "Contado"), ("CREDITO", "Crédito")],
+        required=False,
+        default="CONTADO",
+    )
+    limite_credito = serializers.DecimalField(
+        max_digits=18,
+        decimal_places=2,
+        min_value=Decimal("0"),
+        required=False,
+        default=Decimal("0"),
+    )
+    dias_credito = serializers.IntegerField(min_value=0, max_value=3650, required=False, default=0)
+    reutilizar_cliente_existente = serializers.BooleanField(required=False, default=True)
+    crear_cotizacion = serializers.BooleanField(required=False, default=False)
+    id_moneda = serializers.UUIDField(required=False, allow_null=True)
+    fecha_cotizacion = serializers.DateField(required=False, allow_null=True)
+    fecha_vencimiento = serializers.DateField(required=False, allow_null=True)
+    observaciones_cotizacion = serializers.CharField(required=False, allow_blank=True)
+
+
+class ConvertirLeadResponseSerializer(serializers.Serializer):
+    """Respuesta estructurada de ``POST /api/crm/leads/{id}/convertir-cliente/``."""
+
+    ya_convertido = serializers.BooleanField()
+    lead = LeadSerializer()
+    cliente = ClienteSerializer()
+    cotizacion_id = serializers.UUIDField(allow_null=True)
+    numero_cotizacion = serializers.CharField(allow_null=True)
 
 
 class ActividadSerializer(_NulSafeSerializerMixin, serializers.ModelSerializer):

@@ -4632,6 +4632,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/crm/leads/{id_lead}/anonimizar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Lead. */
+                id_lead: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Anonimiza la PII de un lead conforme al derecho al olvido
+         * @description CRUD multi-tenant de ``crm.Lead`` con filtros Kanban y acción ``mover-etapa``.
+         */
+        post: operations["crm_leads_anonimizar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/leads/{id_lead}/convertir-cliente/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Lead. */
+                id_lead: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Convierte atómica e idempotentemente un lead en cliente (+ cotización borrador opcional)
+         * @description CRUD multi-tenant de ``crm.Lead`` con filtros Kanban y acción ``mover-etapa``.
+         */
+        post: operations["crm_leads_convertir_cliente"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/crm/leads/{id_lead}/desactivar/": {
         parameters: {
             query?: never;
@@ -19569,6 +19615,34 @@ export interface components {
              * Format: uuid
              */
             contacto?: string | null;
+            /**
+             * Cliente convertido
+             * Format: uuid
+             */
+            readonly cliente_convertido?: string | null;
+            /** Cliente convertido nombre */
+            readonly cliente_convertido_nombre?: string;
+            /** Cliente convertido rif */
+            readonly cliente_convertido_rif?: string;
+            /**
+             * Fecha conversion
+             * Format: date-time
+             */
+            readonly fecha_conversion?: string | null;
+            /**
+             * Cotizacion convertida id
+             * Format: uuid
+             */
+            readonly cotizacion_convertida_id?: string | null;
+            /** Ya convertido */
+            readonly ya_convertido?: boolean;
+            /** Anonimizado */
+            readonly anonimizado?: boolean;
+            /**
+             * Fecha anonimizacion
+             * Format: date-time
+             */
+            readonly fecha_anonimizacion?: string | null;
             /** Consentimiento aceptado */
             consentimiento_aceptado?: boolean;
             /**
@@ -19599,6 +19673,84 @@ export interface components {
              * @description Fecha y hora de la última modificación del registro.
              */
             readonly fecha_actualizacion?: string;
+        };
+        AnonimizarLeadInput: {
+            /** Motivo */
+            motivo?: string;
+        };
+        ConvertirLeadInput: {
+            /** Razon social */
+            razon_social?: string;
+            /** Nombre comercial */
+            nombre_comercial?: string;
+            /** Rif */
+            rif?: string;
+            /**
+             * Email
+             * Format: email
+             */
+            email?: string;
+            /** Telefono */
+            telefono?: string;
+            /** Direccion */
+            direccion?: string;
+            /**
+             * Tipo cliente
+             * @default CONTADO
+             * @enum {string}
+             */
+            tipo_cliente: "CONTADO" | "CREDITO";
+            /**
+             * Limite credito
+             * Format: decimal
+             * @default 0.00
+             */
+            limite_credito: string;
+            /**
+             * Dias credito
+             * @default 0
+             */
+            dias_credito: number;
+            /**
+             * Reutilizar cliente existente
+             * @default true
+             */
+            reutilizar_cliente_existente: boolean;
+            /**
+             * Crear cotizacion
+             * @default false
+             */
+            crear_cotizacion: boolean;
+            /**
+             * Id moneda
+             * Format: uuid
+             */
+            id_moneda?: string | null;
+            /**
+             * Fecha cotizacion
+             * Format: date
+             */
+            fecha_cotizacion?: string | null;
+            /**
+             * Fecha vencimiento
+             * Format: date
+             */
+            fecha_vencimiento?: string | null;
+            /** Observaciones cotizacion */
+            observaciones_cotizacion?: string;
+        };
+        ConvertirLeadResponse: {
+            /** Ya convertido */
+            ya_convertido: boolean;
+            lead: components["schemas"]["Lead"];
+            cliente: components["schemas"]["Cliente"];
+            /**
+             * Cotizacion id
+             * Format: uuid
+             */
+            cotizacion_id: string | null;
+            /** Numero cotizacion */
+            numero_cotizacion: string | null;
         };
         MoverEtapa: {
             /**
@@ -20556,7 +20708,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-21T17:21:47.818728-04:00
+             * @default 2026-11-21T19:13:43.468500-04:00
              */
             fecha_despacho: string;
             /**
@@ -40560,6 +40712,86 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Lead"];
                 };
+            };
+        };
+    };
+    crm_leads_anonimizar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Lead. */
+                id_lead: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnonimizarLeadInput"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Lead"];
+                };
+            };
+            /** @description Lead ya anonimizado o inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Lead no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    crm_leads_convertir_cliente: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Lead. */
+                id_lead: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConvertirLeadInput"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConvertirLeadResponse"];
+                };
+            };
+            /** @description Datos o estado inválido para convertir */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Lead no encontrado */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

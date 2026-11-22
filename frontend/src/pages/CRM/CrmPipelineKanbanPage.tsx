@@ -11,13 +11,16 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
+  DialogContentText,
   DialogTitle,
   Divider,
   Drawer,
+  FormControlLabel,
   IconButton,
   MenuItem,
   Paper,
   Stack,
+  Switch,
   TextField,
   Typography,
 } from '@mui/material';
@@ -26,7 +29,7 @@ import CheckCircleOutlineOutlined from '@mui/icons-material/CheckCircleOutlineOu
 import CloseOutlined from '@mui/icons-material/CloseOutlined';
 import ReplayOutlined from '@mui/icons-material/ReplayOutlined';
 import { PageContainer, PageHeader } from '../../components/ui';
-import { crmKeys } from '../../lib/queryKeys';
+import { crmKeys, ventasKeys } from '../../lib/queryKeys';
 import {
   crmCrmService,
   type CrmActividad,
@@ -87,6 +90,18 @@ const ACTIVIDAD_FORM_VACIO = {
   fecha_vencimiento: '',
 };
 
+const RIF_REGEX = /^[VJEGBP]-[0-9]+$/;
+
+const CONVERSION_FORM_VACIO = {
+  razon_social: '',
+  rif: '',
+  email: '',
+  telefono: '',
+  direccion: '',
+  tipo_cliente: 'CONTADO' as 'CONTADO' | 'CREDITO',
+  crear_cotizacion: false,
+};
+
 function formatearFecha(iso?: string | null): string {
   if (!iso) return '';
   const d = new Date(iso);
@@ -114,6 +129,14 @@ const CrmPipelineKanbanPage: React.FC = () => {
   const [actividadForm, setActividadForm] = useState(ACTIVIDAD_FORM_VACIO);
   const [actividadError, setActividadError] = useState('');
   const [draggingLeadId, setDraggingLeadId] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState('');
+
+  const [convertirOpen, setConvertirOpen] = useState(false);
+  const [conversionForm, setConversionForm] = useState(CONVERSION_FORM_VACIO);
+  const [conversionError, setConversionError] = useState('');
+
+  const [anonimizarOpen, setAnonimizarOpen] = useState(false);
+  const [anonimizarError, setAnonimizarError] = useState('');
 
   const pipelinesQuery = useQuery({
     queryKey: crmKeys.pipelinesAll(empresaId),
@@ -288,6 +311,65 @@ const CrmPipelineKanbanPage: React.FC = () => {
     },
   });
 
+  const convertirLeadMutation = useMutation({
+    mutationFn: () => {
+      if (!leadDetalleId) {
+        throw new Error('Selecciona un lead para convertir a cliente.');
+      }
+      return crmCrmService.convertirLeadACliente(leadDetalleId, {
+        razon_social: conversionForm.razon_social.trim(),
+        rif: conversionForm.rif.trim().toUpperCase(),
+        email: conversionForm.email.trim(),
+        telefono: conversionForm.telefono.trim(),
+        direccion: conversionForm.direccion.trim(),
+        tipo_cliente: conversionForm.tipo_cliente,
+        crear_cotizacion: conversionForm.crear_cotizacion,
+      });
+    },
+    onSuccess: (res) => {
+      setConvertirOpen(false);
+      setConversionError('');
+      setErrorMsg('');
+      const msgCot = res.numero_cotizacion
+        ? ` Cotización borrador ${res.numero_cotizacion} creada.`
+        : '';
+      setSuccessMsg(
+        res.ya_convertido
+          ? `Lead ya estaba convertido al cliente ${res.cliente.razon_social}.${msgCot}`
+          : `Lead convertido a cliente ${res.cliente.razon_social}.${msgCot}`,
+      );
+      void qc.invalidateQueries({ queryKey: crmKeys.leadsAll(empresaId) });
+      void qc.invalidateQueries({ queryKey: crmKeys.pipelinesAll(empresaId) });
+      void qc.invalidateQueries({ queryKey: crmKeys.clientesAll() });
+      if (res.cotizacion_id) {
+        void qc.invalidateQueries({ queryKey: ventasKeys.cotizaciones.all() });
+      }
+    },
+    onError: (err) => {
+      setConversionError(mensajeDeError(err, 'No se pudo convertir el lead a cliente.'));
+    },
+  });
+
+  const anonimizarLeadMutation = useMutation({
+    mutationFn: () => {
+      if (!leadDetalleId) {
+        throw new Error('Selecciona un lead para anonimizar.');
+      }
+      return crmCrmService.anonimizarLead(leadDetalleId);
+    },
+    onSuccess: () => {
+      setAnonimizarOpen(false);
+      setAnonimizarError('');
+      setErrorMsg('');
+      setSuccessMsg('PII del lead anonimizada y auditada correctamente.');
+      void qc.invalidateQueries({ queryKey: crmKeys.leadsAll(empresaId) });
+      void qc.invalidateQueries({ queryKey: crmKeys.clientesAll() });
+    },
+    onError: (err) => {
+      setAnonimizarError(mensajeDeError(err, 'No se pudo anonimizar el lead.'));
+    },
+  });
+
   function abrirDetalleLead(id: string) {
     setActividadForm(ACTIVIDAD_FORM_VACIO);
     setActividadError('');
@@ -297,7 +379,47 @@ const CrmPipelineKanbanPage: React.FC = () => {
   function cerrarDetalleLead() {
     setActividadForm(ACTIVIDAD_FORM_VACIO);
     setActividadError('');
+    setConvertirOpen(false);
+    setConversionError('');
+    setAnonimizarOpen(false);
+    setAnonimizarError('');
     setLeadDetalleId(null);
+  }
+
+  function abrirConvertirCliente() {
+    if (!leadDetalle) return;
+    const razonDefault =
+      (leadDetalle.empresa_nombre ?? '').trim() ||
+      `${leadDetalle.nombre} ${leadDetalle.apellido ?? ''}`.trim();
+    setConversionForm({
+      razon_social: razonDefault,
+      rif: '',
+      email: leadDetalle.email ?? '',
+      telefono: leadDetalle.telefono ?? '',
+      direccion: '',
+      tipo_cliente: 'CONTADO',
+      crear_cotizacion: false,
+    });
+    setConversionError('');
+    setConvertirOpen(true);
+  }
+
+  function handleConvertirSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setConversionError('');
+    const razon = conversionForm.razon_social.trim();
+    const rif = conversionForm.rif.trim().toUpperCase();
+    if (!razon) {
+      setConversionError('La razón social es obligatoria.');
+      return;
+    }
+    if (!RIF_REGEX.test(rif)) {
+      setConversionError(
+        'El RIF debe tener formato V/J/E/G/B/P seguido de guion y números (ej. J-12345678).',
+      );
+      return;
+    }
+    convertirLeadMutation.mutate();
   }
 
   function abrirNuevoLead() {
@@ -349,6 +471,12 @@ const CrmPipelineKanbanPage: React.FC = () => {
       {errorMsg && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErrorMsg('')}>
           {errorMsg}
+        </Alert>
+      )}
+
+      {successMsg && (
+        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccessMsg('')}>
+          {successMsg}
         </Alert>
       )}
 
@@ -516,12 +644,15 @@ const CrmPipelineKanbanPage: React.FC = () => {
                       const nombreCompleto = `${lead.nombre} ${lead.apellido ?? ''}`.trim();
                       const pendientes = lead.actividades_pendientes ?? 0;
                       const vencidas = lead.actividades_vencidas ?? 0;
+                      const leadConvertido = Boolean(lead.ya_convertido || lead.cliente_convertido);
+                      const leadAnonimizado = Boolean(lead.anonimizado);
                       return (
                         <Card
                           key={leadId}
                           variant="outlined"
-                          draggable
+                          draggable={!leadAnonimizado}
                           onDragStart={(ev) => {
+                            if (leadAnonimizado) return;
                             setDraggingLeadId(leadId);
                             ev.dataTransfer?.setData('text/plain', leadId);
                           }}
@@ -582,6 +713,12 @@ const CrmPipelineKanbanPage: React.FC = () => {
                                   label={`${vencidas} venc.`}
                                 />
                               )}
+                              {leadConvertido && (
+                                <Chip size="small" color="success" label="Convertido" />
+                              )}
+                              {leadAnonimizado && (
+                                <Chip size="small" color="warning" label="Anonimizado" />
+                              )}
                             </Stack>
 
                             <Stack direction="row" spacing={1} alignItems="center">
@@ -589,6 +726,7 @@ const CrmPipelineKanbanPage: React.FC = () => {
                                 select
                                 size="small"
                                 label="Mover a etapa"
+                                disabled={leadAnonimizado}
                                 value={lead.etapa ?? etapaId}
                                 onChange={(ev) => {
                                   const destId = ev.target.value;
@@ -761,6 +899,20 @@ const CrmPipelineKanbanPage: React.FC = () => {
               {leadDetalle.propietario_nombre && (
                 <Chip size="small" variant="outlined" label={`Propietario: ${leadDetalle.propietario_nombre}`} />
               )}
+              {(leadDetalle.ya_convertido || Boolean(leadDetalle.cliente_convertido)) && (
+                <Chip
+                  size="small"
+                  color="success"
+                  label={
+                    leadDetalle.cliente_convertido_rif
+                      ? `Convertido · ${leadDetalle.cliente_convertido_rif}`
+                      : 'Convertido'
+                  }
+                />
+              )}
+              {leadDetalle.anonimizado && (
+                <Chip size="small" color="warning" label="Anonimizado" />
+              )}
             </Stack>
 
             <Stack spacing={0.5}>
@@ -769,6 +921,14 @@ const CrmPipelineKanbanPage: React.FC = () => {
               )}
               {leadDetalle.telefono && (
                 <Typography variant="body2">Teléfono: {leadDetalle.telefono}</Typography>
+              )}
+              {leadDetalle.cliente_convertido_nombre && (
+                <Typography variant="body2" color="success.main">
+                  Cliente: {leadDetalle.cliente_convertido_nombre}
+                  {leadDetalle.cliente_convertido_rif
+                    ? ` (${leadDetalle.cliente_convertido_rif})`
+                    : ''}
+                </Typography>
               )}
               {leadDetalle.mensaje && (
                 <Typography variant="body2" color="text.secondary">
@@ -781,6 +941,7 @@ const CrmPipelineKanbanPage: React.FC = () => {
               select
               size="small"
               label="Etapa actual"
+              disabled={Boolean(leadDetalle.anonimizado)}
               value={leadDetalle.etapa ?? ''}
               onChange={(ev) => {
                 const dest = ev.target.value;
@@ -795,6 +956,39 @@ const CrmPipelineKanbanPage: React.FC = () => {
                 </MenuItem>
               ))}
             </TextField>
+
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              <Button
+                size="small"
+                variant="contained"
+                color="success"
+                disabled={
+                  Boolean(leadDetalle.ya_convertido || leadDetalle.cliente_convertido) ||
+                  Boolean(leadDetalle.anonimizado)
+                }
+                onClick={abrirConvertirCliente}
+              >
+                Convertir a cliente
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                color="error"
+                disabled={Boolean(leadDetalle.anonimizado)}
+                onClick={() => {
+                  setAnonimizarError('');
+                  setAnonimizarOpen(true);
+                }}
+              >
+                Anonimizar PII
+              </Button>
+            </Stack>
+
+            {leadDetalle.anonimizado && (
+              <Alert severity="warning">
+                Este lead fue anonimizado por derecho al olvido. Sus datos personales fueron suprimidos.
+              </Alert>
+            )}
 
             <Divider />
 
@@ -857,7 +1051,7 @@ const CrmPipelineKanbanPage: React.FC = () => {
                 <Button
                   type="submit"
                   variant="contained"
-                  disabled={crearActividadMutation.isPending}
+                  disabled={crearActividadMutation.isPending || Boolean(leadDetalle.anonimizado)}
                 >
                   {crearActividadMutation.isPending ? 'Registrando…' : 'Registrar actividad'}
                 </Button>
@@ -947,6 +1141,172 @@ const CrmPipelineKanbanPage: React.FC = () => {
           </Stack>
         )}
       </Drawer>
+
+      {/* Modal Convertir Lead a Cliente */}
+      <Dialog
+        open={convertirOpen}
+        onClose={() => {
+          setConversionError('');
+          setConvertirOpen(false);
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
+        <Box component="form" onSubmit={handleConvertirSubmit} noValidate>
+          <DialogTitle>Convertir lead a cliente</DialogTitle>
+          <DialogContent>
+            {conversionError && (
+              <Alert severity="error" sx={{ mt: 1, mb: 1 }} onClose={() => setConversionError('')}>
+                {conversionError}
+              </Alert>
+            )}
+            <Stack spacing={2} sx={{ mt: 1 }}>
+              <TextField
+                label="Razón social"
+                required
+                fullWidth
+                value={conversionForm.razon_social}
+                onChange={(ev) =>
+                  setConversionForm({ ...conversionForm, razon_social: ev.target.value })
+                }
+              />
+              <TextField
+                label="RIF"
+                required
+                fullWidth
+                placeholder="J-12345678"
+                helperText="Formato válido: V/J/E/G/B/P seguido de guion y números (ej. J-12345678)."
+                value={conversionForm.rif}
+                onChange={(ev) =>
+                  setConversionForm({ ...conversionForm, rif: ev.target.value.toUpperCase() })
+                }
+              />
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+                <TextField
+                  label="Correo electrónico"
+                  type="email"
+                  fullWidth
+                  value={conversionForm.email}
+                  onChange={(ev) =>
+                    setConversionForm({ ...conversionForm, email: ev.target.value })
+                  }
+                />
+                <TextField
+                  label="Teléfono"
+                  fullWidth
+                  value={conversionForm.telefono}
+                  onChange={(ev) =>
+                    setConversionForm({ ...conversionForm, telefono: ev.target.value })
+                  }
+                />
+              </Stack>
+              <TextField
+                label="Dirección fiscal"
+                multiline
+                minRows={2}
+                fullWidth
+                value={conversionForm.direccion}
+                onChange={(ev) =>
+                  setConversionForm({ ...conversionForm, direccion: ev.target.value })
+                }
+              />
+              <TextField
+                select
+                label="Tipo de cliente"
+                fullWidth
+                value={conversionForm.tipo_cliente}
+                onChange={(ev) =>
+                  setConversionForm({
+                    ...conversionForm,
+                    tipo_cliente: ev.target.value as 'CONTADO' | 'CREDITO',
+                  })
+                }
+              >
+                <MenuItem value="CONTADO">Contado</MenuItem>
+                <MenuItem value="CREDITO">Crédito</MenuItem>
+              </TextField>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={conversionForm.crear_cotizacion}
+                    onChange={(ev) =>
+                      setConversionForm({
+                        ...conversionForm,
+                        crear_cotizacion: ev.target.checked,
+                      })
+                    }
+                  />
+                }
+                label="Crear cotización borrador"
+              />
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button
+              type="button"
+              onClick={() => {
+                setConversionError('');
+                setConvertirOpen(false);
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              color="success"
+              disabled={convertirLeadMutation.isPending}
+            >
+              {convertirLeadMutation.isPending ? 'Convirtiendo…' : 'Confirmar conversión'}
+            </Button>
+          </DialogActions>
+        </Box>
+      </Dialog>
+
+      {/* Diálogo de confirmación Anonimizar PII */}
+      <Dialog
+        open={anonimizarOpen}
+        onClose={() => {
+          setAnonimizarError('');
+          setAnonimizarOpen(false);
+        }}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Confirmar anonimización de PII</DialogTitle>
+        <DialogContent>
+          {anonimizarError && (
+            <Alert severity="error" sx={{ mb: 1.5 }} onClose={() => setAnonimizarError('')}>
+              {anonimizarError}
+            </Alert>
+          )}
+          <DialogContentText>
+            Esta acción reemplazará permanentemente los datos personales del lead (nombre, apellido,
+            empresa, correo, teléfono y mensaje) conforme al derecho al olvido y registrará el
+            evento en auditoría. Esta operación no se puede deshacer.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            type="button"
+            onClick={() => {
+              setAnonimizarError('');
+              setAnonimizarOpen(false);
+            }}
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="button"
+            variant="contained"
+            color="error"
+            disabled={anonimizarLeadMutation.isPending}
+            onClick={() => anonimizarLeadMutation.mutate()}
+          >
+            {anonimizarLeadMutation.isPending ? 'Anonimizando…' : 'Confirmar anonimización'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </PageContainer>
   );
 };

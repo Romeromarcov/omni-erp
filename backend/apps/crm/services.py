@@ -12,12 +12,13 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.connect.models import Perfil, Tarjeta
-from apps.connect.validators import normalizar_email, normalizar_telefono
 from apps.core.exceptions import DomainError
 from apps.core.models import Contacto, Empresa, Usuarios
+from apps.core.validators import normalizar_email, normalizar_telefono
 from apps.tareas.models import Tarea
 
 from .models import Actividad, Etapa, Lead, Pipeline
+from .services_dedup import resolver_o_vincular_contacto
 
 
 class CrmError(DomainError):
@@ -199,12 +200,25 @@ def crear_lead_crm(
 
     email_limpio = (email or "").strip()
     telefono_limpio = (telefono or "").strip()
+    apellido_limpio = (apellido or "").strip()
+    empresa_nombre_limpio = (empresa_nombre or "").strip()
+
+    contacto_resuelto = contacto
+    if contacto_resuelto is None:
+        contacto_resuelto = resolver_o_vincular_contacto(
+            empresa,
+            nombre=nombre_limpio,
+            apellido=apellido_limpio,
+            email=email_limpio,
+            telefono=telefono_limpio,
+            empresa_nombre=empresa_nombre_limpio,
+        )
 
     lead = Lead(
         id_empresa=empresa,
         nombre=nombre_limpio,
-        apellido=(apellido or "").strip(),
-        empresa_nombre=(empresa_nombre or "").strip(),
+        apellido=apellido_limpio,
+        empresa_nombre=empresa_nombre_limpio,
         email=email_limpio,
         telefono=telefono_limpio,
         email_normalizado=normalizar_email(email_limpio),
@@ -216,7 +230,7 @@ def crear_lead_crm(
         pipeline=pipeline_obj,
         etapa=etapa_obj,
         propietario=propietario,
-        contacto=contacto,
+        contacto=contacto_resuelto,
         consentimiento_aceptado=bool(consentimiento_aceptado),
         consentimiento_fecha=consent_fecha_final,
         consentimiento_texto=consent_texto_limpio,

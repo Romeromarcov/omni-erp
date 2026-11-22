@@ -28,6 +28,7 @@ from apps.core import rls
 from apps.core.exceptions import DomainError
 from apps.core.models import Empresa, Usuarios
 from apps.crm.models import Etapa, Lead, Pipeline
+from apps.crm.services_dedup import resolver_o_vincular_contacto
 
 from .models import Perfil, Tarjeta, Toque
 from .validators import (
@@ -537,6 +538,15 @@ def capturar_lead_publico(
             if etapa is None:
                 raise ConnectError("El pipeline predeterminado no tiene etapas abiertas configuradas.")
 
+            contacto = resolver_o_vincular_contacto(
+                empresa,
+                nombre=nombre,
+                apellido=apellido,
+                email=email,
+                telefono=telefono,
+                empresa_nombre=empresa_nombre,
+            )
+
             lead = Lead(
                 id_empresa=empresa,
                 nombre=nombre,
@@ -553,6 +563,7 @@ def capturar_lead_publico(
                 pipeline=pipeline,
                 etapa=etapa,
                 propietario_id=propietario_id,
+                contacto=contacto,
                 consentimiento_aceptado=True,
                 consentimiento_fecha=timezone.now(),
                 consentimiento_texto=consentimiento_texto,
