@@ -9,8 +9,8 @@ from rest_framework import serializers
 
 from apps.core.models import Empresa, Usuarios
 
-from .models import Perfil
-from .validators import normalizar_slug
+from .models import Perfil, Tarjeta
+from .validators import normalizar_slug, normalizar_uid_chip
 
 
 def _validar_sin_nul_dict(data: Any, campo: str = "error") -> None:
@@ -177,3 +177,108 @@ class MiPerfilSerializer(_SlugNormalizerMixin, serializers.ModelSerializer):
             "fecha_creacion",
             "fecha_actualizacion",
         ]
+
+
+class _UidNormalizerMixin:
+    """Normaliza ``uid_chip`` antes de ejecutar validadores de campo DRF."""
+
+    def to_internal_value(self, data: Any) -> Any:
+        _validar_sin_nul_dict(data)
+        if isinstance(data, Mapping) and "uid_chip" in data and isinstance(data["uid_chip"], str):
+            mutable = dict(data)
+            mutable["uid_chip"] = normalizar_uid_chip(mutable["uid_chip"])
+            data = mutable
+        return super().to_internal_value(data)  # type: ignore[misc]
+
+
+class TarjetaSerializer(_UidNormalizerMixin, serializers.ModelSerializer):
+    """Serializer CRUD multi-tenant para ``connect.Tarjeta`` (CTF-005 whitelist)."""
+
+    id_empresa = serializers.PrimaryKeyRelatedField(queryset=Empresa.objects.all(), required=False)
+    perfil = serializers.PrimaryKeyRelatedField(queryset=Perfil.objects.all(), required=False, allow_null=True)
+    perfil_slug = serializers.CharField(source="perfil.slug", read_only=True, default=None)
+    perfil_nombre = serializers.CharField(source="perfil.nombre_publico", read_only=True, default=None)
+
+    class Meta:
+        model = Tarjeta
+        fields = [
+            "id_tarjeta",
+            "id_empresa",
+            "perfil",
+            "perfil_slug",
+            "perfil_nombre",
+            "uid_chip",
+            "tipo",
+            "estado",
+            "fecha_activacion",
+            "notas",
+            "activo",
+            "fecha_creacion",
+            "fecha_actualizacion",
+        ]
+        read_only_fields = [
+            "id_tarjeta",
+            "perfil_slug",
+            "perfil_nombre",
+            "fecha_activacion",
+            "fecha_creacion",
+            "fecha_actualizacion",
+        ]
+        validators: list[Any] = []
+
+
+class TarjetaAsignarInputSerializer(serializers.Serializer):
+    """Payload de asignación de tarjeta física a un ``Perfil`` del mismo tenant."""
+
+    perfil_id = serializers.UUIDField(required=True)
+    activar = serializers.BooleanField(required=False, default=False)
+
+    def to_internal_value(self, data: Any) -> Any:
+        _validar_sin_nul_dict(data)
+        return super().to_internal_value(data)
+
+
+class ConnectAnaliticasPeriodoSerializer(serializers.Serializer):
+    """Rango de fechas evaluado en las analíticas Connect."""
+
+    desde = serializers.DateField(read_only=True)
+    hasta = serializers.DateField(read_only=True)
+    dias = serializers.IntegerField(read_only=True)
+
+
+class ConnectAnaliticasSerieDiaSerializer(serializers.Serializer):
+    """Punto diario de toques y leads."""
+
+    fecha = serializers.DateField(read_only=True)
+    toques = serializers.IntegerField(read_only=True)
+    leads = serializers.IntegerField(read_only=True)
+
+
+class ConnectAnaliticasTopPerfilSerializer(serializers.Serializer):
+    """Ranking de perfil público sin datos internos privados."""
+
+    id_perfil = serializers.UUIDField(read_only=True)
+    slug = serializers.CharField(read_only=True)
+    nombre_publico = serializers.CharField(read_only=True)
+    toques = serializers.IntegerField(read_only=True)
+    visitantes_unicos = serializers.IntegerField(read_only=True)
+    leads = serializers.IntegerField(read_only=True)
+    leads_convertidos = serializers.IntegerField(read_only=True)
+    tasa_conversion_pct = serializers.CharField(read_only=True)
+
+
+class ConnectAnaliticasSerializer(serializers.Serializer):
+    """Respuesta agregada de ``GET /api/connect/analiticas/``."""
+
+    periodo = ConnectAnaliticasPeriodoSerializer(read_only=True)
+    perfil_id = serializers.UUIDField(read_only=True, allow_null=True)
+    total_toques = serializers.IntegerField(read_only=True)
+    visitantes_unicos = serializers.IntegerField(read_only=True)
+    total_leads = serializers.IntegerField(read_only=True)
+    leads_convertidos = serializers.IntegerField(read_only=True)
+    tasa_conversion_pct = serializers.CharField(read_only=True)
+    tasa_cierre_pct = serializers.CharField(read_only=True)
+    por_origen = serializers.DictField(child=serializers.IntegerField(), read_only=True)
+    por_dispositivo = serializers.DictField(child=serializers.IntegerField(), read_only=True)
+    serie_diaria = ConnectAnaliticasSerieDiaSerializer(many=True, read_only=True)
+    top_perfiles = ConnectAnaliticasTopPerfilSerializer(many=True, read_only=True)

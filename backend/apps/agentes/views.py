@@ -34,11 +34,13 @@ from .serializers import (
     AnalizarCobranzaInputSerializer,
     AnalizarPersonalizacionInputSerializer,
     AnalizarReordenInputSerializer,
+    CalificarLeadConnectInputSerializer,
     ClasificarGastoInputSerializer,
     ConsumoLLMResumenSerializer,
     ConsumoLLMSerializer,
     EjecucionAgenteSerializer,
     PrediccionAgenteSerializer,
+    ProponerSeguimientoConnectInputSerializer,
 )
 from .services import AgenteError, calcular_resumen_consumo_llm, encolar_ejecucion_agente
 
@@ -115,6 +117,8 @@ _TITULOS_AGENTE = {
     "reorden_sugeridor": "Reorden de Stock",
     "clasificador_gastos": "Clasificación de Gasto",
     "personalizacion_capa2": "Personalización",
+    "connect_calificador": "Calificador Connect",
+    "connect_seguimiento": "Seguimiento Connect",
 }
 
 
@@ -134,6 +138,10 @@ def _titulo_sugerencia(prediccion) -> str:
         return "Reorden de inventario sugerido"
     if prediccion.agente == "clasificador_gastos":
         return f"Clasificar gasto: {prediccion.categoria_predicha}"
+    if prediccion.agente == "connect_calificador":
+        return f"Lead Connect ({prediccion.categoria_predicha})"
+    if prediccion.agente == "connect_seguimiento":
+        return f"Seguimiento Connect: {prediccion.categoria_predicha}"
     return f"Sugerencia — {agente_label}: {prediccion.categoria_predicha}"
 
 
@@ -148,6 +156,11 @@ def _accion_para_sugerencia(prediccion) -> str:
         prod_id = meta.get("producto_id")
         if prod_id:
             return f"/inventario/productos/{prod_id}/"
+    if prediccion.agente in ("connect_calificador", "connect_seguimiento"):
+        if meta.get("solicitud_aprobacion_id"):
+            return "/aprobaciones/solicitudes"
+        if meta.get("lead_id"):
+            return "/crm/pipeline"
     return ""
 
 
@@ -362,6 +375,80 @@ class PrediccionAgenteViewSet(NulSafeFilterMixin, BaseModelViewSet):
             empresa=gasto.id_empresa,
             agente="clasificador_gastos",
             parametros={"gasto_id": str(gasto_id), "aplicar": aplicar},
+        )
+
+    @swagger_auto_schema(
+        request_body=CalificarLeadConnectInputSerializer,
+        responses={202: EjecucionAgenteSerializer, 403: "Sin empresa asignada", 404: "Lead no encontrado"},
+    )
+    @action(
+        detail=False,
+        methods=["post"],
+        url_path="calificar-lead-connect",
+        throttle_classes=[*BaseModelViewSet.throttle_classes, EscrituraRateThrottle],
+    )
+    def calificar_lead_connect(self, request):
+        """
+        POST /api/agentes/predicciones/calificar-lead-connect/
+
+        Valida pertenencia multi-tenant del lead y encola ``connect_calificador`` (HTTP 202).
+        """
+        from apps.crm.models import Lead
+
+        empresas = get_empresas_visible(request.user)
+        if not empresas.exists():
+            return Response({"detail": "Sin empresa asignada."}, status=status.HTTP_403_FORBIDDEN)
+
+        params = _validar_input(CalificarLeadConnectInputSerializer, request.data)
+        lead_id = params["lead_id"]
+
+        lead = Lead.objects.select_related("id_empresa").filter(pk=lead_id, id_empresa__in=empresas).first()
+        if lead is None:
+            return Response({"detail": "Lead no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+
+        return self._responder_encolado(
+            request,
+            empresa=lead.id_empresa,
+            agente="connect_calificador",
+            parametros={"lead_id": str(lead_id)},
+        )
+
+    @swagger_auto_schema(
+        request_body=ProponerSeguimientoConnectInputSerializer,
+        responses={202: EjecucionAgenteSerializer, 403: "Sin empresa asignada", 404: "Lead no encontrado"},
+    )
+    @action(
+        detail=False,
+        methods=["post"],
+        url_path="proponer-seguimiento-connect",
+        throttle_classes=[*BaseModelViewSet.throttle_classes, EscrituraRateThrottle],
+    )
+    def proponer_seguimiento_connect(self, request):
+        """
+        POST /api/agentes/predicciones/proponer-seguimiento-connect/
+
+        Valida pertenencia multi-tenant del lead y encola ``connect_seguimiento`` (HTTP 202).
+        Toda propuesta de envío externo crea obligatoriamente una ``SolicitudAprobacion``
+        (``CONNECT_ENVIO_EXTERNO``) sin enviar mensajes directamente.
+        """
+        from apps.crm.models import Lead
+
+        empresas = get_empresas_visible(request.user)
+        if not empresas.exists():
+            return Response({"detail": "Sin empresa asignada."}, status=status.HTTP_403_FORBIDDEN)
+
+        params = _validar_input(ProponerSeguimientoConnectInputSerializer, request.data)
+        lead_id = params["lead_id"]
+
+        lead = Lead.objects.select_related("id_empresa").filter(pk=lead_id, id_empresa__in=empresas).first()
+        if lead is None:
+            return Response({"detail": "Lead no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+
+        return self._responder_encolado(
+            request,
+            empresa=lead.id_empresa,
+            agente="connect_seguimiento",
+            parametros={"lead_id": str(lead_id)},
         )
 
     @swagger_auto_schema(manual_parameters=[_EMPRESA_ID_QUERY_PARAM])

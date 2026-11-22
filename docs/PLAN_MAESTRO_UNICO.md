@@ -315,7 +315,7 @@ Lo que la realidad económica del país obliga aunque ninguna ley lo pida. Es el
 | ADR-011 | Servicios hermanos / fábricas | ✅ Aceptado 2026-06-12 |
 | ADR-012 | Modelo transaccional de venta POS offline | ✅ Aceptado 2026-06-19 (backend implementado) |
 | ADR-013 | Subproyecto `cxc_lubrikca` como app dedicada y aislada (motor determinístico + Odoo solo lectura) | ✅ Aceptado 2026-06-27 (Fases 0–6 + staging standalone) |
-| ADR-014 | Omni Connect (tarjetas NFC + CRM ligero) como módulo dentro de Omni | ✅ Aceptado 2026-11-13 (S1 esquema) |
+| ADR-014 | Omni Connect (tarjetas NFC + CRM ligero) como módulo dentro de Omni | ✅ Aceptado 2026-11-13 (Plan 07 `S1`–`S12` 100% completado: `#261`, PR-26..PR-30) |
 | ADR-015 | Omni Tareas (`apps/tareas`) — ejecución operativa, minutas IA y proyectos nativos | ✅ Aceptado 2026-11-16 (PRs #286–#287) |
 
 ---
@@ -339,7 +339,7 @@ Lo que la realidad económica del país obliga aunque ninguna ley lo pida. Es el
 - **Barrido completo de UI + E2E cerrado (PRs #215–#247):** las 15 apps que eran API-only y los 9 sub-módulos con brecha de UI ya cuentan con páginas React/MUI, `toList()`, servicios tipados, tests Vitest y specs E2E cross-módulo (P2P, P2C, H2P, cambio divisa/conciliación, libro de ventas SENIAT, gasto completo).
 - **Nuevas capacidades incorporadas (ADR-013, ADR-014, ADR-015 y operación):**
   - **`apps/cxc_lubrikca` (ADR-013):** Fases 0–6 completas (motor determinístico, captura/equivalentes congelados, bandeja de aprobación, conciliación semáforo, sync Odoo read-only + Beat PRs #256/#258) y servicio standalone `omni-erp-cobranza-staging` desplegado en Railway (`Dockerfile.cobranza`). Pendiente go-live prod con validación contra Odoo real.
-  - **`apps/connect` + CRM ligero (ADR-014, S1 PR #261):** esquema `Perfil`, `Tarjeta`, `Toque`, `Pipeline`, `Etapa`, `Lead` con RLS (`S2`–`S12` en [`docs/planes/07-omni-connect.md`](planes/07-omni-connect.md)).
+  - **`apps/connect` + CRM ligero (ADR-014 — Plan 07 `S1`–`S12` ✅ 100% completado):** esquema + RLS (`S1` `#261`), perfil público `/c/:slug` + vCard + captura de leads con consentimiento/anti-spam + `/connect/perfil` (`PR-26` `#313`), `crm.Actividad` + Kanban `/crm/pipeline` + MCP (`PR-27` `#314`), dedup `core.Contacto` + anonimización PII + conversión atómica a `crm.Cliente`/cotización (`PR-28` `#315`), `integration_hub.EventoOutbox` + push opt-in Odoo `crm.lead` (`PR-29` `#316`), y analíticas `/connect/analiticas` + purga Celery Beat + tarjetas NFC/QR `/connect/tarjetas` + agentes `connect_calificador`/`connect_seguimiento` con gate `gestion_aprobaciones` (`PR-30`). Detalle en [`docs/planes/07-omni-connect.md`](planes/07-omni-connect.md).
   - **`apps/tareas` (ADR-015, PRs #286–#287):** áreas operativas, proyectos Kanban, plantillas recurrentes, minutas con IA, escalación gradual, `CapabilityToken` (`tareas:read`/`tareas:write`), tools MCP e interfaz frontend completa.
   - **`apps/activaciones` (PRs #266–#267):** calendarios, recursos con control de capacidad solapada, eventos de activación + sincronización Google Calendar vía Celery.
   - **`apps/bots_ingest` (PRs #266, #271, #277, #280–#282):** ingesta multi-tenant de bots Telegram con `CapabilityToken`, panel de flota/bitácora y push **opt-in** en borrador a Odoo para **7 tipos** (`contacto`, `pedido`, `pago`, `pago_proveedor`, `proveedor`, `factura_proveedor`, `gasto`).
@@ -353,14 +353,13 @@ Lo que la realidad económica del país obliga aunque ninguna ley lo pida. Es el
 **✅ REAL_DONE (código + tests + UI verificados en disco)**
 
 - **Núcleo/plataforma:** `core` (Empresa/Sucursal/Usuario/Rol/Permiso/Contacto/CapabilityToken/Notificacion/llm_gateway/idempotency/rls/MCP server/event store/`uuid7` monótono), `configuracion_motor`, `auditoria`, `saas`, `integration_hub` (Odoo XML-RPC + Google Sheets + GenericRestConnector + SyncEngine + Celery + MCP), `personalizacion` (DSL runtime + UI), `agentes` (OmniAgente, niveles, PrediccionAgente, eval suite, clasificador, sugerencias + UI), `notificaciones` (+ UI), `gestion_documental` (+ UI), `integracion_b2b` (CRUD + UI), `migracion_datos` (importadores + UI).
-- **Ciclo comercial:** `ventas` (Cotización→Pedido→NotaVenta→FacturaFiscal→NC/devoluciones, listas de precio + comisiones, integrado stock+IVA/IGTF+asiento+CxC), `inventario` (kardex, valoración FIFO/Promedio, COGS, stepper de operaciones, datos maestros + UI), `compras` (OC→Recepción→FacturaCompra + asientos; UI aprovisionamiento), `crm` (Cliente/Contacto/Dirección + UI; esquema `Pipeline`/`Etapa`/`Lead` S1), `proveedores` (RIF + UI), `finanzas` (Moneda/MetodoPago/Pago/PagoTercero/Cajas/TasaCambio/FX/MCP + UI), `fiscal` (IVA/IGTF config-driven, Libros SENIAT TXT+PDF, cierre período, pagos parafiscales + UI), `contabilidad` (`generar_asiento()` en `@transaction.atomic`, R-CODE-11, FK usuario).
+- **Ciclo comercial:** `ventas` (Cotización→Pedido→NotaVenta→FacturaFiscal→NC/devoluciones, listas de precio + comisiones, integrado stock+IVA/IGTF+asiento+CxC), `inventario` (kardex, valoración FIFO/Promedio, COGS, stepper de operaciones, datos maestros + UI), `compras` (OC→Recepción→FacturaCompra + asientos; UI aprovisionamiento), `crm` (Cliente/Contacto/Dirección + `Pipeline`/`Etapa`/`Lead`/`Actividad` + dedup/anonimización/conversión + Kanban `/crm/pipeline` + MCP), `connect` (Plan 07 `S1`–`S12` ✅ 100%: perfil público `/c/:slug`, vCard, leads con consentimiento, outbox Odoo `crm.lead`, analíticas + retención Beat, tarjetas NFC + QR SVG/PNG, agentes IA con `gestion_aprobaciones` + UI `/connect/{perfil,tarjetas,analiticas}`), `proveedores` (RIF + UI), `finanzas` (Moneda/MetodoPago/Pago/PagoTercero/Cajas/TasaCambio/FX/MCP + UI), `fiscal` (IVA/IGTF config-driven, Libros SENIAT TXT+PDF, cierre período, pagos parafiscales + UI), `contabilidad` (`generar_asiento()` en `@transaction.atomic`, R-CODE-11, FK usuario).
 - **Cobranza, tesorería y operación:** `cuentas_por_cobrar` (abono atómico con lock+tope, aging 5 tramos, scoring, PDF), `cuentas_por_pagar` (abonos con write-guard, aging, diferencia cambiaria), `cxc` (GestionCobranza, AcuerdoPago/CuotaAcuerdo, agente IA SSE), `cxc_lubrikca` (Fases 0–6 + standalone staging), `tesoreria` (conciliación con lock, `OperacionCambioDivisa`, ingesta extractos VE + pre-conciliación humana PRs #283–#284), `tareas` (Kanban/minutas/recurrencia/escalación/MCP PRs #286–#287), `activaciones` (+ Google Calendar), `bots_ingest` (flota + CapabilityToken + push borrador Odoo 7 tipos).
 - **RRHH, nómina, manufactura y despacho:** `nomina` (cálculo LOTTT + extrasalarial + UI), `rrhh` (Empleado/Cargo/Beneficio/Licencia + UI), `control_asistencia` (+ UI), `manufactura` (BOM, rutas, centros, OF con etapas, costeo real, MRP + UI), `despacho` (máquina de estados, PDF + UI), `gastos` (flujo aprobación + reembolsos + UI), `costos` (+ UI), `servicio_cliente` (tickets/SLA/base conocimiento + UI).
 - **Localización (framework + VE):** `localizacion` instalada (6 puertos ABC + 6 `NoOp` + registry con alias `VE`/`VEN` + `GET /api/localizacion/estado/` + MCP `localizacion_estado_empresa`). `localizacion_ve` **6/6 puertos ✅** (`MotorImpuestosVE`, `GeneradorDocumentoLegalVE`, `CalculadoraNominaVE`, `LibroLegalVE`, `ProveedorTasasVE`, `MetodosPagoLocalesVE`). `eventos` (subsistema sin `models.py`). `sync` (pull deltas + `POST /api/sync/push/ventas/`).
 
 **🔶 PARCIAL / BRECHA DE PARIDAD FUNCIONAL (tienen UI/CRUD o base parcial, requieren cierre técnico)**
 
-- `connect` (`S1` esquema completo; faltan historias `S2`–`S12` — ver [`07-omni-connect.md`](planes/07-omni-connect.md)).
 - `almacenes` (CRUD `Almacen`/`UbicacionAlmacen` + UI; faltan reservas/transferencias entre ubicaciones y reglas de reabastecimiento), `compras` + `gestion_aprobaciones` (`gestion_aprobaciones` ya cuenta con motor de etapas por monto/rol/usuario y UI, pero falta capa transaccional `RequisicionCompra`→`SolicitudCotizacion`→`OfertaProveedor`→`OrdenCompra` y reglas por departamento/SLA — ver [`08-conciliacion-pagos-y-paridad-odoo.md`](planes/08-conciliacion-pagos-y-paridad-odoo.md)), `contabilidad` (faltan diarios contables, reversión atómica por contra-asiento, cierre de período/ejercicio y estados financieros canónicos — Plan 08).
 - `banca_electronica` (tiene CRUD + UI de cuentas, pero duplica el modelo `CuentaBancariaEmpresa` respecto a `finanzas` y requiere consolidación de servicios con `tesoreria` — Plan 08).
 
@@ -486,10 +485,10 @@ P0 (✅ cerrado #64–#73) + UI/E2E sweep (✅ cerrado #215–#247) + Plan 06 Fa
    │      compras + gestion_aprobaciones (Requisicion→RFQ→Oferta→OC + reglas depto/SLA),
    │      inventario + almacenes (ReglaReabastecimiento, LoteProducto opt-in, transferencias ubicación),
    │      banca_electronica consolidada + Integration Hub (facturas_compra, pagos multi-factura, CTF-011)
-   ├─ Ola 4 — Omni Connect S2–S12 (Plan 07):
-   │    • Perfil público NFC (S2) → lead con consentimiento (S3) → crm.Actividad + Kanban (S4) →
-   │      dedup core.Contacto (S5) → conversión Cliente (S6) → outbox + push Odoo crm.lead (S7–S9) →
-   │      analíticas Toque (S10) → tarjetas físicas + Agentes IA con aprobación (S11–S12)
+   ├─ Ola 4 — Omni Connect S1–S12 (Plan 07) ✅ 100% COMPLETADA (`#261` + PR-26..PR-30):
+   │    • Perfil público NFC + vCard + leads (PR-26 `#313`) → crm.Actividad + Kanban + MCP (PR-27 `#314`) →
+   │      dedup core.Contacto + conversión Cliente (PR-28 `#315`) → outbox + push Odoo crm.lead (PR-29 `#316`) →
+   │      analíticas + retención Beat + tarjetas NFC/QR + Agentes IA con aprobación (PR-30)
    └─ Ola 5 — Localización desacoplada + Multiplataforma:
         • localizacion_ve: 6/6 adaptadores VE ✅ + flags por capa en Empresa + REST/MCP
         • Plan B (CTF-010, shells firmados) + Plan A (offline niveles 2–3)
@@ -506,7 +505,7 @@ P0 (✅ cerrado #64–#73) + UI/E2E sweep (✅ cerrado #215–#247) + Plan 06 Fa
 
 ### F — Workstream frontend (completado en barrido #215–#247; residual en Plan 06 / 07 / 08)
 - **✅ Cerrado:** 16/16 FormPages en `react-hook-form` + `zod` (FE-CRIT-1), 15 apps + 9 sub-módulos con UI + `toList()` + E2E cross-módulo.
-- [ ] Pendiente: ciclo offline en `PosPage` (`CTF-008`), segunda pasada `Decimal` (Plan 06 Tarea 4.2), Kanban/UI de `Omni Connect` (`Plan 07`) y UI de conciliación N:M / reportes contables (`Plan 08`).
+- [ ] Pendiente: ciclo offline en `PosPage` (`CTF-008`), segunda pasada `Decimal` (Plan 06 Tarea 4.2) y UI de conciliación N:M / reportes contables (`Plan 08`). *(UI pública, Kanban y consolas de `Omni Connect` cerradas en `Plan 07` PR-26..PR-30.)*
 
 ### Sub-fases 1.F–1.J (pilotos distribuidora y fábrica)
 - **1.F Distribuidora en producción:** software listo; resta carga de datos reales de la distribuidora, configuración fiscal real y 30 días continuos de operación.
@@ -807,8 +806,8 @@ omni-erp/
 ```
 
 ## 9.5 Áreas de trabajo abiertas hoy
-- **Backend:** Plan 06 (Fases 1–4), seguridad residual Plan 05 (`P1-5`/`P1-6`/`P2-2`/`P2-3`/`P2-4`/`P2-6`), conciliación N:M `AsignacionPago` + paridad ERP Odoo (`Plan 08`), Omni Connect S2–S12 (`Plan 07`), 4 adapters faltantes en `localizacion_ve` y nómina LOTTT de borde (cestaticket).
-- **Frontend:** ciclo offline POS (`CTF-008`), segunda pasada Decimal (Plan 06 Tarea 4.2), UI Kanban/pública de Omni Connect (`Plan 07`) y UI de conciliación N:M / reportes contables (`Plan 08`).
+- **Backend:** Plan 06 (Fases 1–4), seguridad residual Plan 05 (`P1-5`/`P1-6`/`P2-2`/`P2-3`/`P2-4`/`P2-6`), conciliación N:M `AsignacionPago` + paridad ERP Odoo (`Plan 08`), 4 adapters faltantes en `localizacion_ve` y nómina LOTTT de borde (cestaticket). *(Omni Connect `Plan 07` `S1`–`S12` ✅ completado en `#261` + PR-26..PR-30.)*
+- **Frontend:** ciclo offline POS (`CTF-008`), segunda pasada Decimal (Plan 06 Tarea 4.2) y UI de conciliación N:M / reportes contables (`Plan 08`). *(UI de Omni Connect `/c/:slug`, `/crm/pipeline`, `/connect/{perfil,tarjetas,analiticas}` ✅ completada en `Plan 07`.)*
 - **DevOps / Owner:** secrets `BACKUP_*` en GitHub (`P1-7`), rol `omni_app` + `RLS_ENABLED=True` (`CTF-012`), branch protection en GitHub, validación `cxc_lubrikca` contra Odoo real, SSL self-hosted (diferido) y Prometheus/Grafana.
 - **Datos:** migración de la distribuidora real (sub-fase 1.F).
 

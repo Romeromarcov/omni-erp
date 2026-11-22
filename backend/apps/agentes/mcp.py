@@ -58,12 +58,14 @@ def agentes_disparar_analisis(
     solo_alertas: bool = True,
     gasto_id: str | None = None,
     aplicar: bool = False,
+    lead_id: str | None = None,
 ) -> dict[str, Any]:
     """
     Encola de forma asíncrona en Celery la ejecución de un agente IA para la empresa.
 
     Agentes soportados: ``cobranza_estratega``, ``reorden_sugeridor``,
-    ``personalizacion_capa2``, ``clasificador_gastos``.
+    ``personalizacion_capa2``, ``clasificador_gastos``, ``connect_calificador``,
+    ``connect_seguimiento``.
 
     Scope requerido: ``agentes:write``
     """
@@ -74,6 +76,7 @@ def agentes_disparar_analisis(
         serializar_ejecucion_dict,
     )
     from apps.core.models import Empresa  # noqa: PLC0415
+    from apps.crm.models import Lead  # noqa: PLC0415
     from apps.gastos.models import Gasto  # noqa: PLC0415
 
     with _ctx(capability_token, f"{_SCOPE}:write", empresa_id=empresa_id) as ctx:
@@ -106,6 +109,16 @@ def agentes_disparar_analisis(
             if not Gasto.objects.filter(pk=gasto_uuid, id_empresa=empresa).exists():
                 return {"error": "Gasto no encontrado en la empresa."}
             parametros = {"gasto_id": str(gasto_uuid), "aplicar": bool(aplicar)}
+        elif agente_clean in ("connect_calificador", "connect_seguimiento"):
+            if not lead_id:
+                return {"error": f"Se requiere lead_id para {agente_clean}."}
+            try:
+                lead_uuid = _parse_uuid(lead_id, "lead_id")
+            except (ValueError, TypeError):
+                return {"error": "lead_id no es un UUID válido."}
+            if not Lead.objects.filter(pk=lead_uuid, id_empresa=empresa).exists():
+                return {"error": "Lead no encontrado en la empresa."}
+            parametros = {"lead_id": str(lead_uuid)}
 
         try:
             ejecucion = encolar_ejecucion_agente(
@@ -295,6 +308,113 @@ def agentes_resumen_consumo_llm(
         return resumen
 
 
+def agentes_calificar_lead_connect(
+    capability_token: str,
+    empresa_id: str,
+    lead_id: str,
+) -> dict[str, Any]:
+    """Califica un lead de Omni Connect (prioridad, score y siguiente actividad) y persiste ``PrediccionAgente``.
+
+    Scope requerido: ``agentes:write``
+    """
+    from apps.agentes.connect_agents import ejecutar_connect_calificador  # noqa: PLC0415
+    from apps.agentes.services import AgenteError  # noqa: PLC0415
+    from apps.core.models import CapabilityToken, Empresa  # noqa: PLC0415
+
+    with _ctx(capability_token, f"{_SCOPE}:write", empresa_id=empresa_id) as ctx:
+        try:
+            lead_uuid = _parse_uuid(lead_id, "lead_id")
+        except (ValueError, TypeError):
+            return {"error": "lead_id no es un UUID válido."}
+
+        empresa_uuid = uuid.UUID(str(ctx["empresa_id"]))
+        empresa = Empresa.objects.filter(pk=empresa_uuid, activo=True).first()
+        if empresa is None:
+            return {"error": "Empresa inactiva o no encontrada."}
+
+        token_obj = (
+            CapabilityToken.objects.select_related("creado_por")
+            .filter(token=capability_token, empresa=empresa, activo=True)
+            .first()
+        )
+        usuario = token_obj.creado_por if token_obj is not None else None
+
+        try:
+            res = ejecutar_connect_calificador(empresa=empresa, lead_id=lead_uuid, usuario=usuario)
+        except Exception as exc:  # noqa: BLE001
+            return {
+                "error": sanitize_mcp_error(
+                    exc,
+                    logger=logger,
+                    tool_name="agentes_calificar_lead_connect",
+                    controlled_types=(AgenteError, ValueError),
+                )
+            }
+
+        logger.info(
+            "agentes_calificar_lead_connect | actor=%s | tenant=%s | lead=%s | prioridad=%s",
+            ctx["actor_id"],
+            ctx["tenant_id"],
+            lead_uuid,
+            res["prioridad"],
+        )
+        return res
+
+
+def agentes_proponer_seguimiento_connect(
+    capability_token: str,
+    empresa_id: str,
+    lead_id: str,
+) -> dict[str, Any]:
+    """Genera una propuesta de seguimiento para un lead Connect y crea ``SolicitudAprobacion`` en envíos externos.
+
+    Nunca envía mensajes externos directamente. Scope requerido: ``agentes:write``.
+    """
+    from apps.agentes.connect_agents import ejecutar_connect_seguimiento  # noqa: PLC0415
+    from apps.agentes.services import AgenteError  # noqa: PLC0415
+    from apps.core.models import CapabilityToken, Empresa  # noqa: PLC0415
+
+    with _ctx(capability_token, f"{_SCOPE}:write", empresa_id=empresa_id) as ctx:
+        try:
+            lead_uuid = _parse_uuid(lead_id, "lead_id")
+        except (ValueError, TypeError):
+            return {"error": "lead_id no es un UUID válido."}
+
+        empresa_uuid = uuid.UUID(str(ctx["empresa_id"]))
+        empresa = Empresa.objects.filter(pk=empresa_uuid, activo=True).first()
+        if empresa is None:
+            return {"error": "Empresa inactiva o no encontrada."}
+
+        token_obj = (
+            CapabilityToken.objects.select_related("creado_por")
+            .filter(token=capability_token, empresa=empresa, activo=True)
+            .first()
+        )
+        usuario = token_obj.creado_por if token_obj is not None else None
+
+        try:
+            res = ejecutar_connect_seguimiento(empresa=empresa, lead_id=lead_uuid, usuario=usuario)
+        except Exception as exc:  # noqa: BLE001
+            return {
+                "error": sanitize_mcp_error(
+                    exc,
+                    logger=logger,
+                    tool_name="agentes_proponer_seguimiento_connect",
+                    controlled_types=(AgenteError, ValueError),
+                )
+            }
+
+        logger.info(
+            "agentes_proponer_seguimiento_connect | actor=%s | tenant=%s | lead=%s | accion=%s | aprob=%s",
+            ctx["actor_id"],
+            ctx["tenant_id"],
+            lead_uuid,
+            res["accion"],
+            res.get("solicitud_aprobacion_id"),
+        )
+        return res
+
+
 MCP_TOOLS: list[dict[str, Any]] = [
     {
         "fn": agentes_disparar_analisis,
@@ -315,5 +435,15 @@ MCP_TOOLS: list[dict[str, Any]] = [
         "fn": agentes_resumen_consumo_llm,
         "name": "agentes_resumen_consumo_llm",
         "scope": f"{_SCOPE}:read",
+    },
+    {
+        "fn": agentes_calificar_lead_connect,
+        "name": "agentes_calificar_lead_connect",
+        "scope": f"{_SCOPE}:write",
+    },
+    {
+        "fn": agentes_proponer_seguimiento_connect,
+        "name": "agentes_proponer_seguimiento_connect",
+        "scope": f"{_SCOPE}:write",
     },
 ]

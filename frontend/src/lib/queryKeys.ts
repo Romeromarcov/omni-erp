@@ -890,4 +890,28 @@ export const connectKeys = {
     ['connect', 'public', slug, uid ?? null] as const,
   miPerfil: (empresaId?: string | null) =>
     ['connect', empresaId ?? null, 'mi-perfil'] as const,
+  perfiles: (empresaId?: string | null) =>
+    ['connect', empresaId ?? null, 'perfiles'] as const,
+  analiticas: (
+    empresaId?: string | null,
+    filtros?: {
+      dias?: number;
+      desde?: string | null;
+      hasta?: string | null;
+      perfilId?: string | null;
+    },
+  ) =>
+    [
+      'connect',
+      empresaId ?? null,
+      'analiticas',
+      filtros?.dias ?? 30,
+      filtros?.desde ?? null,
+      filtros?.hasta ?? null,
+      filtros?.perfilId ?? null,
+    ] as const,
+  tarjetasAll: (empresaId?: string | null) =>
+    ['connect', empresaId ?? null, 'tarjetas'] as const,
+  tarjetas: (empresaId?: string | null, estado?: string | null, incluirInactivos?: boolean) =>
+    ['connect', empresaId ?? null, 'tarjetas', 'list', estado ?? null, Boolean(incluirInactivos)] as const,
 };

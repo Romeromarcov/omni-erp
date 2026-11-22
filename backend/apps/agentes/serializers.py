@@ -103,6 +103,18 @@ class ClasificarGastoInputSerializer(serializers.Serializer):
     aplicar = serializers.BooleanField(required=False, default=False)
 
 
+class CalificarLeadConnectInputSerializer(serializers.Serializer):
+    """Parámetros de entrada para encolar ``connect_calificador``."""
+
+    lead_id = serializers.UUIDField(required=True)
+
+
+class ProponerSeguimientoConnectInputSerializer(serializers.Serializer):
+    """Parámetros de entrada para encolar ``connect_seguimiento``."""
+
+    lead_id = serializers.UUIDField(required=True)
+
+
 class ConsumoLLMSerializer(serializers.ModelSerializer):
     """Serializer de solo lectura para registros de consumo y costo LLM (Plan 05 P2-3)."""
 

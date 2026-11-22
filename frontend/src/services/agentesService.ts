@@ -21,7 +21,9 @@ export type Agente =
   | 'clasificador_gastos'
   | 'cobranza_estratega'
   | 'reorden_sugeridor'
-  | 'personalizacion_capa2';
+  | 'personalizacion_capa2'
+  | 'connect_calificador'
+  | 'connect_seguimiento';
 
 /** Resultado de la revisión humana (espejo de PrediccionAgente.RESULTADO_CHOICES). */
 export type ResultadoHumano = 'pendiente' | 'aceptada' | 'rechazada';
@@ -34,6 +36,8 @@ export const AGENTES: readonly Agente[] = [
   'cobranza_estratega',
   'reorden_sugeridor',
   'personalizacion_capa2',
+  'connect_calificador',
+  'connect_seguimiento',
 ] as const;
 
 export const RESULTADOS_HUMANOS: readonly ResultadoHumano[] = [

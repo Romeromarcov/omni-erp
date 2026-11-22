@@ -636,7 +636,13 @@ class TestPerfilViewSetYMCP:
         assert client_a.get("/api/connect/perfiles/?search=a%00b").status_code == 400
 
     def test_mcp_connect_tools_autodiscovery_permisos_y_flujo(self, empresa_a, empresa_b, user_a, user_b):
-        assert {t["name"] for t in connect_mcp.MCP_TOOLS} == {"connect_mi_perfil", "connect_actualizar_perfil"}
+        assert {t["name"] for t in connect_mcp.MCP_TOOLS} == {
+            "connect_mi_perfil",
+            "connect_actualizar_perfil",
+            "connect_analiticas",
+            "connect_listar_tarjetas",
+            "connect_gestionar_tarjeta",
+        }
         assert "connect_mi_perfil" in mcp_server._DISCOVERED_TOOLS
         assert "connect_actualizar_perfil" in mcp_server._DISCOVERED_TOOLS
         assert "apps.connect.mcp" in settings.MCP_AGENT_CAPABILITIES["module_paths"]

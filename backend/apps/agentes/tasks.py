@@ -41,14 +41,20 @@ def ejecutar_analisis_agente(self, ejecucion_id: str, empresa_id: str) -> dict[s
     o ``fallido`` (con ``mensaje_error`` genérico y saneado conforme a R-CODE-8).
     """
     from apps.core import rls  # noqa: PLC0415
+    from apps.crm.models import Lead  # noqa: PLC0415
     from apps.gastos.models import CategoriaGasto, Gasto  # noqa: PLC0415
 
     from .clasificador import ClasificadorGastos  # noqa: PLC0415
     from .cobranza import CobranzaEstrategaAgent  # noqa: PLC0415
+    from .connect_agents import (  # noqa: PLC0415
+        ejecutar_connect_calificador,
+        ejecutar_connect_seguimiento,
+    )
     from .models import EjecucionAgente, PrediccionAgente  # noqa: PLC0415
     from .personalizacion_agente import PersonalizacionCapa2Agent  # noqa: PLC0415
     from .reorden import ReordenSugeridorAgent  # noqa: PLC0415
     from .services import (  # noqa: PLC0415
+        AgenteError,
         jsonable,
         serializar_sugerencia_cobranza,
         serializar_sugerencia_reorden,
@@ -176,6 +182,24 @@ def ejecutar_analisis_agente(self, ejecucion_id: str, empresa_id: str) -> dict[s
                     "categoria_id": categoria_id,
                 }
 
+            elif ejecucion.agente == "connect_calificador":
+                lead_id_raw = parametros.get("lead_id")
+                lead_uuid = uuid.UUID(str(lead_id_raw))
+                resultado_payload = ejecutar_connect_calificador(
+                    empresa=empresa,
+                    lead_id=lead_uuid,
+                    usuario=ejecucion.iniciado_por,
+                )
+
+            elif ejecucion.agente == "connect_seguimiento":
+                lead_id_raw = parametros.get("lead_id")
+                lead_uuid = uuid.UUID(str(lead_id_raw))
+                resultado_payload = ejecutar_connect_seguimiento(
+                    empresa=empresa,
+                    lead_id=lead_uuid,
+                    usuario=ejecucion.iniciado_por,
+                )
+
             else:
                 raise ValueError(f"Agente no soportado: {ejecucion.agente}")
 
@@ -185,15 +209,33 @@ def ejecutar_analisis_agente(self, ejecucion_id: str, empresa_id: str) -> dict[s
             ejecucion.save(update_fields=["estado", "resultado", "fecha_fin"])
             return ejecucion.resultado
 
-        except Gasto.DoesNotExist:
+        except (Gasto.DoesNotExist, Lead.DoesNotExist):
             logger.warning(
-                "ejecutar_analisis_agente: gasto %r no encontrado para empresa %s (ejecucion=%s)",
-                parametros.get("gasto_id"),
+                "ejecutar_analisis_agente: entidad %r no encontrada para empresa %s (ejecucion=%s)",
+                parametros.get("gasto_id") or parametros.get("lead_id"),
                 empresa_uuid,
                 ejecucion.pk,
             )
             ejecucion.estado = "fallido"
-            ejecucion.mensaje_error = "El gasto solicitado no fue encontrado."
+            ejecucion.mensaje_error = (
+                "El lead solicitado no fue encontrado."
+                if ejecucion.agente in ("connect_calificador", "connect_seguimiento")
+                else "El gasto solicitado no fue encontrado."
+            )
+            ejecucion.fecha_fin = timezone.now()
+            ejecucion.save(update_fields=["estado", "mensaje_error", "fecha_fin"])
+            return None
+
+        except AgenteError as exc:
+            logger.warning(
+                "ejecutar_analisis_agente: error controlado en %s (ejecucion=%s, empresa=%s): %s",
+                ejecucion.agente,
+                ejecucion.pk,
+                empresa_uuid,
+                exc,
+            )
+            ejecucion.estado = "fallido"
+            ejecucion.mensaje_error = str(exc) or _MENSAJE_ERROR_GENERICO
             ejecucion.fecha_fin = timezone.now()
             ejecucion.save(update_fields=["estado", "mensaje_error", "fecha_fin"])
             return None

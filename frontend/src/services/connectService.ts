@@ -1,4 +1,6 @@
-import { API_URL, get, patch, type HttpError } from './api';
+import { API_URL, fetchBlob, get, patch, post, type HttpError } from './api';
+import { toList, type PaginatedResponse } from '../utils/api';
+import type { EjecucionAgente } from './agentesService';
 
 export type BotonTipo =
   | 'web'
@@ -245,4 +247,201 @@ export async function updateMiPerfil(
     `/connect/perfiles/mi-perfil/${qs}`,
     payload as unknown as Record<string, unknown>,
   );
+}
+
+// ── S10: Analíticas de Omni Connect ───────────────────────────────────────────
+
+export interface ConnectAnaliticasPeriodo {
+  desde: string;
+  hasta: string;
+  dias: number;
+}
+
+export interface ConnectAnaliticasSerieDia {
+  fecha: string;
+  toques: number;
+  leads: number;
+}
+
+export interface ConnectAnaliticasTopPerfil {
+  id_perfil: string;
+  slug: string;
+  nombre_publico: string;
+  toques: number;
+  visitantes_unicos: number;
+  leads: number;
+  leads_convertidos: number;
+  tasa_conversion_pct: string;
+}
+
+export interface ConnectAnaliticasResponse {
+  periodo: ConnectAnaliticasPeriodo;
+  perfil_id: string | null;
+  total_toques: number;
+  visitantes_unicos: number;
+  total_leads: number;
+  leads_convertidos: number;
+  tasa_conversion_pct: string;
+  tasa_cierre_pct: string;
+  por_origen: Record<string, number>;
+  por_dispositivo: Record<string, number>;
+  serie_diaria: ConnectAnaliticasSerieDia[];
+  top_perfiles: ConnectAnaliticasTopPerfil[];
+}
+
+export interface ConnectAnaliticasParams {
+  empresaId?: string | null;
+  dias?: number;
+  desde?: string;
+  hasta?: string;
+  perfilId?: string | null;
+}
+
+export async function getPerfilesConnect(empresaId?: string | null): Promise<ConnectPerfil[]> {
+  const qs = empresaId ? `?empresa_id=${encodeURIComponent(empresaId)}` : '';
+  const data = await get<PaginatedResponse<ConnectPerfil> | ConnectPerfil[]>(
+    `/connect/perfiles/${qs}`,
+  );
+  return toList<ConnectPerfil>(data);
+}
+
+export async function getAnaliticasConnect(
+  params: ConnectAnaliticasParams = {},
+): Promise<ConnectAnaliticasResponse> {
+  const qs = new URLSearchParams();
+  if (params.empresaId) qs.set('empresa_id', params.empresaId);
+  if (typeof params.dias === 'number' && Number.isFinite(params.dias)) {
+    qs.set('dias', String(params.dias));
+  }
+  if (params.desde) qs.set('desde', params.desde);
+  if (params.hasta) qs.set('hasta', params.hasta);
+  if (params.perfilId) qs.set('perfil_id', params.perfilId);
+  const query = qs.toString();
+  return get<ConnectAnaliticasResponse>(`/connect/analiticas/${query ? `?${query}` : ''}`);
+}
+
+// ── S11: Tarjetas físicas NFC y generación QR SVG/PNG ────────────────────────
+
+export type TarjetaTipo = 'PVC' | 'METAL' | 'PULSERA';
+export type TarjetaEstado = 'INVENTARIO' | 'ACTIVA' | 'DESACTIVADA' | 'PERDIDA';
+export type ConnectQrFormato = 'svg' | 'png';
+
+export interface ConnectTarjeta {
+  id_tarjeta: string;
+  id_empresa: string;
+  perfil: string | null;
+  perfil_slug: string | null;
+  perfil_nombre: string | null;
+  uid_chip: string;
+  tipo: TarjetaTipo | string;
+  estado: TarjetaEstado | string;
+  fecha_activacion: string | null;
+  notas: string;
+  activo: boolean;
+  fecha_creacion: string;
+  fecha_actualizacion: string;
+}
+
+export interface ConnectTarjetaCreatePayload {
+  uid_chip: string;
+  tipo?: TarjetaTipo;
+  notas?: string;
+  perfil?: string | null;
+}
+
+export interface ConnectTarjetaAsignarPayload {
+  perfil_id: string;
+  activar?: boolean;
+}
+
+export async function getTarjetasConnect(params: {
+  empresaId?: string | null;
+  estado?: string | null;
+  incluirInactivos?: boolean;
+} = {}): Promise<ConnectTarjeta[]> {
+  const qs = new URLSearchParams();
+  if (params.empresaId) qs.set('empresa_id', params.empresaId);
+  if (params.estado) qs.set('estado', params.estado);
+  if (params.incluirInactivos) qs.set('incluir_inactivos', 'true');
+  const query = qs.toString();
+  const data = await get<PaginatedResponse<ConnectTarjeta> | ConnectTarjeta[]>(
+    `/connect/tarjetas/${query ? `?${query}` : ''}`,
+  );
+  return toList<ConnectTarjeta>(data);
+}
+
+export async function crearTarjetaConnect(
+  payload: ConnectTarjetaCreatePayload,
+  empresaId?: string | null,
+): Promise<ConnectTarjeta> {
+  const body: Record<string, unknown> = {
+    uid_chip: payload.uid_chip.trim(),
+    tipo: payload.tipo ?? 'PVC',
+    notas: payload.notas?.trim() ?? '',
+  };
+  if (payload.perfil) body.perfil = payload.perfil;
+  if (empresaId) body.id_empresa = empresaId;
+  return post<ConnectTarjeta>('/connect/tarjetas/', body);
+}
+
+export async function asignarTarjetaConnect(
+  tarjetaId: string,
+  payload: ConnectTarjetaAsignarPayload,
+): Promise<ConnectTarjeta> {
+  return post<ConnectTarjeta>(`/connect/tarjetas/${encodeURIComponent(tarjetaId)}/asignar/`, {
+    perfil_id: payload.perfil_id,
+    activar: Boolean(payload.activar),
+  });
+}
+
+export async function activarTarjetaConnect(tarjetaId: string): Promise<ConnectTarjeta> {
+  return post<ConnectTarjeta>(`/connect/tarjetas/${encodeURIComponent(tarjetaId)}/activar/`, {});
+}
+
+export async function desactivarTarjetaConnect(tarjetaId: string): Promise<ConnectTarjeta> {
+  return post<ConnectTarjeta>(`/connect/tarjetas/${encodeURIComponent(tarjetaId)}/desactivar/`, {});
+}
+
+export async function marcarPerdidaTarjetaConnect(tarjetaId: string): Promise<ConnectTarjeta> {
+  return post<ConnectTarjeta>(
+    `/connect/tarjetas/${encodeURIComponent(tarjetaId)}/marcar-perdida/`,
+    {},
+  );
+}
+
+export async function getTarjetaQrBlob(
+  tarjetaId: string,
+  formato: ConnectQrFormato = 'svg',
+): Promise<Blob> {
+  const accept = formato === 'png' ? 'image/png' : 'image/svg+xml';
+  return fetchBlob(
+    `/connect/tarjetas/${encodeURIComponent(tarjetaId)}/qr/?formato=${encodeURIComponent(formato)}`,
+    { headers: { Accept: `${accept}, application/json` } },
+  );
+}
+
+export async function getMiPerfilQrBlob(
+  formato: ConnectQrFormato = 'svg',
+  empresaId?: string | null,
+): Promise<Blob> {
+  const qs = new URLSearchParams({ formato });
+  if (empresaId) qs.set('empresa_id', empresaId);
+  const accept = formato === 'png' ? 'image/png' : 'image/svg+xml';
+  return fetchBlob(`/connect/perfiles/mi-perfil/qr/?${qs.toString()}`, {
+    headers: { Accept: `${accept}, application/json` },
+  });
+}
+
+// ── S12: Agentes IA Omni Connect (calificador + seguimiento con aprobación) ───
+
+export async function calificarLeadConnect(leadId: string): Promise<EjecucionAgente> {
+  return post<EjecucionAgente>('/agentes/predicciones/calificar-lead-connect/', {
+    lead_id: leadId,
+  });
+}
+
+export async function proponerSeguimientoConnect(leadId: string): Promise<EjecucionAgente> {
+  return post<EjecucionAgente>('/agentes/predicciones/proponer-seguimiento-connect/', {
+    lead_id: leadId,
+  });
 }
