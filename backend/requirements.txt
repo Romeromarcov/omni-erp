@@ -27,7 +27,7 @@ django-celery-beat==2.9.0
 django-celery-results==2.6.0
 
 # ── PDF generation ──────────────────────────────────────────────────────────
-reportlab==4.5.1
+reportlab==5.1.0
 # WeasyPrint (HTML→PDF, decisión A-019). Requiere pango/cairo en Linux:
 #   apt-get install libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz0b libfontconfig1
 # En desarrollo local (Windows/macOS) instala directamente sin dependencias de sistema.
