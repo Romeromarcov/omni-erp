@@ -1,3 +1,6 @@
+from decimal import Decimal
+
+from apps.core.base_models import AMBITO_CONTABLE_CHOICES
 from apps.core.uuid import uuid7
 
 from django.db import models
@@ -129,6 +132,12 @@ class NotaVenta(models.Model):
         default="BORRADOR",
     )
     observaciones = models.TextField(null=True, blank=True)
+    ambito = models.CharField(
+        max_length=12,
+        choices=AMBITO_CONTABLE_CHOICES,
+        default="GERENCIAL",
+        db_index=True,
+    )
     activo = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
@@ -584,6 +593,112 @@ class DetalleNotaCreditoFiscal(models.Model):
 
     def __str__(self):
         return f"{self.id_nota_credito_fiscal.numero_nota_credito} - {self.id_producto.nombre_producto}"
+
+
+class NotaDebitoFiscal(models.Model):
+    """Nota de débito fiscal emitida sobre una FacturaFiscal (Plan 09 §2.2)."""
+
+    MOTIVOS_CHOICES = [
+        ("INTERES_MORA", "Interés de Mora"),
+        ("DIFERENCIA_CAMBIARIA", "Diferencia Cambiaria"),
+        ("AJUSTE_PRECIO", "Ajuste de Precio"),
+        ("CARGO_ADICIONAL", "Cargo Adicional"),
+        ("ERROR_FACTURACION", "Error de Facturación"),
+        ("OTRO", "Otro"),
+    ]
+    ESTADOS_CHOICES = [
+        ("BORRADOR", "Borrador"),
+        ("EMITIDA", "Emitida"),
+        ("APLICADA", "Aplicada"),
+        ("ANULADA", "Anulada"),
+    ]
+
+    id_nota_debito_fiscal = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="notas_debito_fiscal")
+    id_cliente = models.ForeignKey("crm.Cliente", on_delete=models.CASCADE, related_name="notas_debito_fiscal")
+    id_factura_origen = models.ForeignKey(
+        "FacturaFiscal", on_delete=models.CASCADE, related_name="notas_debito_fiscal"
+    )
+    numero_control = models.CharField(
+        max_length=50,
+        blank=True,
+        default="",
+        help_text="Número de control compartido o asignado",
+    )
+    numero_nota_debito = models.CharField(
+        max_length=50,
+        blank=True,
+        default="",
+        help_text="Número individual de la nota de débito",
+    )
+    fecha_emision = models.DateField()
+    fecha_vencimiento = models.DateField(null=True, blank=True)
+
+    base_imponible = models.DecimalField(max_digits=18, decimal_places=4, default=Decimal("0.00"))
+    monto_iva = models.DecimalField(max_digits=18, decimal_places=4, default=Decimal("0.00"))
+    monto_total = models.DecimalField(max_digits=18, decimal_places=4)
+
+    id_moneda = models.ForeignKey("finanzas.Moneda", on_delete=models.CASCADE, related_name="notas_debito_fiscal")
+    tasa_cambio = models.DecimalField(max_digits=18, decimal_places=6, default=Decimal("1.000000"))
+    motivo = models.CharField(max_length=25, choices=MOTIVOS_CHOICES, default="AJUSTE_PRECIO")
+    estado = models.CharField(max_length=20, choices=ESTADOS_CHOICES, default="BORRADOR")
+    ambito = models.CharField(
+        max_length=12,
+        choices=AMBITO_CONTABLE_CHOICES,
+        default="FISCAL",
+        db_index=True,
+    )
+
+    observaciones = models.TextField(null=True, blank=True)
+    activo = models.BooleanField(default=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "ventas_nota_debito_fiscal"
+        verbose_name = "Nota de Débito Fiscal"
+        verbose_name_plural = "Notas de Débito Fiscal"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["id_empresa", "numero_nota_debito"],
+                condition=~models.Q(numero_nota_debito=""),
+                name="uniq_ventas_nd_fiscal_empresa_numero",
+            ),
+        ]
+        indexes = [models.Index(fields=["id_empresa", "estado", "fecha_emision"])]
+
+    def __str__(self):
+        return f"{self.numero_nota_debito} (Control: {self.numero_control})"
+
+
+class DetalleNotaDebitoFiscal(models.Model):
+    """Línea de detalle de una NotaDebitoFiscal (con producto opcional)."""
+
+    id_detalle_nota_debito = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_nota_debito_fiscal = models.ForeignKey("NotaDebitoFiscal", related_name="detalles", on_delete=models.CASCADE)
+    id_producto = models.ForeignKey(
+        "inventario.Producto",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="detalles_nota_debito_fiscal",
+    )
+    descripcion = models.CharField(max_length=255, blank=True, default="")
+    cantidad = models.DecimalField(max_digits=18, decimal_places=4, default=Decimal("1.0000"))
+    precio_unitario = models.DecimalField(max_digits=18, decimal_places=4)
+    alicuota_iva = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal("16.00"))
+    subtotal = models.DecimalField(max_digits=18, decimal_places=4)
+    monto_impuesto = models.DecimalField(max_digits=18, decimal_places=4, default=Decimal("0.00"))
+    total_linea = models.DecimalField(max_digits=18, decimal_places=4)
+    observaciones = models.TextField(null=True, blank=True)
+
+    class Meta:
+        db_table = "ventas_detalle_nota_debito_fiscal"
+        verbose_name = "Detalle de Nota de Débito Fiscal"
+        verbose_name_plural = "Detalles de Nota de Débito Fiscal"
+
+    def __str__(self):
+        desc = self.id_producto.nombre_producto if self.id_producto else self.descripcion
+        return f"{self.id_nota_debito_fiscal.numero_nota_debito} - {desc}"
 
 
 # ── Listas de Precios (M4) ────────────────────────────────────────────────────

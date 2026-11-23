@@ -252,6 +252,8 @@ class MapeoContable(models.Model):
         ("FACTURA_VENTA", "Factura de Venta"),
         ("DEVOLUCION_VENTA", "Devolución de Venta"),
         ("DEVOLUCION_VENTA_IVA", "IVA de Devolución de Venta"),
+        ("NOTA_DEBITO_FISCAL", "Nota de Débito Fiscal"),
+        ("NOTA_DEBITO_FISCAL_IVA", "IVA de Nota de Débito Fiscal"),
         ("FACTURA_COMPRA", "Factura de Compra"),
         ("GASTO", "Gasto (base)"),
         ("GASTO_IVA", "IVA Crédito Fiscal de Gasto"),

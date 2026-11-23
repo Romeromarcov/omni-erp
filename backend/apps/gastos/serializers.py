@@ -34,6 +34,7 @@ class DetalleGastoSerializer(serializers.ModelSerializer):
 class GastoSerializer(serializers.ModelSerializer):
     detalles = DetalleGastoSerializer(many=True, read_only=True)
     estado_gasto_display = serializers.CharField(source="get_estado_gasto_display", read_only=True)
+    ambito_display = serializers.CharField(source="get_ambito_display", read_only=True)
 
     class Meta:
         model = models.Gasto
@@ -52,6 +53,8 @@ class GastoSerializer(serializers.ModelSerializer):
             "tiene_factura",
             "numero_factura",
             "sin_respaldo",
+            "ambito",
+            "ambito_display",
             "id_empleado_responsable",
             "id_empleado_responsable_temp",
             "estado_gasto",

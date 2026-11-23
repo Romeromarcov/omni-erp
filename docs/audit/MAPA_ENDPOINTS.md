@@ -453,6 +453,10 @@
 | `^detalles-nota-credito-venta/(?P<pk>[^/.]+)/$` | DetalleNotaCreditoVentaViewSet | DetalleNotaCreditoVenta | — | ✅ | IsAuthenticated |
 | `^detalles-nota-credito-venta/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleNotaCreditoVentaViewSet | DetalleNotaCreditoVenta | — | ✅ | IsAuthenticated |
 | `^detalles-nota-credito-venta\.(?P<format>[a-z0-9]+)/?$` | DetalleNotaCreditoVentaViewSet | DetalleNotaCreditoVenta | — | ✅ | IsAuthenticated |
+| `^detalles-nota-debito-fiscal/$` | DetalleNotaDebitoFiscalViewSet | DetalleNotaDebitoFiscal | — | ✅ | IsAuthenticated |
+| `^detalles-nota-debito-fiscal/(?P<pk>[^/.]+)/$` | DetalleNotaDebitoFiscalViewSet | DetalleNotaDebitoFiscal | — | ✅ | IsAuthenticated |
+| `^detalles-nota-debito-fiscal/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleNotaDebitoFiscalViewSet | DetalleNotaDebitoFiscal | — | ✅ | IsAuthenticated |
+| `^detalles-nota-debito-fiscal\.(?P<format>[a-z0-9]+)/?$` | DetalleNotaDebitoFiscalViewSet | DetalleNotaDebitoFiscal | — | ✅ | IsAuthenticated |
 | `^detalles-nota-venta/$` | DetalleNotaVentaViewSet | DetalleNotaVenta | — | ✅ | IsAuthenticated |
 | `^detalles-nota-venta/(?P<pk>[^/.]+)/$` | DetalleNotaVentaViewSet | DetalleNotaVenta | — | ✅ | IsAuthenticated |
 | `^detalles-nota-venta/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DetalleNotaVentaViewSet | DetalleNotaVenta | — | ✅ | IsAuthenticated |
@@ -857,6 +861,12 @@
 | `^notas-credito-venta/(?P<pk>[^/.]+)/$` | NotaCreditoVentaViewSet | NotaCreditoVenta | ✅ | ✅ | IsAuthenticated |
 | `^notas-credito-venta/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | NotaCreditoVentaViewSet | NotaCreditoVenta | ✅ | ✅ | IsAuthenticated |
 | `^notas-credito-venta\.(?P<format>[a-z0-9]+)/?$` | NotaCreditoVentaViewSet | NotaCreditoVenta | ✅ | ✅ | IsAuthenticated |
+| `^notas-debito-fiscales/$` | NotaDebitoFiscalViewSet | NotaDebitoFiscal | ✅ | ✅ | IsAuthenticated |
+| `^notas-debito-fiscales/(?P<pk>[^/.]+)/$` | NotaDebitoFiscalViewSet | NotaDebitoFiscal | ✅ | ✅ | IsAuthenticated |
+| `^notas-debito-fiscales/(?P<pk>[^/.]+)/emitir/$` | NotaDebitoFiscalViewSet | NotaDebitoFiscal | ✅ | ✅ | IsAuthenticated |
+| `^notas-debito-fiscales/(?P<pk>[^/.]+)/emitir\.(?P<format>[a-z0-9]+)/?$` | NotaDebitoFiscalViewSet | NotaDebitoFiscal | ✅ | ✅ | IsAuthenticated |
+| `^notas-debito-fiscales/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | NotaDebitoFiscalViewSet | NotaDebitoFiscal | ✅ | ✅ | IsAuthenticated |
+| `^notas-debito-fiscales\.(?P<format>[a-z0-9]+)/?$` | NotaDebitoFiscalViewSet | NotaDebitoFiscal | ✅ | ✅ | IsAuthenticated |
 | `^notas-venta/$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
 | `^notas-venta/(?P<pk>[^/.]+)/$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
 | `^notas-venta/(?P<pk>[^/.]+)/convertir-factura/$` | NotaVentaViewSet | NotaVenta | ✅ | ✅ | IsAuthenticated |
@@ -1515,4 +1525,4 @@
 | `validar-cuenta-ve/` | ValidarCuentaVeView | — | — | — | IsAuthenticated |
 | `validar-referencia/` | ValidarReferenciaView | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 277_
+_Total ViewSets: 279_

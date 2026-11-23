@@ -5,7 +5,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from apps.core.exceptions import domain_error_response
-from apps.core.viewsets import get_empresas_visible
+from apps.core.viewsets import filtrar_ambito_queryset, get_empresas_visible
 
 from .models import (
     ConceptoNomina,
@@ -118,14 +118,17 @@ class ConceptoNominaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
 class ProcesoNominaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     queryset = ProcesoNomina.objects.all()
     serializer_class = ProcesoNominaSerializer
-    filterset_fields = ["estado", "id_empresa", "id_periodo_nomina"]
+    filterset_fields = ["estado", "ambito", "id_empresa", "id_periodo_nomina"]
     search_fields = ["numero_proceso"]
     ordering_fields = ["fecha_proceso", "numero_proceso", "total_neto"]
     ordering = ["-fecha_proceso"]
 
     def get_queryset(self):
         # R-CODE-1
-        return ProcesoNomina.objects.filter(id_empresa__in=_empresas(self.request))
+        return filtrar_ambito_queryset(
+            ProcesoNomina.objects.filter(id_empresa__in=_empresas(self.request)),
+            self.request,
+        )
 
     @action(detail=True, methods=["post"])
     def procesar(self, request, pk=None):

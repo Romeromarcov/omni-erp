@@ -177,7 +177,13 @@ def registrar_recepcion(orden_compra, almacen, usuario, items: list[dict]) -> di
 
 
 @transaction.atomic
-def registrar_factura_compra(recepcion, numero_factura: str, fecha_emision=None, usuario=None) -> dict:
+def registrar_factura_compra(
+    recepcion,
+    numero_factura: str,
+    fecha_emision=None,
+    usuario=None,
+    ambito: str = "FISCAL",
+) -> dict:
     """
     Registra la factura del proveedor asociada a una recepción y genera el asiento (R-CODE-11).
 
@@ -207,6 +213,7 @@ def registrar_factura_compra(recepcion, numero_factura: str, fecha_emision=None,
         numero_factura=numero_factura,
         fecha_emision=fecha,
         monto_total=recepcion.monto_total,
+        ambito=ambito,
     )
 
     # Re-vincula la CxP nacida en la recepción a la factura recién registrada.

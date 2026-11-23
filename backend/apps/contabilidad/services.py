@@ -55,6 +55,8 @@ TIPOS_ASIENTO = frozenset(
         "NOTA_VENTA",  # CTF-001: asiento al confirmar nota de venta
         "DEVOLUCION_VENTA",  # 1.G: reverso de la venta (espejo del asiento de venta)
         "DEVOLUCION_VENTA_IVA",  # 1.G: reverso del IVA débito fiscal de la factura
+        "NOTA_DEBITO_FISCAL",  # Plan 09 §2.2: base de nota de débito fiscal (cargo adicional / mora / ajuste)
+        "NOTA_DEBITO_FISCAL_IVA",  # Plan 09 §2.2: IVA débito fiscal de nota de débito
         "FACTURA_COMPRA",
         "GASTO",  # Gasto aprobado → DR Cuenta Gasto / CR CxP o Banco
         "GASTO_IVA",  # Porción IVA crédito fiscal del gasto (asiento separado)
@@ -79,6 +81,8 @@ _TIPO_ASIENTO_TO_DIARIO: dict[str, str] = {
     "NOTA_VENTA": "VENTAS",
     "DEVOLUCION_VENTA": "VENTAS",
     "DEVOLUCION_VENTA_IVA": "VENTAS",
+    "NOTA_DEBITO_FISCAL": "VENTAS",
+    "NOTA_DEBITO_FISCAL_IVA": "VENTAS",
     "COSTO_VENTA": "VENTAS",
     "PAGO_CXC": "VENTAS",
     "FACTURA_COMPRA": "COMPRAS",

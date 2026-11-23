@@ -1,3 +1,4 @@
+from apps.core.base_models import AMBITO_CONTABLE_CHOICES
 from apps.core.uuid import uuid7
 
 from django.db import models
@@ -60,6 +61,12 @@ class Gasto(models.Model):
     tiene_factura = models.BooleanField(default=False)
     numero_factura = models.CharField(max_length=100, null=True, blank=True)
     sin_respaldo = models.BooleanField(default=False)
+    ambito = models.CharField(
+        max_length=12,
+        choices=AMBITO_CONTABLE_CHOICES,
+        default="FISCAL",
+        db_index=True,
+    )
     # FK real al empleado responsable (deuda: antes solo el UUIDField temporal,
     # que ningún flujo poblaba). SET_NULL: el gasto sobrevive al borrado.
     id_empleado_responsable = models.ForeignKey(

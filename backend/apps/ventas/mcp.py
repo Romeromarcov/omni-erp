@@ -194,6 +194,53 @@ def ventas_get_facturas(
         ]
 
 
+def ventas_listar_notas_debito_fiscales(
+    capability_token: str,
+    empresa_id: str,
+    estado: str = "",
+    limit: int = 20,
+) -> list:
+    """
+    Lista notas de débito fiscales de una empresa.
+
+    Scope requerido: ``ventas:read``
+    """
+    from apps.ventas.models import NotaDebitoFiscal  # noqa: PLC0415
+
+    with _ctx(capability_token, f"{_SCOPE}:read", empresa_id=empresa_id) as ctx:
+        limit = min(max(int(limit), 1), 100)
+        qs = NotaDebitoFiscal.objects.filter(id_empresa=empresa_id, activo=True).select_related(
+            "id_cliente", "id_factura_origen"
+        )
+        if estado:
+            qs = qs.filter(estado=str(estado).strip().upper())
+
+        notas = qs.order_by("-fecha_emision", "-fecha_creacion")[:limit]
+        logger.info(
+            "ventas_listar_notas_debito_fiscales | actor=%s | tenant=%s | count=%d",
+            ctx["actor_id"],
+            ctx["tenant_id"],
+            len(notas),
+        )
+        return [
+            {
+                "id_nota_debito_fiscal": str(n.id_nota_debito_fiscal),
+                "numero_nota_debito": n.numero_nota_debito,
+                "numero_control": n.numero_control,
+                "factura_origen": n.id_factura_origen.numero_factura,
+                "cliente": n.id_cliente.razon_social,
+                "motivo": n.motivo,
+                "estado": n.estado,
+                "ambito": n.ambito,
+                "fecha": str(n.fecha_emision),
+                "base_imponible": n.base_imponible,
+                "monto_iva": n.monto_iva,
+                "monto_total": n.monto_total,
+            }
+            for n in notas
+        ]
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Auto-discovery — exportar lista de herramientas
 # ─────────────────────────────────────────────────────────────────────────────
@@ -212,6 +259,11 @@ MCP_TOOLS: List[Dict[str, Any]] = [
     {
         "fn": ventas_get_facturas,
         "name": "ventas_get_facturas",
+        "scope": f"{_SCOPE}:read",
+    },
+    {
+        "fn": ventas_listar_notas_debito_fiscales,
+        "name": "ventas_listar_notas_debito_fiscales",
         "scope": f"{_SCOPE}:read",
     },
 ]

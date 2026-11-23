@@ -49836,6 +49836,188 @@
                 }
             ]
         },
+        "/ventas/detalles-nota-debito-fiscal/": {
+            "get": {
+                "operationId": "ventas_detalles-nota-debito-fiscal_list",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/DetalleNotaDebitoFiscal"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "ventas"
+                ]
+            },
+            "post": {
+                "operationId": "ventas_detalles-nota-debito-fiscal_create",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/DetalleNotaDebitoFiscal"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/DetalleNotaDebitoFiscal"
+                        }
+                    }
+                },
+                "tags": [
+                    "ventas"
+                ]
+            },
+            "parameters": []
+        },
+        "/ventas/detalles-nota-debito-fiscal/{id_detalle_nota_debito}/": {
+            "get": {
+                "operationId": "ventas_detalles-nota-debito-fiscal_read",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/DetalleNotaDebitoFiscal"
+                        }
+                    }
+                },
+                "tags": [
+                    "ventas"
+                ]
+            },
+            "put": {
+                "operationId": "ventas_detalles-nota-debito-fiscal_update",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/DetalleNotaDebitoFiscal"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/DetalleNotaDebitoFiscal"
+                        }
+                    }
+                },
+                "tags": [
+                    "ventas"
+                ]
+            },
+            "patch": {
+                "operationId": "ventas_detalles-nota-debito-fiscal_partial_update",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/DetalleNotaDebitoFiscal"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/DetalleNotaDebitoFiscal"
+                        }
+                    }
+                },
+                "tags": [
+                    "ventas"
+                ]
+            },
+            "delete": {
+                "operationId": "ventas_detalles-nota-debito-fiscal_delete",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "204": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "ventas"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_detalle_nota_debito",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Detalle de Nota de Débito Fiscal.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
         "/ventas/detalles-nota-venta/": {
             "get": {
                 "operationId": "ventas_detalles-nota-venta_list",
@@ -51722,6 +51904,226 @@
                     "name": "id_nota_credito",
                     "in": "path",
                     "description": "Un Cadena UUID que identifique este Nota de Crédito de Venta.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/ventas/notas-debito-fiscales/": {
+            "get": {
+                "operationId": "ventas_notas-debito-fiscales_list",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/NotaDebitoFiscal"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "ventas"
+                ]
+            },
+            "post": {
+                "operationId": "ventas_notas-debito-fiscales_create",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/NotaDebitoFiscal"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/NotaDebitoFiscal"
+                        }
+                    }
+                },
+                "tags": [
+                    "ventas"
+                ]
+            },
+            "parameters": []
+        },
+        "/ventas/notas-debito-fiscales/{id_nota_debito_fiscal}/": {
+            "get": {
+                "operationId": "ventas_notas-debito-fiscales_read",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/NotaDebitoFiscal"
+                        }
+                    }
+                },
+                "tags": [
+                    "ventas"
+                ]
+            },
+            "put": {
+                "operationId": "ventas_notas-debito-fiscales_update",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/NotaDebitoFiscal"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/NotaDebitoFiscal"
+                        }
+                    }
+                },
+                "tags": [
+                    "ventas"
+                ]
+            },
+            "patch": {
+                "operationId": "ventas_notas-debito-fiscales_partial_update",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/NotaDebitoFiscal"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/NotaDebitoFiscal"
+                        }
+                    }
+                },
+                "tags": [
+                    "ventas"
+                ]
+            },
+            "delete": {
+                "operationId": "ventas_notas-debito-fiscales_delete",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "204": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "ventas"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_nota_debito_fiscal",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Nota de Débito Fiscal.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/ventas/notas-debito-fiscales/{id_nota_debito_fiscal}/emitir/": {
+            "post": {
+                "operationId": "ventas_notas-debito-fiscales_emitir",
+                "summary": "POST /api/ventas/notas-debito-fiscales/{pk}/emitir/",
+                "description": "Emite la Nota de Débito Fiscal generando correlativo SENIAT ``NOTA_DEBITO``,\nCxC adicional y asientos contables ``NOTA_DEBITO_FISCAL`` / ``NOTA_DEBITO_FISCAL_IVA``.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/NotaDebitoFiscal"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/NotaDebitoFiscal"
+                        }
+                    }
+                },
+                "tags": [
+                    "ventas"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_nota_debito_fiscal",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Nota de Débito Fiscal.",
                     "required": true,
                     "type": "string",
                     "format": "uuid"
@@ -55196,6 +55598,20 @@
                     "type": "string",
                     "format": "decimal"
                 },
+                "ambito": {
+                    "title": "Ambito",
+                    "type": "string",
+                    "enum": [
+                        "FISCAL",
+                        "GERENCIAL"
+                    ]
+                },
+                "ambito_display": {
+                    "title": "Ambito display",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
                 "observaciones": {
                     "title": "Observaciones",
                     "type": "string",
@@ -57110,6 +57526,8 @@
                         "FACTURA_VENTA",
                         "DEVOLUCION_VENTA",
                         "DEVOLUCION_VENTA_IVA",
+                        "NOTA_DEBITO_FISCAL",
+                        "NOTA_DEBITO_FISCAL_IVA",
                         "FACTURA_COMPRA",
                         "GASTO",
                         "GASTO_IVA",
@@ -58988,6 +59406,54 @@
                     "type": "integer",
                     "maximum": 32767,
                     "minimum": 0
+                },
+                "tipo_contribuyente": {
+                    "title": "Tipo contribuyente",
+                    "type": "string",
+                    "enum": [
+                        "ORDINARIO",
+                        "ESPECIAL",
+                        "FORMAL",
+                        "EXENTO",
+                        "NO_CONTRIBUYENTE"
+                    ]
+                },
+                "tipo_persona_fiscal": {
+                    "title": "Tipo persona fiscal",
+                    "type": "string",
+                    "enum": [
+                        "PNR",
+                        "PNNR",
+                        "PJDO",
+                        "PJND"
+                    ]
+                },
+                "es_agente_retencion_iva": {
+                    "title": "Es agente retencion iva",
+                    "type": "boolean"
+                },
+                "porcentaje_retencion_iva": {
+                    "title": "Porcentaje retencion iva",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "es_agente_retencion_islr": {
+                    "title": "Es agente retencion islr",
+                    "type": "boolean"
+                },
+                "exento_islr": {
+                    "title": "Exento islr",
+                    "type": "boolean"
+                },
+                "estado": {
+                    "title": "Estado",
+                    "type": "string",
+                    "maxLength": 80
+                },
+                "municipio": {
+                    "title": "Municipio",
+                    "type": "string",
+                    "maxLength": 100
                 },
                 "usuario": {
                     "title": "Usuario",
@@ -62544,7 +63010,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-22T21:53:48.626335-04:00"
+                    "default": "2026-11-22T22:51:27.879066-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",
@@ -66321,6 +66787,20 @@
                     "type": "boolean",
                     "readOnly": true
                 },
+                "ambito": {
+                    "title": "Ambito",
+                    "type": "string",
+                    "enum": [
+                        "FISCAL",
+                        "GERENCIAL"
+                    ]
+                },
+                "ambito_display": {
+                    "title": "Ambito display",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
                 "id_empleado_responsable": {
                     "title": "Id empleado responsable",
                     "type": "integer",
@@ -68319,6 +68799,20 @@
                     "type": "string",
                     "maxLength": 100,
                     "x-nullable": true
+                },
+                "ambito": {
+                    "title": "Ambito",
+                    "type": "string",
+                    "enum": [
+                        "FISCAL",
+                        "GERENCIAL"
+                    ]
+                },
+                "ambito_display": {
+                    "title": "Ambito display",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
                 },
                 "observaciones": {
                     "title": "Observaciones",
@@ -70820,6 +71314,20 @@
                         "APROBADO",
                         "CANCELADO"
                     ]
+                },
+                "ambito": {
+                    "title": "Ambito",
+                    "type": "string",
+                    "enum": [
+                        "FISCAL",
+                        "GERENCIAL"
+                    ]
+                },
+                "ambito_display": {
+                    "title": "Ambito display",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
                 },
                 "observaciones": {
                     "title": "Observaciones",
@@ -75302,6 +75810,74 @@
                 }
             }
         },
+        "DetalleNotaDebitoFiscal": {
+            "required": [
+                "id_nota_debito_fiscal",
+                "precio_unitario",
+                "subtotal",
+                "total_linea"
+            ],
+            "type": "object",
+            "properties": {
+                "id_detalle_nota_debito": {
+                    "title": "Id detalle nota debito",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_nota_debito_fiscal": {
+                    "title": "Id nota debito fiscal",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "id_producto": {
+                    "title": "Id producto",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "descripcion": {
+                    "title": "Descripcion",
+                    "type": "string",
+                    "maxLength": 255
+                },
+                "cantidad": {
+                    "title": "Cantidad",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "precio_unitario": {
+                    "title": "Precio unitario",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "alicuota_iva": {
+                    "title": "Alicuota iva",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "subtotal": {
+                    "title": "Subtotal",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "monto_impuesto": {
+                    "title": "Monto impuesto",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "total_linea": {
+                    "title": "Total linea",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "observaciones": {
+                    "title": "Observaciones",
+                    "type": "string",
+                    "x-nullable": true
+                }
+            }
+        },
         "DetalleNotaVenta": {
             "required": [
                 "id_nota_venta",
@@ -76049,6 +76625,173 @@
                 }
             }
         },
+        "NotaDebitoFiscal": {
+            "required": [
+                "id_cliente",
+                "id_factura_origen",
+                "fecha_emision",
+                "monto_total",
+                "id_moneda"
+            ],
+            "type": "object",
+            "properties": {
+                "id_nota_debito_fiscal": {
+                    "title": "Id nota debito fiscal",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_cliente": {
+                    "title": "Id cliente",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "cliente_nombre": {
+                    "title": "Cliente nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "id_factura_origen": {
+                    "title": "Id factura origen",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "factura_numero": {
+                    "title": "Factura numero",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "numero_control": {
+                    "title": "Numero control",
+                    "description": "Número de control compartido o asignado",
+                    "type": "string",
+                    "maxLength": 50
+                },
+                "numero_nota_debito": {
+                    "title": "Numero nota debito",
+                    "description": "Número individual de la nota de débito",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 50
+                },
+                "fecha_emision": {
+                    "title": "Fecha emision",
+                    "type": "string",
+                    "format": "date"
+                },
+                "fecha_vencimiento": {
+                    "title": "Fecha vencimiento",
+                    "type": "string",
+                    "format": "date",
+                    "x-nullable": true
+                },
+                "base_imponible": {
+                    "title": "Base imponible",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "monto_iva": {
+                    "title": "Monto iva",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "monto_total": {
+                    "title": "Monto total",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "id_moneda": {
+                    "title": "Id moneda",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "tasa_cambio": {
+                    "title": "Tasa cambio",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "motivo": {
+                    "title": "Motivo",
+                    "type": "string",
+                    "enum": [
+                        "INTERES_MORA",
+                        "DIFERENCIA_CAMBIARIA",
+                        "AJUSTE_PRECIO",
+                        "CARGO_ADICIONAL",
+                        "ERROR_FACTURACION",
+                        "OTRO"
+                    ]
+                },
+                "motivo_display": {
+                    "title": "Motivo display",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "estado": {
+                    "title": "Estado",
+                    "type": "string",
+                    "enum": [
+                        "BORRADOR",
+                        "EMITIDA",
+                        "APLICADA",
+                        "ANULADA"
+                    ],
+                    "readOnly": true
+                },
+                "estado_display": {
+                    "title": "Estado display",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "ambito": {
+                    "title": "Ambito",
+                    "type": "string",
+                    "enum": [
+                        "FISCAL",
+                        "GERENCIAL"
+                    ],
+                    "readOnly": true
+                },
+                "ambito_display": {
+                    "title": "Ambito display",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "observaciones": {
+                    "title": "Observaciones",
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "activo": {
+                    "title": "Activo",
+                    "type": "boolean"
+                },
+                "fecha_creacion": {
+                    "title": "Fecha creacion",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "detalles": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/DetalleNotaDebitoFiscal"
+                    },
+                    "readOnly": true
+                }
+            }
+        },
         "NotaVenta": {
             "required": [
                 "id_cliente",
@@ -76062,6 +76805,12 @@
                     "type": "string",
                     "format": "uuid",
                     "readOnly": true
+                },
+                "ambito_display": {
+                    "title": "Ambito display",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
                 },
                 "id_cliente": {
                     "title": "Id cliente",
@@ -76097,6 +76846,14 @@
                     "title": "Observaciones",
                     "type": "string",
                     "x-nullable": true
+                },
+                "ambito": {
+                    "title": "Ambito",
+                    "type": "string",
+                    "enum": [
+                        "FISCAL",
+                        "GERENCIAL"
+                    ]
                 },
                 "activo": {
                     "title": "Activo",

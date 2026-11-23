@@ -43,22 +43,11 @@ def _rif(obj, *campos) -> str:
 # ── TXT ventas ─────────────────────────────────────────────────────────────────
 
 
-def generar_libro_ventas_txt(empresa, fecha_inicio: date, fecha_fin: date) -> str:
-    """
-    Genera el libro de ventas en formato SENIAT TXT (pipe-delimited).
+def _filas_libro_ventas(empresa, fecha_inicio: date, fecha_fin: date) -> list[list[str]]:
+    """Extrae filas SENIAT de Libro de Ventas (Facturas Fiscales + Notas de Débito Fiscales)."""
+    from apps.ventas.models import FacturaFiscal, NotaDebitoFiscal
 
-    Primera línea: cabecera de columnas.
-    Líneas siguientes: una por cada factura en el rango.
-
-        RIF_EMISOR|RIF_RECEPTOR|FECHA|NRO_CTRL|NRO_FAC|BASE_IMPONIBLE|IVA|TOTAL
-
-    Devuelve solo la cabecera si no hay facturas en el rango.
-    """
-    from apps.ventas.models import FacturaFiscal
-
-    cabecera = "RIF_EMISOR|RIF_RECEPTOR|FECHA|NRO_CTRL|NRO_FAC|BASE_IMPONIBLE|IVA|TOTAL"
     rif_emisor = _rif(empresa, "identificador_fiscal", "rif")
-
     facturas = (
         FacturaFiscal.objects.filter(
             id_empresa=empresa,
@@ -69,13 +58,26 @@ def generar_libro_ventas_txt(empresa, fecha_inicio: date, fecha_fin: date) -> st
         .select_related("id_cliente")
         .order_by("fecha_emision", "numero_control")
     )
+    notas_debito = (
+        NotaDebitoFiscal.objects.filter(
+            id_empresa=empresa,
+            fecha_emision__gte=fecha_inicio,
+            fecha_emision__lte=fecha_fin,
+            estado__in=["EMITIDA", "APLICADA"],
+            ambito="FISCAL",
+            activo=True,
+        )
+        .select_related("id_cliente")
+        .order_by("fecha_emision", "numero_control")
+    )
 
-    lineas = [cabecera]
+    documentos: list[tuple[date, str, list[str]]] = []
     for f in facturas:
-        cliente = f.id_cliente
-        rif_receptor = _rif(cliente, "rif", "identificador_fiscal")
-        lineas.append(
-            "|".join(
+        rif_receptor = _rif(f.id_cliente, "rif", "identificador_fiscal")
+        documentos.append(
+            (
+                f.fecha_emision,
+                f.numero_control or "",
                 [
                     rif_emisor,
                     rif_receptor,
@@ -85,49 +87,106 @@ def generar_libro_ventas_txt(empresa, fecha_inicio: date, fecha_fin: date) -> st
                     f"{Decimal(str(f.base_imponible)):.2f}",
                     f"{Decimal(str(f.monto_iva)):.2f}",
                     f"{Decimal(str(f.monto_total)):.2f}",
-                ]
+                ],
             )
         )
+    for nd in notas_debito:
+        rif_receptor = _rif(nd.id_cliente, "rif", "identificador_fiscal")
+        documentos.append(
+            (
+                nd.fecha_emision,
+                nd.numero_control or "",
+                [
+                    rif_emisor,
+                    rif_receptor,
+                    str(nd.fecha_emision),
+                    nd.numero_control,
+                    nd.numero_nota_debito,
+                    f"{Decimal(str(nd.base_imponible)):.2f}",
+                    f"{Decimal(str(nd.monto_iva)):.2f}",
+                    f"{Decimal(str(nd.monto_total)):.2f}",
+                ],
+            )
+        )
+    documentos.sort(key=lambda item: (item[0], item[1]))
+    return [fila for _, _, fila in documentos]
 
+
+def generar_libro_ventas_txt(empresa, fecha_inicio: date, fecha_fin: date) -> str:
+    """
+    Genera el libro de ventas en formato SENIAT TXT (pipe-delimited).
+
+    Primera línea: cabecera de columnas.
+    Líneas siguientes: una por cada factura o nota de débito fiscal en el rango.
+
+        RIF_EMISOR|RIF_RECEPTOR|FECHA|NRO_CTRL|NRO_FAC|BASE_IMPONIBLE|IVA|TOTAL
+
+    Devuelve solo la cabecera si no hay documentos fiscales en el rango.
+    """
+    cabecera = "RIF_EMISOR|RIF_RECEPTOR|FECHA|NRO_CTRL|NRO_FAC|BASE_IMPONIBLE|IVA|TOTAL"
+    lineas = [cabecera, *("|".join(fila) for fila in _filas_libro_ventas(empresa, fecha_inicio, fecha_fin))]
     return "\n".join(lineas)
 
 
 # ── TXT compras ────────────────────────────────────────────────────────────────
 
 
-def generar_libro_compras_txt(empresa, fecha_inicio: date, fecha_fin: date) -> str:
-    """
-    Genera el libro de compras en formato SENIAT TXT (pipe-delimited).
-    Si no existe el modelo FacturaProveedor devuelve solo la cabecera.
-    """
-    cabecera = "RIF_EMISOR|RIF_RECEPTOR|FECHA|NRO_CTRL|NRO_FAC|BASE_IMPONIBLE|IVA|TOTAL"
-
-    try:
-        from apps.compras.models import FacturaProveedor  # type: ignore
-    except ImportError:
-        return cabecera
+def _filas_libro_compras(empresa, fecha_inicio: date, fecha_fin: date) -> list[list[str]]:
+    """Extrae filas SENIAT de Libro de Compras (excluye documentos gerenciales)."""
+    from apps.compras.models import FacturaCompra
 
     rif_receptor = _rif(empresa, "identificador_fiscal", "rif")
+    filas: list[list[str]] = []
 
-    facturas = (
-        FacturaProveedor.objects.filter(
+    facturas_compra = (
+        FacturaCompra.objects.filter(
             id_empresa=empresa,
             fecha_emision__gte=fecha_inicio,
             fecha_emision__lte=fecha_fin,
+            ambito="FISCAL",
+            activo=True,
         )
         .select_related("id_proveedor")
-        .order_by("fecha_emision")
+        .order_by("fecha_emision", "numero_factura")
     )
+    for fc in facturas_compra:
+        proveedor = fc.id_proveedor
+        rif_emisor = _rif(proveedor, "identificador_fiscal", "rif") if proveedor is not None else ""
+        total = Decimal(str(fc.monto_total))
+        base = Decimal(str(getattr(fc, "base_imponible", total)))
+        iva = Decimal(str(getattr(fc, "monto_iva", Decimal("0.00"))))
+        filas.append(
+            [
+                rif_emisor,
+                rif_receptor,
+                str(fc.fecha_emision),
+                str(getattr(fc, "numero_control", "")),
+                str(fc.numero_factura),
+                f"{base:.2f}",
+                f"{iva:.2f}",
+                f"{total:.2f}",
+            ]
+        )
 
-    lineas = [cabecera]
-    for f in facturas:
-        proveedor = f.id_proveedor
-        rif_emisor = _rif(proveedor, "identificador_fiscal", "rif")
-        base = Decimal(str(getattr(f, "base_imponible", 0)))
-        iva = Decimal(str(getattr(f, "monto_iva", 0)))
-        total = Decimal(str(getattr(f, "monto_total", 0)))
-        lineas.append(
-            "|".join(
+    try:
+        from apps.compras.models import FacturaProveedor  # type: ignore
+
+        facturas_legacy = (
+            FacturaProveedor.objects.filter(
+                id_empresa=empresa,
+                fecha_emision__gte=fecha_inicio,
+                fecha_emision__lte=fecha_fin,
+            )
+            .select_related("id_proveedor")
+            .order_by("fecha_emision")
+        )
+        for f in facturas_legacy:
+            proveedor = f.id_proveedor
+            rif_emisor = _rif(proveedor, "identificador_fiscal", "rif")
+            base = Decimal(str(getattr(f, "base_imponible", 0)))
+            iva = Decimal(str(getattr(f, "monto_iva", 0)))
+            total = Decimal(str(getattr(f, "monto_total", 0)))
+            filas.append(
                 [
                     rif_emisor,
                     rif_receptor,
@@ -139,8 +198,19 @@ def generar_libro_compras_txt(empresa, fecha_inicio: date, fecha_fin: date) -> s
                     f"{total:.2f}",
                 ]
             )
-        )
+    except ImportError:
+        pass
 
+    return filas
+
+
+def generar_libro_compras_txt(empresa, fecha_inicio: date, fecha_fin: date) -> str:
+    """
+    Genera el libro de compras en formato SENIAT TXT (pipe-delimited).
+    Incluye únicamente compras con ``ambito='FISCAL'``.
+    """
+    cabecera = "RIF_EMISOR|RIF_RECEPTOR|FECHA|NRO_CTRL|NRO_FAC|BASE_IMPONIBLE|IVA|TOTAL"
+    lineas = [cabecera, *("|".join(fila) for fila in _filas_libro_compras(empresa, fecha_inicio, fecha_fin))]
     return "\n".join(lineas)
 
 
@@ -297,37 +367,8 @@ def _build_libro_pdf(
 
 
 def generar_libro_ventas_pdf(empresa, fecha_inicio: date, fecha_fin: date) -> bytes:
-    """Genera el PDF del libro de ventas SENIAT."""
-    from apps.ventas.models import FacturaFiscal
-
-    rif_emisor = _rif(empresa, "identificador_fiscal", "rif")
-    facturas = (
-        FacturaFiscal.objects.filter(
-            id_empresa=empresa,
-            fecha_emision__gte=fecha_inicio,
-            fecha_emision__lte=fecha_fin,
-            estado__in=["EMITIDA", "PAGADA", "VENCIDA"],
-        )
-        .select_related("id_cliente")
-        .order_by("fecha_emision", "numero_control")
-    )
-
-    filas = []
-    for f in facturas:
-        rif_receptor = _rif(f.id_cliente, "rif", "identificador_fiscal")
-        filas.append(
-            [
-                rif_emisor,
-                rif_receptor,
-                str(f.fecha_emision),
-                f.numero_control,
-                f.numero_factura,
-                f"{Decimal(str(f.base_imponible)):.2f}",
-                f"{Decimal(str(f.monto_iva)):.2f}",
-                f"{Decimal(str(f.monto_total)):.2f}",
-            ]
-        )
-
+    """Genera el PDF del libro de ventas SENIAT (Facturas Fiscales + Notas de Débito Fiscales)."""
+    filas = _filas_libro_ventas(empresa, fecha_inicio, fecha_fin)
     nombre_empresa = getattr(empresa, "nombre_legal", None) or getattr(empresa, "nombre", "")
     return _build_libro_pdf(
         titulo=f"Libro de Ventas — {nombre_empresa}",
@@ -342,43 +383,8 @@ def generar_libro_ventas_pdf(empresa, fecha_inicio: date, fecha_fin: date) -> by
 
 
 def generar_libro_compras_pdf(empresa, fecha_inicio: date, fecha_fin: date) -> bytes:
-    """Genera el PDF del libro de compras SENIAT."""
-    rif_receptor = _rif(empresa, "identificador_fiscal", "rif")
-    filas = []
-
-    try:
-        from apps.compras.models import FacturaProveedor  # type: ignore
-
-        facturas = (
-            FacturaProveedor.objects.filter(
-                id_empresa=empresa,
-                fecha_emision__gte=fecha_inicio,
-                fecha_emision__lte=fecha_fin,
-            )
-            .select_related("id_proveedor")
-            .order_by("fecha_emision")
-        )
-
-        for f in facturas:
-            rif_emisor = _rif(f.id_proveedor, "identificador_fiscal", "rif")
-            base = Decimal(str(getattr(f, "base_imponible", 0)))
-            iva = Decimal(str(getattr(f, "monto_iva", 0)))
-            total = Decimal(str(getattr(f, "monto_total", 0)))
-            filas.append(
-                [
-                    rif_emisor,
-                    rif_receptor,
-                    str(getattr(f, "fecha_emision", "")),
-                    str(getattr(f, "numero_control", "")),
-                    str(getattr(f, "numero_factura", "")),
-                    f"{base:.2f}",
-                    f"{iva:.2f}",
-                    f"{total:.2f}",
-                ]
-            )
-    except ImportError:
-        pass
-
+    """Genera el PDF del libro de compras SENIAT (excluye documentos gerenciales)."""
+    filas = _filas_libro_compras(empresa, fecha_inicio, fecha_fin)
     nombre_empresa = getattr(empresa, "nombre_legal", None) or getattr(empresa, "nombre", "")
     return _build_libro_pdf(
         titulo=f"Libro de Compras — {nombre_empresa}",

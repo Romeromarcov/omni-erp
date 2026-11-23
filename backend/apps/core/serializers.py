@@ -390,11 +390,24 @@ class ContactoSerializer(BaseModelSerializer):
             "dias_credito",
             "lista_precio",
             "dias_pago",
+            "tipo_contribuyente",
+            "tipo_persona_fiscal",
+            "es_agente_retencion_iva",
+            "porcentaje_retencion_iva",
+            "es_agente_retencion_islr",
+            "exento_islr",
+            "estado",
+            "municipio",
             "usuario",
             "activo",
             "fecha_creacion",
         ]
         read_only_fields = ["id_contacto", "id_empresa", "fecha_creacion"]
+
+    def validate_porcentaje_retencion_iva(self, value):
+        if value is not None and (value < 0 or value > 100):
+            raise serializers.ValidationError("El porcentaje de retención IVA debe estar entre 0 y 100.")
+        return value
 
 
 from .models import Notificacion  # noqa: E402

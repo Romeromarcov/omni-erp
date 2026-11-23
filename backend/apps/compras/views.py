@@ -7,7 +7,12 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from apps.core.exceptions import domain_error_response
-from apps.core.viewsets import BaseModelViewSet, EmpresaInjectMixin, get_empresas_visible
+from apps.core.viewsets import (
+    BaseModelViewSet,
+    EmpresaInjectMixin,
+    filtrar_ambito_queryset,
+    get_empresas_visible,
+)
 
 from .models import (
     DetalleFacturaCompra,
@@ -189,12 +194,16 @@ class RecepcionMercanciaViewSet(_NulSafeFilterMixin, EmpresaInjectMixin, BaseMod
 class FacturaCompraViewSet(_NulSafeFilterMixin, EmpresaInjectMixin, BaseModelViewSet):  # H-API-2
     queryset = FacturaCompra.objects.all()
     serializer_class = FacturaCompraSerializer
+    filterset_fields = ["ambito", "id_empresa", "id_proveedor", "id_orden_compra"]
     search_fields = ["numero_factura", "observaciones"]
     ordering_fields = ["fecha_emision", "numero_factura", "monto_total", "fecha_creacion"]
 
     def get_queryset(self):
         # R-CODE-1
-        return FacturaCompra.objects.filter(id_empresa__in=_empresas(self.request))
+        return filtrar_ambito_queryset(
+            FacturaCompra.objects.filter(id_empresa__in=_empresas(self.request)),
+            self.request,
+        )
 
     @action(detail=False, methods=["post"], url_path="facturar")
     def facturar(self, request):

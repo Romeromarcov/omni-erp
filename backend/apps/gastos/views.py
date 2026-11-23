@@ -3,7 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from apps.core.exceptions import domain_error_response
-from apps.core.viewsets import BaseModelViewSet, get_empresas_visible
+from apps.core.viewsets import BaseModelViewSet, filtrar_ambito_queryset, get_empresas_visible
 
 from .models import CategoriaGasto, DetalleGasto, Gasto, ReembolsoGasto
 from .serializers import (
@@ -42,14 +42,17 @@ class CategoriaGastoViewSet(BaseModelViewSet):  # BUG-03: era viewsets.ModelView
 class GastoViewSet(BaseModelViewSet):  # BUG-03: era viewsets.ModelViewSet
     queryset = Gasto.objects.all()
     serializer_class = GastoSerializer
-    filterset_fields = ["estado_gasto", "id_empresa", "id_categoria_gasto", "fecha_gasto"]
+    filterset_fields = ["estado_gasto", "ambito", "id_empresa", "id_categoria_gasto", "fecha_gasto"]
     search_fields = ["descripcion"]
     ordering_fields = ["fecha_gasto", "monto", "fecha_creacion"]
     ordering = ["-fecha_gasto"]
 
     def get_queryset(self):
         # R-CODE-1: filtrar por empresas visibles del usuario autenticado
-        return Gasto.objects.filter(id_empresa__in=_empresas(self.request))
+        return filtrar_ambito_queryset(
+            Gasto.objects.filter(id_empresa__in=_empresas(self.request)),
+            self.request,
+        )
 
     @action(detail=True, methods=["post"])
     def aprobar(self, request, pk=None):

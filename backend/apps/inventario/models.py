@@ -5,7 +5,7 @@ from apps.core.uuid import uuid7
 from django.db import models
 from django.db.models import F, Q
 
-from apps.core.base_models import IntegrationFieldsMixin, OmniBaseModel, TimeStampedModel
+from apps.core.base_models import AMBITO_CONTABLE_CHOICES, IntegrationFieldsMixin, OmniBaseModel, TimeStampedModel
 
 
 class UnidadMedida(OmniBaseModel, IntegrationFieldsMixin):
@@ -196,6 +196,12 @@ class MovimientoInventario(TimeStampedModel):
     )
     id_lote = models.ForeignKey(
         "LoteProducto", on_delete=models.SET_NULL, null=True, blank=True, related_name="movimientos"
+    )
+    ambito = models.CharField(
+        max_length=12,
+        choices=AMBITO_CONTABLE_CHOICES,
+        default="FISCAL",
+        db_index=True,
     )
     observaciones = models.TextField(null=True, blank=True)
 

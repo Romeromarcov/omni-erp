@@ -1700,29 +1700,28 @@ class TestMigracionBackfillPagoContacto:
             executor = MigrationExecutor(connection)
             executor.migrate([("finanzas", "0044_backfill_pago_id_contacto")])
 
-            p_fac.refresh_from_db()
-            p_ped.refresh_from_db()
-            p_nv.refresh_from_db()
-            p_cxp.refresh_from_db()
-            p_cruzado.refresh_from_db()
-            p_preservado.refresh_from_db()
+            # Usar project_state acorde al esquema actualmente aplicado (puede haber
+            # migraciones posteriores en apps relacionadas ya revertidas temporalmente).
+            executor = MigrationExecutor(connection)
+            apps_0044 = executor.loader.project_state(list(executor.loader.applied_migrations)).apps
+            Pago0044 = apps_0044.get_model("finanzas", "Pago")
 
-            assert p_fac.id_contacto_id == contacto_cliente_a.pk
-            assert p_ped.id_contacto_id == contacto_cliente_a.pk
-            assert p_nv.id_contacto_id == contacto_cliente_a.pk
-            assert p_cxp.id_contacto_id == contacto_proveedor_a.pk
-            assert p_cruzado.id_contacto_id is None
-            assert p_preservado.id_contacto_id == otro_contacto_a.pk
+            with rls.rls_bypass():
+                assert Pago0044.objects.get(pk=p_fac.pk).id_contacto_id == contacto_cliente_a.pk
+                assert Pago0044.objects.get(pk=p_ped.pk).id_contacto_id == contacto_cliente_a.pk
+                assert Pago0044.objects.get(pk=p_nv.pk).id_contacto_id == contacto_cliente_a.pk
+                assert Pago0044.objects.get(pk=p_cxp.pk).id_contacto_id == contacto_proveedor_a.pk
+                assert Pago0044.objects.get(pk=p_cruzado.pk).id_contacto_id is None
+                assert Pago0044.objects.get(pk=p_preservado.pk).id_contacto_id == otro_contacto_a.pk
 
             # Idempotencia: segunda corrida no altera nada
             mod = importlib.import_module("apps.finanzas.migrations.0044_backfill_pago_id_contacto")
-            from django.apps import apps as django_apps
 
             with connection.schema_editor() as editor:
-                mod.backfill_pago_id_contacto(django_apps, editor)
+                mod.backfill_pago_id_contacto(apps_0044, editor)
 
-            p_preservado.refresh_from_db()
-            assert p_preservado.id_contacto_id == otro_contacto_a.pk
+            with rls.rls_bypass():
+                assert Pago0044.objects.get(pk=p_preservado.pk).id_contacto_id == otro_contacto_a.pk
         finally:
             executor = MigrationExecutor(connection)
             executor.migrate(executor.loader.graph.leaf_nodes())

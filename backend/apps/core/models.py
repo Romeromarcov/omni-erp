@@ -1,4 +1,6 @@
 # apps/core/models.py
+from decimal import Decimal
+
 from apps.core.uuid import uuid7
 
 from django.contrib.auth.models import AbstractUser
@@ -910,6 +912,42 @@ class Contacto(OmniBaseModel):
 
     # Campos de proveedor
     dias_pago = models.PositiveSmallIntegerField(default=30)
+
+    # Perfil fiscal venezolano (Plan 09 §2.1)
+    TIPO_CONTRIBUYENTE_CHOICES = [
+        ("ORDINARIO", "Contribuyente Ordinario"),
+        ("ESPECIAL", "Contribuyente Especial"),
+        ("FORMAL", "Contribuyente Formal"),
+        ("EXENTO", "Exento / Exonerado"),
+        ("NO_CONTRIBUYENTE", "No Contribuyente"),
+    ]
+    TIPO_PERSONA_FISCAL_CHOICES = [
+        ("PNR", "Persona Natural Residente"),
+        ("PNNR", "Persona Natural No Residente"),
+        ("PJDO", "Persona Jurídica Domiciliada"),
+        ("PJND", "Persona Jurídica No Domiciliada"),
+    ]
+    tipo_contribuyente = models.CharField(
+        max_length=20,
+        choices=TIPO_CONTRIBUYENTE_CHOICES,
+        default="ORDINARIO",
+    )
+    tipo_persona_fiscal = models.CharField(
+        max_length=6,
+        choices=TIPO_PERSONA_FISCAL_CHOICES,
+        blank=True,
+        default="",
+    )
+    es_agente_retencion_iva = models.BooleanField(default=False)
+    porcentaje_retencion_iva = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal("0.00"),
+    )
+    es_agente_retencion_islr = models.BooleanField(default=False)
+    exento_islr = models.BooleanField(default=False)
+    estado = models.CharField(max_length=80, blank=True, default="")
+    municipio = models.CharField(max_length=100, blank=True, default="")
 
     # Enlace opcional a usuario Django
     usuario = models.OneToOneField(
