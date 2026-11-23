@@ -11,7 +11,9 @@
 | agentes | EjecucionAgente | ✅ | ✅ | — |
 | agentes | PrediccionAgente | ✅ | ✅ | — |
 | almacenes | Almacen | ✅ | ✅ | id_empresa+codigo_almacen |
+| almacenes | DetalleTransferenciaTransito | ✅ | ✅ | — |
 | almacenes | StockUbicacion | ✅ | ✅ | — |
+| almacenes | TransferenciaTransito | ✅ | ✅ | id_empresa+numero |
 | almacenes | UbicacionAlmacen | ✅ | ✅ | id_almacen+codigo_ubicacion |
 | auditoria | LogAuditoria | ✅ | ✅ | — |
 | banca_electronica | DetalleLotePagoBancario | — | ✅ | — |
@@ -21,6 +23,8 @@
 | bots_ingest | BotRegistro | ✅ | ✅ | — |
 | bots_ingest | BotUsuario | ✅ | ✅ | — |
 | bots_ingest | IngestaBot | ✅ | ✅ | — |
+| compras | AsignacionCostoDestino | ✅ | ✅ | id_costo_destino+id_detalle_recepcion |
+| compras | CostoDestino | ✅ | ✅ | id_empresa+numero_documento |
 | compras | DetalleFacturaCompra | — | ✅ | — |
 | compras | DetalleOfertaProveedor | — | ✅ | — |
 | compras | DetalleOrdenCompra | — | ✅ | — |
@@ -28,6 +32,7 @@
 | compras | DetalleRequisicionCompra | — | ✅ | — |
 | compras | DetalleSolicitudCotizacion | — | ✅ | — |
 | compras | FacturaCompra | ✅ | ✅ | id_empresa+numero_factura |
+| compras | LineaCostoDestino | ✅ | ✅ | — |
 | compras | OfertaProveedor | — | ✅ | — |
 | compras | OrdenCompra | ✅ | ✅ | id_empresa+numero_orden |
 | compras | RecepcionMercancia | ✅ | ✅ | — |
@@ -169,8 +174,10 @@
 | integration_hub | JobSincronizacion | — | ✅ | — |
 | integration_hub | LogDetalleSincronizacion | — | ✅ | — |
 | inventario | CategoriaProducto | ✅ | ✅ | — |
+| inventario | ConteoInventario | ✅ | ✅ | id_empresa+numero |
 | inventario | ConversionUnidadMedida | ✅ | ✅ | id_producto+id_unidad_origen+id_unidad_destino |
 | inventario | DetalleRequisicion | — | ✅ | id_requisicion+id_producto |
+| inventario | LineaConteoInventario | ✅ | ✅ | — |
 | inventario | LoteProducto | ✅ | ✅ | — |
 | inventario | MovimientoInventario | ✅ | ✅ | — |
 | inventario | MovimientoLote | — | ✅ | — |
@@ -279,4 +286,4 @@
 | ventas | Pedido | ✅ | ✅ | id_empresa+numero_pedido |
 | ventas | ReglaPrecioDinamico | ✅ | ✅ | id_empresa+codigo |
 
-_Total modelos: 276_
+_Total modelos: 283_

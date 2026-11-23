@@ -1,7 +1,11 @@
-from apps.core.base_models import AMBITO_CONTABLE_CHOICES
+from decimal import Decimal
+
+from apps.core.base_models import AMBITO_CONTABLE_CHOICES, OmniBaseModel
 from apps.core.uuid import uuid7
 
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Q
 
 
 class OrdenCompra(models.Model):
@@ -353,3 +357,156 @@ class DetalleFacturaCompra(models.Model):
 
     def __str__(self):
         return f"{self.id_factura_compra.numero_factura} - {self.id_producto.nombre_producto}"
+
+
+# ── Costos en Destino / Landed Costs (Plan 09 Fase 5.1) ───────────────────────
+
+
+class CostoDestino(OmniBaseModel):
+    """Prorrateo de costos de importación/destino (flete, seguro, arancel, nacionalización)."""
+
+    METODOS_PRORRATEO = [
+        ("VALOR", "Por Valor (FOB / Compra)"),
+        ("CANTIDAD", "Por Cantidad de Unidades"),
+        ("PESO", "Por Peso (kg)"),
+        ("VOLUMEN", "Por Volumen (m³)"),
+    ]
+    ESTADOS = [
+        ("BORRADOR", "Borrador"),
+        ("APLICADO", "Aplicado"),
+        ("ANULADO", "Anulado"),
+    ]
+
+    id_costo_destino = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="costos_destino")
+    id_recepcion = models.ForeignKey(RecepcionMercancia, on_delete=models.PROTECT, related_name="costos_destino")
+    numero_documento = models.CharField(max_length=50)
+    fecha = models.DateField()
+    metodo_prorrateo = models.CharField(max_length=20, choices=METODOS_PRORRATEO, default="VALOR")
+    ambito = models.CharField(
+        max_length=12,
+        choices=AMBITO_CONTABLE_CHOICES,
+        default="FISCAL",
+        db_index=True,
+    )
+    nro_expediente_impor = models.CharField(max_length=80, blank=True, default="")
+    nro_planilla_impor = models.CharField(max_length=80, blank=True, default="")
+    monto_total = models.DecimalField(max_digits=18, decimal_places=4, default=Decimal("0"))
+    estado = models.CharField(max_length=15, choices=ESTADOS, default="BORRADOR", db_index=True)
+    id_asiento = models.ForeignKey(
+        "contabilidad.AsientoContable",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="costos_destino",
+    )
+    observaciones = models.TextField(blank=True, default="")
+
+    class Meta:
+        db_table = "compras_costo_destino"
+        verbose_name = "Costo en Destino"
+        verbose_name_plural = "Costos en Destino"
+        unique_together = [["id_empresa", "numero_documento"]]
+        ordering = ["-fecha", "-fecha_creacion"]
+        constraints = [
+            models.CheckConstraint(condition=Q(monto_total__gte=0), name="compras_costo_destino_total_gte_0"),
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.id_recepcion_id and self.id_empresa_id and self.id_recepcion.id_empresa_id != self.id_empresa_id:
+            raise ValidationError({"id_recepcion": "La recepción no pertenece a la empresa indicada."})
+
+    def __str__(self):
+        return f"{self.numero_documento} ({self.metodo_prorrateo}) [{self.estado}]"
+
+
+class LineaCostoDestino(OmniBaseModel):
+    """Concepto individual de costo en destino (flete, seguro, arancel, aduana, etc.)."""
+
+    CONCEPTOS = [
+        ("FLETE", "Flete Internacional / Nacional"),
+        ("SEGURO", "Seguro de Carga"),
+        ("ARANCEL", "Arancel / Derechos Aduanales"),
+        ("NACIONALIZACION", "Gastos de Nacionalización / Agente Aduanal"),
+        ("ALMACENAJE_ADUANA", "Almacenaje / Manejo Portuario"),
+        ("OTRO", "Otro Costo en Destino"),
+    ]
+
+    id_linea_costo_destino = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="lineas_costo_destino")
+    id_costo_destino = models.ForeignKey(CostoDestino, on_delete=models.CASCADE, related_name="lineas")
+    concepto = models.CharField(max_length=25, choices=CONCEPTOS)
+    descripcion = models.CharField(max_length=255)
+    monto = models.DecimalField(max_digits=18, decimal_places=4)
+    id_factura_compra = models.ForeignKey(
+        FacturaCompra,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="lineas_costo_destino",
+    )
+    observaciones = models.TextField(blank=True, default="")
+
+    class Meta:
+        db_table = "compras_linea_costo_destino"
+        verbose_name = "Línea de Costo en Destino"
+        verbose_name_plural = "Líneas de Costo en Destino"
+        constraints = [
+            models.CheckConstraint(condition=Q(monto__gt=0), name="compras_linea_costo_destino_monto_gt_0"),
+        ]
+
+    def clean(self):
+        super().clean()
+        if (
+            self.id_costo_destino_id
+            and self.id_empresa_id
+            and self.id_costo_destino.id_empresa_id != self.id_empresa_id
+        ):
+            raise ValidationError({"id_costo_destino": "El costo en destino no pertenece a la empresa indicada."})
+        if (
+            self.id_factura_compra_id
+            and self.id_empresa_id
+            and self.id_factura_compra.id_empresa_id != self.id_empresa_id
+        ):
+            raise ValidationError({"id_factura_compra": "La factura de compra no pertenece a la empresa indicada."})
+
+    def __str__(self):
+        return f"{self.concepto}: {self.monto}"
+
+
+class AsignacionCostoDestino(OmniBaseModel):
+    """Trazabilidad de prorrateo por línea de recepción y variación de costo unitario."""
+
+    id_asignacion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="asignaciones_costo_destino")
+    id_costo_destino = models.ForeignKey(CostoDestino, on_delete=models.CASCADE, related_name="asignaciones")
+    id_detalle_recepcion = models.ForeignKey(
+        DetalleRecepcionMercancia, on_delete=models.PROTECT, related_name="asignaciones_costo_destino"
+    )
+    id_producto = models.ForeignKey(
+        "inventario.Producto", on_delete=models.PROTECT, related_name="asignaciones_costo_destino"
+    )
+    base_prorrateo = models.DecimalField(max_digits=18, decimal_places=4)
+    porcentaje_prorrateo = models.DecimalField(max_digits=8, decimal_places=4)
+    costo_adicional_total = models.DecimalField(max_digits=18, decimal_places=4)
+    costo_adicional_unitario = models.DecimalField(max_digits=18, decimal_places=4)
+    costo_unitario_anterior = models.DecimalField(max_digits=18, decimal_places=4)
+    costo_unitario_nuevo = models.DecimalField(max_digits=18, decimal_places=4)
+
+    class Meta:
+        db_table = "compras_asignacion_costo_destino"
+        verbose_name = "Asignación de Costo en Destino"
+        verbose_name_plural = "Asignaciones de Costo en Destino"
+        unique_together = [["id_costo_destino", "id_detalle_recepcion"]]
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(costo_adicional_total__gte=0), name="compras_asig_costo_dest_total_gte_0"
+            ),
+            models.CheckConstraint(
+                condition=Q(costo_unitario_nuevo__gte=0), name="compras_asig_costo_dest_nuevo_gte_0"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.id_producto.nombre_producto}: +{self.costo_adicional_unitario}/u"

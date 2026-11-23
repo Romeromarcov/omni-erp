@@ -271,14 +271,19 @@ RLS_TABLES = {
     "agentes_prediccionagente": "id_empresa_id",
     # almacenes
     "almacenes_almacen": "id_empresa_id",
+    "almacenes_detalle_transferencia_transito": "id_empresa_id",
     "almacenes_stock_ubicacion": "id_empresa_id",
+    "almacenes_transferencia_transito": "id_empresa_id",
     "almacenes_ubicacion_almacen": "id_empresa_id",
     # auditoria
     "auditoria_logauditoria": "id_empresa_id",
     # banca_electronica
     "banca_electronica_lote_pago": "id_empresa_id",
     # compras
+    "compras_asignacion_costo_destino": "id_empresa_id",
+    "compras_costo_destino": "id_empresa_id",
     "compras_factura_compra": "id_empresa_id",
+    "compras_linea_costo_destino": "id_empresa_id",
     "compras_requisicion_compra": "id_empresa_id",
     "compras_solicitud_cotizacion": "id_empresa_id",
     # configuracion_motor
@@ -394,7 +399,9 @@ RLS_TABLES = {
     "integration_hub_evento_outbox": "id_empresa_id",
     # inventario
     "inventario_categoria_producto": "id_empresa_id",
+    "inventario_conteo": "id_empresa_id",
     "inventario_conversion_unidad_medida": "id_empresa_id",
+    "inventario_linea_conteo": "id_empresa_id",
     "inventario_lote_producto": "id_empresa_id",
     "inventario_regla_reabastecimiento": "id_empresa_id",
     "inventario_requisicion_interna": "id_empresa_id",

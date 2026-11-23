@@ -1844,6 +1844,193 @@
                 }
             ]
         },
+        "/almacenes/transferencias-transito/": {
+            "get": {
+                "operationId": "almacenes_transferencias-transito_list",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/TransferenciaTransito"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "almacenes"
+                ]
+            },
+            "parameters": []
+        },
+        "/almacenes/transferencias-transito/despachar/": {
+            "post": {
+                "operationId": "almacenes_transferencias-transito_despachar",
+                "description": "Despacha mercancía desde el almacén origen dejándola EN_TRANSITO.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/DespacharTransferenciaTransitoInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/DespacharTransferenciaTransitoInput"
+                        }
+                    }
+                },
+                "tags": [
+                    "almacenes"
+                ]
+            },
+            "parameters": []
+        },
+        "/almacenes/transferencias-transito/{id_transferencia_transito}/": {
+            "get": {
+                "operationId": "almacenes_transferencias-transito_read",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/TransferenciaTransito"
+                        }
+                    }
+                },
+                "tags": [
+                    "almacenes"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_transferencia_transito",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Transferencia en Tránsito.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/almacenes/transferencias-transito/{id_transferencia_transito}/cancelar/": {
+            "post": {
+                "operationId": "almacenes_transferencias-transito_cancelar",
+                "description": "Cancela una transferencia EN_TRANSITO y devuelve el stock al almacén origen.",
+                "parameters": [],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/TransferenciaTransito"
+                        }
+                    }
+                },
+                "tags": [
+                    "almacenes"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_transferencia_transito",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Transferencia en Tránsito.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/almacenes/transferencias-transito/{id_transferencia_transito}/recibir/": {
+            "post": {
+                "operationId": "almacenes_transferencias-transito_recibir",
+                "description": "Recibe en almacén destino una transferencia EN_TRANSITO (total o parcial).",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/RecibirTransferenciaTransitoInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/RecibirTransferenciaTransitoInput"
+                        }
+                    }
+                },
+                "tags": [
+                    "almacenes"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_transferencia_transito",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Transferencia en Tránsito.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
         "/almacenes/ubicaciones-almacen/": {
             "get": {
                 "operationId": "almacenes_ubicaciones-almacen_list",
@@ -4552,6 +4739,244 @@
                 }
             ]
         },
+        "/compras/costos-destino/": {
+            "get": {
+                "operationId": "compras_costos-destino_list",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/CostoDestino"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "compras"
+                ]
+            },
+            "post": {
+                "operationId": "compras_costos-destino_create",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CostoDestino"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/CostoDestino"
+                        }
+                    }
+                },
+                "tags": [
+                    "compras"
+                ]
+            },
+            "parameters": []
+        },
+        "/compras/costos-destino/{id_costo_destino}/": {
+            "get": {
+                "operationId": "compras_costos-destino_read",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/CostoDestino"
+                        }
+                    }
+                },
+                "tags": [
+                    "compras"
+                ]
+            },
+            "put": {
+                "operationId": "compras_costos-destino_update",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CostoDestino"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/CostoDestino"
+                        }
+                    }
+                },
+                "tags": [
+                    "compras"
+                ]
+            },
+            "patch": {
+                "operationId": "compras_costos-destino_partial_update",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CostoDestino"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/CostoDestino"
+                        }
+                    }
+                },
+                "tags": [
+                    "compras"
+                ]
+            },
+            "delete": {
+                "operationId": "compras_costos-destino_delete",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "204": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "compras"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_costo_destino",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Costo en Destino.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/compras/costos-destino/{id_costo_destino}/anular/": {
+            "post": {
+                "operationId": "compras_costos-destino_anular",
+                "description": "Anula un costo en destino en BORRADOR.",
+                "parameters": [],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/CostoDestino"
+                        }
+                    }
+                },
+                "tags": [
+                    "compras"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_costo_destino",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Costo en Destino.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/compras/costos-destino/{id_costo_destino}/aplicar/": {
+            "post": {
+                "operationId": "compras_costos-destino_aplicar",
+                "description": "Aplica el prorrateo del costo en destino sobre la recepción y revalúa el inventario.",
+                "parameters": [],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/CostoDestino"
+                        }
+                    }
+                },
+                "tags": [
+                    "compras"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_costo_destino",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Costo en Destino.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
         "/compras/detalles-factura-compra/": {
             "get": {
                 "operationId": "compras_detalles-factura-compra_list",
@@ -5848,6 +6273,241 @@
                     "name": "id_factura_compra",
                     "in": "path",
                     "description": "Un Cadena UUID que identifique este Factura de Compra.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/compras/facturas-compra/{id_factura_compra}/validar-three-way-matching/": {
+            "get": {
+                "operationId": "compras_facturas-compra_validar-three-way-matching_read",
+                "description": "Cruza OrdenCompra ↔ RecepcionMercancia ↔ FacturaCompra (3-Way Matching).",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/FacturaCompra"
+                        }
+                    }
+                },
+                "tags": [
+                    "compras"
+                ]
+            },
+            "post": {
+                "operationId": "compras_facturas-compra_validar-three-way-matching_create",
+                "description": "Cruza OrdenCompra ↔ RecepcionMercancia ↔ FacturaCompra (3-Way Matching).",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/FacturaCompra"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/FacturaCompra"
+                        }
+                    }
+                },
+                "tags": [
+                    "compras"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_factura_compra",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Factura de Compra.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/compras/lineas-costo-destino/": {
+            "get": {
+                "operationId": "compras_lineas-costo-destino_list",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/LineaCostoDestino"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "compras"
+                ]
+            },
+            "post": {
+                "operationId": "compras_lineas-costo-destino_create",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/LineaCostoDestino"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/LineaCostoDestino"
+                        }
+                    }
+                },
+                "tags": [
+                    "compras"
+                ]
+            },
+            "parameters": []
+        },
+        "/compras/lineas-costo-destino/{id_linea_costo_destino}/": {
+            "get": {
+                "operationId": "compras_lineas-costo-destino_read",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/LineaCostoDestino"
+                        }
+                    }
+                },
+                "tags": [
+                    "compras"
+                ]
+            },
+            "put": {
+                "operationId": "compras_lineas-costo-destino_update",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/LineaCostoDestino"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/LineaCostoDestino"
+                        }
+                    }
+                },
+                "tags": [
+                    "compras"
+                ]
+            },
+            "patch": {
+                "operationId": "compras_lineas-costo-destino_partial_update",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/LineaCostoDestino"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/LineaCostoDestino"
+                        }
+                    }
+                },
+                "tags": [
+                    "compras"
+                ]
+            },
+            "delete": {
+                "operationId": "compras_lineas-costo-destino_delete",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "204": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "compras"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_linea_costo_destino",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Línea de Costo en Destino.",
                     "required": true,
                     "type": "string",
                     "format": "uuid"
@@ -34479,6 +35139,246 @@
                 }
             ]
         },
+        "/inventario/conteos-inventario/": {
+            "get": {
+                "operationId": "inventario_conteos-inventario_list",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/ConteoInventario"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "inventario"
+                ]
+            },
+            "post": {
+                "operationId": "inventario_conteos-inventario_create",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CrearConteoInventarioInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/CrearConteoInventarioInput"
+                        }
+                    }
+                },
+                "tags": [
+                    "inventario"
+                ]
+            },
+            "parameters": []
+        },
+        "/inventario/conteos-inventario/{id_conteo}/": {
+            "get": {
+                "operationId": "inventario_conteos-inventario_read",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ConteoInventario"
+                        }
+                    }
+                },
+                "tags": [
+                    "inventario"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_conteo",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Conteo de Inventario.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/inventario/conteos-inventario/{id_conteo}/anular/": {
+            "post": {
+                "operationId": "inventario_conteos-inventario_anular",
+                "description": "Anula un conteo aún no aplicado.",
+                "parameters": [],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ConteoInventario"
+                        }
+                    }
+                },
+                "tags": [
+                    "inventario"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_conteo",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Conteo de Inventario.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/inventario/conteos-inventario/{id_conteo}/aprobar-aplicar/": {
+            "post": {
+                "operationId": "inventario_conteos-inventario_aprobar_aplicar",
+                "description": "Aprueba diferencias y dispara los ajustes de inventario con ámbito del conteo.",
+                "parameters": [],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ConteoInventario"
+                        }
+                    }
+                },
+                "tags": [
+                    "inventario"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_conteo",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Conteo de Inventario.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/inventario/conteos-inventario/{id_conteo}/enviar-aprobacion/": {
+            "post": {
+                "operationId": "inventario_conteos-inventario_enviar_aprobacion",
+                "description": "Finaliza captura y deja el conteo en PENDIENTE_APROBACION.",
+                "parameters": [],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ConteoInventario"
+                        }
+                    }
+                },
+                "tags": [
+                    "inventario"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_conteo",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Conteo de Inventario.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/inventario/conteos-inventario/{id_conteo}/escanear/": {
+            "post": {
+                "operationId": "inventario_conteos-inventario_escanear",
+                "description": "Registra escaneo de código de barras / SKU durante la captura física.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/EscanearConteoInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/EscanearConteoInput"
+                        }
+                    }
+                },
+                "tags": [
+                    "inventario"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_conteo",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Conteo de Inventario.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
         "/inventario/conversiones-unidad-medida/": {
             "get": {
                 "operationId": "inventario_conversiones-unidad-medida_list",
@@ -34826,6 +35726,41 @@
                 "responses": {
                     "204": {
                         "description": ""
+                    }
+                },
+                "tags": [
+                    "inventario"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        },
+        "/inventario/entregas/{id}/escanear/": {
+            "post": {
+                "operationId": "inventario_entregas_escanear",
+                "description": "Verifica líneas Pick-Pack-Ship mediante código de barras o SKU.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/OperacionInventario"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/OperacionInventario"
+                        }
                     }
                 },
                 "tags": [
@@ -35418,6 +36353,72 @@
             },
             "parameters": []
         },
+        "/inventario/productos/buscar-barcode/": {
+            "get": {
+                "operationId": "inventario_productos_buscar_barcode",
+                "description": "Busca un producto activo por código de barras o SKU (?codigo=).",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/Producto"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "inventario"
+                ]
+            },
+            "parameters": []
+        },
         "/inventario/productos/{id_producto}/": {
             "get": {
                 "operationId": "inventario_productos_read",
@@ -35514,6 +36515,34 @@
                 "operationId": "inventario_productos_kardex",
                 "summary": "GET /api/inventario/productos/{pk}/kardex/",
                 "description": "Query params:\n  almacen      — UUID de almacén (requerido para saldo corriente)\n  fecha_desde  — YYYY-MM-DD (inclusive)\n  fecha_hasta  — YYYY-MM-DD (inclusive)",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Producto"
+                        }
+                    }
+                },
+                "tags": [
+                    "inventario"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_producto",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Producto.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/inventario/productos/{id_producto}/semaforo-margen/": {
+            "get": {
+                "operationId": "inventario_productos_semaforo_margen",
+                "description": "Evalúa el margen real respecto a ``costo_reposicion_usd`` (?precio_venta_usd=).",
                 "parameters": [],
                 "responses": {
                     "200": {
@@ -35703,6 +36732,41 @@
                 "responses": {
                     "204": {
                         "description": ""
+                    }
+                },
+                "tags": [
+                    "inventario"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        },
+        "/inventario/recepciones/{id}/escanear/": {
+            "post": {
+                "operationId": "inventario_recepciones_escanear",
+                "description": "Verifica líneas Pick-Pack-Ship mediante código de barras o SKU.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/OperacionInventario"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/OperacionInventario"
+                        }
                     }
                 },
                 "tags": [
@@ -36026,6 +37090,22 @@
             "get": {
                 "operationId": "inventario_reportes_movimientos",
                 "description": "Historial de movimientos. Filtros: ?producto=&almacen=&tipo=&fecha_desde=&fecha_hasta=.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "inventario"
+                ]
+            },
+            "parameters": []
+        },
+        "/inventario/reportes/resumen-dual/": {
+            "get": {
+                "operationId": "inventario_reportes_resumen_dual",
+                "description": "Consolida inventario y movimientos por ámbito FISCAL vs GERENCIAL (?almacen=).",
                 "parameters": [],
                 "responses": {
                     "200": {
@@ -56106,6 +57186,306 @@
                 }
             }
         },
+        "DetalleTransferenciaTransito": {
+            "type": "object",
+            "properties": {
+                "id_detalle": {
+                    "title": "Id detalle",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_transferencia": {
+                    "title": "Id transferencia",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_producto": {
+                    "title": "Id producto",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "producto_nombre": {
+                    "title": "Producto nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "id_variante": {
+                    "title": "Id variante",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "cantidad_despachada": {
+                    "title": "Cantidad despachada",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "cantidad_recibida": {
+                    "title": "Cantidad recibida",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "costo_unitario": {
+                    "title": "Costo unitario",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
+        "TransferenciaTransito": {
+            "type": "object",
+            "properties": {
+                "id_transferencia_transito": {
+                    "title": "Id transferencia transito",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "numero": {
+                    "title": "Numero",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "id_almacen_origen": {
+                    "title": "Id almacen origen",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "almacen_origen_nombre": {
+                    "title": "Almacen origen nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "id_almacen_destino": {
+                    "title": "Id almacen destino",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "almacen_destino_nombre": {
+                    "title": "Almacen destino nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "id_ubicacion_transito": {
+                    "title": "Id ubicacion transito",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "ambito": {
+                    "title": "Ambito",
+                    "type": "string",
+                    "enum": [
+                        "FISCAL",
+                        "GERENCIAL"
+                    ],
+                    "readOnly": true
+                },
+                "estado": {
+                    "title": "Estado",
+                    "type": "string",
+                    "enum": [
+                        "EN_TRANSITO",
+                        "RECIBIDA",
+                        "CANCELADA"
+                    ],
+                    "readOnly": true
+                },
+                "estado_display": {
+                    "title": "Estado display",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "fecha_despacho": {
+                    "title": "Fecha despacho",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_recepcion": {
+                    "title": "Fecha recepcion",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "id_usuario_despacho": {
+                    "title": "Id usuario despacho",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_usuario_recepcion": {
+                    "title": "Id usuario recepcion",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "observaciones": {
+                    "title": "Observaciones",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "activo": {
+                    "title": "Activo",
+                    "description": "Indica si el registro está activo (False = borrado lógico).",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "detalles": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/DetalleTransferenciaTransito"
+                    },
+                    "readOnly": true
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_actualizacion": {
+                    "title": "Fecha de Actualización",
+                    "description": "Fecha y hora de la última modificación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
+        "_DetalleDespachoTransitoInput": {
+            "required": [
+                "producto",
+                "cantidad"
+            ],
+            "type": "object",
+            "properties": {
+                "producto": {
+                    "title": "Producto",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "variante": {
+                    "title": "Variante",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "cantidad": {
+                    "title": "Cantidad",
+                    "type": "string",
+                    "format": "decimal"
+                }
+            }
+        },
+        "DespacharTransferenciaTransitoInput": {
+            "required": [
+                "id_almacen_origen",
+                "id_almacen_destino",
+                "items"
+            ],
+            "type": "object",
+            "properties": {
+                "id_almacen_origen": {
+                    "title": "Id almacen origen",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "id_almacen_destino": {
+                    "title": "Id almacen destino",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "id_ubicacion_transito": {
+                    "title": "Id ubicacion transito",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "ambito": {
+                    "title": "Ambito",
+                    "type": "string",
+                    "enum": [
+                        "FISCAL",
+                        "GERENCIAL"
+                    ],
+                    "default": "FISCAL"
+                },
+                "numero": {
+                    "title": "Numero",
+                    "type": "string",
+                    "maxLength": 50
+                },
+                "observaciones": {
+                    "title": "Observaciones",
+                    "type": "string",
+                    "default": ""
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/_DetalleDespachoTransitoInput"
+                    }
+                }
+            }
+        },
+        "RecibirTransferenciaTransitoInput": {
+            "type": "object",
+            "properties": {
+                "cantidades_recibidas": {
+                    "title": "Cantidades recibidas",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string",
+                        "format": "decimal"
+                    },
+                    "default": {}
+                },
+                "observaciones": {
+                    "title": "Observaciones",
+                    "type": "string",
+                    "default": ""
+                }
+            }
+        },
         "UbicacionAlmacen": {
             "required": [
                 "codigo_ubicacion",
@@ -56147,7 +57527,8 @@
                         "DEVOLUCION",
                         "PICKING",
                         "RECEPCION",
-                        "DESPACHO"
+                        "DESPACHO",
+                        "TRANSITO"
                     ]
                 },
                 "pasillo": {
@@ -57610,6 +58991,308 @@
                 },
                 "created_at": {
                     "title": "Created at",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
+        "LineaCostoDestino": {
+            "required": [
+                "id_empresa",
+                "id_costo_destino",
+                "concepto",
+                "descripcion",
+                "monto"
+            ],
+            "type": "object",
+            "properties": {
+                "id_linea_costo_destino": {
+                    "title": "Id linea costo destino",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "id_costo_destino": {
+                    "title": "Id costo destino",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "concepto": {
+                    "title": "Concepto",
+                    "type": "string",
+                    "enum": [
+                        "FLETE",
+                        "SEGURO",
+                        "ARANCEL",
+                        "NACIONALIZACION",
+                        "ALMACENAJE_ADUANA",
+                        "OTRO"
+                    ]
+                },
+                "concepto_display": {
+                    "title": "Concepto display",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "descripcion": {
+                    "title": "Descripcion",
+                    "type": "string",
+                    "maxLength": 255,
+                    "minLength": 1
+                },
+                "monto": {
+                    "title": "Monto",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "id_factura_compra": {
+                    "title": "Id factura compra",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "observaciones": {
+                    "title": "Observaciones",
+                    "type": "string"
+                },
+                "activo": {
+                    "title": "Activo",
+                    "description": "Indica si el registro está activo (False = borrado lógico).",
+                    "type": "boolean"
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_actualizacion": {
+                    "title": "Fecha de Actualización",
+                    "description": "Fecha y hora de la última modificación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
+        "AsignacionCostoDestino": {
+            "type": "object",
+            "properties": {
+                "id_asignacion": {
+                    "title": "Id asignacion",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_costo_destino": {
+                    "title": "Id costo destino",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_detalle_recepcion": {
+                    "title": "Id detalle recepcion",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_producto": {
+                    "title": "Id producto",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "producto_nombre": {
+                    "title": "Producto nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "base_prorrateo": {
+                    "title": "Base prorrateo",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "porcentaje_prorrateo": {
+                    "title": "Porcentaje prorrateo",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "costo_adicional_total": {
+                    "title": "Costo adicional total",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "costo_adicional_unitario": {
+                    "title": "Costo adicional unitario",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "costo_unitario_anterior": {
+                    "title": "Costo unitario anterior",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "costo_unitario_nuevo": {
+                    "title": "Costo unitario nuevo",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
+        "CostoDestino": {
+            "required": [
+                "id_empresa",
+                "id_recepcion",
+                "numero_documento",
+                "fecha"
+            ],
+            "type": "object",
+            "properties": {
+                "id_costo_destino": {
+                    "title": "Id costo destino",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "id_recepcion": {
+                    "title": "Id recepcion",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "numero_documento": {
+                    "title": "Numero documento",
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 1
+                },
+                "fecha": {
+                    "title": "Fecha",
+                    "type": "string",
+                    "format": "date"
+                },
+                "metodo_prorrateo": {
+                    "title": "Metodo prorrateo",
+                    "type": "string",
+                    "enum": [
+                        "VALOR",
+                        "CANTIDAD",
+                        "PESO",
+                        "VOLUMEN"
+                    ]
+                },
+                "ambito": {
+                    "title": "Ambito",
+                    "type": "string",
+                    "enum": [
+                        "FISCAL",
+                        "GERENCIAL"
+                    ]
+                },
+                "nro_expediente_impor": {
+                    "title": "Nro expediente impor",
+                    "type": "string",
+                    "maxLength": 80
+                },
+                "nro_planilla_impor": {
+                    "title": "Nro planilla impor",
+                    "type": "string",
+                    "maxLength": 80
+                },
+                "monto_total": {
+                    "title": "Monto total",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "estado": {
+                    "title": "Estado",
+                    "type": "string",
+                    "enum": [
+                        "BORRADOR",
+                        "APLICADO",
+                        "ANULADO"
+                    ],
+                    "readOnly": true
+                },
+                "estado_display": {
+                    "title": "Estado display",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "id_asiento": {
+                    "title": "Id asiento",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "observaciones": {
+                    "title": "Observaciones",
+                    "type": "string"
+                },
+                "activo": {
+                    "title": "Activo",
+                    "description": "Indica si el registro está activo (False = borrado lógico).",
+                    "type": "boolean"
+                },
+                "lineas": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/LineaCostoDestino"
+                    },
+                    "readOnly": true
+                },
+                "asignaciones": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/AsignacionCostoDestino"
+                    },
+                    "readOnly": true
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_actualizacion": {
+                    "title": "Fecha de Actualización",
+                    "description": "Fecha y hora de la última modificación del registro.",
                     "type": "string",
                     "format": "date-time",
                     "readOnly": true
@@ -59939,7 +61622,9 @@
                         "PAGO_PARAFISCAL",
                         "RETENCION_IVA_COMPRA",
                         "RETENCION_IVA_VENTA",
-                        "RETENCION_ISLR"
+                        "RETENCION_ISLR",
+                        "COSTO_DESTINO",
+                        "AJUSTE_CONTEO"
                     ]
                 },
                 "descripcion_plantilla": {
@@ -65535,7 +67220,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-23T06:02:54.705336-04:00"
+                    "default": "2026-11-23T06:51:51.354944-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",
@@ -71362,6 +73047,382 @@
                 }
             }
         },
+        "LineaConteoInventario": {
+            "type": "object",
+            "properties": {
+                "id_linea_conteo": {
+                    "title": "Id linea conteo",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_conteo": {
+                    "title": "Id conteo",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_producto": {
+                    "title": "Id producto",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "producto_nombre": {
+                    "title": "Producto nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "producto_sku": {
+                    "title": "Producto sku",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "codigo_barras": {
+                    "title": "Codigo barras",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "id_variante": {
+                    "title": "Id variante",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "id_ubicacion": {
+                    "title": "Id ubicacion",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "cantidad_sistema": {
+                    "title": "Cantidad sistema",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "cantidad_contada": {
+                    "title": "Cantidad contada",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "diferencia": {
+                    "title": "Diferencia",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "costo_unitario_referencia": {
+                    "title": "Costo unitario referencia",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "valor_diferencia": {
+                    "title": "Valor diferencia",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "conteos_escaneados": {
+                    "title": "Conteos escaneados",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "observaciones": {
+                    "title": "Observaciones",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "activo": {
+                    "title": "Activo",
+                    "description": "Indica si el registro está activo (False = borrado lógico).",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_actualizacion": {
+                    "title": "Fecha de Actualización",
+                    "description": "Fecha y hora de la última modificación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
+        "ConteoInventario": {
+            "required": [
+                "id_empresa",
+                "numero",
+                "id_almacen",
+                "fecha_conteo",
+                "id_responsable"
+            ],
+            "type": "object",
+            "properties": {
+                "id_conteo": {
+                    "title": "Id conteo",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "numero": {
+                    "title": "Numero",
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 1
+                },
+                "id_almacen": {
+                    "title": "Id almacen",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "almacen_nombre": {
+                    "title": "Almacen nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "ambito": {
+                    "title": "Ambito",
+                    "type": "string",
+                    "enum": [
+                        "FISCAL",
+                        "GERENCIAL"
+                    ]
+                },
+                "tipo_conteo": {
+                    "title": "Tipo conteo",
+                    "type": "string",
+                    "enum": [
+                        "CICLICO",
+                        "TOTAL",
+                        "ALEATORIO"
+                    ]
+                },
+                "estado": {
+                    "title": "Estado",
+                    "type": "string",
+                    "enum": [
+                        "BORRADOR",
+                        "EN_PROGRESO",
+                        "PENDIENTE_APROBACION",
+                        "APLICADO",
+                        "ANULADO"
+                    ],
+                    "readOnly": true
+                },
+                "estado_display": {
+                    "title": "Estado display",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "fecha_conteo": {
+                    "title": "Fecha conteo",
+                    "type": "string",
+                    "format": "date"
+                },
+                "id_responsable": {
+                    "title": "Id responsable",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "id_aprobador": {
+                    "title": "Id aprobador",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "fecha_aprobacion": {
+                    "title": "Fecha aprobacion",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "observaciones": {
+                    "title": "Observaciones",
+                    "type": "string"
+                },
+                "activo": {
+                    "title": "Activo",
+                    "description": "Indica si el registro está activo (False = borrado lógico).",
+                    "type": "boolean"
+                },
+                "lineas": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/LineaConteoInventario"
+                    },
+                    "readOnly": true
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_actualizacion": {
+                    "title": "Fecha de Actualización",
+                    "description": "Fecha y hora de la última modificación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
+        "ConteoLineaInicialInput": {
+            "required": [
+                "producto"
+            ],
+            "type": "object",
+            "properties": {
+                "producto": {
+                    "title": "Producto",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "variante": {
+                    "title": "Variante",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "ubicacion": {
+                    "title": "Ubicacion",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                }
+            }
+        },
+        "CrearConteoInventarioInput": {
+            "required": [
+                "id_almacen"
+            ],
+            "type": "object",
+            "properties": {
+                "id_almacen": {
+                    "title": "Id almacen",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "tipo_conteo": {
+                    "title": "Tipo conteo",
+                    "type": "string",
+                    "enum": [
+                        "CICLICO",
+                        "TOTAL",
+                        "ALEATORIO"
+                    ],
+                    "default": "CICLICO"
+                },
+                "ambito": {
+                    "title": "Ambito",
+                    "type": "string",
+                    "enum": [
+                        "FISCAL",
+                        "GERENCIAL"
+                    ],
+                    "default": "FISCAL"
+                },
+                "fecha_conteo": {
+                    "title": "Fecha conteo",
+                    "type": "string",
+                    "format": "date"
+                },
+                "numero": {
+                    "title": "Numero",
+                    "type": "string",
+                    "maxLength": 50
+                },
+                "observaciones": {
+                    "title": "Observaciones",
+                    "type": "string",
+                    "default": ""
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ConteoLineaInicialInput"
+                    }
+                }
+            }
+        },
+        "EscanearConteoInput": {
+            "required": [
+                "codigo"
+            ],
+            "type": "object",
+            "properties": {
+                "codigo": {
+                    "title": "Codigo",
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1
+                },
+                "cantidad": {
+                    "title": "Cantidad",
+                    "type": "string",
+                    "format": "decimal",
+                    "default": "1.0000"
+                },
+                "modo": {
+                    "title": "Modo",
+                    "type": "string",
+                    "enum": [
+                        "INCREMENTAL",
+                        "REEMPLAZAR"
+                    ],
+                    "default": "INCREMENTAL"
+                },
+                "variante": {
+                    "title": "Variante",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "ubicacion": {
+                    "title": "Ubicacion",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "observaciones": {
+                    "title": "Observaciones",
+                    "type": "string",
+                    "default": ""
+                }
+            }
+        },
         "ConversionUnidadMedida": {
             "required": [
                 "factor_conversion",
@@ -71497,6 +73558,12 @@
                 },
                 "cantidad": {
                     "title": "Cantidad",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "cantidad_escaneada": {
+                    "title": "Cantidad escaneada",
+                    "description": "Cantidad verificada mediante escaneo de código de barras en Pick-Pack-Ship.",
                     "type": "string",
                     "format": "decimal"
                 },
@@ -72115,6 +74182,44 @@
                     "title": "Costo promedio",
                     "type": "string",
                     "format": "decimal"
+                },
+                "costo_reposicion_usd": {
+                    "title": "Costo reposicion usd",
+                    "description": "Costo de reposición vigente en USD para cálculo de semáforo de margen real.",
+                    "type": "string",
+                    "format": "decimal",
+                    "x-nullable": true
+                },
+                "margen_minimo_pct": {
+                    "title": "Margen minimo pct",
+                    "description": "Porcentaje de margen mínimo sobre costo de reposición; debajo dispara alerta ROJA.",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "margen_alerta_pct": {
+                    "title": "Margen alerta pct",
+                    "description": "Porcentaje de margen preventivo; entre mínimo y alerta dispara semáforo AMARILLO.",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "peso_unitario_kg": {
+                    "title": "Peso unitario kg",
+                    "type": "string",
+                    "format": "decimal",
+                    "x-nullable": true
+                },
+                "volumen_unitario_m3": {
+                    "title": "Volumen unitario m3",
+                    "type": "string",
+                    "format": "decimal",
+                    "x-nullable": true
+                },
+                "codigo_barras": {
+                    "title": "Codigo barras",
+                    "description": "Código EAN/UPC/Code128 para escaneo rápido en conteos y Pick-Pack-Ship.",
+                    "type": "string",
+                    "maxLength": 100,
+                    "x-nullable": true
                 },
                 "metodo_valoracion": {
                     "title": "Metodo valoracion",

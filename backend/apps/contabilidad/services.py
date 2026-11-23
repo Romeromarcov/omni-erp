@@ -77,6 +77,8 @@ TIPOS_ASIENTO = frozenset(
         "RETENCION_IVA_COMPRA",
         "RETENCION_IVA_VENTA",
         "RETENCION_ISLR",
+        "COSTO_DESTINO",  # Plan 09 Ola 4A: prorrateo de landed costs en importación/compras
+        "AJUSTE_CONTEO",  # Plan 09 Ola 4A: diferencia de conteo físico cíclico/total
     }
 )
 
@@ -95,6 +97,7 @@ _TIPO_ASIENTO_TO_DIARIO: dict[str, str] = {
     "GASTO": "COMPRAS",
     "GASTO_IVA": "COMPRAS",
     "RECEPCION_MERCANCIA": "COMPRAS",
+    "COSTO_DESTINO": "COMPRAS",
     "PAGO_CXP": "COMPRAS",
     "PAGO_TERCERO": "COMPRAS",
     "RETENCION_IVA_COMPRA": "COMPRAS",
@@ -104,6 +107,7 @@ _TIPO_ASIENTO_TO_DIARIO: dict[str, str] = {
     "PROVISION_NOMINA": "NOMINA",
     "PAGO_PARAFISCAL": "NOMINA",
     "CAMBIO_DIVISA": "BANCO",
+    "AJUSTE_CONTEO": "VARIOS",
 }
 
 

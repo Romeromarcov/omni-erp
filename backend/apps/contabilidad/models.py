@@ -274,6 +274,8 @@ class MapeoContable(models.Model):
         ("RETENCION_IVA_COMPRA", "Retención IVA en Compras"),
         ("RETENCION_IVA_VENTA", "Retención IVA en Ventas"),
         ("RETENCION_ISLR", "Retención ISLR"),
+        ("COSTO_DESTINO", "Costo en Destino (Landed Cost)"),
+        ("AJUSTE_CONTEO", "Ajuste por Conteo Físico"),
     ]
 
     id_mapeo = models.UUIDField(primary_key=True, default=uuid7, editable=False)

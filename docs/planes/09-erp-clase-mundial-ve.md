@@ -137,8 +137,9 @@
 | **Ola 2A (P0)** | **Fase 3.1–3.3** (Precios dinámicos por brecha + Flujo dual Nota Venta Gerencial + Crédito por mora real + Comisiones por cobro efectivo y metas + MCP) | ✅ **COMPLETADA (`#340`)** |
 | **Ola 2B (P0)** | **Fase 7.1** (RBAC/ABAC Granular por módulo × acción × ámbito × alcance + Access Studio UI/API) | ✅ **COMPLETADA (`#341`)** |
 | **Ola 3A (P1)** | **Fase 2.3–2.5** (Retenciones IVA `.txt`/ISLR `.xml`, Decreto 1808, IGTF/ITF, Imprenta Digital Unidigital y Libro Inv. Art. 177) | ✅ **COMPLETADA (`#342`)** |
-| **Ola 3B (P1)** | **Fase 4** (Nómina Dual VE LOTTT + Paquete Objetivo/Bonificaciones + Préstamos + TXT Bancarios/Parafiscales + Arqueo USD) | 🔄 **EN CURSO (`PR-41`)** |
-| **Ola 4 (P1)** | **Fase 6** (Logística TMS IA/GPS/Delivery/ePOD) + **Fase 5** (Landed Costs + Costo Reposición + Conteo Físico + Barcode) | Ola 1 + Ola 2 |
+| **Ola 3B (P1)** | **Fase 4** (Nómina Dual VE LOTTT + Paquete Objetivo/Bonificaciones + Préstamos + TXT Bancarios/Parafiscales + Arqueo USD) | ✅ **COMPLETADA (`#343`)** |
+| **Ola 4A (P1)** | **Fase 5** (Costos en Destino/Landed Costs + Costo Reposición USD + Semáforo Margen + Conteo Cíclico Dual + Barcode Pick-Pack-Ship + Tránsito Inter-Almacén + 3-Way Matching) | 🔄 **EN CURSO (`PR-42`)** |
+| **Ola 4B (P1)** | **Fase 6** (Logística TMS IA/GPS/Delivery Externo/ePOD) | Ola 4A |
 | **Ola 5 (P2)** | **Fase 7.2–7.4** (Portales independientes: Vendedores SFA, Clientes Self-Service, Conductores) + cierre operativo campo `CTF-008` | Ola 2 + Ola 4 |
 | **Ola 6B / Fase 8 (P2/P3)** | **Fase 8** (WhatsApp/Chatter, Agentes IA operativos, RLS prod `CTF-012` + firma apps `CTF-010`, Migrador 1-Click Odoo) | Ola 3 + Ola 5 |
 
