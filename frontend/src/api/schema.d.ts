@@ -18634,7 +18634,7 @@ export interface components {
              * Id empresa
              * Format: uuid
              */
-            id_empresa: string;
+            readonly id_empresa?: string;
             /**
              * Id costo destino
              * Format: uuid
@@ -18754,7 +18754,7 @@ export interface components {
              * Id empresa
              * Format: uuid
              */
-            id_empresa: string;
+            readonly id_empresa?: string;
             /**
              * Id recepcion
              * Format: uuid
@@ -23605,7 +23605,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-23T06:51:51.354944-04:00
+             * @default 2026-11-23T07:44:19.848614-04:00
              */
             fecha_despacho: string;
             /**
@@ -27212,26 +27212,26 @@ export interface components {
              * Id empresa
              * Format: uuid
              */
-            id_empresa: string;
+            readonly id_empresa?: string;
             /** Numero */
-            numero: string;
+            readonly numero?: string;
             /**
              * Id almacen
              * Format: uuid
              */
-            id_almacen: string;
+            readonly id_almacen?: string;
             /** Almacen nombre */
             readonly almacen_nombre?: string;
             /**
              * Ambito
              * @enum {string}
              */
-            ambito?: "FISCAL" | "GERENCIAL";
+            readonly ambito?: "FISCAL" | "GERENCIAL";
             /**
              * Tipo conteo
              * @enum {string}
              */
-            tipo_conteo?: "CICLICO" | "TOTAL" | "ALEATORIO";
+            readonly tipo_conteo?: "CICLICO" | "TOTAL" | "ALEATORIO";
             /**
              * Estado
              * @enum {string}
@@ -27243,12 +27243,12 @@ export interface components {
              * Fecha conteo
              * Format: date
              */
-            fecha_conteo: string;
+            readonly fecha_conteo?: string;
             /**
              * Id responsable
              * Format: uuid
              */
-            id_responsable: string;
+            readonly id_responsable?: string;
             /**
              * Id aprobador
              * Format: uuid
@@ -27260,12 +27260,12 @@ export interface components {
              */
             readonly fecha_aprobacion?: string | null;
             /** Observaciones */
-            observaciones?: string;
+            readonly observaciones?: string;
             /**
              * Activo
              * @description Indica si el registro está activo (False = borrado lógico).
              */
-            activo?: boolean;
+            readonly activo?: boolean;
             readonly lineas?: components["schemas"]["LineaConteoInventario"][];
             /**
              * Fecha de Creación

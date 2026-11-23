@@ -10,6 +10,7 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 
 from apps.core.exceptions import domain_error_response
+from apps.core.throttling import EscrituraRateThrottle
 from apps.core.viewsets import (
     BaseModelViewSet,
     EmpresaInjectMixin,
@@ -438,7 +439,12 @@ class _OperacionInventarioBaseViewSet(BaseModelViewSet):
         operacion.refresh_from_db()
         return Response(OperacionInventarioSerializer(operacion).data)
 
-    @action(detail=True, methods=["post"], url_path="escanear")
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="escanear",
+        throttle_classes=[*BaseModelViewSet.throttle_classes, EscrituraRateThrottle],
+    )
     def escanear(self, request, pk=None):
         """Verifica líneas Pick-Pack-Ship mediante código de barras o SKU."""
         from .serializers_supply_chain import EscanearOperacionInputSerializer

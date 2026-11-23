@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from apps.almacenes.models import Almacen, UbicacionAlmacen
 from apps.core.exceptions import domain_error_response
 from apps.core.idempotency import idempotent
+from apps.core.serializer_mixins import TenantFKScopeMixin
 from apps.core.throttling import EscrituraRateThrottle
 from apps.core.viewsets import (
     ActiveFilterMixin,
@@ -36,7 +37,7 @@ from .services_supply_chain import (
 )
 
 
-class ConteoInventarioViewSet(NulSafeFilterMixin, ActiveFilterMixin, viewsets.ModelViewSet):
+class ConteoInventarioViewSet(TenantFKScopeMixin, NulSafeFilterMixin, ActiveFilterMixin, viewsets.ModelViewSet):
     queryset = ConteoInventario.objects.all()
     serializer_class = ConteoInventarioSerializer
     http_method_names = ["get", "post", "head", "options"]

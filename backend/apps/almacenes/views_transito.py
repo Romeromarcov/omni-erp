@@ -17,6 +17,7 @@ from apps.core.viewsets import (
     filtrar_ambito_queryset,
     get_empresa_primaria,
     get_empresas_visible,
+    validar_uuid_param,
 )
 from apps.inventario.models import Producto, VarianteProducto
 
@@ -72,7 +73,8 @@ class TransferenciaTransitoViewSet(NulSafeFilterMixin, ActiveFilterMixin, viewse
         visibles = get_empresas_visible(request.user)
         raw_emp = request.data.get("id_empresa")
         if raw_emp:
-            empresa = visibles.filter(pk=raw_emp).first()
+            uid = validar_uuid_param(str(raw_emp), "id_empresa")
+            empresa = visibles.filter(pk=uid).first()
             if empresa is None:
                 raise ValidationError({"id_empresa": "Empresa fuera de su alcance."})
         else:

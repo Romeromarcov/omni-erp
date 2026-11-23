@@ -5,6 +5,7 @@ from __future__ import annotations
 from drf_yasg.utils import no_body, swagger_auto_schema
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from apps.core.exceptions import domain_error_response
@@ -93,6 +94,19 @@ class CostoDestinoViewSet(
             return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail")
         return Response(CostoDestinoSerializer(anulado, context={"request": request}).data, status=status.HTTP_200_OK)
 
+    def perform_update(self, serializer):
+        if serializer.instance.estado != "BORRADOR":
+            raise ValidationError(
+                {"estado": f"No se puede editar un costo en destino en estado {serializer.instance.estado}."}
+            )
+        super().perform_update(serializer)
+
+    def perform_destroy(self, instance):
+        if instance.estado != "BORRADOR":
+            raise ValidationError({"estado": f"No se puede eliminar un costo en destino en estado {instance.estado}."})
+        instance.activo = False
+        instance.save(update_fields=["activo", "fecha_actualizacion"])
+
 
 class LineaCostoDestinoViewSet(
     TenantFKScopeMixin, NulSafeFilterMixin, ActiveFilterMixin, EmpresaInjectMixin, viewsets.ModelViewSet
@@ -112,3 +126,16 @@ class LineaCostoDestinoViewSet(
         if costo_id:
             qs = qs.filter(id_costo_destino_id=validar_uuid_param(costo_id, "costo_destino"))
         return qs
+
+    def perform_destroy(self, instance):
+        if instance.id_costo_destino.estado != "BORRADOR":
+            raise ValidationError(
+                {
+                    "id_costo_destino": (
+                        f"No se puede eliminar una línea cuyo costo en destino está en estado "
+                        f"{instance.id_costo_destino.estado}."
+                    )
+                }
+            )
+        instance.activo = False
+        instance.save(update_fields=["activo", "fecha_actualizacion"])

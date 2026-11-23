@@ -1659,3 +1659,83 @@ class TestEdgeCasesYValidacionesSupplyChain:
         req_no_emp.user = ctx["user"]
         with pytest.raises(DRFValidationError):
             resolver_empresa_usuario_inventario(req_no_emp, str(empresa_b.pk))
+
+        # Nuevas guardas de seguridad (PATCH/DELETE bloqueado en APLICADO + ?empresa=/id_empresa NUL/UUID inválido -> 400)
+        assert (
+            client.get(
+                "/api/inventario/productos/buscar-barcode/?codigo=7591234500011&empresa=no-uuid\x00"
+            ).status_code
+            == 400
+        )
+        assert (
+            client.post(
+                "/api/almacenes/transferencias-transito/despachar/",
+                {
+                    "id_empresa": "no-uuid\x00",
+                    "id_almacen_origen": str(ctx["alm_orig"].pk),
+                    "id_almacen_destino": str(ctx["alm_dest"].pk),
+                    "items": [{"producto": str(ctx["prod_a"].pk), "cantidad": "1"}],
+                },
+                format="json",
+            ).status_code
+            == 400
+        )
+        r_cd_edit = client.post(
+            "/api/compras/costos-destino/",
+            {
+                "id_recepcion": str(ctx["recepcion"].pk),
+                "numero_documento": "CD-DEL-LOCK",
+                "fecha": "2026-11-22",
+                "metodo_prorrateo": "VALOR",
+            },
+            format="json",
+        )
+        assert r_cd_edit.status_code == 201
+        cd_lock_id = r_cd_edit.data["id_costo_destino"]
+        r_ln_lock = client.post(
+            "/api/compras/lineas-costo-destino/",
+            {"id_costo_destino": cd_lock_id, "concepto": "FLETE", "descripcion": "Lock", "monto": "12.00"},
+            format="json",
+        )
+        assert r_ln_lock.status_code == 201
+        ln_lock_id = r_ln_lock.data["id_linea_costo_destino"]
+        assert (
+            client.patch(
+                f"/api/compras/costos-destino/{cd_lock_id}/", {"observaciones": "ok"}, format="json"
+            ).status_code
+            == 200
+        )
+        assert client.post(f"/api/compras/costos-destino/{cd_lock_id}/aplicar/", {}, format="json").status_code == 200
+        assert (
+            client.patch(
+                f"/api/compras/costos-destino/{cd_lock_id}/", {"observaciones": "nope"}, format="json"
+            ).status_code
+            == 400
+        )
+        assert client.delete(f"/api/compras/costos-destino/{cd_lock_id}/").status_code == 400
+        assert client.delete(f"/api/compras/lineas-costo-destino/{ln_lock_id}/").status_code == 400
+
+        # BORRADOR sí permite soft-delete
+        r_cd_del = client.post(
+            "/api/compras/costos-destino/",
+            {
+                "id_recepcion": str(ctx["recepcion"].pk),
+                "numero_documento": "CD-SOFT-DEL",
+                "fecha": "2026-11-22",
+                "metodo_prorrateo": "VALOR",
+            },
+            format="json",
+        )
+        assert r_cd_del.status_code == 201
+        cd_del_id = r_cd_del.data["id_costo_destino"]
+        r_ln_del = client.post(
+            "/api/compras/lineas-costo-destino/",
+            {"id_costo_destino": cd_del_id, "concepto": "FLETE", "descripcion": "Del", "monto": "5.00"},
+            format="json",
+        )
+        assert r_ln_del.status_code == 201
+        assert (
+            client.delete(f"/api/compras/lineas-costo-destino/{r_ln_del.data['id_linea_costo_destino']}/").status_code
+            == 204
+        )
+        assert client.delete(f"/api/compras/costos-destino/{cd_del_id}/").status_code == 204

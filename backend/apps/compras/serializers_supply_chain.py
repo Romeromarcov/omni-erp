@@ -48,11 +48,8 @@ class LineaCostoDestinoSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         attrs = super().validate(attrs)
         costo = attrs.get("id_costo_destino") or getattr(self.instance, "id_costo_destino", None)
-        emp = attrs.get("id_empresa") or getattr(self.instance, "id_empresa", None)
-        if emp is None and costo is not None:
-            emp = costo.id_empresa
-            attrs["id_empresa"] = emp
-        if costo is not None and emp is not None and str(costo.id_empresa_id) != str(emp.pk):
+        emp_ref = _empresa_efectiva(self)
+        if costo is not None and emp_ref is not None and str(costo.id_empresa_id) != emp_ref:
             raise serializers.ValidationError({"id_costo_destino": "El costo en destino no pertenece a la empresa."})
         if costo is not None and costo.estado != "BORRADOR":
             raise serializers.ValidationError(
@@ -63,7 +60,7 @@ class LineaCostoDestinoSerializer(serializers.ModelSerializer):
             if "id_factura_compra" in attrs
             else getattr(self.instance, "id_factura_compra", None)
         )
-        if fac is not None and emp is not None and str(fac.id_empresa_id) != str(emp.pk):
+        if fac is not None and emp_ref is not None and str(fac.id_empresa_id) != emp_ref:
             raise serializers.ValidationError({"id_factura_compra": "La factura no pertenece a la empresa."})
         return attrs
 
@@ -131,6 +128,10 @@ class CostoDestinoSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         attrs = super().validate(attrs)
+        if self.instance is not None and self.instance.estado != "BORRADOR":
+            raise serializers.ValidationError(
+                {"estado": f"No se puede editar un costo en destino en estado {self.instance.estado}."}
+            )
         request = self.context.get("request") if hasattr(self, "context") else None
         user = getattr(request, "user", None)
         visibles = (
@@ -139,12 +140,8 @@ class CostoDestinoSerializer(serializers.ModelSerializer):
             else None
         )
         recepcion = attrs.get("id_recepcion") or getattr(self.instance, "id_recepcion", None)
-        emp = attrs.get("id_empresa") or getattr(self.instance, "id_empresa", None)
-        if emp is None and recepcion is not None:
-            emp = recepcion.id_empresa
-            attrs["id_empresa"] = emp
-        emp_ref = str(emp.pk) if emp is not None else _empresa_efectiva(self)
-        if emp is not None and visibles is not None and str(emp.pk) not in visibles:
+        emp_ref = _empresa_efectiva(self)
+        if emp_ref is not None and visibles is not None and emp_ref not in visibles:
             raise serializers.ValidationError({"id_empresa": "Empresa fuera de su alcance."})
         if recepcion is not None and emp_ref is not None and str(recepcion.id_empresa_id) != emp_ref:
             raise serializers.ValidationError({"id_recepcion": "La recepción no pertenece a la empresa indicada."})

@@ -6,7 +6,7 @@ from decimal import Decimal
 
 from rest_framework import serializers
 
-from apps.core.viewsets import get_empresa_primaria, get_empresas_visible
+from apps.core.viewsets import get_empresa_primaria, get_empresas_visible, validar_uuid_param
 
 from .models import ConteoInventario, LineaConteoInventario
 
@@ -69,14 +69,7 @@ class ConteoInventarioSerializer(serializers.ModelSerializer):
             "fecha_creacion",
             "fecha_actualizacion",
         ]
-        read_only_fields = [
-            "id_conteo",
-            "estado",
-            "id_aprobador",
-            "fecha_aprobacion",
-            "fecha_creacion",
-            "fecha_actualizacion",
-        ]
+        read_only_fields = fields
 
 
 class ConteoLineaInicialInputSerializer(serializers.Serializer):
@@ -118,7 +111,8 @@ class EscanearOperacionInputSerializer(serializers.Serializer):
 def resolver_empresa_usuario_inventario(request, raw_empresa_id=None):
     visibles = get_empresas_visible(request.user)
     if raw_empresa_id:
-        emp = visibles.filter(pk=raw_empresa_id).first()
+        uid = validar_uuid_param(str(raw_empresa_id), "id_empresa")
+        emp = visibles.filter(pk=uid).first()
         if emp is None:
             raise serializers.ValidationError({"id_empresa": "Empresa fuera de su alcance."})
         return emp

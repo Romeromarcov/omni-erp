@@ -58999,7 +58999,6 @@
         },
         "LineaCostoDestino": {
             "required": [
-                "id_empresa",
                 "id_costo_destino",
                 "concepto",
                 "descripcion",
@@ -59016,7 +59015,8 @@
                 "id_empresa": {
                     "title": "Id empresa",
                     "type": "string",
-                    "format": "uuid"
+                    "format": "uuid",
+                    "readOnly": true
                 },
                 "id_costo_destino": {
                     "title": "Id costo destino",
@@ -59169,7 +59169,6 @@
         },
         "CostoDestino": {
             "required": [
-                "id_empresa",
                 "id_recepcion",
                 "numero_documento",
                 "fecha"
@@ -59185,7 +59184,8 @@
                 "id_empresa": {
                     "title": "Id empresa",
                     "type": "string",
-                    "format": "uuid"
+                    "format": "uuid",
+                    "readOnly": true
                 },
                 "id_recepcion": {
                     "title": "Id recepcion",
@@ -67220,7 +67220,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-23T06:51:51.354944-04:00"
+                    "default": "2026-11-23T07:44:19.848614-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",
@@ -73171,13 +73171,6 @@
             }
         },
         "ConteoInventario": {
-            "required": [
-                "id_empresa",
-                "numero",
-                "id_almacen",
-                "fecha_conteo",
-                "id_responsable"
-            ],
             "type": "object",
             "properties": {
                 "id_conteo": {
@@ -73189,18 +73182,20 @@
                 "id_empresa": {
                     "title": "Id empresa",
                     "type": "string",
-                    "format": "uuid"
+                    "format": "uuid",
+                    "readOnly": true
                 },
                 "numero": {
                     "title": "Numero",
                     "type": "string",
-                    "maxLength": 50,
+                    "readOnly": true,
                     "minLength": 1
                 },
                 "id_almacen": {
                     "title": "Id almacen",
                     "type": "string",
-                    "format": "uuid"
+                    "format": "uuid",
+                    "readOnly": true
                 },
                 "almacen_nombre": {
                     "title": "Almacen nombre",
@@ -73214,7 +73209,8 @@
                     "enum": [
                         "FISCAL",
                         "GERENCIAL"
-                    ]
+                    ],
+                    "readOnly": true
                 },
                 "tipo_conteo": {
                     "title": "Tipo conteo",
@@ -73223,7 +73219,8 @@
                         "CICLICO",
                         "TOTAL",
                         "ALEATORIO"
-                    ]
+                    ],
+                    "readOnly": true
                 },
                 "estado": {
                     "title": "Estado",
@@ -73246,12 +73243,14 @@
                 "fecha_conteo": {
                     "title": "Fecha conteo",
                     "type": "string",
-                    "format": "date"
+                    "format": "date",
+                    "readOnly": true
                 },
                 "id_responsable": {
                     "title": "Id responsable",
                     "type": "string",
-                    "format": "uuid"
+                    "format": "uuid",
+                    "readOnly": true
                 },
                 "id_aprobador": {
                     "title": "Id aprobador",
@@ -73269,12 +73268,15 @@
                 },
                 "observaciones": {
                     "title": "Observaciones",
-                    "type": "string"
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
                 },
                 "activo": {
                     "title": "Activo",
                     "description": "Indica si el registro está activo (False = borrado lógico).",
-                    "type": "boolean"
+                    "type": "boolean",
+                    "readOnly": true
                 },
                 "lineas": {
                     "type": "array",
