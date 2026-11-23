@@ -1058,3 +1058,114 @@ class TestRamasYValidacionesSENIAT360:
         assert uni._endpoint(empresa_a, "v1/ok") == "https://cfg.unidigital.test/v1/ok"
         with pytest.raises(ImprentaDigitalError):
             uni.emitir_documento(empresa=empresa_a, tipo_documento="FACTURA", referencia_documento="F-ERR", payload={})
+
+    def test_anulacion_periodo_cerrado_asiento_e_idempotencia(self, client_a, empresa_a, user_a):
+        from apps.contabilidad.models import (
+            AsientoContable,
+            DetalleAsiento,
+            MapeoContable,
+            PeriodoContable,
+            PlanCuentas,
+        )
+        from apps.fiscal.models import (
+            ComprobanteRetencionISLR,
+            ComprobanteRetencionIVA,
+            ConceptoRetencionISLR,
+            PeriodoFiscal,
+        )
+
+        hoy = timezone.localdate()
+        empresa_a.contabilidad_activa = True
+        empresa_a.contabilidad_auto_aprobar = False
+        empresa_a.save(update_fields=["contabilidad_activa", "contabilidad_auto_aprobar"])
+
+        prov = Contacto.objects.create(
+            id_empresa=empresa_a, nombre="Prov Contab Anu", rif="J-70000001-7", es_proveedor=True
+        )
+        concepto = ConceptoRetencionISLR.objects.get(codigo="003")
+        PeriodoContable.objects.create(id_empresa=empresa_a, anio=hoy.year, mes=hoy.month, estado="ABIERTO")
+        cta_d = PlanCuentas.objects.create(
+            id_empresa=empresa_a,
+            codigo_cuenta="2.1.01.95",
+            nombre_cuenta="CxP Anu",
+            tipo_cuenta="PASIVO",
+            naturaleza="ACREEDORA",
+            nivel=4,
+        )
+        cta_h = PlanCuentas.objects.create(
+            id_empresa=empresa_a,
+            codigo_cuenta="2.1.03.95",
+            nombre_cuenta="Ret Anu",
+            tipo_cuenta="PASIVO",
+            naturaleza="ACREEDORA",
+            nivel=4,
+        )
+        MapeoContable.objects.create(
+            id_empresa=empresa_a, tipo_asiento="RETENCION_IVA_COMPRA", cuenta_debe=cta_d, cuenta_haber=cta_h
+        )
+        MapeoContable.objects.create(
+            id_empresa=empresa_a, tipo_asiento="RETENCION_ISLR", cuenta_debe=cta_d, cuenta_haber=cta_h
+        )
+
+        # Replay idempotente con Idempotency-Key repetida (BORRADOR)
+        payload_iva = {
+            "contacto": str(prov.id_contacto),
+            "fecha_emision": hoy.isoformat(),
+            "numero_documento": "FAC-IDEM-1",
+            "base_imponible": "1000.00",
+        }
+        r1 = client_a.post(
+            "/api/fiscal/retenciones-iva/emitir/", payload_iva, format="json", HTTP_IDEMPOTENCY_KEY="ret-iva-replay-1"
+        )
+        r2 = client_a.post(
+            "/api/fiscal/retenciones-iva/emitir/", payload_iva, format="json", HTTP_IDEMPOTENCY_KEY="ret-iva-replay-1"
+        )
+        assert r1.status_code == 201 and r2.status_code == 201
+        assert r1.data["id_comprobante"] == r2.data["id_comprobante"]
+
+        comp_borr = ComprobanteRetencionIVA.objects.get(pk=r1.data["id_comprobante"])
+        assert comp_borr.asiento_contable is not None
+        assert comp_borr.asiento_contable.estado_asiento == "BORRADOR"
+        assert DetalleAsiento.objects.filter(id_asiento=comp_borr.asiento_contable, id_contacto=prov).exists()
+
+        # Anular con asiento BORRADOR -> pasa asiento a ANULADO
+        r_anu_borr = client_a.post(f"/api/fiscal/retenciones-iva/{comp_borr.pk}/anular/", {}, format="json")
+        assert r_anu_borr.status_code == 200
+        comp_borr.asiento_contable.refresh_from_db()
+        assert comp_borr.asiento_contable.estado_asiento == "ANULADO"
+
+        # Auto-aprobar para probar reversión de asiento APROBADO al anular ISLR
+        empresa_a.contabilidad_auto_aprobar = True
+        empresa_a.save(update_fields=["contabilidad_auto_aprobar"])
+        r_islr = client_a.post(
+            "/api/fiscal/retenciones-islr/emitir/",
+            {
+                "contacto": str(prov.id_contacto),
+                "concepto": str(concepto.id),
+                "fecha_emision": hoy.isoformat(),
+                "numero_factura": "FAC-APROB-1",
+                "monto_operacion": "4000.00",
+            },
+            format="json",
+            HTTP_IDEMPOTENCY_KEY="ret-islr-aprob-1",
+        )
+        assert r_islr.status_code == 201
+        comp_aprob = ComprobanteRetencionISLR.objects.get(pk=r_islr.data["id_comprobante"])
+        assert comp_aprob.asiento_contable is not None
+        assert comp_aprob.asiento_contable.estado_asiento == "APROBADO"
+
+        # Período fiscal cerrado bloquea anulación (tanto IVA como ISLR)
+        pf = PeriodoFiscal.objects.create(id_empresa=empresa_a, año=hoy.year, mes=hoy.month, cerrado=True)
+        assert (
+            client_a.post(f"/api/fiscal/retenciones-islr/{comp_aprob.pk}/anular/", {}, format="json").status_code
+            == 400
+        )
+        comp_aprob.refresh_from_db()
+        assert comp_aprob.estado == "EMITIDO"
+
+        # Reabrir período y anular ISLR -> crea contra-asiento de reversión
+        pf.cerrado = False
+        pf.save(update_fields=["cerrado"])
+        r_anu_islr = client_a.post(f"/api/fiscal/retenciones-islr/{comp_aprob.pk}/anular/", {}, format="json")
+        assert r_anu_islr.status_code == 200
+        assert AsientoContable.objects.filter(asiento_revertido=comp_aprob.asiento_contable).exists()

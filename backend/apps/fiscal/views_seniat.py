@@ -130,12 +130,12 @@ class ComprobanteRetencionIVAViewSet(NulSafeFilterMixin, ActiveFilterMixin, view
             qs = qs.filter(tipo_operacion=tipo_op.upper())
         return qs
 
+    @idempotent(scope="fiscal:ret_iva")
     @action(
         detail=False,
         methods=["post"],
         throttle_classes=[*viewsets.ReadOnlyModelViewSet.throttle_classes, EscrituraRateThrottle],
     )
-    @idempotent(scope="fiscal:ret_iva")
     def emitir(self, request):
         """Emite atómicamente un Comprobante de Retención de IVA."""
         inp = EmitirRetencionIVAInputSerializer(data=request.data)
@@ -190,7 +190,9 @@ class ComprobanteRetencionIVAViewSet(NulSafeFilterMixin, ActiveFilterMixin, view
         """Anula lógicamente un Comprobante de Retención IVA."""
         comp = self.get_object()
         try:
-            anulado = anular_retencion_iva(comp)
+            anulado = anular_retencion_iva(comp, usuario=request.user)
+        except AsientoError as exc:
+            return domain_error_response(exc, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
         except RetencionFiscalError as exc:
             return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST)
         return Response(ComprobanteRetencionIVASerializer(anulado).data)
@@ -242,12 +244,12 @@ class ComprobanteRetencionISLRViewSet(NulSafeFilterMixin, ActiveFilterMixin, vie
             qs = qs.filter(estado=estado.upper())
         return qs
 
+    @idempotent(scope="fiscal:ret_islr")
     @action(
         detail=False,
         methods=["post"],
         throttle_classes=[*viewsets.ReadOnlyModelViewSet.throttle_classes, EscrituraRateThrottle],
     )
-    @idempotent(scope="fiscal:ret_islr")
     def emitir(self, request):
         """Emite atómicamente un Comprobante de Retención ISLR (Decreto 1808)."""
         inp = EmitirRetencionISLRInputSerializer(data=request.data)
@@ -294,7 +296,9 @@ class ComprobanteRetencionISLRViewSet(NulSafeFilterMixin, ActiveFilterMixin, vie
         """Anula lógicamente un Comprobante de Retención ISLR."""
         comp = self.get_object()
         try:
-            anulado = anular_retencion_islr(comp)
+            anulado = anular_retencion_islr(comp, usuario=request.user)
+        except AsientoError as exc:
+            return domain_error_response(exc, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
         except RetencionFiscalError as exc:
             return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST)
         return Response(ComprobanteRetencionISLRSerializer(anulado).data)
@@ -342,8 +346,12 @@ class DocumentoImprentaDigitalViewSet(NulSafeFilterMixin, ActiveFilterMixin, vie
             qs = qs.filter(tipo_documento=tipo_doc.upper())
         return qs
 
-    @action(detail=False, methods=["post"])
     @idempotent(scope="fiscal:imprenta_digital")
+    @action(
+        detail=False,
+        methods=["post"],
+        throttle_classes=[*viewsets.ReadOnlyModelViewSet.throttle_classes, EscrituraRateThrottle],
+    )
     def emitir(self, request):
         """Emite documento ante la Imprenta Digital configurada (Simulado o Unidigital)."""
         inp = EmitirImprentaDigitalInputSerializer(data=request.data)

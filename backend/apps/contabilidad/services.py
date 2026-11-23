@@ -271,6 +271,10 @@ def _resolver_contacto_documento_asiento(documento: Any, empresa: Empresa) -> Co
     if directo is not None:
         return directo
 
+    directo_alt = _contacto_valido_empresa(getattr(documento, "contacto", None), empresa)
+    if directo_alt is not None:
+        return directo_alt
+
     cliente = getattr(documento, "id_cliente", None)
     if cliente is not None:
         c_cli = _contacto_valido_empresa(getattr(cliente, "contacto", None), empresa)
@@ -324,7 +328,15 @@ def _resolver_contacto_documento_asiento(documento: Any, empresa: Empresa) -> Co
 
 def _descripcion(plantilla: str, tipo: str, documento: Any) -> str:
     desc = plantilla.replace("{tipo}", tipo)
-    for attr in ("numero_factura", "numero_orden", "numero_nota", "numero_recepcion", "numero_pedido"):
+    for attr in (
+        "numero_comprobante",
+        "numero_documento",
+        "numero_factura",
+        "numero_orden",
+        "numero_nota",
+        "numero_recepcion",
+        "numero_pedido",
+    ):
         val = getattr(documento, attr, None)
         if val:
             return desc.replace("{numero}", str(val))

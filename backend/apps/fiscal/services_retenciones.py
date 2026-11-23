@@ -166,16 +166,42 @@ def emitir_retencion_iva(
     return comp
 
 
-@transaction.atomic
-def anular_retencion_iva(comprobante):
-    from .models import ComprobanteRetencionIVA
+def _anular_comprobante_y_asiento(model_cls, comprobante, *, etiqueta: str, usuario=None):
+    from apps.contabilidad.models import AsientoContable
+    from apps.contabilidad.services import revertir_asiento
 
-    locked = ComprobanteRetencionIVA.objects.select_for_update().get(pk=comprobante.pk)
+    from .services import PeriodoCerradoError, validar_periodo_abierto
+
+    locked = model_cls.objects.select_for_update().get(pk=comprobante.pk)
     if locked.estado == "ANULADO":
-        raise RetencionFiscalError("El comprobante de retención IVA ya está anulado.")
+        raise RetencionFiscalError(f"El comprobante de retención {etiqueta} ya está anulado.")
+    try:
+        validar_periodo_abierto(locked.id_empresa, locked.fecha_emision)
+    except PeriodoCerradoError as exc:
+        raise RetencionFiscalError(str(exc)) from exc
+
+    if locked.asiento_contable_id is not None:
+        asiento = AsientoContable.objects.select_for_update().get(pk=locked.asiento_contable_id)
+        if asiento.estado_asiento == "BORRADOR":
+            asiento.estado_asiento = "ANULADO"
+            asiento.save(update_fields=["estado_asiento"])
+        elif asiento.estado_asiento == "APROBADO":
+            revertir_asiento(
+                asiento,
+                usuario=usuario,
+                motivo=f"Anulación comprobante {locked.numero_comprobante}",
+            )
+
     locked.estado = "ANULADO"
     locked.save(update_fields=["estado", "fecha_actualizacion"])
     return locked
+
+
+@transaction.atomic
+def anular_retencion_iva(comprobante, *, usuario=None):
+    from .models import ComprobanteRetencionIVA
+
+    return _anular_comprobante_y_asiento(ComprobanteRetencionIVA, comprobante, etiqueta="IVA", usuario=usuario)
 
 
 def generar_txt_retenciones_iva_seniat(empresa, periodo_yyyymm: str) -> str:
@@ -318,15 +344,10 @@ def emitir_retencion_islr(
 
 
 @transaction.atomic
-def anular_retencion_islr(comprobante):
+def anular_retencion_islr(comprobante, *, usuario=None):
     from .models import ComprobanteRetencionISLR
 
-    locked = ComprobanteRetencionISLR.objects.select_for_update().get(pk=comprobante.pk)
-    if locked.estado == "ANULADO":
-        raise RetencionFiscalError("El comprobante de retención ISLR ya está anulado.")
-    locked.estado = "ANULADO"
-    locked.save(update_fields=["estado", "fecha_actualizacion"])
-    return locked
+    return _anular_comprobante_y_asiento(ComprobanteRetencionISLR, comprobante, etiqueta="ISLR", usuario=usuario)
 
 
 def generar_xml_retenciones_islr_seniat(empresa, periodo_yyyymm: str) -> str:
