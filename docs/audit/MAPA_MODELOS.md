@@ -107,8 +107,14 @@
 | cxc_lubrikca | PromocionPrimeraCompra | ✅ | ✅ | — |
 | cxc_lubrikca | ReglaRecurrencia | ✅ | ✅ | — |
 | cxc_lubrikca | Vinculacion | ✅ | ✅ | — |
+| despacho | Conductor | ✅ | ✅ | id_empresa+cedula |
 | despacho | Despacho | ✅ | ✅ | id_empresa+numero_despacho |
 | despacho | DetalleDespacho | — | ✅ | — |
+| despacho | ParadaEntrega | ✅ | ✅ | id_ruta+secuencia |
+| despacho | RutaDespacho | ✅ | ✅ | id_empresa+codigo |
+| despacho | TarifaFlete | ✅ | ✅ | — |
+| despacho | Vehiculo | ✅ | ✅ | id_empresa+placa |
+| despacho | ZonaLogistica | ✅ | ✅ | id_empresa+codigo |
 | finanzas | AsignacionPago | ✅ | ✅ | — |
 | finanzas | Caja | ✅ | ✅ | — |
 | finanzas | CajaFisica | ✅ | ✅ | — |
@@ -286,4 +292,4 @@
 | ventas | Pedido | ✅ | ✅ | id_empresa+numero_pedido |
 | ventas | ReglaPrecioDinamico | ✅ | ✅ | id_empresa+codigo |
 
-_Total modelos: 283_
+_Total modelos: 289_

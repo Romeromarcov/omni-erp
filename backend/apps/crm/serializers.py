@@ -120,6 +120,9 @@ class DireccionClienteSerializer(serializers.ModelSerializer):
             "longitud",
             "gps_precision_m",
             "gps_capturado_en",
+            "ventana_entrega_inicio",
+            "ventana_entrega_fin",
+            "referencia_gps",
             "id_empresa",
             "id_cliente",
         ]

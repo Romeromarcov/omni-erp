@@ -348,7 +348,13 @@ RLS_TABLES = {
     "cxc_plantillacobranza": "empresa_id",
     "cxc_ventafraccionada": "empresa_id",
     # despacho
+    "despacho_conductor": "id_empresa_id",
     "despacho_despacho": "id_empresa_id",
+    "despacho_parada_entrega": "id_empresa_id",
+    "despacho_ruta": "id_empresa_id",
+    "despacho_tarifa_flete": "id_empresa_id",
+    "despacho_vehiculo": "id_empresa_id",
+    "despacho_zona_logistica": "id_empresa_id",
     # finanzas
     "finanzas_asignacion_pago": "id_empresa_id",
     "finanzas_caja_fisica": "empresa_id",
