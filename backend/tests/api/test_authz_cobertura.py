@@ -39,6 +39,10 @@ PUBLIC_ALLOWLIST: dict[str, str] = {
         "Omni Connect S2/S3: perfil público NFC/QR/enlace, descarga vCard RFC 6350 y "
         "captura pública de leads con consentimiento obligatorio, honeypot y rate-limit."
     ),
+    "api/despacho/tracking/<uuid:token>/": (
+        "Plan 09 Fase 6.4: tracking público en vivo de parada vía token_tracking UUIDv7 opaco, "
+        "sin PII (sin cédula/firma), con AnonRateThrottle y lookup puntual."
+    ),
     "swagger": "Esquema OpenAPI / Swagger UI (drf-yasg).",
     "redoc": "Documentación ReDoc (drf-yasg).",
 }

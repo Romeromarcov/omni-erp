@@ -7192,6 +7192,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/despacho/conductores/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["despacho_conductores_list"];
+        put?: never;
+        post: operations["despacho_conductores_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/despacho/conductores/{id_conductor}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Conductor. */
+                id_conductor: string;
+            };
+            cookie?: never;
+        };
+        get: operations["despacho_conductores_read"];
+        put: operations["despacho_conductores_update"];
+        post?: never;
+        delete: operations["despacho_conductores_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["despacho_conductores_partial_update"];
+        trace?: never;
+    };
     "/despacho/despachos/": {
         parameters: {
             query?: never;
@@ -7389,6 +7424,411 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/despacho/paradas/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["despacho_paradas_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/despacho/paradas/{id_parada}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Parada de Entrega. */
+                id_parada: string;
+            };
+            cookie?: never;
+        };
+        get: operations["despacho_paradas_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/despacho/paradas/{id_parada}/registrar-epod/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Parada de Entrega. */
+                id_parada: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Registra Prueba de Entrega Digital (foto, firma, GPS) y cobro contra entrega. */
+        post: operations["despacho_paradas_registrar_epod"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/despacho/paradas/{id_parada}/whatsapp-tracking/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Parada de Entrega. */
+                id_parada: string;
+            };
+            cookie?: never;
+        };
+        /** @description Genera el enlace público de tracking y deeplink listo para WhatsApp. */
+        get: operations["despacho_paradas_whatsapp_tracking"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/despacho/rutas/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["despacho_rutas_list"];
+        put?: never;
+        post: operations["despacho_rutas_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/despacho/rutas/cotizar-delivery/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Cotiza tarifa y ETA con proveedor externo (Uber Direct / Ridery / Yummy / Simulado). */
+        post: operations["despacho_rutas_cotizar_delivery"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/despacho/rutas/optimizar-vrp/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Optimiza rutas multi-vehículo por capacidad y distancia geodésica (NN + 2-opt). */
+        post: operations["despacho_rutas_optimizar_vrp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/despacho/rutas/torre-control/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Snapshot de torre de control logística en vivo para mapa GPS y KPIs. */
+        get: operations["despacho_rutas_torre_control"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/despacho/rutas/{id_ruta}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Ruta de Despacho. */
+                id_ruta: string;
+            };
+            cookie?: never;
+        };
+        get: operations["despacho_rutas_read"];
+        put: operations["despacho_rutas_update"];
+        post?: never;
+        delete: operations["despacho_rutas_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["despacho_rutas_partial_update"];
+        trace?: never;
+    };
+    "/despacho/rutas/{id_ruta}/cancelar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Ruta de Despacho. */
+                id_ruta: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Cancela una ruta en estado PLANIFICADA. */
+        post: operations["despacho_rutas_cancelar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/despacho/rutas/{id_ruta}/emitir-guia-seniat/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Ruta de Despacho. */
+                id_ruta: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Emite Guía de Despacho Digital SENIAT desde la ruta vía Imprenta Digital. */
+        post: operations["despacho_rutas_emitir_guia_seniat"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/despacho/rutas/{id_ruta}/iniciar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Ruta de Despacho. */
+                id_ruta: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Inicia una ruta PLANIFICADA pasando sus despachos a EN_RUTA. */
+        post: operations["despacho_rutas_iniciar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/despacho/rutas/{id_ruta}/solicitar-delivery/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Ruta de Despacho. */
+                id_ruta: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Asigna un envío en vivo con proveedor de delivery externo a la ruta. */
+        post: operations["despacho_rutas_solicitar_delivery"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/despacho/rutas/{id_ruta}/tracking-delivery/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Ruta de Despacho. */
+                id_ruta: string;
+            };
+            cookie?: never;
+        };
+        /** @description Consulta el estado del tracking en el proveedor de delivery externo. */
+        get: operations["despacho_rutas_tracking_delivery"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/despacho/tarifas-flete/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["despacho_tarifas-flete_list"];
+        put?: never;
+        post: operations["despacho_tarifas-flete_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/despacho/tarifas-flete/{id_tarifa}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Tarifa de Flete. */
+                id_tarifa: string;
+            };
+            cookie?: never;
+        };
+        get: operations["despacho_tarifas-flete_read"];
+        put: operations["despacho_tarifas-flete_update"];
+        post?: never;
+        delete: operations["despacho_tarifas-flete_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["despacho_tarifas-flete_partial_update"];
+        trace?: never;
+    };
+    "/despacho/tracking/{token}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        /** @description Endpoint público mínimo (sin PII sensible) para tracking del cliente vía token UUID. */
+        get: operations["despacho_tracking_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/despacho/vehiculos/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["despacho_vehiculos_list"];
+        put?: never;
+        post: operations["despacho_vehiculos_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/despacho/vehiculos/{id_vehiculo}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Vehículo de Despacho. */
+                id_vehiculo: string;
+            };
+            cookie?: never;
+        };
+        get: operations["despacho_vehiculos_read"];
+        put: operations["despacho_vehiculos_update"];
+        post?: never;
+        delete: operations["despacho_vehiculos_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["despacho_vehiculos_partial_update"];
+        trace?: never;
+    };
+    "/despacho/vehiculos/{id_vehiculo}/actualizar-gps/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Vehículo de Despacho. */
+                id_vehiculo: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Actualiza las coordenadas GPS actuales del vehículo. */
+        post: operations["despacho_vehiculos_actualizar_gps"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/despacho/zonas-logisticas/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["despacho_zonas-logisticas_list"];
+        put?: never;
+        post: operations["despacho_zonas-logisticas_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/despacho/zonas-logisticas/{id_zona}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Zona Logística. */
+                id_zona: string;
+            };
+            cookie?: never;
+        };
+        get: operations["despacho_zonas-logisticas_read"];
+        put: operations["despacho_zonas-logisticas_update"];
+        post?: never;
+        delete: operations["despacho_zonas-logisticas_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["despacho_zonas-logisticas_partial_update"];
         trace?: never;
     };
     "/finanzas/ajustes-caja-banco/crear_ajuste/": {
@@ -22385,6 +22825,12 @@ export interface components {
              * Format: date-time
              */
             gps_capturado_en?: string | null;
+            /** Ventana entrega inicio */
+            ventana_entrega_inicio?: string | null;
+            /** Ventana entrega fin */
+            ventana_entrega_fin?: string | null;
+            /** Referencia gps */
+            referencia_gps?: string;
             /**
              * Id empresa
              * Format: uuid
@@ -23536,6 +23982,59 @@ export interface components {
              */
             empresa?: string | null;
         };
+        Conductor: {
+            /**
+             * Id conductor
+             * Format: uuid
+             */
+            readonly id_conductor?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /** Id empleado */
+            id_empleado?: number | null;
+            /** Nombre completo */
+            nombre_completo: string;
+            /** Cedula */
+            cedula: string;
+            /** Telefono */
+            telefono?: string;
+            /** Licencia grado */
+            licencia_grado?: string;
+            /**
+             * Licencia vence
+             * Format: date
+             */
+            licencia_vence?: string | null;
+            /**
+             * Id vehiculo asignado
+             * Format: uuid
+             */
+            id_vehiculo_asignado?: string | null;
+            /** Vehiculo placa */
+            readonly vehiculo_placa?: string;
+            /** Disponible */
+            disponible?: boolean;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
         DetalleDespacho: {
             /**
              * Id detalle despacho
@@ -23605,7 +24104,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-23T07:44:19.848614-04:00
+             * @default 2026-11-23T08:20:54.253917-04:00
              */
             fecha_despacho: string;
             /**
@@ -23670,6 +24169,643 @@ export interface components {
              * @description Indica si el registro está activo (False = borrado lógico).
              */
             readonly activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        ParadaEntrega: {
+            /**
+             * Id parada
+             * Format: uuid
+             */
+            readonly id_parada?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /**
+             * Id ruta
+             * Format: uuid
+             */
+            readonly id_ruta?: string;
+            /**
+             * Id despacho
+             * Format: uuid
+             */
+            readonly id_despacho?: string;
+            /** Despacho numero */
+            readonly despacho_numero?: string;
+            /**
+             * Id direccion cliente
+             * Format: uuid
+             */
+            readonly id_direccion_cliente?: string | null;
+            /** Secuencia */
+            readonly secuencia?: number;
+            /**
+             * Estado
+             * @enum {string}
+             */
+            readonly estado?: "PENDIENTE" | "EN_CAMINO" | "ENTREGADA" | "ENTREGA_PARCIAL" | "RECHAZADA";
+            /** Estado display */
+            readonly estado_display?: string;
+            /**
+             * Latitud
+             * Format: decimal
+             */
+            readonly latitud?: string | null;
+            /**
+             * Longitud
+             * Format: decimal
+             */
+            readonly longitud?: string | null;
+            /** Direccion texto */
+            readonly direccion_texto?: string;
+            /**
+             * Distancia tramo km
+             * Format: decimal
+             */
+            readonly distancia_tramo_km?: string;
+            /**
+             * Eta estimada
+             * Format: date-time
+             */
+            readonly eta_estimada?: string | null;
+            /**
+             * Fecha llegada real
+             * Format: date-time
+             */
+            readonly fecha_llegada_real?: string | null;
+            /**
+             * Token tracking
+             * Format: uuid
+             */
+            readonly token_tracking?: string;
+            /** Epod receptor nombre */
+            readonly epod_receptor_nombre?: string;
+            /** Epod receptor cedula */
+            readonly epod_receptor_cedula?: string;
+            /** Epod firma base64 */
+            readonly epod_firma_base64?: string;
+            /** Epod foto url */
+            readonly epod_foto_url?: string;
+            /**
+             * Epod latitud
+             * Format: decimal
+             */
+            readonly epod_latitud?: string | null;
+            /**
+             * Epod longitud
+             * Format: decimal
+             */
+            readonly epod_longitud?: string | null;
+            /** Epod observaciones */
+            readonly epod_observaciones?: string;
+            /** Motivo rechazo */
+            readonly motivo_rechazo?: string;
+            /**
+             * Monto cobrado en sitio
+             * Format: decimal
+             */
+            readonly monto_cobrado_en_sitio?: string;
+            /**
+             * Id pago cobro
+             * Format: uuid
+             */
+            readonly id_pago_cobro?: string | null;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            readonly activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        CobroEnSitioInput: {
+            /**
+             * Monto
+             * Format: decimal
+             */
+            monto: string;
+            /**
+             * Id metodo pago
+             * Format: uuid
+             */
+            id_metodo_pago: string;
+            /**
+             * Id moneda
+             * Format: uuid
+             */
+            id_moneda: string;
+            /**
+             * Tasa
+             * Format: decimal
+             * @default 1.0000
+             */
+            tasa: string;
+            /**
+             * Referencia
+             * @default
+             */
+            referencia: string;
+        } | null;
+        RegistrarEPODInput: {
+            /**
+             * Resultado
+             * @default ENTREGADA
+             * @enum {string}
+             */
+            resultado: "ENTREGADA" | "ENTREGA_PARCIAL" | "RECHAZADA";
+            /**
+             * Receptor nombre
+             * @default
+             */
+            receptor_nombre: string;
+            /**
+             * Receptor cedula
+             * @default
+             */
+            receptor_cedula: string;
+            /**
+             * Firma base64
+             * @default
+             */
+            firma_base64: string;
+            /**
+             * Foto url
+             * @default
+             */
+            foto_url: string;
+            /**
+             * Latitud
+             * Format: decimal
+             */
+            latitud?: string | null;
+            /**
+             * Longitud
+             * Format: decimal
+             */
+            longitud?: string | null;
+            /**
+             * Observaciones
+             * @default
+             */
+            observaciones: string;
+            /**
+             * Motivo rechazo
+             * @default
+             */
+            motivo_rechazo: string;
+            cobro?: components["schemas"]["CobroEnSitioInput"];
+        };
+        RutaDespacho: {
+            /**
+             * Id ruta
+             * Format: uuid
+             */
+            readonly id_ruta?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /** Codigo */
+            codigo: string;
+            /**
+             * Fecha ruta
+             * Format: date
+             */
+            fecha_ruta: string;
+            /**
+             * Id almacen origen
+             * Format: uuid
+             */
+            id_almacen_origen: string;
+            /**
+             * Origen lat
+             * Format: decimal
+             */
+            origen_lat?: string | null;
+            /**
+             * Origen lng
+             * Format: decimal
+             */
+            origen_lng?: string | null;
+            /**
+             * Id vehiculo
+             * Format: uuid
+             */
+            id_vehiculo?: string | null;
+            /** Vehiculo placa */
+            readonly vehiculo_placa?: string;
+            /**
+             * Id conductor
+             * Format: uuid
+             */
+            id_conductor?: string | null;
+            /** Conductor nombre */
+            readonly conductor_nombre?: string;
+            /**
+             * Id zona
+             * Format: uuid
+             */
+            id_zona?: string | null;
+            /**
+             * Estado
+             * @enum {string}
+             */
+            readonly estado?: "PLANIFICADA" | "EN_CURSO" | "COMPLETADA" | "CANCELADA";
+            /** Estado display */
+            readonly estado_display?: string;
+            /**
+             * Distancia estimada km
+             * Format: decimal
+             */
+            readonly distancia_estimada_km?: string;
+            /** Duracion estimada min */
+            readonly duracion_estimada_min?: number;
+            /**
+             * Peso total kg
+             * Format: decimal
+             */
+            readonly peso_total_kg?: string;
+            /**
+             * Volumen total m3
+             * Format: decimal
+             */
+            readonly volumen_total_m3?: string;
+            /**
+             * Costo flete estimado usd
+             * Format: decimal
+             */
+            readonly costo_flete_estimado_usd?: string;
+            /**
+             * Proveedor delivery externo
+             * @enum {string}
+             */
+            proveedor_delivery_externo?: "PROPIO" | "SIMULADO" | "UBER_DIRECT" | "RIDERY" | "YUMMY";
+            /** Referencia delivery externo */
+            readonly referencia_delivery_externo?: string;
+            /**
+             * Tracking url externo
+             * Format: uri
+             */
+            readonly tracking_url_externo?: string;
+            /**
+             * Id guia imprenta digital
+             * Format: uuid
+             * @description UUID de fiscal.DocumentoImprentaDigital emitido como GUIA_DESPACHO.
+             */
+            readonly id_guia_imprenta_digital?: string | null;
+            /** Guia numero control */
+            readonly guia_numero_control?: string;
+            /**
+             * Fecha inicio
+             * Format: date-time
+             */
+            readonly fecha_inicio?: string | null;
+            /**
+             * Fecha fin
+             * Format: date-time
+             */
+            readonly fecha_fin?: string | null;
+            /** Observaciones */
+            observaciones?: string;
+            readonly paradas?: components["schemas"]["ParadaEntrega"][];
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        CotizarDeliveryInput: {
+            /**
+             * Proveedor
+             * @enum {string}
+             */
+            proveedor: "SIMULADO" | "UBER_DIRECT" | "RIDERY" | "YUMMY";
+            /**
+             * Origen lat
+             * Format: decimal
+             */
+            origen_lat: string;
+            /**
+             * Origen lng
+             * Format: decimal
+             */
+            origen_lng: string;
+            /**
+             * Destino lat
+             * Format: decimal
+             */
+            destino_lat: string;
+            /**
+             * Destino lng
+             * Format: decimal
+             */
+            destino_lng: string;
+            /**
+             * Peso kg
+             * Format: decimal
+             * @default 1.0000
+             */
+            peso_kg: string;
+        };
+        OptimizarVRPInput: {
+            /**
+             * Id almacen origen
+             * Format: uuid
+             */
+            id_almacen_origen: string;
+            despachos: string[];
+            vehiculos: string[];
+            /**
+             * Origen lat
+             * Format: decimal
+             */
+            origen_lat: string;
+            /**
+             * Origen lng
+             * Format: decimal
+             */
+            origen_lng: string;
+            /**
+             * Fecha ruta
+             * Format: date
+             */
+            fecha_ruta?: string;
+            /**
+             * Factor trafico
+             * Format: decimal
+             * @default 1.00
+             */
+            factor_trafico: string;
+            /**
+             * Id zona
+             * Format: uuid
+             */
+            id_zona?: string | null;
+        };
+        EmitirGuiaSeniatInput: {
+            /**
+             * Proveedor
+             * @default SIMULADO
+             * @enum {string}
+             */
+            proveedor: "SIMULADO" | "UNIDIGITAL";
+        };
+        SolicitarDeliveryRutaInput: {
+            /**
+             * Proveedor
+             * @enum {string}
+             */
+            proveedor: "SIMULADO" | "UBER_DIRECT" | "RIDERY" | "YUMMY";
+            /**
+             * Destino lat
+             * Format: decimal
+             */
+            destino_lat: string;
+            /**
+             * Destino lng
+             * Format: decimal
+             */
+            destino_lng: string;
+            /** Direccion destino */
+            direccion_destino: string;
+        };
+        TarifaFlete: {
+            /**
+             * Id tarifa
+             * Format: uuid
+             */
+            readonly id_tarifa?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /**
+             * Id zona
+             * Format: uuid
+             */
+            id_zona: string;
+            /** Zona nombre */
+            readonly zona_nombre?: string;
+            /**
+             * Tipo calculo
+             * @enum {string}
+             */
+            tipo_calculo?: "FIJA" | "POR_KG" | "POR_KM" | "POR_M3" | "POR_PALETA";
+            /**
+             * Monto base usd
+             * Format: decimal
+             */
+            monto_base_usd?: string;
+            /**
+             * Tarifa unidad usd
+             * Format: decimal
+             */
+            tarifa_unidad_usd?: string;
+            /**
+             * Minimo usd
+             * Format: decimal
+             */
+            minimo_usd?: string;
+            /** Moneda referencia */
+            moneda_referencia?: string;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        Vehiculo: {
+            /**
+             * Id vehiculo
+             * Format: uuid
+             */
+            readonly id_vehiculo?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /** Placa */
+            placa: string;
+            /** Marca modelo */
+            marca_modelo: string;
+            /**
+             * Tipo vehiculo
+             * @enum {string}
+             */
+            tipo_vehiculo?: "MOTO" | "PANEL" | "CAMION_350" | "CAMION_750" | "GANDOLA" | "EXTERNO";
+            /**
+             * Capacidad kg
+             * Format: decimal
+             */
+            capacidad_kg?: string;
+            /**
+             * Capacidad m3
+             * Format: decimal
+             */
+            capacidad_m3?: string;
+            /**
+             * Capacidad paletas
+             * Format: decimal
+             */
+            capacidad_paletas?: string;
+            /**
+             * Capacidad litros
+             * Format: decimal
+             */
+            capacidad_litros?: string;
+            /**
+             * Velocidad promedio kmh
+             * Format: decimal
+             */
+            velocidad_promedio_kmh?: string;
+            /**
+             * Estado
+             * @enum {string}
+             */
+            estado?: "DISPONIBLE" | "EN_RUTA" | "MANTENIMIENTO" | "INACTIVO";
+            /**
+             * Latitud actual
+             * Format: decimal
+             */
+            latitud_actual?: string | null;
+            /**
+             * Longitud actual
+             * Format: decimal
+             */
+            longitud_actual?: string | null;
+            /**
+             * Gps actualizado en
+             * Format: date-time
+             */
+            readonly gps_actualizado_en?: string | null;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        ActualizarGPSVehiculoInput: {
+            /**
+             * Latitud
+             * Format: decimal
+             */
+            latitud: string;
+            /**
+             * Longitud
+             * Format: decimal
+             */
+            longitud: string;
+        };
+        ZonaLogistica: {
+            /**
+             * Id zona
+             * Format: uuid
+             */
+            readonly id_zona?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /** Codigo */
+            codigo: string;
+            /** Nombre */
+            nombre: string;
+            /** Ciudad */
+            ciudad?: string;
+            /** Estado provincia */
+            estado_provincia?: string;
+            /**
+             * Centro lat
+             * Format: decimal
+             */
+            centro_lat?: string | null;
+            /**
+             * Centro lng
+             * Format: decimal
+             */
+            centro_lng?: string | null;
+            /**
+             * Radio km
+             * Format: decimal
+             */
+            radio_km?: string;
+            /**
+             * Tarifa base usd
+             * Format: decimal
+             */
+            tarifa_base_usd?: string;
+            /** Tiempo servicio min */
+            tiempo_servicio_min?: number;
+            /** Observaciones */
+            observaciones?: string;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
             /**
              * Fecha de Creación
              * Format: date-time
@@ -33336,6 +34472,11 @@ export interface components {
                 "application/json": components["schemas"]["ReglaPrecioDinamico"];
             };
         };
+        Conductor: {
+            content: {
+                "application/json": components["schemas"]["Conductor"];
+            };
+        };
         EsquemaComision: {
             content: {
                 "application/json": components["schemas"]["EsquemaComision"];
@@ -33933,6 +35074,26 @@ export interface components {
         Vinculacion: {
             content: {
                 "application/json": components["schemas"]["Vinculacion"];
+            };
+        };
+        RutaDespacho: {
+            content: {
+                "application/json": components["schemas"]["RutaDespacho"];
+            };
+        };
+        TarifaFlete: {
+            content: {
+                "application/json": components["schemas"]["TarifaFlete"];
+            };
+        };
+        Vehiculo: {
+            content: {
+                "application/json": components["schemas"]["Vehiculo"];
+            };
+        };
+        ZonaLogistica: {
+            content: {
+                "application/json": components["schemas"]["ZonaLogistica"];
             };
         };
         Datafono: {
@@ -49944,6 +51105,144 @@ export interface operations {
             };
         };
     };
+    despacho_conductores_list: {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["Conductor"][];
+                    };
+                };
+            };
+        };
+    };
+    despacho_conductores_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Conductor"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Conductor"];
+                };
+            };
+        };
+    };
+    despacho_conductores_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Conductor. */
+                id_conductor: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Conductor"];
+                };
+            };
+        };
+    };
+    despacho_conductores_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Conductor. */
+                id_conductor: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Conductor"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Conductor"];
+                };
+            };
+        };
+    };
+    despacho_conductores_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Conductor. */
+                id_conductor: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    despacho_conductores_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Conductor. */
+                id_conductor: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Conductor"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Conductor"];
+                };
+            };
+        };
+    };
     despacho_despachos_list: {
         parameters: {
             query?: {
@@ -50262,6 +51561,903 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DetalleDespacho"];
+                };
+            };
+        };
+    };
+    despacho_paradas_list: {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["ParadaEntrega"][];
+                    };
+                };
+            };
+        };
+    };
+    despacho_paradas_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Parada de Entrega. */
+                id_parada: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParadaEntrega"];
+                };
+            };
+        };
+    };
+    despacho_paradas_registrar_epod: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Parada de Entrega. */
+                id_parada: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegistrarEPODInput"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrarEPODInput"];
+                };
+            };
+        };
+    };
+    despacho_paradas_whatsapp_tracking: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Parada de Entrega. */
+                id_parada: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParadaEntrega"];
+                };
+            };
+        };
+    };
+    despacho_rutas_list: {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["RutaDespacho"][];
+                    };
+                };
+            };
+        };
+    };
+    despacho_rutas_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["RutaDespacho"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RutaDespacho"];
+                };
+            };
+        };
+    };
+    despacho_rutas_cotizar_delivery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CotizarDeliveryInput"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CotizarDeliveryInput"];
+                };
+            };
+        };
+    };
+    despacho_rutas_optimizar_vrp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OptimizarVRPInput"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OptimizarVRPInput"];
+                };
+            };
+        };
+    };
+    despacho_rutas_torre_control: {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["RutaDespacho"][];
+                    };
+                };
+            };
+        };
+    };
+    despacho_rutas_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Ruta de Despacho. */
+                id_ruta: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RutaDespacho"];
+                };
+            };
+        };
+    };
+    despacho_rutas_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Ruta de Despacho. */
+                id_ruta: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["RutaDespacho"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RutaDespacho"];
+                };
+            };
+        };
+    };
+    despacho_rutas_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Ruta de Despacho. */
+                id_ruta: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    despacho_rutas_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Ruta de Despacho. */
+                id_ruta: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["RutaDespacho"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RutaDespacho"];
+                };
+            };
+        };
+    };
+    despacho_rutas_cancelar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Ruta de Despacho. */
+                id_ruta: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RutaDespacho"];
+                };
+            };
+        };
+    };
+    despacho_rutas_emitir_guia_seniat: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Ruta de Despacho. */
+                id_ruta: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmitirGuiaSeniatInput"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmitirGuiaSeniatInput"];
+                };
+            };
+        };
+    };
+    despacho_rutas_iniciar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Ruta de Despacho. */
+                id_ruta: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RutaDespacho"];
+                };
+            };
+        };
+    };
+    despacho_rutas_solicitar_delivery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Ruta de Despacho. */
+                id_ruta: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SolicitarDeliveryRutaInput"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SolicitarDeliveryRutaInput"];
+                };
+            };
+        };
+    };
+    despacho_rutas_tracking_delivery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Ruta de Despacho. */
+                id_ruta: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RutaDespacho"];
+                };
+            };
+        };
+    };
+    "despacho_tarifas-flete_list": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["TarifaFlete"][];
+                    };
+                };
+            };
+        };
+    };
+    "despacho_tarifas-flete_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["TarifaFlete"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TarifaFlete"];
+                };
+            };
+        };
+    };
+    "despacho_tarifas-flete_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Tarifa de Flete. */
+                id_tarifa: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TarifaFlete"];
+                };
+            };
+        };
+    };
+    "despacho_tarifas-flete_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Tarifa de Flete. */
+                id_tarifa: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["TarifaFlete"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TarifaFlete"];
+                };
+            };
+        };
+    };
+    "despacho_tarifas-flete_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Tarifa de Flete. */
+                id_tarifa: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "despacho_tarifas-flete_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Tarifa de Flete. */
+                id_tarifa: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["TarifaFlete"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TarifaFlete"];
+                };
+            };
+        };
+    };
+    despacho_tracking_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    despacho_vehiculos_list: {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["Vehiculo"][];
+                    };
+                };
+            };
+        };
+    };
+    despacho_vehiculos_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Vehiculo"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Vehiculo"];
+                };
+            };
+        };
+    };
+    despacho_vehiculos_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Vehículo de Despacho. */
+                id_vehiculo: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Vehiculo"];
+                };
+            };
+        };
+    };
+    despacho_vehiculos_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Vehículo de Despacho. */
+                id_vehiculo: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Vehiculo"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Vehiculo"];
+                };
+            };
+        };
+    };
+    despacho_vehiculos_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Vehículo de Despacho. */
+                id_vehiculo: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    despacho_vehiculos_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Vehículo de Despacho. */
+                id_vehiculo: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Vehiculo"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Vehiculo"];
+                };
+            };
+        };
+    };
+    despacho_vehiculos_actualizar_gps: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Vehículo de Despacho. */
+                id_vehiculo: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActualizarGPSVehiculoInput"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActualizarGPSVehiculoInput"];
+                };
+            };
+        };
+    };
+    "despacho_zonas-logisticas_list": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["ZonaLogistica"][];
+                    };
+                };
+            };
+        };
+    };
+    "despacho_zonas-logisticas_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ZonaLogistica"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ZonaLogistica"];
+                };
+            };
+        };
+    };
+    "despacho_zonas-logisticas_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Zona Logística. */
+                id_zona: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ZonaLogistica"];
+                };
+            };
+        };
+    };
+    "despacho_zonas-logisticas_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Zona Logística. */
+                id_zona: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ZonaLogistica"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ZonaLogistica"];
+                };
+            };
+        };
+    };
+    "despacho_zonas-logisticas_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Zona Logística. */
+                id_zona: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "despacho_zonas-logisticas_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Zona Logística. */
+                id_zona: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ZonaLogistica"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ZonaLogistica"];
                 };
             };
         };

@@ -245,6 +245,10 @@
 | `^conciliaciones/resumen/$` | ConciliacionLubrikcaViewSet | ConciliacionLubrikca | ✅ | ✅ | IsAuthenticated |
 | `^conciliaciones/resumen\.(?P<format>[a-z0-9]+)/?$` | ConciliacionLubrikcaViewSet | ConciliacionLubrikca | ✅ | ✅ | IsAuthenticated |
 | `^conciliaciones\.(?P<format>[a-z0-9]+)/?$` | ConciliacionLubrikcaViewSet | ConciliacionLubrikca | ✅ | ✅ | IsAuthenticated |
+| `^conductores/$` | ConductorViewSet | Conductor | ✅ | ✅ | IsAuthenticated |
+| `^conductores/(?P<pk>[^/.]+)/$` | ConductorViewSet | Conductor | ✅ | ✅ | IsAuthenticated |
+| `^conductores/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConductorViewSet | Conductor | ✅ | ✅ | IsAuthenticated |
+| `^conductores\.(?P<format>[a-z0-9]+)/?$` | ConductorViewSet | Conductor | ✅ | ✅ | IsAuthenticated |
 | `^config-conciliacion/$` | ConfiguracionConciliacionViewSet | ConfiguracionConciliacion | ✅ | ✅ | IsAuthenticated |
 | `^config-conciliacion/(?P<pk>[^/.]+)/$` | ConfiguracionConciliacionViewSet | ConfiguracionConciliacion | ✅ | ✅ | IsAuthenticated |
 | `^config-conciliacion/(?P<pk>[^/.]+)/activar/$` | ConfiguracionConciliacionViewSet | ConfiguracionConciliacion | ✅ | ✅ | IsAuthenticated |
@@ -1039,6 +1043,14 @@
 | `^pagos/tipos_operacion\.(?P<format>[a-z0-9]+)/?$` | PagoViewSet | Pago | ✅ | ✅ | IsAuthenticated |
 | `^pagos\.(?P<format>[a-z0-9]+)/?$` | PagoLubrikcaViewSet | PagoLubrikca | ✅ | — | IsAuthenticated |
 | `^pagos\.(?P<format>[a-z0-9]+)/?$` | PagoViewSet | Pago | ✅ | ✅ | IsAuthenticated |
+| `^paradas/$` | ParadaEntregaViewSet | ParadaEntrega | ✅ | ✅ | IsAuthenticated |
+| `^paradas/(?P<pk>[^/.]+)/$` | ParadaEntregaViewSet | ParadaEntrega | ✅ | ✅ | IsAuthenticated |
+| `^paradas/(?P<pk>[^/.]+)/registrar-epod/$` | ParadaEntregaViewSet | ParadaEntrega | ✅ | ✅ | IsAuthenticated |
+| `^paradas/(?P<pk>[^/.]+)/registrar-epod\.(?P<format>[a-z0-9]+)/?$` | ParadaEntregaViewSet | ParadaEntrega | ✅ | ✅ | IsAuthenticated |
+| `^paradas/(?P<pk>[^/.]+)/whatsapp-tracking/$` | ParadaEntregaViewSet | ParadaEntrega | ✅ | ✅ | IsAuthenticated |
+| `^paradas/(?P<pk>[^/.]+)/whatsapp-tracking\.(?P<format>[a-z0-9]+)/?$` | ParadaEntregaViewSet | ParadaEntrega | ✅ | ✅ | IsAuthenticated |
+| `^paradas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ParadaEntregaViewSet | ParadaEntrega | ✅ | ✅ | IsAuthenticated |
+| `^paradas\.(?P<format>[a-z0-9]+)/?$` | ParadaEntregaViewSet | ParadaEntrega | ✅ | ✅ | IsAuthenticated |
 | `^parametros-sistema/$` | ParametroSistemaViewSet | ParametroSistema | ✅ | ✅ | IsAuthenticated |
 | `^parametros-sistema/(?P<pk>[^/.]+)/$` | ParametroSistemaViewSet | ParametroSistema | ✅ | ✅ | IsAuthenticated |
 | `^parametros-sistema/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ParametroSistemaViewSet | ParametroSistema | ✅ | ✅ | IsAuthenticated |
@@ -1429,6 +1441,26 @@
 | `^rutas-produccion/(?P<pk>[^/.]+)/$` | RutaProduccionViewSet | RutaProduccion | ✅ | ✅ | IsAuthenticated |
 | `^rutas-produccion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | RutaProduccionViewSet | RutaProduccion | ✅ | ✅ | IsAuthenticated |
 | `^rutas-produccion\.(?P<format>[a-z0-9]+)/?$` | RutaProduccionViewSet | RutaProduccion | ✅ | ✅ | IsAuthenticated |
+| `^rutas/$` | RutaDespachoViewSet | RutaDespacho | ✅ | ✅ | IsAuthenticated |
+| `^rutas/(?P<pk>[^/.]+)/$` | RutaDespachoViewSet | RutaDespacho | ✅ | ✅ | IsAuthenticated |
+| `^rutas/(?P<pk>[^/.]+)/cancelar/$` | RutaDespachoViewSet | RutaDespacho | ✅ | ✅ | IsAuthenticated |
+| `^rutas/(?P<pk>[^/.]+)/cancelar\.(?P<format>[a-z0-9]+)/?$` | RutaDespachoViewSet | RutaDespacho | ✅ | ✅ | IsAuthenticated |
+| `^rutas/(?P<pk>[^/.]+)/emitir-guia-seniat/$` | RutaDespachoViewSet | RutaDespacho | ✅ | ✅ | IsAuthenticated |
+| `^rutas/(?P<pk>[^/.]+)/emitir-guia-seniat\.(?P<format>[a-z0-9]+)/?$` | RutaDespachoViewSet | RutaDespacho | ✅ | ✅ | IsAuthenticated |
+| `^rutas/(?P<pk>[^/.]+)/iniciar/$` | RutaDespachoViewSet | RutaDespacho | ✅ | ✅ | IsAuthenticated |
+| `^rutas/(?P<pk>[^/.]+)/iniciar\.(?P<format>[a-z0-9]+)/?$` | RutaDespachoViewSet | RutaDespacho | ✅ | ✅ | IsAuthenticated |
+| `^rutas/(?P<pk>[^/.]+)/solicitar-delivery/$` | RutaDespachoViewSet | RutaDespacho | ✅ | ✅ | IsAuthenticated |
+| `^rutas/(?P<pk>[^/.]+)/solicitar-delivery\.(?P<format>[a-z0-9]+)/?$` | RutaDespachoViewSet | RutaDespacho | ✅ | ✅ | IsAuthenticated |
+| `^rutas/(?P<pk>[^/.]+)/tracking-delivery/$` | RutaDespachoViewSet | RutaDespacho | ✅ | ✅ | IsAuthenticated |
+| `^rutas/(?P<pk>[^/.]+)/tracking-delivery\.(?P<format>[a-z0-9]+)/?$` | RutaDespachoViewSet | RutaDespacho | ✅ | ✅ | IsAuthenticated |
+| `^rutas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | RutaDespachoViewSet | RutaDespacho | ✅ | ✅ | IsAuthenticated |
+| `^rutas/cotizar-delivery/$` | RutaDespachoViewSet | RutaDespacho | ✅ | ✅ | IsAuthenticated |
+| `^rutas/cotizar-delivery\.(?P<format>[a-z0-9]+)/?$` | RutaDespachoViewSet | RutaDespacho | ✅ | ✅ | IsAuthenticated |
+| `^rutas/optimizar-vrp/$` | RutaDespachoViewSet | RutaDespacho | ✅ | ✅ | IsAuthenticated |
+| `^rutas/optimizar-vrp\.(?P<format>[a-z0-9]+)/?$` | RutaDespachoViewSet | RutaDespacho | ✅ | ✅ | IsAuthenticated |
+| `^rutas/torre-control/$` | RutaDespachoViewSet | RutaDespacho | ✅ | ✅ | IsAuthenticated |
+| `^rutas/torre-control\.(?P<format>[a-z0-9]+)/?$` | RutaDespachoViewSet | RutaDespacho | ✅ | ✅ | IsAuthenticated |
+| `^rutas\.(?P<format>[a-z0-9]+)/?$` | RutaDespachoViewSet | RutaDespacho | ✅ | ✅ | IsAuthenticated |
 | `^secciones/$` | SeccionProyectoViewSet | SeccionProyecto | ✅ | ✅ | PermisoTareas |
 | `^secciones/(?P<pk>[0-9a-fA-F-]{36})/$` | SeccionProyectoViewSet | SeccionProyecto | ✅ | ✅ | PermisoTareas |
 | `^secciones/(?P<pk>[0-9a-fA-F-]{36})\.(?P<format>[a-z0-9]+)/?$` | SeccionProyectoViewSet | SeccionProyecto | ✅ | ✅ | PermisoTareas |
@@ -1493,6 +1525,10 @@
 | `^suscripciones/activa/$` | SuscripcionViewSet | Suscripcion | ✅ | ✅ | IsAuthenticated |
 | `^suscripciones/activa\.(?P<format>[a-z0-9]+)/?$` | SuscripcionViewSet | Suscripcion | ✅ | ✅ | IsAuthenticated |
 | `^suscripciones\.(?P<format>[a-z0-9]+)/?$` | SuscripcionViewSet | Suscripcion | ✅ | ✅ | IsAuthenticated |
+| `^tarifas-flete/$` | TarifaFleteViewSet | TarifaFlete | ✅ | ✅ | IsAuthenticated |
+| `^tarifas-flete/(?P<pk>[^/.]+)/$` | TarifaFleteViewSet | TarifaFlete | ✅ | ✅ | IsAuthenticated |
+| `^tarifas-flete/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | TarifaFleteViewSet | TarifaFlete | ✅ | ✅ | IsAuthenticated |
+| `^tarifas-flete\.(?P<format>[a-z0-9]+)/?$` | TarifaFleteViewSet | TarifaFlete | ✅ | ✅ | IsAuthenticated |
 | `^tarjetas/$` | TarjetaViewSet | Tarjeta | ✅ | ✅ | IsAuthenticated |
 | `^tarjetas/(?P<pk>[^/.]+)/$` | TarjetaViewSet | Tarjeta | ✅ | ✅ | IsAuthenticated |
 | `^tarjetas/(?P<pk>[^/.]+)/activar/$` | TarjetaViewSet | Tarjeta | ✅ | ✅ | IsAuthenticated |
@@ -1587,6 +1623,12 @@
 | `^variantes-producto/(?P<pk>[^/.]+)/$` | VarianteProductoViewSet | VarianteProducto | — | ✅ | IsAuthenticated |
 | `^variantes-producto/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | VarianteProductoViewSet | VarianteProducto | — | ✅ | IsAuthenticated |
 | `^variantes-producto\.(?P<format>[a-z0-9]+)/?$` | VarianteProductoViewSet | VarianteProducto | — | ✅ | IsAuthenticated |
+| `^vehiculos/$` | VehiculoViewSet | Vehiculo | ✅ | ✅ | IsAuthenticated |
+| `^vehiculos/(?P<pk>[^/.]+)/$` | VehiculoViewSet | Vehiculo | ✅ | ✅ | IsAuthenticated |
+| `^vehiculos/(?P<pk>[^/.]+)/actualizar-gps/$` | VehiculoViewSet | Vehiculo | ✅ | ✅ | IsAuthenticated |
+| `^vehiculos/(?P<pk>[^/.]+)/actualizar-gps\.(?P<format>[a-z0-9]+)/?$` | VehiculoViewSet | Vehiculo | ✅ | ✅ | IsAuthenticated |
+| `^vehiculos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | VehiculoViewSet | Vehiculo | ✅ | ✅ | IsAuthenticated |
+| `^vehiculos\.(?P<format>[a-z0-9]+)/?$` | VehiculoViewSet | Vehiculo | ✅ | ✅ | IsAuthenticated |
 | `^ventas-fraccionadas/$` | VentaFraccionadaViewSet | VentaFraccionada | ✅ | ✅ | IsAuthenticated |
 | `^ventas-fraccionadas/(?P<pk>[^/.]+)/$` | VentaFraccionadaViewSet | VentaFraccionada | ✅ | ✅ | IsAuthenticated |
 | `^ventas-fraccionadas/(?P<pk>[^/.]+)/confirmar/$` | VentaFraccionadaViewSet | VentaFraccionada | ✅ | ✅ | IsAuthenticated |
@@ -1609,6 +1651,10 @@
 | `^vinculos-documento/(?P<pk>[^/.]+)/$` | VinculoDocumentoViewSet | VinculoDocumento | — | ✅ | IsAuthenticated |
 | `^vinculos-documento/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | VinculoDocumentoViewSet | VinculoDocumento | — | ✅ | IsAuthenticated |
 | `^vinculos-documento\.(?P<format>[a-z0-9]+)/?$` | VinculoDocumentoViewSet | VinculoDocumento | — | ✅ | IsAuthenticated |
+| `^zonas-logisticas/$` | ZonaLogisticaViewSet | ZonaLogistica | ✅ | ✅ | IsAuthenticated |
+| `^zonas-logisticas/(?P<pk>[^/.]+)/$` | ZonaLogisticaViewSet | ZonaLogistica | ✅ | ✅ | IsAuthenticated |
+| `^zonas-logisticas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ZonaLogisticaViewSet | ZonaLogistica | ✅ | ✅ | IsAuthenticated |
+| `^zonas-logisticas\.(?P<format>[a-z0-9]+)/?$` | ZonaLogisticaViewSet | ZonaLogistica | ✅ | ✅ | IsAuthenticated |
 | `agente/` | CobranzaAgenteView | — | — | — | IsAuthenticated |
 | `analiticas/` | ConnectAnaliticasView | — | — | — | IsAuthenticated |
 | `api/auth/change-password/` | change_password_view | — | — | — | IsAuthenticated |
@@ -1662,10 +1708,11 @@
 | `simulador-liquidacion/` | SimuladorLiquidacionLOTTTView | — | — | — | IsAuthenticated |
 | `status/` | IntegrationHubStatusView | — | — | — | IsAuthenticated |
 | `tasa-oficial-bcv/` | TasaCambioOficialBCVView | — | — | — | IsAuthenticated |
+| `tracking/<uuid:token>/` | TrackingPublicoParadaView | — | — | — | AllowAny |
 | `usuario_roles/` | usuario_roles_view | — | — | — | IsAuthenticated |
 | `usuarios/change_password/` | change_password_view | — | — | — | IsAuthenticated |
 | `usuarios/me/` | me_view | — | — | — | IsAuthenticated |
 | `validar-cuenta-ve/` | ValidarCuentaVeView | — | — | — | IsAuthenticated |
 | `validar-referencia/` | ValidarReferenciaView | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 295_
+_Total ViewSets: 302_

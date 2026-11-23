@@ -130,6 +130,9 @@ class DireccionCliente(OmniBaseModel):
     longitud = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     gps_precision_m = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
     gps_capturado_en = models.DateTimeField(null=True, blank=True)
+    ventana_entrega_inicio = models.TimeField(null=True, blank=True)
+    ventana_entrega_fin = models.TimeField(null=True, blank=True)
+    referencia_gps = models.CharField(max_length=200, blank=True, default="")
 
     class Meta:
         db_table = "crm_direccion_cliente"

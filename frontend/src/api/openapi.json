@@ -22195,6 +22195,188 @@
                 }
             ]
         },
+        "/despacho/conductores/": {
+            "get": {
+                "operationId": "despacho_conductores_list",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/Conductor"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "post": {
+                "operationId": "despacho_conductores_create",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Conductor"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Conductor"
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "parameters": []
+        },
+        "/despacho/conductores/{id_conductor}/": {
+            "get": {
+                "operationId": "despacho_conductores_read",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Conductor"
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "put": {
+                "operationId": "despacho_conductores_update",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Conductor"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Conductor"
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "patch": {
+                "operationId": "despacho_conductores_partial_update",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Conductor"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Conductor"
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "delete": {
+                "operationId": "despacho_conductores_delete",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "204": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_conductor",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Conductor.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
         "/despacho/despachos/": {
             "get": {
                 "operationId": "despacho_despachos_list",
@@ -22669,6 +22851,1233 @@
                     "name": "id_detalle_despacho",
                     "in": "path",
                     "description": "Un Cadena UUID que identifique este Detalle de Despacho.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/despacho/paradas/": {
+            "get": {
+                "operationId": "despacho_paradas_list",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/ParadaEntrega"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "parameters": []
+        },
+        "/despacho/paradas/{id_parada}/": {
+            "get": {
+                "operationId": "despacho_paradas_read",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ParadaEntrega"
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_parada",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Parada de Entrega.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/despacho/paradas/{id_parada}/registrar-epod/": {
+            "post": {
+                "operationId": "despacho_paradas_registrar_epod",
+                "description": "Registra Prueba de Entrega Digital (foto, firma, GPS) y cobro contra entrega.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/RegistrarEPODInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/RegistrarEPODInput"
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_parada",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Parada de Entrega.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/despacho/paradas/{id_parada}/whatsapp-tracking/": {
+            "get": {
+                "operationId": "despacho_paradas_whatsapp_tracking",
+                "description": "Genera el enlace público de tracking y deeplink listo para WhatsApp.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ParadaEntrega"
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_parada",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Parada de Entrega.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/despacho/rutas/": {
+            "get": {
+                "operationId": "despacho_rutas_list",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/RutaDespacho"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "post": {
+                "operationId": "despacho_rutas_create",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/RutaDespacho"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/RutaDespacho"
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "parameters": []
+        },
+        "/despacho/rutas/cotizar-delivery/": {
+            "post": {
+                "operationId": "despacho_rutas_cotizar_delivery",
+                "description": "Cotiza tarifa y ETA con proveedor externo (Uber Direct / Ridery / Yummy / Simulado).",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CotizarDeliveryInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/CotizarDeliveryInput"
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "parameters": []
+        },
+        "/despacho/rutas/optimizar-vrp/": {
+            "post": {
+                "operationId": "despacho_rutas_optimizar_vrp",
+                "description": "Optimiza rutas multi-vehículo por capacidad y distancia geodésica (NN + 2-opt).",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/OptimizarVRPInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/OptimizarVRPInput"
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "parameters": []
+        },
+        "/despacho/rutas/torre-control/": {
+            "get": {
+                "operationId": "despacho_rutas_torre_control",
+                "description": "Snapshot de torre de control logística en vivo para mapa GPS y KPIs.",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/RutaDespacho"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "parameters": []
+        },
+        "/despacho/rutas/{id_ruta}/": {
+            "get": {
+                "operationId": "despacho_rutas_read",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/RutaDespacho"
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "put": {
+                "operationId": "despacho_rutas_update",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/RutaDespacho"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/RutaDespacho"
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "patch": {
+                "operationId": "despacho_rutas_partial_update",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/RutaDespacho"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/RutaDespacho"
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "delete": {
+                "operationId": "despacho_rutas_delete",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "204": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_ruta",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Ruta de Despacho.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/despacho/rutas/{id_ruta}/cancelar/": {
+            "post": {
+                "operationId": "despacho_rutas_cancelar",
+                "description": "Cancela una ruta en estado PLANIFICADA.",
+                "parameters": [],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/RutaDespacho"
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_ruta",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Ruta de Despacho.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/despacho/rutas/{id_ruta}/emitir-guia-seniat/": {
+            "post": {
+                "operationId": "despacho_rutas_emitir_guia_seniat",
+                "description": "Emite Guía de Despacho Digital SENIAT desde la ruta vía Imprenta Digital.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/EmitirGuiaSeniatInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/EmitirGuiaSeniatInput"
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_ruta",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Ruta de Despacho.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/despacho/rutas/{id_ruta}/iniciar/": {
+            "post": {
+                "operationId": "despacho_rutas_iniciar",
+                "description": "Inicia una ruta PLANIFICADA pasando sus despachos a EN_RUTA.",
+                "parameters": [],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/RutaDespacho"
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_ruta",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Ruta de Despacho.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/despacho/rutas/{id_ruta}/solicitar-delivery/": {
+            "post": {
+                "operationId": "despacho_rutas_solicitar_delivery",
+                "description": "Asigna un envío en vivo con proveedor de delivery externo a la ruta.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/SolicitarDeliveryRutaInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/SolicitarDeliveryRutaInput"
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_ruta",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Ruta de Despacho.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/despacho/rutas/{id_ruta}/tracking-delivery/": {
+            "get": {
+                "operationId": "despacho_rutas_tracking_delivery",
+                "description": "Consulta el estado del tracking en el proveedor de delivery externo.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/RutaDespacho"
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_ruta",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Ruta de Despacho.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/despacho/tarifas-flete/": {
+            "get": {
+                "operationId": "despacho_tarifas-flete_list",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/TarifaFlete"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "post": {
+                "operationId": "despacho_tarifas-flete_create",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/TarifaFlete"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/TarifaFlete"
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "parameters": []
+        },
+        "/despacho/tarifas-flete/{id_tarifa}/": {
+            "get": {
+                "operationId": "despacho_tarifas-flete_read",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/TarifaFlete"
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "put": {
+                "operationId": "despacho_tarifas-flete_update",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/TarifaFlete"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/TarifaFlete"
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "patch": {
+                "operationId": "despacho_tarifas-flete_partial_update",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/TarifaFlete"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/TarifaFlete"
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "delete": {
+                "operationId": "despacho_tarifas-flete_delete",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "204": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_tarifa",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Tarifa de Flete.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/despacho/tracking/{token}/": {
+            "get": {
+                "operationId": "despacho_tracking_read",
+                "description": "Endpoint público mínimo (sin PII sensible) para tracking del cliente vía token UUID.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "token",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        },
+        "/despacho/vehiculos/": {
+            "get": {
+                "operationId": "despacho_vehiculos_list",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/Vehiculo"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "post": {
+                "operationId": "despacho_vehiculos_create",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Vehiculo"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Vehiculo"
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "parameters": []
+        },
+        "/despacho/vehiculos/{id_vehiculo}/": {
+            "get": {
+                "operationId": "despacho_vehiculos_read",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Vehiculo"
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "put": {
+                "operationId": "despacho_vehiculos_update",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Vehiculo"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Vehiculo"
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "patch": {
+                "operationId": "despacho_vehiculos_partial_update",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Vehiculo"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Vehiculo"
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "delete": {
+                "operationId": "despacho_vehiculos_delete",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "204": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_vehiculo",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Vehículo de Despacho.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/despacho/vehiculos/{id_vehiculo}/actualizar-gps/": {
+            "post": {
+                "operationId": "despacho_vehiculos_actualizar_gps",
+                "description": "Actualiza las coordenadas GPS actuales del vehículo.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ActualizarGPSVehiculoInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ActualizarGPSVehiculoInput"
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_vehiculo",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Vehículo de Despacho.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/despacho/zonas-logisticas/": {
+            "get": {
+                "operationId": "despacho_zonas-logisticas_list",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/ZonaLogistica"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "post": {
+                "operationId": "despacho_zonas-logisticas_create",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ZonaLogistica"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ZonaLogistica"
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "parameters": []
+        },
+        "/despacho/zonas-logisticas/{id_zona}/": {
+            "get": {
+                "operationId": "despacho_zonas-logisticas_read",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ZonaLogistica"
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "put": {
+                "operationId": "despacho_zonas-logisticas_update",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ZonaLogistica"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ZonaLogistica"
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "patch": {
+                "operationId": "despacho_zonas-logisticas_partial_update",
+                "description": "",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ZonaLogistica"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ZonaLogistica"
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "delete": {
+                "operationId": "despacho_zonas-logisticas_delete",
+                "description": "",
+                "parameters": [],
+                "responses": {
+                    "204": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_zona",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Zona Logística.",
                     "required": true,
                     "type": "string",
                     "format": "uuid"
@@ -65254,6 +66663,21 @@
                     "format": "date-time",
                     "x-nullable": true
                 },
+                "ventana_entrega_inicio": {
+                    "title": "Ventana entrega inicio",
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "ventana_entrega_fin": {
+                    "title": "Ventana entrega fin",
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "referencia_gps": {
+                    "title": "Referencia gps",
+                    "type": "string",
+                    "maxLength": 200
+                },
                 "id_empresa": {
                     "title": "Id empresa",
                     "type": "string",
@@ -67104,6 +68528,95 @@
                 }
             }
         },
+        "Conductor": {
+            "required": [
+                "nombre_completo",
+                "cedula"
+            ],
+            "type": "object",
+            "properties": {
+                "id_conductor": {
+                    "title": "Id conductor",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empleado": {
+                    "title": "Id empleado",
+                    "type": "integer",
+                    "x-nullable": true
+                },
+                "nombre_completo": {
+                    "title": "Nombre completo",
+                    "type": "string",
+                    "maxLength": 150,
+                    "minLength": 1
+                },
+                "cedula": {
+                    "title": "Cedula",
+                    "type": "string",
+                    "maxLength": 30,
+                    "minLength": 1
+                },
+                "telefono": {
+                    "title": "Telefono",
+                    "type": "string",
+                    "maxLength": 30
+                },
+                "licencia_grado": {
+                    "title": "Licencia grado",
+                    "type": "string",
+                    "maxLength": 20
+                },
+                "licencia_vence": {
+                    "title": "Licencia vence",
+                    "type": "string",
+                    "format": "date",
+                    "x-nullable": true
+                },
+                "id_vehiculo_asignado": {
+                    "title": "Id vehiculo asignado",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "vehiculo_placa": {
+                    "title": "Vehiculo placa",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "disponible": {
+                    "title": "Disponible",
+                    "type": "boolean"
+                },
+                "activo": {
+                    "title": "Activo",
+                    "description": "Indica si el registro está activo (False = borrado lógico).",
+                    "type": "boolean"
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_actualizacion": {
+                    "title": "Fecha de Actualización",
+                    "description": "Fecha y hora de la última modificación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
         "DetalleDespacho": {
             "type": "object",
             "properties": {
@@ -67220,7 +68733,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-23T07:44:19.848614-04:00"
+                    "default": "2026-11-23T08:20:54.253917-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",
@@ -67321,6 +68834,979 @@
                     "description": "Indica si el registro está activo (False = borrado lógico).",
                     "type": "boolean",
                     "readOnly": true
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_actualizacion": {
+                    "title": "Fecha de Actualización",
+                    "description": "Fecha y hora de la última modificación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
+        "ParadaEntrega": {
+            "type": "object",
+            "properties": {
+                "id_parada": {
+                    "title": "Id parada",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_ruta": {
+                    "title": "Id ruta",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_despacho": {
+                    "title": "Id despacho",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "despacho_numero": {
+                    "title": "Despacho numero",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "id_direccion_cliente": {
+                    "title": "Id direccion cliente",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "secuencia": {
+                    "title": "Secuencia",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "estado": {
+                    "title": "Estado",
+                    "type": "string",
+                    "enum": [
+                        "PENDIENTE",
+                        "EN_CAMINO",
+                        "ENTREGADA",
+                        "ENTREGA_PARCIAL",
+                        "RECHAZADA"
+                    ],
+                    "readOnly": true
+                },
+                "estado_display": {
+                    "title": "Estado display",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "latitud": {
+                    "title": "Latitud",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "longitud": {
+                    "title": "Longitud",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "direccion_texto": {
+                    "title": "Direccion texto",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "distancia_tramo_km": {
+                    "title": "Distancia tramo km",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "eta_estimada": {
+                    "title": "Eta estimada",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "fecha_llegada_real": {
+                    "title": "Fecha llegada real",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "token_tracking": {
+                    "title": "Token tracking",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "epod_receptor_nombre": {
+                    "title": "Epod receptor nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "epod_receptor_cedula": {
+                    "title": "Epod receptor cedula",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "epod_firma_base64": {
+                    "title": "Epod firma base64",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "epod_foto_url": {
+                    "title": "Epod foto url",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "epod_latitud": {
+                    "title": "Epod latitud",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "epod_longitud": {
+                    "title": "Epod longitud",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "epod_observaciones": {
+                    "title": "Epod observaciones",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "motivo_rechazo": {
+                    "title": "Motivo rechazo",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "monto_cobrado_en_sitio": {
+                    "title": "Monto cobrado en sitio",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "id_pago_cobro": {
+                    "title": "Id pago cobro",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "activo": {
+                    "title": "Activo",
+                    "description": "Indica si el registro está activo (False = borrado lógico).",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_actualizacion": {
+                    "title": "Fecha de Actualización",
+                    "description": "Fecha y hora de la última modificación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
+        "CobroEnSitioInput": {
+            "required": [
+                "monto",
+                "id_metodo_pago",
+                "id_moneda"
+            ],
+            "type": "object",
+            "properties": {
+                "monto": {
+                    "title": "Monto",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "id_metodo_pago": {
+                    "title": "Id metodo pago",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "id_moneda": {
+                    "title": "Id moneda",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "tasa": {
+                    "title": "Tasa",
+                    "type": "string",
+                    "format": "decimal",
+                    "default": "1.0000"
+                },
+                "referencia": {
+                    "title": "Referencia",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 100
+                }
+            },
+            "x-nullable": true
+        },
+        "RegistrarEPODInput": {
+            "type": "object",
+            "properties": {
+                "resultado": {
+                    "title": "Resultado",
+                    "type": "string",
+                    "enum": [
+                        "ENTREGADA",
+                        "ENTREGA_PARCIAL",
+                        "RECHAZADA"
+                    ],
+                    "default": "ENTREGADA"
+                },
+                "receptor_nombre": {
+                    "title": "Receptor nombre",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 150
+                },
+                "receptor_cedula": {
+                    "title": "Receptor cedula",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 40
+                },
+                "firma_base64": {
+                    "title": "Firma base64",
+                    "type": "string",
+                    "default": ""
+                },
+                "foto_url": {
+                    "title": "Foto url",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 500
+                },
+                "latitud": {
+                    "title": "Latitud",
+                    "type": "string",
+                    "format": "decimal",
+                    "x-nullable": true
+                },
+                "longitud": {
+                    "title": "Longitud",
+                    "type": "string",
+                    "format": "decimal",
+                    "x-nullable": true
+                },
+                "observaciones": {
+                    "title": "Observaciones",
+                    "type": "string",
+                    "default": ""
+                },
+                "motivo_rechazo": {
+                    "title": "Motivo rechazo",
+                    "type": "string",
+                    "default": ""
+                },
+                "cobro": {
+                    "$ref": "#/definitions/CobroEnSitioInput"
+                }
+            }
+        },
+        "RutaDespacho": {
+            "required": [
+                "codigo",
+                "fecha_ruta",
+                "id_almacen_origen"
+            ],
+            "type": "object",
+            "properties": {
+                "id_ruta": {
+                    "title": "Id ruta",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "codigo": {
+                    "title": "Codigo",
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 1
+                },
+                "fecha_ruta": {
+                    "title": "Fecha ruta",
+                    "type": "string",
+                    "format": "date"
+                },
+                "id_almacen_origen": {
+                    "title": "Id almacen origen",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "origen_lat": {
+                    "title": "Origen lat",
+                    "type": "string",
+                    "format": "decimal",
+                    "x-nullable": true
+                },
+                "origen_lng": {
+                    "title": "Origen lng",
+                    "type": "string",
+                    "format": "decimal",
+                    "x-nullable": true
+                },
+                "id_vehiculo": {
+                    "title": "Id vehiculo",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "vehiculo_placa": {
+                    "title": "Vehiculo placa",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "id_conductor": {
+                    "title": "Id conductor",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "conductor_nombre": {
+                    "title": "Conductor nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "id_zona": {
+                    "title": "Id zona",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "estado": {
+                    "title": "Estado",
+                    "type": "string",
+                    "enum": [
+                        "PLANIFICADA",
+                        "EN_CURSO",
+                        "COMPLETADA",
+                        "CANCELADA"
+                    ],
+                    "readOnly": true
+                },
+                "estado_display": {
+                    "title": "Estado display",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "distancia_estimada_km": {
+                    "title": "Distancia estimada km",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "duracion_estimada_min": {
+                    "title": "Duracion estimada min",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "peso_total_kg": {
+                    "title": "Peso total kg",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "volumen_total_m3": {
+                    "title": "Volumen total m3",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "costo_flete_estimado_usd": {
+                    "title": "Costo flete estimado usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "proveedor_delivery_externo": {
+                    "title": "Proveedor delivery externo",
+                    "type": "string",
+                    "enum": [
+                        "PROPIO",
+                        "SIMULADO",
+                        "UBER_DIRECT",
+                        "RIDERY",
+                        "YUMMY"
+                    ]
+                },
+                "referencia_delivery_externo": {
+                    "title": "Referencia delivery externo",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "tracking_url_externo": {
+                    "title": "Tracking url externo",
+                    "type": "string",
+                    "format": "uri",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "id_guia_imprenta_digital": {
+                    "title": "Id guia imprenta digital",
+                    "description": "UUID de fiscal.DocumentoImprentaDigital emitido como GUIA_DESPACHO.",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "guia_numero_control": {
+                    "title": "Guia numero control",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "fecha_inicio": {
+                    "title": "Fecha inicio",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "fecha_fin": {
+                    "title": "Fecha fin",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "observaciones": {
+                    "title": "Observaciones",
+                    "type": "string"
+                },
+                "paradas": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ParadaEntrega"
+                    },
+                    "readOnly": true
+                },
+                "activo": {
+                    "title": "Activo",
+                    "description": "Indica si el registro está activo (False = borrado lógico).",
+                    "type": "boolean"
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_actualizacion": {
+                    "title": "Fecha de Actualización",
+                    "description": "Fecha y hora de la última modificación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
+        "CotizarDeliveryInput": {
+            "required": [
+                "proveedor",
+                "origen_lat",
+                "origen_lng",
+                "destino_lat",
+                "destino_lng"
+            ],
+            "type": "object",
+            "properties": {
+                "proveedor": {
+                    "title": "Proveedor",
+                    "type": "string",
+                    "enum": [
+                        "SIMULADO",
+                        "UBER_DIRECT",
+                        "RIDERY",
+                        "YUMMY"
+                    ]
+                },
+                "origen_lat": {
+                    "title": "Origen lat",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "origen_lng": {
+                    "title": "Origen lng",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "destino_lat": {
+                    "title": "Destino lat",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "destino_lng": {
+                    "title": "Destino lng",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "peso_kg": {
+                    "title": "Peso kg",
+                    "type": "string",
+                    "format": "decimal",
+                    "default": "1.0000"
+                }
+            }
+        },
+        "OptimizarVRPInput": {
+            "required": [
+                "id_almacen_origen",
+                "despachos",
+                "vehiculos",
+                "origen_lat",
+                "origen_lng"
+            ],
+            "type": "object",
+            "properties": {
+                "id_almacen_origen": {
+                    "title": "Id almacen origen",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "despachos": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                },
+                "vehiculos": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                },
+                "origen_lat": {
+                    "title": "Origen lat",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "origen_lng": {
+                    "title": "Origen lng",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "fecha_ruta": {
+                    "title": "Fecha ruta",
+                    "type": "string",
+                    "format": "date"
+                },
+                "factor_trafico": {
+                    "title": "Factor trafico",
+                    "type": "string",
+                    "format": "decimal",
+                    "default": "1.00"
+                },
+                "id_zona": {
+                    "title": "Id zona",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                }
+            }
+        },
+        "EmitirGuiaSeniatInput": {
+            "type": "object",
+            "properties": {
+                "proveedor": {
+                    "title": "Proveedor",
+                    "type": "string",
+                    "enum": [
+                        "SIMULADO",
+                        "UNIDIGITAL"
+                    ],
+                    "default": "SIMULADO"
+                }
+            }
+        },
+        "SolicitarDeliveryRutaInput": {
+            "required": [
+                "proveedor",
+                "destino_lat",
+                "destino_lng",
+                "direccion_destino"
+            ],
+            "type": "object",
+            "properties": {
+                "proveedor": {
+                    "title": "Proveedor",
+                    "type": "string",
+                    "enum": [
+                        "SIMULADO",
+                        "UBER_DIRECT",
+                        "RIDERY",
+                        "YUMMY"
+                    ]
+                },
+                "destino_lat": {
+                    "title": "Destino lat",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "destino_lng": {
+                    "title": "Destino lng",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "direccion_destino": {
+                    "title": "Direccion destino",
+                    "type": "string",
+                    "maxLength": 500,
+                    "minLength": 1
+                }
+            }
+        },
+        "TarifaFlete": {
+            "required": [
+                "id_zona"
+            ],
+            "type": "object",
+            "properties": {
+                "id_tarifa": {
+                    "title": "Id tarifa",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_zona": {
+                    "title": "Id zona",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "zona_nombre": {
+                    "title": "Zona nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "tipo_calculo": {
+                    "title": "Tipo calculo",
+                    "type": "string",
+                    "enum": [
+                        "FIJA",
+                        "POR_KG",
+                        "POR_KM",
+                        "POR_M3",
+                        "POR_PALETA"
+                    ]
+                },
+                "monto_base_usd": {
+                    "title": "Monto base usd",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "tarifa_unidad_usd": {
+                    "title": "Tarifa unidad usd",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "minimo_usd": {
+                    "title": "Minimo usd",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "moneda_referencia": {
+                    "title": "Moneda referencia",
+                    "type": "string",
+                    "maxLength": 10,
+                    "minLength": 1
+                },
+                "activo": {
+                    "title": "Activo",
+                    "description": "Indica si el registro está activo (False = borrado lógico).",
+                    "type": "boolean"
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_actualizacion": {
+                    "title": "Fecha de Actualización",
+                    "description": "Fecha y hora de la última modificación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
+        "Vehiculo": {
+            "required": [
+                "placa",
+                "marca_modelo"
+            ],
+            "type": "object",
+            "properties": {
+                "id_vehiculo": {
+                    "title": "Id vehiculo",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "placa": {
+                    "title": "Placa",
+                    "type": "string",
+                    "maxLength": 25,
+                    "minLength": 1
+                },
+                "marca_modelo": {
+                    "title": "Marca modelo",
+                    "type": "string",
+                    "maxLength": 120,
+                    "minLength": 1
+                },
+                "tipo_vehiculo": {
+                    "title": "Tipo vehiculo",
+                    "type": "string",
+                    "enum": [
+                        "MOTO",
+                        "PANEL",
+                        "CAMION_350",
+                        "CAMION_750",
+                        "GANDOLA",
+                        "EXTERNO"
+                    ]
+                },
+                "capacidad_kg": {
+                    "title": "Capacidad kg",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "capacidad_m3": {
+                    "title": "Capacidad m3",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "capacidad_paletas": {
+                    "title": "Capacidad paletas",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "capacidad_litros": {
+                    "title": "Capacidad litros",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "velocidad_promedio_kmh": {
+                    "title": "Velocidad promedio kmh",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "estado": {
+                    "title": "Estado",
+                    "type": "string",
+                    "enum": [
+                        "DISPONIBLE",
+                        "EN_RUTA",
+                        "MANTENIMIENTO",
+                        "INACTIVO"
+                    ]
+                },
+                "latitud_actual": {
+                    "title": "Latitud actual",
+                    "type": "string",
+                    "format": "decimal",
+                    "x-nullable": true
+                },
+                "longitud_actual": {
+                    "title": "Longitud actual",
+                    "type": "string",
+                    "format": "decimal",
+                    "x-nullable": true
+                },
+                "gps_actualizado_en": {
+                    "title": "Gps actualizado en",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "activo": {
+                    "title": "Activo",
+                    "description": "Indica si el registro está activo (False = borrado lógico).",
+                    "type": "boolean"
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_actualizacion": {
+                    "title": "Fecha de Actualización",
+                    "description": "Fecha y hora de la última modificación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
+        "ActualizarGPSVehiculoInput": {
+            "required": [
+                "latitud",
+                "longitud"
+            ],
+            "type": "object",
+            "properties": {
+                "latitud": {
+                    "title": "Latitud",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "longitud": {
+                    "title": "Longitud",
+                    "type": "string",
+                    "format": "decimal"
+                }
+            }
+        },
+        "ZonaLogistica": {
+            "required": [
+                "codigo",
+                "nombre"
+            ],
+            "type": "object",
+            "properties": {
+                "id_zona": {
+                    "title": "Id zona",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "codigo": {
+                    "title": "Codigo",
+                    "type": "string",
+                    "maxLength": 30,
+                    "minLength": 1
+                },
+                "nombre": {
+                    "title": "Nombre",
+                    "type": "string",
+                    "maxLength": 120,
+                    "minLength": 1
+                },
+                "ciudad": {
+                    "title": "Ciudad",
+                    "type": "string",
+                    "maxLength": 100
+                },
+                "estado_provincia": {
+                    "title": "Estado provincia",
+                    "type": "string",
+                    "maxLength": 100
+                },
+                "centro_lat": {
+                    "title": "Centro lat",
+                    "type": "string",
+                    "format": "decimal",
+                    "x-nullable": true
+                },
+                "centro_lng": {
+                    "title": "Centro lng",
+                    "type": "string",
+                    "format": "decimal",
+                    "x-nullable": true
+                },
+                "radio_km": {
+                    "title": "Radio km",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "tarifa_base_usd": {
+                    "title": "Tarifa base usd",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "tiempo_servicio_min": {
+                    "title": "Tiempo servicio min",
+                    "type": "integer",
+                    "maximum": 2147483647,
+                    "minimum": 0
+                },
+                "observaciones": {
+                    "title": "Observaciones",
+                    "type": "string"
+                },
+                "activo": {
+                    "title": "Activo",
+                    "description": "Indica si el registro está activo (False = borrado lógico).",
+                    "type": "boolean"
                 },
                 "fecha_creacion": {
                     "title": "Fecha de Creación",

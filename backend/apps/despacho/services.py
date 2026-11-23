@@ -251,11 +251,12 @@ def transicionar_despacho(
         update_fields.append("fecha_en_ruta")
 
     elif nuevo_estado == Despacho.ESTADO_ENTREGADO:
-        if not (receptor or "").strip():
+        receptor_limpio = (receptor or "").strip()
+        if not receptor_limpio:
             raise DespachoError("Para marcar ENTREGADO se requiere el nombre del receptor.")
         despacho.fecha_entrega_real = ahora
         documento["entrega"] = {
-            "receptor": receptor.strip(),
+            "receptor": receptor_limpio,
             "documento_receptor": (documento_receptor or "").strip() or None,
             "firma_base64": firma_base64 or None,
             "registrado_por": str(usuario.pk),
@@ -265,11 +266,12 @@ def transicionar_despacho(
         update_fields += ["fecha_entrega_real", "documento_json"]
 
     elif nuevo_estado == Despacho.ESTADO_DEVUELTO:
-        if not (motivo or "").strip():
+        motivo_limpio = (motivo or "").strip()
+        if not motivo_limpio:
             raise DespachoError("Para marcar DEVUELTO se requiere el motivo de la devolución.")
         despacho.fecha_devolucion = ahora
         documento["devolucion"] = {
-            "motivo": motivo.strip(),
+            "motivo": motivo_limpio,
             "registrado_por": str(usuario.pk),
             "fecha": ahora.isoformat(),
         }
@@ -277,11 +279,12 @@ def transicionar_despacho(
         update_fields += ["fecha_devolucion", "documento_json"]
 
     elif nuevo_estado == Despacho.ESTADO_CANCELADO:
-        if not (motivo or "").strip():
+        motivo_limpio = (motivo or "").strip()
+        if not motivo_limpio:
             raise DespachoError("Para CANCELAR se requiere el motivo de la cancelación.")
         despacho.fecha_cancelacion = ahora
         documento["cancelacion"] = {
-            "motivo": motivo.strip(),
+            "motivo": motivo_limpio,
             "registrado_por": str(usuario.pk),
             "fecha": ahora.isoformat(),
         }
