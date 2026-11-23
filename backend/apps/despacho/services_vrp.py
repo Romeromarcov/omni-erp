@@ -220,7 +220,15 @@ def _ordenar_nearest_neighbor_y_2opt(
 
 
 def _siguiente_codigo_ruta(empresa) -> str:
-    n = RutaDespacho.objects.filter(id_empresa=empresa).count() + 1
+    # Serializa correlativo contra creación simultánea o manual bloqueando filas existentes.
+    usados = set(
+        RutaDespacho.objects.select_for_update()
+        .filter(id_empresa=empresa, codigo__startswith="RUTA-")
+        .values_list("codigo", flat=True)
+    )
+    n = len(usados) + 1
+    while f"RUTA-{n:06d}" in usados:
+        n += 1
     return f"RUTA-{n:06d}"
 
 
@@ -239,10 +247,10 @@ def optimizar_rutas_vrp(
     coords_override: dict[str, tuple[Any, Any]] | None = None,
 ) -> dict[str, Any]:
     """Asigna despachos a vehículos por capacidad y optimiza la secuencia de paradas (NN + 2-opt)."""
-    if almacen_origen.id_empresa_id != empresa.pk:
-        raise VRPError("El almacén de origen no pertenece a la empresa.")
-    if zona is not None and zona.id_empresa_id != empresa.pk:
-        raise VRPError("La zona logística no pertenece a la empresa.")
+    if almacen_origen.id_empresa_id != empresa.pk or not almacen_origen.activo:
+        raise VRPError("El almacén de origen no pertenece a la empresa o está inactivo.")
+    if zona is not None and (zona.id_empresa_id != empresa.pk or not zona.activo):
+        raise VRPError("La zona logística no pertenece a la empresa o está inactiva.")
     if not despachos:
         raise VRPError("Debe indicar al menos un despacho pendiente para planificar.")
     if not vehiculos:
@@ -253,14 +261,45 @@ def optimizar_rutas_vrp(
     if f_trafico < Decimal("0.50") or f_trafico > Decimal("5.00"):
         raise VRPError("El factor_trafico debe estar entre 0.50 y 5.00.")
 
+    # Bloqueo pesimista ordenado por PK para prevenir doble asignación concurrente.
+    desp_ids = sorted({d.pk for d in despachos})
+    veh_ids = sorted({v.pk for v in vehiculos})
+    desp_locked_map = {
+        d.pk: d
+        for d in Despacho.objects.select_for_update(of=("self",))
+        .select_related("id_nota_venta", "id_nota_venta__id_cliente")
+        .filter(pk__in=desp_ids)
+        .order_by("pk")
+    }
+    veh_locked_map = {
+        v.pk: v for v in Vehiculo.objects.select_for_update(of=("self",)).filter(pk__in=veh_ids).order_by("pk")
+    }
+    desp_en_ruta_activa = set(
+        ParadaEntrega.objects.filter(
+            id_empresa=empresa,
+            id_despacho_id__in=desp_ids,
+            activo=True,
+            id_ruta__activo=True,
+            id_ruta__estado__in=("PLANIFICADA", "EN_CURSO"),
+            estado__in=("PENDIENTE", "EN_CAMINO"),
+        ).values_list("id_despacho_id", flat=True)
+    )
+
     nodos: list[_DespachoNode] = []
-    for desp in despachos:
-        if desp.id_empresa_id != empresa.pk:
-            raise VRPError(f"El despacho '{desp.numero_despacho}' no pertenece a la empresa.")
+    vistas_desp: set[Any] = set()
+    for desp_arg in despachos:
+        if desp_arg.pk in vistas_desp:
+            continue
+        vistas_desp.add(desp_arg.pk)
+        desp = desp_locked_map.get(desp_arg.pk, desp_arg)
+        if desp.id_empresa_id != empresa.pk or not desp.activo:
+            raise VRPError(f"El despacho '{desp.numero_despacho}' no pertenece a la empresa o está inactivo.")
         if desp.estado_despacho != Despacho.ESTADO_PENDIENTE:
             raise VRPError(
                 f"El despacho '{desp.numero_despacho}' debe estar PENDIENTE (actual: {desp.estado_despacho})."
             )
+        if desp.pk in desp_en_ruta_activa:
+            raise VRPError(f"El despacho '{desp.numero_despacho}' ya está asignado a otra ruta activa.")
         peso, vol = _extraer_peso_volumen_despacho(desp)
         direc_obj, d_lat, d_lng, win = _resolver_coord_despacho(
             desp, coords_override=coords_override, origen_lat=o_lat, origen_lng=o_lng
@@ -278,9 +317,14 @@ def optimizar_rutas_vrp(
         )
 
     vehiculos_activos = []
-    for veh in vehiculos:
-        if veh.id_empresa_id != empresa.pk:
-            raise VRPError(f"El vehículo '{veh.placa}' no pertenece a la empresa.")
+    vistos_veh: set[Any] = set()
+    for veh_arg in vehiculos:
+        if veh_arg.pk in vistos_veh:
+            continue
+        vistos_veh.add(veh_arg.pk)
+        veh = veh_locked_map.get(veh_arg.pk, veh_arg)
+        if veh.id_empresa_id != empresa.pk or not veh.activo:
+            raise VRPError(f"El vehículo '{veh.placa}' no pertenece a la empresa o está inactivo.")
         if veh.estado != "DISPONIBLE":
             raise VRPError(f"El vehículo '{veh.placa}' no está DISPONIBLE (estado: {veh.estado}).")
         vehiculos_activos.append(veh)

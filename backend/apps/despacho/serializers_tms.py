@@ -101,6 +101,21 @@ class VehiculoSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id_vehiculo", "id_empresa", "gps_actualizado_en", "fecha_creacion", "fecha_actualizacion"]
 
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        lat = attrs.get("latitud_actual")
+        lng = attrs.get("longitud_actual")
+        if lat is not None and (lat < Decimal("-90") or lat > Decimal("90")):
+            raise serializers.ValidationError({"latitud_actual": "Latitud fuera de rango [-90, 90]."})
+        if lng is not None and (lng < Decimal("-180") or lng > Decimal("180")):
+            raise serializers.ValidationError({"longitud_actual": "Longitud fuera de rango [-180, 180]."})
+        if self.instance is not None and "estado" in attrs and self.instance.estado == "EN_RUTA":
+            if attrs["estado"] != "EN_RUTA":
+                raise serializers.ValidationError(
+                    {"estado": "No se puede cambiar manualmente el estado de un vehículo EN_RUTA."}
+                )
+        return attrs
+
 
 class ConductorSerializer(serializers.ModelSerializer):
     vehiculo_placa = serializers.CharField(source="id_vehiculo_asignado.placa", read_only=True)

@@ -8,15 +8,28 @@ Expone ``ProveedorDeliveryExterno`` y adaptadores concretos:
 from __future__ import annotations
 
 import hashlib
+import logging
 from abc import ABC, abstractmethod
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Any, Callable
+from urllib.parse import quote
 
 import requests
+
+logger = logging.getLogger(__name__)
 
 
 class DeliveryExternoError(Exception):
     """Error al cotizar, solicitar, consultar o cancelar con proveedor externo."""
+
+
+def _safe_int(val: Any, *, default: int, campo: str) -> int:
+    if val is None or val == "":
+        return default
+    try:
+        return int(val)
+    except (TypeError, ValueError) as exc:
+        raise DeliveryExternoError(f"Respuesta inválida del proveedor externo en '{campo}'.") from exc
 
 
 class ProveedorDeliveryExterno(ABC):
@@ -177,7 +190,8 @@ class _BaseHttpDeliveryAdapter(ProveedorDeliveryExterno):
             resp.raise_for_status()
             return dict(resp.json())
         except Exception as exc:
-            raise DeliveryExternoError(f"Error comunicando con '{self.codigo}': {exc}") from exc
+            logger.warning("delivery_externo error | provider=%s | err=%s", self.codigo, type(exc).__name__)
+            raise DeliveryExternoError(f"Error de comunicación con el proveedor externo '{self.codigo}'.") from exc
 
     def cotizar(
         self,
@@ -200,7 +214,7 @@ class _BaseHttpDeliveryAdapter(ProveedorDeliveryExterno):
         return {
             "proveedor": self.codigo,
             "tarifa_usd": str(data.get("tarifa_usd", data.get("fee", "0.0000"))),
-            "eta_minutos": int(data.get("eta_minutos", data.get("duration", 20))),
+            "eta_minutos": _safe_int(data.get("eta_minutos", data.get("duration")), default=20, campo="eta_minutos"),
             "moneda": str(data.get("moneda", "USD")),
         }
 
@@ -225,28 +239,33 @@ class _BaseHttpDeliveryAdapter(ProveedorDeliveryExterno):
                 "weight_kg": str(peso_kg),
             },
         )
+        ref = str(data.get("referencia_externa") or "").strip()
+        if not ref:
+            raise DeliveryExternoError("Respuesta inválida del proveedor externo: falta 'referencia_externa'.")
         return {
             "proveedor": self.codigo,
-            "referencia_externa": str(data["referencia_externa"]),
+            "referencia_externa": ref,
             "tracking_url": str(data.get("tracking_url", "")),
             "tarifa_usd": str(data.get("tarifa_usd", "0.0000")),
-            "eta_minutos": int(data.get("eta_minutos", 20)),
+            "eta_minutos": _safe_int(data.get("eta_minutos"), default=20, campo="eta_minutos"),
             "estado": str(data.get("estado", "ASIGNADO")),
         }
 
     def consultar_tracking(self, *, referencia_externa: str) -> dict[str, Any]:
-        data = self._call("GET", f"/deliveries/{referencia_externa}")
+        ref_q = quote(str(referencia_externa), safe="")
+        data = self._call("GET", f"/deliveries/{ref_q}")
         return {
             "proveedor": self.codigo,
             "referencia_externa": referencia_externa,
             "estado": str(data.get("estado", "EN_CAMINO")),
             "latitud_repartidor": str(data.get("latitud_repartidor", "")),
             "longitud_repartidor": str(data.get("longitud_repartidor", "")),
-            "eta_minutos": int(data.get("eta_minutos", 15)),
+            "eta_minutos": _safe_int(data.get("eta_minutos"), default=15, campo="eta_minutos"),
         }
 
     def cancelar_entrega(self, *, referencia_externa: str, motivo: str = "") -> dict[str, Any]:
-        data = self._call("POST", f"/deliveries/{referencia_externa}/cancel", {"motivo": motivo})
+        ref_q = quote(str(referencia_externa), safe="")
+        data = self._call("POST", f"/deliveries/{ref_q}/cancel", {"motivo": motivo})
         return {
             "proveedor": self.codigo,
             "referencia_externa": referencia_externa,

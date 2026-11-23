@@ -13,6 +13,7 @@ from rest_framework.views import APIView
 from apps.almacenes.models import Almacen
 from apps.core.exceptions import domain_error_response
 from apps.core.idempotency import idempotent
+from apps.core.rls import rls_bypass
 from apps.core.serializer_mixins import TenantFKScopeMixin
 from apps.core.throttling import EscrituraRateThrottle
 from apps.core.viewsets import (
@@ -101,7 +102,7 @@ class ZonaLogisticaViewSet(
     ordering = ["nombre"]
 
     def get_queryset(self):
-        return ZonaLogistica.objects.filter(id_empresa__in=get_empresas_visible(self.request.user))
+        return super().get_queryset().filter(id_empresa__in=get_empresas_visible(self.request.user))
 
 
 class TarifaFleteViewSet(
@@ -120,8 +121,11 @@ class TarifaFleteViewSet(
     ordering = ["-fecha_creacion"]
 
     def get_queryset(self):
-        qs = TarifaFlete.objects.filter(id_empresa__in=get_empresas_visible(self.request.user)).select_related(
-            "id_zona"
+        qs = (
+            super()
+            .get_queryset()
+            .filter(id_empresa__in=get_empresas_visible(self.request.user))
+            .select_related("id_zona")
         )
         zona_id = self.request.query_params.get("zona")
         if zona_id:
@@ -145,13 +149,14 @@ class VehiculoViewSet(
     ordering = ["placa"]
 
     def get_queryset(self):
-        qs = Vehiculo.objects.filter(id_empresa__in=get_empresas_visible(self.request.user))
+        qs = super().get_queryset().filter(id_empresa__in=get_empresas_visible(self.request.user))
         estado = _no_nul(self.request.query_params.get("estado"), "estado")
         if estado:
             qs = qs.filter(estado=estado.upper())
         return qs
 
     @swagger_auto_schema(request_body=ActualizarGPSVehiculoInputSerializer)
+    @idempotent(scope="despacho:actualizar_gps")
     @action(
         detail=True,
         methods=["post"],
@@ -187,8 +192,11 @@ class ConductorViewSet(
     ordering = ["nombre_completo"]
 
     def get_queryset(self):
-        return Conductor.objects.filter(id_empresa__in=get_empresas_visible(self.request.user)).select_related(
-            "id_vehiculo_asignado"
+        return (
+            super()
+            .get_queryset()
+            .filter(id_empresa__in=get_empresas_visible(self.request.user))
+            .select_related("id_vehiculo_asignado")
         )
 
 
@@ -204,7 +212,9 @@ class RutaDespachoViewSet(
 
     def get_queryset(self):
         qs = (
-            RutaDespacho.objects.filter(id_empresa__in=get_empresas_visible(self.request.user))
+            super()
+            .get_queryset()
+            .filter(id_empresa__in=get_empresas_visible(self.request.user))
             .select_related("id_almacen_origen", "id_vehiculo", "id_conductor", "id_zona")
             .prefetch_related("paradas__id_despacho")
         )
@@ -225,6 +235,7 @@ class RutaDespachoViewSet(
         instance.save(update_fields=["activo", "fecha_actualizacion"])
 
     @swagger_auto_schema(request_body=OptimizarVRPInputSerializer)
+    @idempotent(scope="despacho:optimizar_vrp")
     @action(
         detail=False,
         methods=["post"],
@@ -238,23 +249,23 @@ class RutaDespachoViewSet(
         vd = ser.validated_data
         empresa = _resolver_empresa(request)
 
-        alm = Almacen.objects.filter(pk=vd["id_almacen_origen"], id_empresa=empresa).first()
+        alm = Almacen.objects.filter(pk=vd["id_almacen_origen"], id_empresa=empresa, activo=True).first()
         if alm is None:
             return Response({"id_almacen_origen": "Almacén no encontrado."}, status=status.HTTP_404_NOT_FOUND)
 
         zona = None
         if vd.get("id_zona"):
-            zona = ZonaLogistica.objects.filter(pk=vd["id_zona"], id_empresa=empresa).first()
+            zona = ZonaLogistica.objects.filter(pk=vd["id_zona"], id_empresa=empresa, activo=True).first()
             if zona is None:
                 return Response({"id_zona": "Zona logística no encontrada."}, status=status.HTTP_404_NOT_FOUND)
 
-        despachos = list(Despacho.objects.filter(id_empresa=empresa, pk__in=vd["despachos"]))
+        despachos = list(Despacho.objects.filter(id_empresa=empresa, pk__in=vd["despachos"], activo=True))
         if len(despachos) != len(set(vd["despachos"])):
             return Response(
                 {"despachos": "Uno o más despachos no existen en la empresa."}, status=status.HTTP_404_NOT_FOUND
             )
 
-        vehiculos = list(Vehiculo.objects.filter(id_empresa=empresa, pk__in=vd["vehiculos"]))
+        vehiculos = list(Vehiculo.objects.filter(id_empresa=empresa, pk__in=vd["vehiculos"], activo=True))
         if len(vehiculos) != len(set(vd["vehiculos"])):
             return Response(
                 {"vehiculos": "Uno o más vehículos no existen en la empresa."}, status=status.HTTP_404_NOT_FOUND
@@ -303,6 +314,7 @@ class RutaDespachoViewSet(
         return Response(RutaDespachoSerializer(upd, context={"request": request}).data)
 
     @swagger_auto_schema(request_body=no_body)
+    @idempotent(scope="despacho:cancelar_ruta")
     @action(
         detail=True,
         methods=["post"],
@@ -319,7 +331,12 @@ class RutaDespachoViewSet(
         return Response(RutaDespachoSerializer(upd, context={"request": request}).data)
 
     @swagger_auto_schema(request_body=CotizarDeliveryInputSerializer)
-    @action(detail=False, methods=["post"], url_path="cotizar-delivery")
+    @action(
+        detail=False,
+        methods=["post"],
+        url_path="cotizar-delivery",
+        throttle_classes=[*viewsets.ModelViewSet.throttle_classes, EscrituraRateThrottle],
+    )
     def cotizar_delivery(self, request):
         """Cotiza tarifa y ETA con proveedor externo (Uber Direct / Ridery / Yummy / Simulado)."""
         ser = CotizarDeliveryInputSerializer(data=request.data)
@@ -409,8 +426,11 @@ class ParadaEntregaViewSet(TenantFKScopeMixin, NulSafeFilterMixin, ActiveFilterM
     ordering = ["secuencia"]
 
     def get_queryset(self):
-        qs = ParadaEntrega.objects.filter(id_empresa__in=get_empresas_visible(self.request.user)).select_related(
-            "id_ruta", "id_despacho"
+        qs = (
+            super()
+            .get_queryset()
+            .filter(id_empresa__in=get_empresas_visible(self.request.user))
+            .select_related("id_ruta", "id_despacho")
         )
         ruta_id = self.request.query_params.get("ruta")
         if ruta_id:
@@ -464,7 +484,11 @@ class ParadaEntregaViewSet(TenantFKScopeMixin, NulSafeFilterMixin, ActiveFilterM
         """Genera el enlace público de tracking y deeplink listo para WhatsApp."""
         parada = self.get_object()
         base_url = _no_nul(request.query_params.get("base_url"), "base_url") or ""
-        return Response(generar_payload_tracking_whatsapp(parada, base_url=base_url), status=status.HTTP_200_OK)
+        try:
+            payload = generar_payload_tracking_whatsapp(parada, base_url=base_url)
+        except TMSError as exc:
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail")
+        return Response(payload, status=status.HTTP_200_OK)
 
 
 class TrackingPublicoParadaView(APIView):
@@ -475,16 +499,21 @@ class TrackingPublicoParadaView(APIView):
 
     def get(self, request, token):
         uid = validar_uuid_param(str(token), "token")
-        parada = (
-            ParadaEntrega.objects.select_related("id_ruta", "id_ruta__id_vehiculo", "id_despacho")
-            .filter(token_tracking=uid, activo=True)
-            .first()
-        )
-        if parada is None:
-            return Response({"detail": "Tracking no encontrado."}, status=status.HTTP_404_NOT_FOUND)
-        veh = parada.id_ruta.id_vehiculo
-        return Response(
-            {
+        with rls_bypass():
+            parada = (
+                ParadaEntrega.objects.select_related("id_ruta", "id_ruta__id_vehiculo", "id_despacho")
+                .filter(
+                    token_tracking=uid,
+                    activo=True,
+                    id_ruta__activo=True,
+                    id_empresa__activo=True,
+                )
+                .first()
+            )
+            if parada is None:
+                return Response({"detail": "Tracking no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+            veh = parada.id_ruta.id_vehiculo
+            payload = {
                 "numero_despacho": parada.id_despacho.numero_despacho,
                 "ruta_codigo": parada.id_ruta.codigo,
                 "secuencia": parada.secuencia,
@@ -496,6 +525,5 @@ class TrackingPublicoParadaView(APIView):
                 "vehiculo_lng": str(veh.longitud_actual) if veh and veh.longitud_actual is not None else None,
                 "proveedor_delivery_externo": parada.id_ruta.proveedor_delivery_externo,
                 "tracking_url_externo": parada.id_ruta.tracking_url_externo,
-            },
-            status=status.HTTP_200_OK,
-        )
+            }
+        return Response(payload, status=status.HTTP_200_OK)

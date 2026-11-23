@@ -1232,3 +1232,201 @@ class TestEdgeCasesTMSYAdapters:
             registrar_epod_parada(
                 p_real, ctx["user"], resultado="ENTREGADA", receptor_nombre="Ana", cobro={"monto": "abc"}
             )
+
+    def test_hardening_rls_tracking_soft_delete_vrp_lock_y_sanitizacion(
+        self, rls_test_role, empresa_a, empresa_b, moneda_usd, metodo_efectivo
+    ):
+        from unittest.mock import patch
+
+        from rest_framework.test import APIClient
+
+        from apps.core.rls import apply_context
+        from apps.despacho.delivery_externo import DeliveryExternoError, UberDirectAdapter
+        from apps.despacho.models import RutaDespacho, Vehiculo, ZonaLogistica
+        from apps.despacho.serializers_tms import VehiculoSerializer
+        from apps.despacho.services_tms import TMSError, registrar_epod_parada
+        from apps.despacho.services_vrp import VRPError, optimizar_rutas_vrp
+        from apps.finanzas.models import MetodoPago, Moneda
+
+        ctx = _setup_tms_base(empresa_a, moneda_usd)
+        veh = Vehiculo.objects.create(id_empresa=empresa_a, placa="VHARD1", marca_modelo="Iveco")
+        veh_inact = Vehiculo.objects.create(
+            id_empresa=empresa_a, placa="VINACT", marca_modelo="Inactivo", activo=False
+        )
+
+        # MEDIO #4: _siguiente_codigo_ruta evita colisión con ruta manual RUTA-000001
+        RutaDespacho.objects.create(
+            id_empresa=empresa_a,
+            codigo="RUTA-000001",
+            fecha_ruta=timezone.localdate(),
+            id_almacen_origen=ctx["alm"],
+            estado="PLANIFICADA",
+        )
+        res = optimizar_rutas_vrp(
+            empresa=empresa_a,
+            almacen_origen=ctx["alm"],
+            despachos=ctx["despachos"][:1],
+            vehiculos=[veh],
+            origen_lat="10.48",
+            origen_lng="-66.90",
+        )
+        ruta = res["rutas"][0]
+        assert ruta.codigo == "RUTA-000002"
+        parada = ruta.paradas.first()
+
+        # MEDIO #4: Despacho ya asignado a una ruta activa no puede re-planificarse en paralelo
+        with pytest.raises(VRPError):
+            optimizar_rutas_vrp(
+                empresa=empresa_a,
+                almacen_origen=ctx["alm"],
+                despachos=ctx["despachos"][:1],
+                vehiculos=[veh],
+                origen_lat="10.48",
+                origen_lng="-66.90",
+            )
+
+        # MEDIO #3: ActiveFilterMixin oculta inactivos por defecto y los muestra con ?incluir_inactivos=true
+        client = APIClient()
+        client.force_authenticate(user=ctx["user"])
+        zona = ZonaLogistica.objects.create(id_empresa=empresa_a, codigo="Z-ACT", nombre="Z Act", activo=False)
+        assert not any(
+            z["id_zona"] == str(zona.pk) for z in client.get("/api/despacho/zonas-logisticas/").data["results"]
+        )
+        assert any(
+            z["id_zona"] == str(zona.pk)
+            for z in client.get("/api/despacho/zonas-logisticas/?incluir_inactivos=true").data["results"]
+        )
+        assert not any(
+            v["id_vehiculo"] == str(veh_inact.pk) for v in client.get("/api/despacho/vehiculos/").data["results"]
+        )
+        # optimizar-vrp rechaza vehículo soft-deleted con 404
+        assert (
+            client.post(
+                "/api/despacho/rutas/optimizar-vrp/",
+                {
+                    "id_almacen_origen": str(ctx["alm"].pk),
+                    "despachos": [str(ctx["despachos"][1].pk)],
+                    "vehiculos": [str(veh_inact.pk)],
+                    "origen_lat": "10.48",
+                    "origen_lng": "-66.90",
+                },
+                format="json",
+            ).status_code
+            == 404
+        )
+
+        # BAJO #6: VehiculoSerializer valida rango lat/lng y bloqueo de estado si EN_RUTA
+        assert (
+            VehiculoSerializer(
+                data={"placa": "VBADGPS", "marca_modelo": "X", "latitud_actual": "120.0", "longitud_actual": "-66.9"}
+            ).is_valid()
+            is False
+        )
+        assert (
+            VehiculoSerializer(
+                data={"placa": "VBADLN", "marca_modelo": "X", "latitud_actual": "10.5", "longitud_actual": "-200.0"}
+            ).is_valid()
+            is False
+        )
+        veh.estado = "EN_RUTA"
+        veh.save(update_fields=["estado"])
+        assert VehiculoSerializer(instance=veh, data={"estado": "DISPONIBLE"}, partial=True).is_valid() is False
+        veh.estado = "DISPONIBLE"
+        veh.save(update_fields=["estado"])
+
+        # BAJO #6: whatsapp-tracking rechaza esquemas peligrosos
+        assert (
+            client.get(
+                f"/api/despacho/paradas/{parada.pk}/whatsapp-tracking/?base_url=javascript:alert(1)"
+            ).status_code
+            == 400
+        )
+
+        # ALTO #2: registrar_epod_parada rechaza MetodoPago/Moneda privados de otra empresa o inactivos
+        mp_priv_b = MetodoPago.objects.create(
+            nombre_metodo="Privado Beta",
+            tipo_metodo="EFECTIVO",
+            empresa=empresa_b,
+            es_generico=False,
+            es_publico=False,
+            activo=True,
+        )
+        mon_priv_b = Moneda.objects.create(
+            codigo_iso=f"Z{uuid.uuid4().hex[:3].upper()}",
+            nombre="Moneda Beta Privada",
+            simbolo="B",
+            empresa=empresa_b,
+            es_generica=False,
+            es_publica=False,
+            activo=True,
+        )
+        with pytest.raises(TMSError):
+            registrar_epod_parada(
+                parada,
+                ctx["user"],
+                resultado="ENTREGADA",
+                receptor_nombre="Ana",
+                cobro={"monto": "10", "id_metodo_pago": str(mp_priv_b.pk), "id_moneda": str(moneda_usd.pk)},
+            )
+        with pytest.raises(TMSError):
+            registrar_epod_parada(
+                parada,
+                ctx["user"],
+                resultado="ENTREGADA",
+                receptor_nombre="Ana",
+                cobro={"monto": "10", "id_metodo_pago": str(metodo_efectivo.pk), "id_moneda": str(mon_priv_b.pk)},
+            )
+
+        # ALTO #1: TrackingPublicoParadaView funciona incluso bajo RLS fail-closed y da 404 si ruta.activo=False
+        from django.test import override_settings
+
+        anon = APIClient()
+        with override_settings(RLS_ENABLED=True):
+            apply_context([], bypass=False)
+            try:
+                r_pub = anon.get(f"/api/despacho/tracking/{parada.token_tracking}/")
+                assert r_pub.status_code == 200
+                assert r_pub.data["ruta_codigo"] == ruta.codigo
+            finally:
+                apply_context([], bypass=True)
+        ruta.activo = False
+        ruta.save(update_fields=["activo"])
+        assert anon.get(f"/api/despacho/tracking/{parada.token_tracking}/").status_code == 404
+
+        # MEDIO #5: delivery_externo sanitiza excepciones, valida referencia_externa y eta_minutos, y hace quote
+        adp = UberDirectAdapter(base_url="https://api.uber.local", api_token="secret-tok")
+        with patch("apps.despacho.delivery_externo.requests.request", side_effect=RuntimeError("secret-url-leak")):
+            with pytest.raises(DeliveryExternoError) as err:
+                adp.cotizar(
+                    origen_lat=Decimal("10.48"),
+                    origen_lng=Decimal("-66.90"),
+                    destino_lat=Decimal("10.50"),
+                    destino_lng=Decimal("-66.85"),
+                    peso_kg=Decimal("5"),
+                )
+            assert "secret-url-leak" not in str(err.value)
+        adp_bad = UberDirectAdapter(transport=lambda **kw: {"eta_minutos": "no-num"})
+        with pytest.raises(DeliveryExternoError):
+            adp_bad.cotizar(
+                origen_lat=Decimal("10.48"),
+                origen_lng=Decimal("-66.90"),
+                destino_lat=Decimal("10.50"),
+                destino_lng=Decimal("-66.85"),
+                peso_kg=Decimal("5"),
+            )
+        with pytest.raises(DeliveryExternoError):
+            adp_bad.solicitar_entrega(
+                referencia_ruta="R",
+                origen_lat=Decimal("10.48"),
+                origen_lng=Decimal("-66.90"),
+                destino_lat=Decimal("10.50"),
+                destino_lng=Decimal("-66.85"),
+                direccion_destino="Dir",
+                peso_kg=Decimal("5"),
+            )
+        seen_urls = []
+        adp_q = UberDirectAdapter(
+            transport=lambda *, method, endpoint, payload, provider: (seen_urls.append(endpoint), {"estado": "OK"})[1]
+        )
+        adp_q.consultar_tracking(referencia_externa="REF/123?x=1")
+        assert seen_urls[0] == "/deliveries/REF%2F123%3Fx%3D1"

@@ -7,6 +7,7 @@ from typing import Any
 from urllib.parse import quote
 
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
 from apps.finanzas.models import MetodoPago, Moneda, Pago
@@ -113,6 +114,9 @@ def registrar_epod_parada(
     cobro: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Registra la Prueba de Entrega Digital (ePOD), transiciona el despacho y opcionalmente cobra en sitio."""
+    parada_ref = ParadaEntrega.objects.values("id_ruta_id").get(pk=parada.pk)
+    # Orden consistente de locks (RutaDespacho -> ParadaEntrega) igual que iniciar_ruta_despacho.
+    ruta = RutaDespacho.objects.select_for_update(of=("self",)).get(pk=parada_ref["id_ruta_id"])
     parada_locked = (
         ParadaEntrega.objects.select_for_update(of=("self",))
         .select_related("id_ruta", "id_despacho", "id_despacho__id_nota_venta", "id_empresa")
@@ -120,12 +124,11 @@ def registrar_epod_parada(
     )
     if parada_locked.estado in ("ENTREGADA", "ENTREGA_PARCIAL", "RECHAZADA"):
         raise TMSError(f"La parada #{parada_locked.secuencia} ya fue cerrada ({parada_locked.estado}).")
-    if parada_locked.id_ruta.estado not in ("PLANIFICADA", "EN_CURSO"):
-        raise TMSError(f"La ruta {parada_locked.id_ruta.codigo} no está activa ({parada_locked.id_ruta.estado}).")
+    if ruta.estado not in ("PLANIFICADA", "EN_CURSO"):
+        raise TMSError(f"La ruta {ruta.codigo} no está activa ({ruta.estado}).")
     if resultado not in ("ENTREGADA", "ENTREGA_PARCIAL", "RECHAZADA"):
         raise TMSError(f"Resultado de parada inválido: {resultado!r}.")
 
-    ruta = RutaDespacho.objects.select_for_update(of=("self",)).get(pk=parada_locked.id_ruta_id)
     if ruta.estado == "PLANIFICADA":
         iniciar_ruta_despacho(ruta, usuario)
         ruta.refresh_from_db()
@@ -176,8 +179,17 @@ def registrar_epod_parada(
         moneda_id = cobro.get("id_moneda")
         if not metodo_id or not moneda_id:
             raise TMSError("Método de pago y moneda son obligatorios para cobro en sitio.")
-        metodo = MetodoPago.objects.filter(pk=str(metodo_id)).first()
-        moneda = Moneda.objects.filter(pk=str(moneda_id)).first()
+        emp = parada_locked.id_empresa
+        metodo = (
+            MetodoPago.objects.filter(pk=str(metodo_id), activo=True)
+            .filter(Q(es_generico=True) | Q(es_publico=True) | Q(empresa__isnull=True) | Q(empresa=emp))
+            .first()
+        )
+        moneda = (
+            Moneda.objects.filter(pk=str(moneda_id), activo=True)
+            .filter(Q(es_generica=True) | Q(es_publica=True) | Q(empresa__isnull=True) | Q(empresa=emp))
+            .first()
+        )
         if metodo is None or moneda is None:
             raise TMSError("Método de pago o moneda inválidos para cobro en sitio.")
 
@@ -358,6 +370,8 @@ def emitir_guia_despacho_seniat(
 def generar_payload_tracking_whatsapp(parada: ParadaEntrega, base_url: str = "") -> dict[str, Any]:
     """Construye el link público y mensaje listo para WhatsApp del cliente."""
     limpio_base = (base_url or "").strip().rstrip("/")
+    if limpio_base and not limpio_base.startswith(("https://", "http://")):
+        raise TMSError("La 'base_url' de tracking debe iniciar con http:// o https://.")
     ruta_rel = f"/api/despacho/tracking/{parada.token_tracking}/"
     tracking_url = f"{limpio_base}{ruta_rel}" if limpio_base else ruta_rel
     mensaje = (
