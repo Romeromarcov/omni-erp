@@ -10,6 +10,7 @@ vi.mock('../services/contabilidadService', () => ({
     getDiarios: vi.fn(),
     getPlanCuentas: vi.fn(),
     getContactosSelector: vi.fn(),
+    listCentrosCosto: vi.fn(),
     getBalanceComprobacion: vi.fn(),
     getEstadoResultados: vi.fn(),
     getBalanceGeneral: vi.fn(),
@@ -262,6 +263,18 @@ describe('ReportesContablesPage', () => {
     vi.mocked(contabilidadService.getContactosSelector).mockResolvedValue([
       { id_contacto: 'cnt-1', nombre_completo: 'Cliente Uno', rif: 'J-12345678-9' },
     ]);
+    vi.mocked(contabilidadService.listCentrosCosto).mockResolvedValue([
+      {
+        id_centro_costo: 'cc-1',
+        id_empresa: 'emp-1',
+        codigo: 'CC-LOG',
+        nombre: 'Logística',
+        tipo: 'LOGISTICA',
+        id_padre: null,
+        activo: true,
+        fecha_creacion: '2026-01-01T00:00:00Z',
+      },
+    ]);
     vi.mocked(contabilidadService.getBalanceComprobacion).mockResolvedValue(balanceComprobacionMock);
     vi.mocked(contabilidadService.getEstadoResultados).mockResolvedValue(estadoResultadosMock);
     vi.mocked(contabilidadService.getBalanceGeneral).mockResolvedValue(balanceGeneralMock);
@@ -374,5 +387,31 @@ describe('ReportesContablesPage', () => {
     createObjectUrlSpy.mockRestore();
     revokeObjectUrlSpy.mockRestore();
     clickSpy.mockRestore();
+  });
+
+  it('permite filtrar por Libro (ámbito dual), Moneda trimonetaria y Centro de costo', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText('Caja General');
+
+    await user.click(screen.getByRole('combobox', { name: 'Libro' }));
+    await user.click(await screen.findByRole('option', { name: 'Solo Gerencial' }));
+
+    await user.click(screen.getByRole('combobox', { name: 'Moneda' }));
+    await user.click(await screen.findByRole('option', { name: 'Referencia (USDT)' }));
+
+    await user.click(screen.getByRole('combobox', { name: 'Centro de costo' }));
+    await user.click(await screen.findByRole('option', { name: /CC-LOG — Logística/ }));
+
+    await waitFor(() => {
+      expect(contabilidadService.getBalanceComprobacion).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          empresa_id: 'emp-1',
+          ambito: 'GERENCIAL',
+          moneda: 'REFERENCIA',
+          id_centro_costo: 'cc-1',
+        }),
+      );
+    });
   });
 });

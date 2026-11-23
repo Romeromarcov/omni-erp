@@ -32,6 +32,7 @@ import LockOpenOutlined from '@mui/icons-material/LockOpenOutlined';
 import EventAvailableOutlined from '@mui/icons-material/EventAvailableOutlined';
 import {
   contabilidadService,
+  type AmbitoContable,
   type DiarioContable,
   type PeriodoContable,
   type TipoDiario,
@@ -44,6 +45,7 @@ import { FeedbackContext } from '../../contexts/feedbackTypes';
 import { DataTable, PageContainer, PageHeader, StatusChip, type Column } from '../../components/ui';
 
 const TIPOS_DIARIO: TipoDiario[] = ['VENTAS', 'COMPRAS', 'BANCO', 'CAJA', 'NOMINA', 'VARIOS'];
+const AMBITOS_CONTABLES: AmbitoContable[] = ['FISCAL', 'GERENCIAL'];
 const MESES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
 interface DiariosContablesPageProps {
@@ -124,6 +126,7 @@ export default function DiariosContablesPage({ initialTab = 'diarios' }: Diarios
       codigo: '',
       nombre: '',
       tipo: 'VARIOS',
+      ambito: 'FISCAL',
       prefijo_secuencia: '',
       siguiente_numero: '1',
       cuenta_defecto_debe: '',
@@ -137,6 +140,7 @@ export default function DiariosContablesPage({ initialTab = 'diarios' }: Diarios
       codigo: '',
       nombre: '',
       tipo: 'VARIOS',
+      ambito: 'FISCAL',
       prefijo_secuencia: '',
       siguiente_numero: '1',
       cuenta_defecto_debe: '',
@@ -152,6 +156,7 @@ export default function DiariosContablesPage({ initialTab = 'diarios' }: Diarios
       codigo: d.codigo,
       nombre: d.nombre,
       tipo: d.tipo,
+      ambito: d.ambito === 'GERENCIAL' ? 'GERENCIAL' : 'FISCAL',
       prefijo_secuencia: d.prefijo_secuencia || '',
       siguiente_numero: String(d.siguiente_numero ?? 1),
       cuenta_defecto_debe: d.cuenta_defecto_debe || '',
@@ -168,6 +173,7 @@ export default function DiariosContablesPage({ initialTab = 'diarios' }: Diarios
         codigo: input.codigo.trim(),
         nombre: input.nombre.trim(),
         tipo: input.tipo,
+        ambito: input.ambito ?? 'FISCAL',
         prefijo_secuencia: (input.prefijo_secuencia ?? '').trim(),
         siguiente_numero: Number.isFinite(sigNum) && sigNum >= 1 ? sigNum : 1,
         cuenta_defecto_debe: input.cuenta_defecto_debe || null,
@@ -262,6 +268,11 @@ export default function DiariosContablesPage({ initialTab = 'diarios' }: Diarios
     },
     { key: 'nombre', header: t('contabilidad.diarios.nombre'), render: (d) => d.nombre },
     { key: 'tipo', header: t('contabilidad.diarios.tipo'), render: (d) => d.tipo_display || d.tipo },
+    {
+      key: 'ambito',
+      header: t('contabilidad.diarios.ambito'),
+      render: (d) => d.ambito_display || d.ambito || 'FISCAL',
+    },
     {
       key: 'secuencia',
       header: t('contabilidad.diarios.secuencia'),
@@ -519,6 +530,27 @@ export default function DiariosContablesPage({ initialTab = 'diarios' }: Diarios
                     {TIPOS_DIARIO.map((tp) => (
                       <MenuItem key={tp} value={tp}>
                         {tp}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                )}
+              />
+              <Controller
+                name="ambito"
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    select
+                    label={t('contabilidad.diarios.ambito')}
+                    fullWidth
+                    value={field.value ?? 'FISCAL'}
+                    onChange={field.onChange}
+                  >
+                    {AMBITOS_CONTABLES.map((amb) => (
+                      <MenuItem key={amb} value={amb}>
+                        {amb === 'FISCAL'
+                          ? t('contabilidad.diarios.ambitoFiscal')
+                          : t('contabilidad.diarios.ambitoGerencial')}
                       </MenuItem>
                     ))}
                   </TextField>

@@ -20,6 +20,27 @@ describe('contabilidadKeys', () => {
     expect(contabilidadKeys.periodos(2026)).toEqual(['contabilidad', 'periodos', 'list', 2026]);
     expect(contabilidadKeys.mapeosAll()).toEqual(['contabilidad', 'mapeos']);
     expect(contabilidadKeys.tiposAsiento()).toEqual(['contabilidad', 'tipos-asiento']);
+    expect(contabilidadKeys.centrosCosto()).toEqual(['contabilidad', 'centros-costo']);
+    expect(
+      contabilidadKeys.balanceComprobacion({
+        empresaId: 'emp-1',
+        ambito: 'GERENCIAL',
+        moneda: 'REFERENCIA',
+        idCentroCosto: 'cc-1',
+      }),
+    ).toEqual([
+      'contabilidad',
+      'reportes',
+      'balance-comprobacion',
+      'emp-1',
+      '',
+      '',
+      '',
+      false,
+      'GERENCIAL',
+      'REFERENCIA',
+      'cc-1',
+    ]);
   });
 });
 

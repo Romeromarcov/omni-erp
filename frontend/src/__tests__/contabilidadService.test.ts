@@ -4,10 +4,11 @@ vi.mock('../services/api', () => ({
   get: vi.fn(),
   post: vi.fn(),
   patch: vi.fn(),
+  del: vi.fn(),
   fetchBlob: vi.fn(),
 }));
 
-import { get, post, patch, fetchBlob } from '../services/api';
+import { del, get, post, patch, fetchBlob } from '../services/api';
 import {
   contabilidadService,
   type CrearCuentaPayload,
@@ -328,5 +329,47 @@ describe('contabilidadService — reportes canónicos (PR-14 · Ola B2)', () => 
     const contactos = await contabilidadService.getContactosSelector();
     expect(get).toHaveBeenCalledWith('/core/contactos/?page_size=200');
     expect(contactos).toHaveLength(1);
+  });
+
+  it('soporta ámbito dual, moneda trimonetaria, centro de costo y CRUD de centros de costo', async () => {
+    vi.mocked(get).mockResolvedValueOnce({ ok: true });
+    await contabilidadService.getEstadoResultados({
+      empresa_id: 'e1',
+      fecha_desde: '2026-01-01',
+      fecha_hasta: '2026-03-31',
+      ambito: 'GERENCIAL',
+      moneda: 'REFERENCIA',
+      id_centro_costo: 'cc-1',
+    });
+    expect(get).toHaveBeenCalledWith(
+      '/contabilidad/reportes/estado-resultados/?empresa_id=e1&fecha_desde=2026-01-01&fecha_hasta=2026-03-31&ambito=GERENCIAL&moneda=REFERENCIA&id_centro_costo=cc-1',
+    );
+
+    vi.mocked(get).mockResolvedValueOnce({ results: [{ id_centro_costo: 'cc-1', codigo: 'CC-OPS', nombre: 'Operaciones' }] });
+    const centros = await contabilidadService.listCentrosCosto();
+    expect(get).toHaveBeenCalledWith('/contabilidad/centros-costo/?page_size=200');
+    expect(centros).toHaveLength(1);
+
+    vi.mocked(post).mockResolvedValueOnce({ id_centro_costo: 'cc-2', codigo: 'CC-LOG', nombre: 'Logística' });
+    await contabilidadService.createCentroCosto({
+      id_empresa: 'e1',
+      codigo: 'CC-LOG',
+      nombre: 'Logística',
+      tipo: 'LOGISTICA',
+    });
+    expect(post).toHaveBeenCalledWith('/contabilidad/centros-costo/', {
+      id_empresa: 'e1',
+      codigo: 'CC-LOG',
+      nombre: 'Logística',
+      tipo: 'LOGISTICA',
+    });
+
+    vi.mocked(patch).mockResolvedValueOnce({ id_centro_costo: 'cc-2', nombre: 'Logística VE' });
+    await contabilidadService.updateCentroCosto('cc-2', { nombre: 'Logística VE' });
+    expect(patch).toHaveBeenCalledWith('/contabilidad/centros-costo/cc-2/', { nombre: 'Logística VE' });
+
+    vi.mocked(del).mockResolvedValueOnce(undefined);
+    await contabilidadService.deleteCentroCosto('cc-2');
+    expect(del).toHaveBeenCalledWith('/contabilidad/centros-costo/cc-2/');
   });
 });

@@ -6,6 +6,11 @@ from django.db.models import Q
 from apps.core.base_models import OmniBaseModel
 from apps.core.uuid import uuid7
 
+AMBITO_CONTABLE_CHOICES = [
+    ("FISCAL", "Fiscal"),
+    ("GERENCIAL", "Gerencial"),
+]
+
 
 class PlanCuentas(models.Model):
     id_cuenta_contable = models.UUIDField(primary_key=True, default=uuid7)
@@ -56,6 +61,13 @@ class DiarioContable(OmniBaseModel):
     codigo = models.CharField(max_length=20)
     nombre = models.CharField(max_length=120)
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default="VARIOS")
+    ambito = models.CharField(
+        max_length=12,
+        choices=AMBITO_CONTABLE_CHOICES,
+        default="FISCAL",
+        db_index=True,
+        help_text="Libro al que pertenece el diario: FISCAL (normativo) o GERENCIAL.",
+    )
     prefijo_secuencia = models.CharField(max_length=20, blank=True, default="")
     siguiente_numero = models.PositiveIntegerField(default=1)
     cuenta_defecto_debe = models.ForeignKey(
@@ -109,6 +121,13 @@ class AsientoContable(models.Model):
         related_name="contra_asiento",
     )
     es_cierre = models.BooleanField(default=False)
+    ambito = models.CharField(
+        max_length=12,
+        choices=AMBITO_CONTABLE_CHOICES,
+        default="FISCAL",
+        db_index=True,
+        help_text="Libro contable del asiento: FISCAL o GERENCIAL.",
+    )
     fecha_asiento = models.DateField()
     numero_asiento = models.CharField(max_length=100)
     descripcion = models.TextField()
@@ -136,9 +155,50 @@ class AsientoContable(models.Model):
         verbose_name = "Asiento Contable"
         verbose_name_plural = "Asientos Contables"
         unique_together = [["id_empresa", "numero_asiento"]]
+        indexes = [models.Index(fields=["id_empresa", "ambito", "estado_asiento", "fecha_asiento"])]
 
     def __str__(self) -> str:
         return str(self.numero_asiento)
+
+
+class CentroCosto(OmniBaseModel):
+    """Centro de costo analítico por empresa (Plan 09 Fase 1.3)."""
+
+    TIPO_CHOICES = [
+        ("OPERATIVO", "Operativo"),
+        ("ADMINISTRATIVO", "Administrativo"),
+        ("COMERCIAL", "Comercial"),
+        ("LOGISTICA", "Logística"),
+        ("PRODUCCION", "Producción"),
+    ]
+
+    id_centro_costo = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey(
+        "core.Empresa",
+        on_delete=models.CASCADE,
+        related_name="centros_costo",
+    )
+    codigo = models.CharField(max_length=30)
+    nombre = models.CharField(max_length=150)
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default="OPERATIVO")
+    id_padre = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="subcentros",
+    )
+
+    class Meta:
+        db_table = "contabilidad_centro_costo"
+        verbose_name = "Centro de Costo"
+        verbose_name_plural = "Centros de Costo"
+        unique_together = [["id_empresa", "codigo"]]
+        indexes = [models.Index(fields=["id_empresa", "tipo", "activo"])]
+        ordering = ["codigo"]
+
+    def __str__(self) -> str:
+        return f"{self.codigo} — {self.nombre}"
 
 
 class DetalleAsiento(models.Model):
@@ -152,13 +212,31 @@ class DetalleAsiento(models.Model):
         blank=True,
         related_name="detalles_asiento",
     )
+    id_centro_costo = models.ForeignKey(
+        "CentroCosto",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="detalles_asiento",
+    )
     debe = models.DecimalField(max_digits=18, decimal_places=2, default=0.00)
     haber = models.DecimalField(max_digits=18, decimal_places=2, default=0.00)
+    debe_base = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    haber_base = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    debe_pais = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    haber_pais = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    debe_referencia = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    haber_referencia = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True)
+    tasa_bcv_aplicada = models.DecimalField(max_digits=18, decimal_places=8, null=True, blank=True)
+    tasa_referencia_aplicada = models.DecimalField(max_digits=18, decimal_places=8, null=True, blank=True)
     descripcion_detalle = models.TextField(null=True, blank=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        indexes = [models.Index(fields=["id_cuenta_contable", "id_contacto"])]
+        indexes = [
+            models.Index(fields=["id_cuenta_contable", "id_contacto"]),
+            models.Index(fields=["id_cuenta_contable", "id_centro_costo"]),
+        ]
 
     def __str__(self) -> str:
         return str(self.id_asiento)

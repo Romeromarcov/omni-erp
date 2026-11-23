@@ -19,18 +19,30 @@ from __future__ import annotations
 import logging
 import uuid
 from datetime import date
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 from typing import TYPE_CHECKING, Any
 
 from django.db import transaction
-from django.db.models import Sum
+from django.db.models import Q, Sum
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 
-from .models import AsientoContable, DetalleAsiento, DiarioContable, MapeoContable, PeriodoContable, PlanCuentas
+from .models import (
+    AMBITO_CONTABLE_CHOICES,
+    AsientoContable,
+    CentroCosto,
+    DetalleAsiento,
+    DiarioContable,
+    MapeoContable,
+    PeriodoContable,
+    PlanCuentas,
+)
 
 if TYPE_CHECKING:
     from apps.core.models import Contacto, Empresa, Usuarios
+
+_AMBITOS_VALIDOS = frozenset(k for k, _ in AMBITO_CONTABLE_CHOICES)
+_CENT = Decimal("0.01")
 
 logger = logging.getLogger(__name__)
 
@@ -124,6 +136,9 @@ def generar_asiento_o_fallar(
     empresa: Empresa | None = None,
     monto: Decimal | None = None,
     usuario: Usuarios | None = None,
+    *,
+    ambito: str | None = None,
+    centro_costo: CentroCosto | None = None,
 ) -> tuple[AsientoContable | None, str | None]:
     """Aplica la política R-CODE-11 de forma uniforme en todos los callsites.
 
@@ -141,7 +156,15 @@ def generar_asiento_o_fallar(
     """
     empresa_resuelta = empresa if empresa is not None else _extraer_empresa(documento)
     try:
-        asiento = generar_asiento(tipo, documento, empresa_resuelta, monto=monto, usuario=usuario)
+        asiento = generar_asiento(
+            tipo,
+            documento,
+            empresa_resuelta,
+            monto=monto,
+            usuario=usuario,
+            ambito=ambito,
+            centro_costo=centro_costo,
+        )
         return asiento, None
     except MapeoContableNoEncontrado as exc:
         if getattr(empresa_resuelta, "contabilidad_activa", False):
@@ -298,6 +321,106 @@ def _descripcion(plantilla: str, tipo: str, documento: Any) -> str:
     return desc.replace("{numero}", str(documento.pk)[:8])
 
 
+def _resolver_ambito_asiento(
+    ambito: str | None,
+    documento: Any,
+    diario: DiarioContable | None,
+) -> str:
+    """Resuelve y valida el ámbito dual del asiento (``FISCAL`` o ``GERENCIAL``)."""
+    candidato = ambito
+    if not candidato and documento is not None:
+        doc_ambito = getattr(documento, "ambito", None)
+        if isinstance(doc_ambito, str) and doc_ambito.strip():
+            candidato = doc_ambito
+    if not candidato and diario is not None:
+        candidato = getattr(diario, "ambito", None)
+    normalizado = str(candidato or "FISCAL").strip().upper()
+    if normalizado not in _AMBITOS_VALIDOS:
+        raise AsientoError(f"Ámbito contable inválido: {candidato!r}. Válidos: {sorted(_AMBITOS_VALIDOS)}")
+    return normalizado
+
+
+def _convertir_moneda_opcional(
+    base_q: Decimal,
+    moneda_origen: Any,
+    moneda_destino: Any,
+    *,
+    empresa: Empresa,
+    fecha: date,
+    solo_oficial_fiscal: bool,
+) -> tuple[Decimal | None, Decimal | None]:
+    if moneda_destino is None:
+        return None, None
+    if moneda_destino.pk == moneda_origen.pk:
+        return base_q, Decimal("1.00000000")
+    from apps.finanzas.services import TasaCambioError
+    from apps.finanzas.services_trimonetario import obtener_tasa_por_tipo
+
+    try:
+        tasa = obtener_tasa_por_tipo(
+            moneda_origen,
+            moneda_destino,
+            empresa=empresa,
+            fecha=fecha,
+            solo_oficial_fiscal=solo_oficial_fiscal,
+        )
+    except TasaCambioError:
+        return None, None
+    valor_tasa = Decimal(str(tasa.valor_tasa))
+    monto = (base_q * valor_tasa).quantize(_CENT, rounding=ROUND_HALF_UP)
+    return monto, valor_tasa
+
+
+def _calcular_importes_trimonetarios_linea(
+    empresa: Empresa,
+    monto_base: Decimal,
+    fecha: date,
+) -> dict[str, Decimal | None]:
+    """Calcula importes Base, País/Fiscal (BCV) y Referencia de forma independiente."""
+    base_q = monto_base.quantize(_CENT, rounding=ROUND_HALF_UP)
+    moneda_base = getattr(empresa, "id_moneda_base", None)
+    moneda_pais = getattr(empresa, "id_moneda_pais", None)
+
+    if moneda_base is None:
+        moneda_pais_id = getattr(empresa, "id_moneda_pais_id", None)
+        return {
+            "base": base_q,
+            "pais": base_q
+            if moneda_pais_id is not None and moneda_pais_id == getattr(empresa, "id_moneda_base_id", None)
+            else None,
+            "referencia": None,
+            "tasa_bcv": None,
+            "tasa_referencia": None,
+        }
+
+    from apps.finanzas.services_trimonetario import obtener_moneda_referencia_empresa
+
+    moneda_ref = obtener_moneda_referencia_empresa(empresa)
+    monto_pais, tasa_bcv = _convertir_moneda_opcional(
+        base_q,
+        moneda_base,
+        moneda_pais,
+        empresa=empresa,
+        fecha=fecha,
+        solo_oficial_fiscal=True,
+    )
+    monto_ref, tasa_ref = _convertir_moneda_opcional(
+        base_q,
+        moneda_base,
+        moneda_ref,
+        empresa=empresa,
+        fecha=fecha,
+        solo_oficial_fiscal=False,
+    )
+    return {
+        "base": base_q,
+        "pais": monto_pais,
+        "referencia": monto_ref,
+        "tasa_bcv": tasa_bcv,
+        "tasa_referencia": tasa_ref,
+    }
+
+
 # ── Generación, aprobación y reversión de asientos ────────────────────────────
 
 
@@ -308,6 +431,9 @@ def generar_asiento(
     empresa: Empresa | None = None,
     monto: Decimal | None = None,
     usuario: Usuarios | None = None,
+    *,
+    ambito: str | None = None,
+    centro_costo: CentroCosto | None = None,
 ) -> AsientoContable:
     """
     Crea un AsientoContable con dos líneas (debe/haber) para el documento dado.
@@ -319,6 +445,9 @@ def generar_asiento(
         empresa = _extraer_empresa(documento)
 
     assert empresa is not None  # narrowing para mypy tras _extraer_empresa
+
+    if centro_costo is not None and centro_costo.id_empresa_id != empresa.pk:
+        raise AsientoError("El centro de costo no pertenece a la empresa del asiento.")
 
     if monto is None:
         monto = _extraer_monto(documento)
@@ -341,13 +470,17 @@ def generar_asiento(
         )
 
     diario = _resolver_diario_para_asiento(empresa, tipo, mapeo)
+    ambito_resuelto = _resolver_ambito_asiento(ambito, documento, diario)
     descripcion = _descripcion(mapeo.descripcion_plantilla, tipo, documento)
     numero = _siguiente_numero_asiento(tipo, diario)
     contacto = _resolver_contacto_documento_asiento(documento, empresa)
+    trimo = _calcular_importes_trimonetarios_linea(empresa, monto, fecha)
+    cero = Decimal("0.00")
 
     asiento = AsientoContable.objects.create(
         id_empresa=empresa,
         id_diario=diario,
+        ambito=ambito_resuelto,
         fecha_asiento=fecha,
         numero_asiento=numero,
         descripcion=descripcion,
@@ -361,16 +494,34 @@ def generar_asiento(
         id_asiento=asiento,
         id_cuenta_contable=mapeo.cuenta_debe,
         id_contacto=contacto,
+        id_centro_costo=centro_costo,
         debe=monto,
         haber=Decimal("0"),
+        debe_base=trimo["base"],
+        haber_base=cero,
+        debe_pais=trimo["pais"],
+        haber_pais=cero if trimo["pais"] is not None else None,
+        debe_referencia=trimo["referencia"],
+        haber_referencia=cero if trimo["referencia"] is not None else None,
+        tasa_bcv_aplicada=trimo["tasa_bcv"],
+        tasa_referencia_aplicada=trimo["tasa_referencia"],
         descripcion_detalle=descripcion,
     )
     DetalleAsiento.objects.create(
         id_asiento=asiento,
         id_cuenta_contable=mapeo.cuenta_haber,
         id_contacto=contacto,
+        id_centro_costo=centro_costo,
         debe=Decimal("0"),
         haber=monto,
+        debe_base=cero,
+        haber_base=trimo["base"],
+        debe_pais=cero if trimo["pais"] is not None else None,
+        haber_pais=trimo["pais"],
+        debe_referencia=cero if trimo["referencia"] is not None else None,
+        haber_referencia=trimo["referencia"],
+        tasa_bcv_aplicada=trimo["tasa_bcv"],
+        tasa_referencia_aplicada=trimo["tasa_referencia"],
         descripcion_detalle=descripcion,
     )
 
@@ -471,6 +622,7 @@ def revertir_asiento(
     contra = AsientoContable.objects.create(
         id_empresa=asiento_locked.id_empresa,
         id_diario=diario,
+        ambito=asiento_locked.ambito,
         asiento_revertido=asiento_locked,
         fecha_asiento=fecha_rev,
         numero_asiento=numero_contra,
@@ -490,8 +642,17 @@ def revertir_asiento(
             id_asiento=contra,
             id_cuenta_contable=det.id_cuenta_contable,
             id_contacto=det.id_contacto,
+            id_centro_costo=det.id_centro_costo,
             debe=rev_debe,
             haber=rev_haber,
+            debe_base=det.haber_base,
+            haber_base=det.debe_base,
+            debe_pais=det.haber_pais,
+            haber_pais=det.debe_pais,
+            debe_referencia=det.haber_referencia,
+            haber_referencia=det.debe_referencia,
+            tasa_bcv_aplicada=det.tasa_bcv_aplicada,
+            tasa_referencia_aplicada=det.tasa_referencia_aplicada,
             descripcion_detalle=f"Reversión: {det.descripcion_detalle or asiento_locked.descripcion}",
         )
         total_rev_debe += rev_debe
@@ -608,6 +769,174 @@ def reabrir_periodo_contable(
     return periodo_locked
 
 
+def _saldar_par(neto: Decimal) -> tuple[Decimal, Decimal]:
+    if neto > Decimal("0.00"):
+        return Decimal("0.00"), neto
+    if neto < Decimal("0.00"):
+        return abs(neto), Decimal("0.00")
+    return Decimal("0.00"), Decimal("0.00")
+
+
+def _cerrar_ambito_ejercicio(
+    empresa: Empresa,
+    anio: int,
+    ambito: str,
+    cuenta_resultado_acumulado: PlanCuentas,
+    *,
+    fecha_asiento: date,
+    usuario: Usuarios | None,
+) -> tuple[AsientoContable | None, Decimal, int]:
+    """Salda cuentas de resultado de un ``ambito`` (``FISCAL`` o ``GERENCIAL``) con soporte trimonetario."""
+    qs_scope = DetalleAsiento.objects.filter(
+        id_asiento__id_empresa=empresa,
+        id_asiento__estado_asiento="APROBADO",
+        id_asiento__fecha_asiento__year=anio,
+        id_asiento__ambito=ambito,
+        id_cuenta_contable__tipo_cuenta__in=["INGRESO", "COSTO", "GASTO"],
+    )
+    filas = list(
+        qs_scope.values("id_cuenta_contable")
+        .annotate(
+            sum_debe=Coalesce(Sum("debe"), Decimal("0.00")),
+            sum_haber=Coalesce(Sum("haber"), Decimal("0.00")),
+            sum_debe_pais=Coalesce(Sum("debe_pais"), Decimal("0.00")),
+            sum_haber_pais=Coalesce(Sum("haber_pais"), Decimal("0.00")),
+            sum_debe_ref=Coalesce(Sum("debe_referencia"), Decimal("0.00")),
+            sum_haber_ref=Coalesce(Sum("haber_referencia"), Decimal("0.00")),
+        )
+        .order_by("id_cuenta_contable")
+    )
+    if not filas:
+        return None, Decimal("0.00"), 0
+
+    tiene_pais = qs_scope.filter(Q(debe_pais__isnull=False) | Q(haber_pais__isnull=False)).exists()
+    tiene_ref = qs_scope.filter(Q(debe_referencia__isnull=False) | Q(haber_referencia__isnull=False)).exists()
+
+    lineas_cuentas: list[dict[str, Any]] = []
+    total_debe = Decimal("0.00")
+    total_haber = Decimal("0.00")
+    total_debe_pais = Decimal("0.00")
+    total_haber_pais = Decimal("0.00")
+    total_debe_ref = Decimal("0.00")
+    total_haber_ref = Decimal("0.00")
+
+    for fila in filas:
+        neto_base = (Decimal(str(fila["sum_debe"])) - Decimal(str(fila["sum_haber"]))).quantize(Decimal("0.01"))
+        neto_pais = (Decimal(str(fila["sum_debe_pais"])) - Decimal(str(fila["sum_haber_pais"]))).quantize(
+            Decimal("0.01")
+        )
+        neto_ref = (Decimal(str(fila["sum_debe_ref"])) - Decimal(str(fila["sum_haber_ref"]))).quantize(Decimal("0.01"))
+        if neto_base == Decimal("0.00") and neto_pais == Decimal("0.00") and neto_ref == Decimal("0.00"):
+            continue
+        l_debe, l_haber = _saldar_par(neto_base)
+        p_debe, p_haber = _saldar_par(neto_pais)
+        r_debe, r_haber = _saldar_par(neto_ref)
+        lineas_cuentas.append(
+            {
+                "cuenta_id": fila["id_cuenta_contable"],
+                "debe": l_debe,
+                "haber": l_haber,
+                "debe_pais": p_debe if tiene_pais else None,
+                "haber_pais": p_haber if tiene_pais else None,
+                "debe_ref": r_debe if tiene_ref else None,
+                "haber_ref": r_haber if tiene_ref else None,
+            }
+        )
+        total_debe += l_debe
+        total_haber += l_haber
+        total_debe_pais += p_debe
+        total_haber_pais += p_haber
+        total_debe_ref += r_debe
+        total_haber_ref += r_haber
+
+    resultado_ejercicio = (total_debe - total_haber).quantize(Decimal("0.01"))
+    resultado_pais = (total_debe_pais - total_haber_pais).quantize(Decimal("0.01"))
+    resultado_ref = (total_debe_ref - total_haber_ref).quantize(Decimal("0.01"))
+
+    if not lineas_cuentas:
+        return None, Decimal("0.00"), 0
+
+    diario = (
+        DiarioContable.objects.filter(id_empresa=empresa, tipo="VARIOS", ambito=ambito, activo=True)
+        .order_by("codigo")
+        .first()
+        or DiarioContable.objects.filter(id_empresa=empresa, tipo="VARIOS", activo=True).order_by("codigo").first()
+    )
+    if diario is not None and (diario.prefijo_secuencia or "").strip():
+        numero_cierre = _siguiente_numero_asiento("CIER", diario)
+    else:
+        numero_cierre = f"CIER-{anio}-{ambito[:3]}-{uuid.uuid4().hex[:6].upper()}"
+
+    asiento_cierre = AsientoContable.objects.create(
+        id_empresa=empresa,
+        id_diario=diario,
+        ambito=ambito,
+        es_cierre=True,
+        fecha_asiento=fecha_asiento,
+        numero_asiento=numero_cierre,
+        descripcion=f"Cierre del ejercicio contable {anio} ({ambito})",
+        nombre_modelo_origen="PeriodoContable",
+        estado_asiento="APROBADO",
+        id_usuario_registro=usuario,
+    )
+
+    cuentas_map = PlanCuentas.objects.in_bulk([item["cuenta_id"] for item in lineas_cuentas])
+    for item in lineas_cuentas:
+        DetalleAsiento.objects.create(
+            id_asiento=asiento_cierre,
+            id_cuenta_contable=cuentas_map[item["cuenta_id"]],
+            debe=item["debe"],
+            haber=item["haber"],
+            debe_base=item["debe"],
+            haber_base=item["haber"],
+            debe_pais=item["debe_pais"],
+            haber_pais=item["haber_pais"],
+            debe_referencia=item["debe_ref"],
+            haber_referencia=item["haber_ref"],
+            descripcion_detalle=f"Cierre ejercicio {anio} ({ambito})",
+        )
+
+    pat_debe = abs(resultado_ejercicio) if resultado_ejercicio < Decimal("0.00") else Decimal("0.00")
+    pat_haber = resultado_ejercicio if resultado_ejercicio > Decimal("0.00") else Decimal("0.00")
+    pat_pais_debe = abs(resultado_pais) if resultado_pais < Decimal("0.00") else Decimal("0.00")
+    pat_pais_haber = resultado_pais if resultado_pais > Decimal("0.00") else Decimal("0.00")
+    pat_ref_debe = abs(resultado_ref) if resultado_ref < Decimal("0.00") else Decimal("0.00")
+    pat_ref_haber = resultado_ref if resultado_ref > Decimal("0.00") else Decimal("0.00")
+    etiqueta_res = (
+        "Ganancia"
+        if resultado_ejercicio > Decimal("0.00")
+        else ("Pérdida" if resultado_ejercicio < Decimal("0.00") else "Equilibrio")
+    )
+    if (
+        pat_debe != Decimal("0.00")
+        or pat_haber != Decimal("0.00")
+        or pat_pais_debe != Decimal("0.00")
+        or pat_pais_haber != Decimal("0.00")
+        or pat_ref_debe != Decimal("0.00")
+        or pat_ref_haber != Decimal("0.00")
+    ):
+        DetalleAsiento.objects.create(
+            id_asiento=asiento_cierre,
+            id_cuenta_contable=cuenta_resultado_acumulado,
+            debe=pat_debe,
+            haber=pat_haber,
+            debe_base=pat_debe,
+            haber_base=pat_haber,
+            debe_pais=pat_pais_debe if tiene_pais else None,
+            haber_pais=pat_pais_haber if tiene_pais else None,
+            debe_referencia=pat_ref_debe if tiene_ref else None,
+            haber_referencia=pat_ref_haber if tiene_ref else None,
+            descripcion_detalle=f"Resultado neto del ejercicio {anio} ({etiqueta_res})",
+        )
+        total_debe += pat_debe
+        total_haber += pat_haber
+
+    if total_debe != total_haber:
+        raise AsientoError(f"El asiento de cierre del ejercicio {anio} ({ambito}) quedó descuadrado.")
+
+    return asiento_cierre, resultado_ejercicio, len(lineas_cuentas)
+
+
 @transaction.atomic
 def cerrar_ejercicio_contable(
     empresa: Empresa,
@@ -616,8 +945,9 @@ def cerrar_ejercicio_contable(
     *,
     usuario: Usuarios | None = None,
     fecha_cierre: date | None = None,
+    ambito: str | None = None,
 ) -> dict[str, Any]:
-    """Salda cuentas de resultado (INGRESO/COSTO/GASTO) a PATRIMONIO y cierra los 12 períodos."""
+    """Salda cuentas de resultado (INGRESO/COSTO/GASTO) a PATRIMONIO por ámbito y cierra los 12 períodos."""
     _validar_anio_mes(anio)
 
     if cuenta_resultado_acumulado.id_empresa_id != empresa.pk:
@@ -626,6 +956,15 @@ def cerrar_ejercicio_contable(
         raise AsientoError("La cuenta de resultado acumulado está inactiva.")
     if cuenta_resultado_acumulado.tipo_cuenta != "PATRIMONIO":
         raise AsientoError("La cuenta de resultado acumulado debe ser de tipo PATRIMONIO.")
+
+    ambitos_objetivo: tuple[str, ...]
+    if ambito is not None:
+        amb_norm = str(ambito).strip().upper()
+        if amb_norm not in _AMBITOS_VALIDOS:
+            raise AsientoError(f"Ámbito inválido para cierre: {ambito!r}.")
+        ambitos_objetivo = (amb_norm,)
+    else:
+        ambitos_objetivo = ("FISCAL", "GERENCIAL")
 
     fecha_asiento = fecha_cierre or date(anio, 12, 31)
     if fecha_asiento.year != anio:
@@ -646,6 +985,7 @@ def cerrar_ejercicio_contable(
             id_empresa=empresa,
             fecha_asiento__year=anio,
             es_cierre=True,
+            ambito__in=ambitos_objetivo,
         )
         .exclude(estado_asiento="ANULADO")
         .filter(contra_asiento__isnull=True)
@@ -668,101 +1008,27 @@ def cerrar_ejercicio_contable(
     if periodos_con_cierre:
         raise AsientoError(f"El ejercicio {anio} ya tiene períodos cerrados vinculados a un asiento de cierre.")
 
-    filas = list(
-        DetalleAsiento.objects.filter(
-            id_asiento__id_empresa=empresa,
-            id_asiento__estado_asiento="APROBADO",
-            id_asiento__fecha_asiento__year=anio,
-            id_cuenta_contable__tipo_cuenta__in=["INGRESO", "COSTO", "GASTO"],
-        )
-        .values("id_cuenta_contable")
-        .annotate(
-            sum_debe=Coalesce(Sum("debe"), Decimal("0.00")),
-            sum_haber=Coalesce(Sum("haber"), Decimal("0.00")),
-        )
-        .order_by("id_cuenta_contable")
-    )
+    asientos_creados: list[AsientoContable] = []
+    resultado_total = Decimal("0.00")
+    cuentas_saldadas_total = 0
 
-    lineas_cuentas: list[tuple[uuid.UUID, Decimal, Decimal]] = []
-    total_debe = Decimal("0.00")
-    total_haber = Decimal("0.00")
-
-    for fila in filas:
-        sum_debe = Decimal(str(fila["sum_debe"]))
-        sum_haber = Decimal(str(fila["sum_haber"]))
-        neto = (sum_debe - sum_haber).quantize(Decimal("0.01"))
-        if neto == Decimal("0.00"):
-            continue
-        if neto > Decimal("0.00"):
-            # Saldo neto deudor → acreditar para saldar a 0
-            linea_debe = Decimal("0.00")
-            linea_haber = neto
-        else:
-            # Saldo neto acreedor → debitar para saldar a 0
-            linea_debe = abs(neto)
-            linea_haber = Decimal("0.00")
-        lineas_cuentas.append((fila["id_cuenta_contable"], linea_debe, linea_haber))
-        total_debe += linea_debe
-        total_haber += linea_haber
-
-    resultado_ejercicio = (total_debe - total_haber).quantize(Decimal("0.01"))
-    asiento_cierre: AsientoContable | None = None
-
-    if lineas_cuentas:
-        diario = (
-            DiarioContable.objects.filter(id_empresa=empresa, tipo="VARIOS", activo=True).order_by("codigo").first()
-        )
-        if diario is not None and (diario.prefijo_secuencia or "").strip():
-            numero_cierre = _siguiente_numero_asiento("CIER", diario)
-        else:
-            numero_cierre = f"CIER-{anio}-{uuid.uuid4().hex[:8].upper()}"
-
-        asiento_cierre = AsientoContable.objects.create(
-            id_empresa=empresa,
-            id_diario=diario,
-            es_cierre=True,
+    for amb in ambitos_objetivo:
+        asiento_amb, res_amb, cnt_amb = _cerrar_ambito_ejercicio(
+            empresa,
+            anio,
+            amb,
+            cuenta_resultado_acumulado,
             fecha_asiento=fecha_asiento,
-            numero_asiento=numero_cierre,
-            descripcion=f"Cierre del ejercicio contable {anio}",
-            nombre_modelo_origen="PeriodoContable",
-            estado_asiento="APROBADO",
-            id_usuario_registro=usuario,
+            usuario=usuario,
         )
+        if asiento_amb is not None:
+            asientos_creados.append(asiento_amb)
+            resultado_total += res_amb
+            cuentas_saldadas_total += cnt_amb
 
-        cuentas_map = PlanCuentas.objects.in_bulk([cid for cid, _, _ in lineas_cuentas])
-        for cid, l_debe, l_haber in lineas_cuentas:
-            DetalleAsiento.objects.create(
-                id_asiento=asiento_cierre,
-                id_cuenta_contable=cuentas_map[cid],
-                debe=l_debe,
-                haber=l_haber,
-                descripcion_detalle=f"Cierre ejercicio {anio}",
-            )
-
-        if resultado_ejercicio > Decimal("0.00"):
-            # Ganancia neta → Haber en Patrimonio
-            DetalleAsiento.objects.create(
-                id_asiento=asiento_cierre,
-                id_cuenta_contable=cuenta_resultado_acumulado,
-                debe=Decimal("0.00"),
-                haber=resultado_ejercicio,
-                descripcion_detalle=f"Resultado neto del ejercicio {anio} (Ganancia)",
-            )
-            total_haber += resultado_ejercicio
-        elif resultado_ejercicio < Decimal("0.00"):
-            # Pérdida neta → Debe en Patrimonio
-            perdida = abs(resultado_ejercicio)
-            DetalleAsiento.objects.create(
-                id_asiento=asiento_cierre,
-                id_cuenta_contable=cuenta_resultado_acumulado,
-                debe=perdida,
-                haber=Decimal("0.00"),
-                descripcion_detalle=f"Resultado neto del ejercicio {anio} (Pérdida)",
-            )
-            total_debe += perdida
-
-        if total_debe != total_haber:
-            raise AsientoError(f"El asiento de cierre del ejercicio {anio} quedó descuadrado.")
+    asiento_cierre = next((a for a in asientos_creados if a.ambito == "FISCAL"), None)
+    if asiento_cierre is None and asientos_creados:
+        asiento_cierre = asientos_creados[0]
 
     ahora = timezone.now()
     periodos_cerrados: list[PeriodoContable] = []
@@ -795,7 +1061,8 @@ def cerrar_ejercicio_contable(
     return {
         "anio": anio,
         "asiento_cierre": asiento_cierre,
-        "resultado_ejercicio": resultado_ejercicio,
+        "asientos_cierre": asientos_creados,
+        "resultado_ejercicio": resultado_total.quantize(Decimal("0.01")),
         "periodos_cerrados": periodos_cerrados,
-        "cantidad_cuentas_saldadas": len(lineas_cuentas),
+        "cantidad_cuentas_saldadas": cuentas_saldadas_total,
     }

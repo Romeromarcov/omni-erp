@@ -2874,6 +2874,94 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/contabilidad/centros-costo/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description CRUD de centros de costo analíticos aislado por tenant. */
+        get: operations["contabilidad_centros-costo_list"];
+        put?: never;
+        /** @description CRUD de centros de costo analíticos aislado por tenant. */
+        post: operations["contabilidad_centros-costo_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contabilidad/centros-costo/{id_centro_costo}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Centro de Costo. */
+                id_centro_costo: string;
+            };
+            cookie?: never;
+        };
+        /** @description CRUD de centros de costo analíticos aislado por tenant. */
+        get: operations["contabilidad_centros-costo_read"];
+        /** @description CRUD de centros de costo analíticos aislado por tenant. */
+        put: operations["contabilidad_centros-costo_update"];
+        post?: never;
+        /** @description CRUD de centros de costo analíticos aislado por tenant. */
+        delete: operations["contabilidad_centros-costo_delete"];
+        options?: never;
+        head?: never;
+        /** @description CRUD de centros de costo analíticos aislado por tenant. */
+        patch: operations["contabilidad_centros-costo_partial_update"];
+        trace?: never;
+    };
+    "/contabilidad/centros-costo/{id_centro_costo}/activar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Centro de Costo. */
+                id_centro_costo: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/activar/
+         *     Reactiva un registro que fue desactivado.
+         *     Busca el objeto incluyendo inactivos (necesario para reactivar).
+         */
+        post: operations["contabilidad_centros-costo_activar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contabilidad/centros-costo/{id_centro_costo}/desactivar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Centro de Costo. */
+                id_centro_costo: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description POST /{pk}/desactivar/
+         *     Desactiva (borrado lógico) un registro activo.
+         */
+        post: operations["contabilidad_centros-costo_desactivar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/contabilidad/detalles-asiento/": {
         parameters: {
             query?: never;
@@ -17877,6 +17965,46 @@ export interface components {
              * Format: decimal
              */
             haber?: string;
+            /**
+             * Debe base
+             * Format: decimal
+             */
+            debe_base?: string | null;
+            /**
+             * Haber base
+             * Format: decimal
+             */
+            haber_base?: string | null;
+            /**
+             * Debe pais
+             * Format: decimal
+             */
+            debe_pais?: string | null;
+            /**
+             * Haber pais
+             * Format: decimal
+             */
+            haber_pais?: string | null;
+            /**
+             * Debe referencia
+             * Format: decimal
+             */
+            debe_referencia?: string | null;
+            /**
+             * Haber referencia
+             * Format: decimal
+             */
+            haber_referencia?: string | null;
+            /**
+             * Tasa bcv aplicada
+             * Format: decimal
+             */
+            tasa_bcv_aplicada?: string | null;
+            /**
+             * Tasa referencia aplicada
+             * Format: decimal
+             */
+            tasa_referencia_aplicada?: string | null;
             /** Descripcion detalle */
             descripcion_detalle?: string | null;
             /**
@@ -17904,6 +18032,16 @@ export interface components {
              * @default
              */
             readonly contacto_nombre: string | null;
+            /**
+             * Id centro costo
+             * Format: uuid
+             */
+            id_centro_costo?: string | null;
+            /**
+             * Centro costo nombre
+             * @default
+             */
+            readonly centro_costo_nombre: string | null;
         };
         AsientoContable: {
             /**
@@ -17912,6 +18050,14 @@ export interface components {
              */
             readonly id_asiento?: string;
             readonly detalles?: components["schemas"]["DetalleAsiento"][];
+            /**
+             * Ambito
+             * @description Libro contable del asiento: FISCAL o GERENCIAL.
+             * @enum {string}
+             */
+            ambito?: "FISCAL" | "GERENCIAL";
+            /** Ambito display */
+            readonly ambito_display?: string;
             /**
              * Fecha asiento
              * Format: date
@@ -17988,6 +18134,56 @@ export interface components {
              */
             motivo: string;
         };
+        CentroCosto: {
+            /**
+             * Id centro costo
+             * Format: uuid
+             */
+            readonly id_centro_costo?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa: string;
+            /** Codigo */
+            codigo: string;
+            /** Nombre */
+            nombre: string;
+            /**
+             * Tipo
+             * @enum {string}
+             */
+            tipo?: "OPERATIVO" | "ADMINISTRATIVO" | "COMERCIAL" | "LOGISTICA" | "PRODUCCION";
+            /** Tipo display */
+            readonly tipo_display?: string;
+            /**
+             * Id padre
+             * Format: uuid
+             */
+            id_padre?: string | null;
+            /**
+             * Padre nombre
+             * @default
+             */
+            readonly padre_nombre: string | null;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
         DiarioContable: {
             /**
              * Id diario
@@ -18010,6 +18206,14 @@ export interface components {
             tipo?: "VENTAS" | "COMPRAS" | "BANCO" | "CAJA" | "NOMINA" | "VARIOS";
             /** Tipo display */
             readonly tipo_display?: string;
+            /**
+             * Ambito
+             * @description Libro al que pertenece el diario: FISCAL (normativo) o GERENCIAL.
+             * @enum {string}
+             */
+            ambito?: "FISCAL" | "GERENCIAL";
+            /** Ambito display */
+            readonly ambito_display?: string;
             /** Prefijo secuencia */
             prefijo_secuencia?: string;
             /** Siguiente numero */
@@ -18426,6 +18630,17 @@ export interface components {
              * Format: uuid
              */
             readonly empresa_id?: string;
+            /** Ambito */
+            readonly ambito?: string;
+            /** Moneda reporte */
+            readonly moneda_reporte?: string;
+            /**
+             * Id centro costo
+             * Format: uuid
+             */
+            readonly id_centro_costo?: string | null;
+            /** Centro costo nombre */
+            readonly centro_costo_nombre?: string;
             /** Moneda base */
             readonly moneda_base?: string;
             /** Moneda base simbolo */
@@ -18582,6 +18797,17 @@ export interface components {
              * Format: uuid
              */
             readonly empresa_id?: string;
+            /** Ambito */
+            readonly ambito?: string;
+            /** Moneda reporte */
+            readonly moneda_reporte?: string;
+            /**
+             * Id centro costo
+             * Format: uuid
+             */
+            readonly id_centro_costo?: string | null;
+            /** Centro costo nombre */
+            readonly centro_costo_nombre?: string;
             /** Moneda base */
             readonly moneda_base?: string;
             /** Moneda base simbolo */
@@ -18666,6 +18892,17 @@ export interface components {
              * Format: uuid
              */
             readonly empresa_id?: string;
+            /** Ambito */
+            readonly ambito?: string;
+            /** Moneda reporte */
+            readonly moneda_reporte?: string;
+            /**
+             * Id centro costo
+             * Format: uuid
+             */
+            readonly id_centro_costo?: string | null;
+            /** Centro costo nombre */
+            readonly centro_costo_nombre?: string;
             /** Moneda base */
             readonly moneda_base?: string;
             /** Moneda base simbolo */
@@ -18758,6 +18995,8 @@ export interface components {
              * Format: uuid
              */
             readonly id_asiento?: string;
+            /** Ambito */
+            readonly ambito?: string;
             /**
              * Fecha asiento
              * Format: date
@@ -18795,6 +19034,13 @@ export interface components {
             /** Contacto nombre */
             readonly contacto_nombre?: string;
             /**
+             * Id centro costo
+             * Format: uuid
+             */
+            readonly id_centro_costo?: string | null;
+            /** Centro costo nombre */
+            readonly centro_costo_nombre?: string;
+            /**
              * Debe
              * Format: decimal
              */
@@ -18831,6 +19077,17 @@ export interface components {
              * Format: uuid
              */
             readonly empresa_id?: string;
+            /** Ambito */
+            readonly ambito?: string;
+            /** Moneda reporte */
+            readonly moneda_reporte?: string;
+            /**
+             * Id centro costo
+             * Format: uuid
+             */
+            readonly id_centro_costo?: string | null;
+            /** Centro costo nombre */
+            readonly centro_costo_nombre?: string;
             /** Moneda base */
             readonly moneda_base?: string;
             /** Moneda base simbolo */
@@ -21385,7 +21642,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-22T14:41:23.472161-04:00
+             * @default 2026-11-22T21:53:48.626335-04:00
              */
             fecha_despacho: string;
             /**
@@ -30422,6 +30679,11 @@ export interface components {
                 "application/json": components["schemas"]["Tarjeta"];
             };
         };
+        CentroCosto: {
+            content: {
+                "application/json": components["schemas"]["CentroCosto"];
+            };
+        };
         DetalleAsiento: {
             content: {
                 "application/json": components["schemas"]["DetalleAsiento"];
@@ -37219,6 +37481,188 @@ export interface operations {
             };
         };
     };
+    "contabilidad_centros-costo_list": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["CentroCosto"][];
+                    };
+                };
+            };
+        };
+    };
+    "contabilidad_centros-costo_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["CentroCosto"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CentroCosto"];
+                };
+            };
+        };
+    };
+    "contabilidad_centros-costo_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Centro de Costo. */
+                id_centro_costo: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CentroCosto"];
+                };
+            };
+        };
+    };
+    "contabilidad_centros-costo_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Centro de Costo. */
+                id_centro_costo: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["CentroCosto"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CentroCosto"];
+                };
+            };
+        };
+    };
+    "contabilidad_centros-costo_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Centro de Costo. */
+                id_centro_costo: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "contabilidad_centros-costo_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Centro de Costo. */
+                id_centro_costo: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["CentroCosto"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CentroCosto"];
+                };
+            };
+        };
+    };
+    "contabilidad_centros-costo_activar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Centro de Costo. */
+                id_centro_costo: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["CentroCosto"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CentroCosto"];
+                };
+            };
+        };
+    };
+    "contabilidad_centros-costo_desactivar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Centro de Costo. */
+                id_centro_costo: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["CentroCosto"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CentroCosto"];
+                };
+            };
+        };
+    };
     "contabilidad_detalles-asiento_list": {
         parameters: {
             query?: {
@@ -38158,6 +38602,12 @@ export interface operations {
                 fecha_desde?: string;
                 fecha_hasta?: string;
                 id_diario?: string;
+                /** @description Libro contable: CONSOLIDADO (default), FISCAL o GERENCIAL. */
+                ambito?: "CONSOLIDADO" | "FISCAL" | "GERENCIAL";
+                /** @description Moneda de agregación: BASE (default), PAIS o REFERENCIA. */
+                moneda?: "BASE" | "PAIS" | "REFERENCIA";
+                /** @description UUID de Centro de Costo analítico (opcional). */
+                id_centro_costo?: string;
                 /** @description Si true, incluye equivalentes convertidos a USD cuando existe tasa disponible. */
                 incluir_equivalentes_usd?: boolean;
                 /** @description Formato de salida: json (default), csv o pdf. */
@@ -38185,6 +38635,12 @@ export interface operations {
                 /** @description UUID de la empresa (requerido). */
                 empresa_id: string;
                 fecha_corte?: string;
+                /** @description Libro contable: CONSOLIDADO (default), FISCAL o GERENCIAL. */
+                ambito?: "CONSOLIDADO" | "FISCAL" | "GERENCIAL";
+                /** @description Moneda de agregación: BASE (default), PAIS o REFERENCIA. */
+                moneda?: "BASE" | "PAIS" | "REFERENCIA";
+                /** @description UUID de Centro de Costo analítico (opcional). */
+                id_centro_costo?: string;
                 /** @description Si true, incluye equivalentes convertidos a USD cuando existe tasa disponible. */
                 incluir_equivalentes_usd?: boolean;
                 /** @description Formato de salida: json (default), csv o pdf. */
@@ -38213,6 +38669,12 @@ export interface operations {
                 empresa_id: string;
                 fecha_desde?: string;
                 fecha_hasta?: string;
+                /** @description Libro contable: CONSOLIDADO (default), FISCAL o GERENCIAL. */
+                ambito?: "CONSOLIDADO" | "FISCAL" | "GERENCIAL";
+                /** @description Moneda de agregación: BASE (default), PAIS o REFERENCIA. */
+                moneda?: "BASE" | "PAIS" | "REFERENCIA";
+                /** @description UUID de Centro de Costo analítico (opcional). */
+                id_centro_costo?: string;
                 /** @description Si true, incluye equivalentes convertidos a USD cuando existe tasa disponible. */
                 incluir_equivalentes_usd?: boolean;
                 /** @description Formato de salida: json (default), csv o pdf. */
@@ -38245,6 +38707,12 @@ export interface operations {
                 fecha_desde?: string;
                 fecha_hasta?: string;
                 limit?: number;
+                /** @description Libro contable: CONSOLIDADO (default), FISCAL o GERENCIAL. */
+                ambito?: "CONSOLIDADO" | "FISCAL" | "GERENCIAL";
+                /** @description Moneda de agregación: BASE (default), PAIS o REFERENCIA. */
+                moneda?: "BASE" | "PAIS" | "REFERENCIA";
+                /** @description UUID de Centro de Costo analítico (opcional). */
+                id_centro_costo?: string;
                 /** @description Si true, incluye equivalentes convertidos a USD cuando existe tasa disponible. */
                 incluir_equivalentes_usd?: boolean;
                 /** @description Formato de salida: json (default), csv o pdf. */

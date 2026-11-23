@@ -204,6 +204,36 @@ _PARAM_USD = openapi.Parameter(
     type=openapi.TYPE_BOOLEAN,
     default=False,
 )
+_PARAM_AMBITO = openapi.Parameter(
+    "ambito",
+    openapi.IN_QUERY,
+    description="Libro contable: CONSOLIDADO (default), FISCAL o GERENCIAL.",
+    type=openapi.TYPE_STRING,
+    enum=["CONSOLIDADO", "FISCAL", "GERENCIAL"],
+    default="CONSOLIDADO",
+)
+_PARAM_MONEDA = openapi.Parameter(
+    "moneda",
+    openapi.IN_QUERY,
+    description="Moneda de agregación: BASE (default), PAIS o REFERENCIA.",
+    type=openapi.TYPE_STRING,
+    enum=["BASE", "PAIS", "REFERENCIA"],
+    default="BASE",
+)
+_PARAM_CENTRO_COSTO = openapi.Parameter(
+    "id_centro_costo",
+    openapi.IN_QUERY,
+    description="UUID de Centro de Costo analítico (opcional).",
+    type=openapi.TYPE_STRING,
+    format=openapi.FORMAT_UUID,
+)
+
+
+def _resolver_filtros_dual(request: Request) -> tuple[str, str, uuid.UUID | None]:
+    ambito = (request.query_params.get("ambito") or "CONSOLIDADO").strip().upper()
+    moneda = (request.query_params.get("moneda") or "BASE").strip().upper()
+    id_centro_costo = _parse_uuid_param(request.query_params.get("id_centro_costo"), "id_centro_costo")
+    return ambito, moneda, id_centro_costo
 
 
 class ReporteContableBaseView(APIView):
@@ -231,6 +261,9 @@ class ReporteBalanceComprobacionView(ReporteContableBaseView):
             openapi.Parameter("fecha_desde", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_DATE),
             openapi.Parameter("fecha_hasta", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_DATE),
             openapi.Parameter("id_diario", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID),
+            _PARAM_AMBITO,
+            _PARAM_MONEDA,
+            _PARAM_CENTRO_COSTO,
             _PARAM_USD,
             _PARAM_FORMATO,
         ],
@@ -245,6 +278,7 @@ class ReporteBalanceComprobacionView(ReporteContableBaseView):
         fecha_desde = _parse_fecha_param(request.query_params.get("fecha_desde"), "fecha_desde")
         fecha_hasta = _parse_fecha_param(request.query_params.get("fecha_hasta"), "fecha_hasta")
         id_diario = _parse_uuid_param(request.query_params.get("id_diario"), "id_diario")
+        ambito, moneda, id_centro_costo = _resolver_filtros_dual(request)
         incluir_usd = _parse_bool_param(
             request.query_params.get("incluir_equivalentes_usd"), "incluir_equivalentes_usd"
         )
@@ -257,6 +291,9 @@ class ReporteBalanceComprobacionView(ReporteContableBaseView):
                 fecha_hasta=fecha_hasta,
                 id_diario=id_diario,
                 incluir_equivalentes_usd=incluir_usd,
+                ambito=ambito,
+                moneda=moneda,
+                id_centro_costo=id_centro_costo,
             )
         except ReporteTenantError as exc:
             return domain_error_response(exc, status_code=status.HTTP_404_NOT_FOUND)
@@ -275,6 +312,9 @@ class ReporteEstadoResultadosView(ReporteContableBaseView):
             _PARAM_EMPRESA,
             openapi.Parameter("fecha_desde", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_DATE),
             openapi.Parameter("fecha_hasta", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_DATE),
+            _PARAM_AMBITO,
+            _PARAM_MONEDA,
+            _PARAM_CENTRO_COSTO,
             _PARAM_USD,
             _PARAM_FORMATO,
         ],
@@ -291,6 +331,7 @@ class ReporteEstadoResultadosView(ReporteContableBaseView):
         fecha_desde = _parse_fecha_param(
             request.query_params.get("fecha_desde"), "fecha_desde"
         ) or fecha_hasta.replace(month=1, day=1)
+        ambito, moneda, id_centro_costo = _resolver_filtros_dual(request)
         incluir_usd = _parse_bool_param(
             request.query_params.get("incluir_equivalentes_usd"), "incluir_equivalentes_usd"
         )
@@ -302,6 +343,9 @@ class ReporteEstadoResultadosView(ReporteContableBaseView):
                 fecha_desde=fecha_desde,
                 fecha_hasta=fecha_hasta,
                 incluir_equivalentes_usd=incluir_usd,
+                ambito=ambito,
+                moneda=moneda,
+                id_centro_costo=id_centro_costo,
             )
         except ReporteTenantError as exc:
             return domain_error_response(exc, status_code=status.HTTP_404_NOT_FOUND)
@@ -319,6 +363,9 @@ class ReporteBalanceGeneralView(ReporteContableBaseView):
         manual_parameters=[
             _PARAM_EMPRESA,
             openapi.Parameter("fecha_corte", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_DATE),
+            _PARAM_AMBITO,
+            _PARAM_MONEDA,
+            _PARAM_CENTRO_COSTO,
             _PARAM_USD,
             _PARAM_FORMATO,
         ],
@@ -333,6 +380,7 @@ class ReporteBalanceGeneralView(ReporteContableBaseView):
         fecha_corte = (
             _parse_fecha_param(request.query_params.get("fecha_corte"), "fecha_corte") or timezone.localdate()
         )
+        ambito, moneda, id_centro_costo = _resolver_filtros_dual(request)
         incluir_usd = _parse_bool_param(
             request.query_params.get("incluir_equivalentes_usd"), "incluir_equivalentes_usd"
         )
@@ -343,6 +391,9 @@ class ReporteBalanceGeneralView(ReporteContableBaseView):
                 empresa,
                 fecha_corte=fecha_corte,
                 incluir_equivalentes_usd=incluir_usd,
+                ambito=ambito,
+                moneda=moneda,
+                id_centro_costo=id_centro_costo,
             )
         except ReporteTenantError as exc:
             return domain_error_response(exc, status_code=status.HTTP_404_NOT_FOUND)
@@ -367,6 +418,9 @@ class ReporteLibroMayorAuxiliarView(ReporteContableBaseView):
             openapi.Parameter("fecha_desde", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_DATE),
             openapi.Parameter("fecha_hasta", openapi.IN_QUERY, type=openapi.TYPE_STRING, format=openapi.FORMAT_DATE),
             openapi.Parameter("limit", openapi.IN_QUERY, type=openapi.TYPE_INTEGER, default=1000),
+            _PARAM_AMBITO,
+            _PARAM_MONEDA,
+            _PARAM_CENTRO_COSTO,
             _PARAM_USD,
             _PARAM_FORMATO,
         ],
@@ -384,6 +438,7 @@ class ReporteLibroMayorAuxiliarView(ReporteContableBaseView):
         fecha_desde = _parse_fecha_param(request.query_params.get("fecha_desde"), "fecha_desde")
         fecha_hasta = _parse_fecha_param(request.query_params.get("fecha_hasta"), "fecha_hasta")
         limit = _parse_limit_param(request.query_params.get("limit"), default=1000)
+        ambito, moneda, id_centro_costo = _resolver_filtros_dual(request)
         incluir_usd = _parse_bool_param(
             request.query_params.get("incluir_equivalentes_usd"), "incluir_equivalentes_usd"
         )
@@ -399,6 +454,9 @@ class ReporteLibroMayorAuxiliarView(ReporteContableBaseView):
                 fecha_hasta=fecha_hasta,
                 limit=limit,
                 incluir_equivalentes_usd=incluir_usd,
+                ambito=ambito,
+                moneda=moneda,
+                id_centro_costo=id_centro_costo,
             )
         except ReporteTenantError as exc:
             return domain_error_response(exc, status_code=status.HTTP_404_NOT_FOUND)

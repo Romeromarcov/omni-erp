@@ -8,6 +8,7 @@ from rest_framework import serializers
 
 from .models import (
     AsientoContable,
+    CentroCosto,
     DetalleAsiento,
     DiarioContable,
     MapeoContable,
@@ -38,6 +39,7 @@ class DiarioContableSerializer(serializers.ModelSerializer):
     """Diario contable (estilo ``account.journal``) con validación de pertenencia por empresa."""
 
     tipo_display = serializers.CharField(source="get_tipo_display", read_only=True)
+    ambito_display = serializers.CharField(source="get_ambito_display", read_only=True)
     cuenta_defecto_debe_nombre = serializers.CharField(
         source="cuenta_defecto_debe.nombre_cuenta",
         read_only=True,
@@ -62,6 +64,8 @@ class DiarioContableSerializer(serializers.ModelSerializer):
             "nombre",
             "tipo",
             "tipo_display",
+            "ambito",
+            "ambito_display",
             "prefijo_secuencia",
             "siguiente_numero",
             "cuenta_defecto_debe",
@@ -105,9 +109,68 @@ class DiarioContableSerializer(serializers.ModelSerializer):
         return attrs
 
 
+class CentroCostoSerializer(serializers.ModelSerializer):
+    """Centro de costo analítico con validación multi-tenant y jerarquía acíclica."""
+
+    tipo_display = serializers.CharField(source="get_tipo_display", read_only=True)
+    padre_nombre = serializers.CharField(
+        source="id_padre.nombre",
+        read_only=True,
+        allow_null=True,
+        allow_blank=True,
+        default="",
+    )
+
+    class Meta:
+        model = CentroCosto
+        fields = [
+            "id_centro_costo",
+            "id_empresa",
+            "codigo",
+            "nombre",
+            "tipo",
+            "tipo_display",
+            "id_padre",
+            "padre_nombre",
+            "activo",
+            "fecha_creacion",
+            "fecha_actualizacion",
+        ]
+        read_only_fields = ["id_centro_costo", "fecha_creacion", "fecha_actualizacion"]
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        empresa = attrs.get("id_empresa") or getattr(self.instance, "id_empresa", None)
+        if isinstance(self.instance, CentroCosto) and "id_empresa" in attrs:
+            if attrs["id_empresa"].pk != self.instance.id_empresa_id:
+                raise serializers.ValidationError(
+                    {"id_empresa": "No se puede cambiar la empresa de un centro de costo."}
+                )
+        padre = attrs.get("id_padre") if "id_padre" in attrs else getattr(self.instance, "id_padre", None)
+        if padre is not None:
+            if empresa is not None and padre.id_empresa_id != empresa.pk:
+                raise serializers.ValidationError({"id_padre": "El centro de costo padre no pertenece a la empresa."})
+            actual: CentroCosto | None = padre
+            visitados: set[Any] = {self.instance.pk} if isinstance(self.instance, CentroCosto) else set()
+            while actual is not None:
+                if actual.pk in visitados:
+                    raise serializers.ValidationError(
+                        {"id_padre": "La jerarquía de centros de costo no puede contener ciclos."}
+                    )
+                visitados.add(actual.pk)
+                actual = actual.id_padre
+        return attrs
+
+
 class DetalleAsientoSerializer(serializers.ModelSerializer):
     contacto_nombre = serializers.CharField(
         source="id_contacto.nombre_completo",
+        read_only=True,
+        allow_null=True,
+        allow_blank=True,
+        default="",
+    )
+    centro_costo_nombre = serializers.CharField(
+        source="id_centro_costo.nombre",
         read_only=True,
         allow_null=True,
         allow_blank=True,
@@ -121,17 +184,32 @@ class DetalleAsientoSerializer(serializers.ModelSerializer):
             "id_detalle_asiento",
             "debe",
             "haber",
+            "debe_base",
+            "haber_base",
+            "debe_pais",
+            "haber_pais",
+            "debe_referencia",
+            "haber_referencia",
+            "tasa_bcv_aplicada",
+            "tasa_referencia_aplicada",
             "descripcion_detalle",
             "fecha_creacion",
             "id_asiento",
             "id_cuenta_contable",
             "id_contacto",
             "contacto_nombre",
+            "id_centro_costo",
+            "centro_costo_nombre",
         ]
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         asiento = attrs.get("id_asiento") or getattr(self.instance, "id_asiento", None)
         contacto = attrs.get("id_contacto") if "id_contacto" in attrs else getattr(self.instance, "id_contacto", None)
+        centro = (
+            attrs.get("id_centro_costo")
+            if "id_centro_costo" in attrs
+            else getattr(self.instance, "id_centro_costo", None)
+        )
         cuenta = (
             attrs.get("id_cuenta_contable")
             if "id_cuenta_contable" in attrs
@@ -146,11 +224,16 @@ class DetalleAsientoSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {"id_contacto": "El contacto no pertenece a la empresa del asiento."}
                 )
+            if centro is not None and centro.id_empresa_id != asiento.id_empresa_id:
+                raise serializers.ValidationError(
+                    {"id_centro_costo": "El centro de costo no pertenece a la empresa del asiento."}
+                )
         return attrs
 
 
 class AsientoContableSerializer(serializers.ModelSerializer):
     detalles = DetalleAsientoSerializer(many=True, read_only=True, source="detalleasiento_set")
+    ambito_display = serializers.CharField(source="get_ambito_display", read_only=True)
     diario_nombre = serializers.CharField(
         source="id_diario.nombre",
         read_only=True,
@@ -166,6 +249,8 @@ class AsientoContableSerializer(serializers.ModelSerializer):
         fields = [
             "id_asiento",
             "detalles",
+            "ambito",
+            "ambito_display",
             "fecha_asiento",
             "numero_asiento",
             "descripcion",

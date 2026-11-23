@@ -41,12 +41,14 @@ import BalanceOutlined from '@mui/icons-material/BalanceOutlined';
 import MenuBookOutlined from '@mui/icons-material/MenuBookOutlined';
 import {
   contabilidadService,
+  type AmbitoReporte,
   type BalanceComprobacionReport,
   type BalanceGeneralReport,
   type EstadoFinancieroCuenta,
   type EstadoResultadosReport,
   type FormatoExportReporte,
   type LibroMayorAuxiliarReport,
+  type MonedaReporte,
   type TipoReporteContable,
 } from '../../services/contabilidadService';
 import { contabilidadKeys } from '../../lib/queryKeys';
@@ -113,6 +115,9 @@ export default function ReportesContablesPage({ initialTab }: ReportesContablesP
 
   // ── Filtros globales y por pestaña ───────────────────────────────────────
   const [incluirUsd, setIncluirUsd] = useState(false);
+  const [ambito, setAmbito] = useState<AmbitoReporte>('CONSOLIDADO');
+  const [moneda, setMoneda] = useState<MonedaReporte>('BASE');
+  const [centroCostoId, setCentroCostoId] = useState('');
   const [fechaDesde, setFechaDesde] = useState('');
   const [fechaHasta, setFechaHasta] = useState('');
   const [pnlDesde, setPnlDesde] = useState(() => inicioAnioIso());
@@ -147,6 +152,12 @@ export default function ReportesContablesPage({ initialTab }: ReportesContablesP
     enabled: Boolean(empresaId),
   });
 
+  const { data: centrosCosto = [] } = useQuery({
+    queryKey: contabilidadKeys.centrosCosto(),
+    queryFn: () => contabilidadService.listCentrosCosto(),
+    enabled: Boolean(empresaId),
+  });
+
   const cuentasOrdenadas = useMemo(
     () => [...cuentasPlan].sort((a, b) => a.codigo_cuenta.localeCompare(b.codigo_cuenta)),
     [cuentasPlan],
@@ -160,6 +171,9 @@ export default function ReportesContablesPage({ initialTab }: ReportesContablesP
       fechaHasta,
       idDiario: diarioId,
       incluirUsd,
+      ambito,
+      moneda,
+      idCentroCosto: centroCostoId,
     }),
     queryFn: () =>
       contabilidadService.getBalanceComprobacion({
@@ -168,6 +182,9 @@ export default function ReportesContablesPage({ initialTab }: ReportesContablesP
         fecha_hasta: fechaHasta || undefined,
         id_diario: diarioId || undefined,
         incluir_equivalentes_usd: incluirUsd,
+        ambito,
+        moneda,
+        id_centro_costo: centroCostoId || undefined,
       }),
     enabled: Boolean(empresaId) && tab === 'balance-comprobacion',
   });
@@ -178,6 +195,9 @@ export default function ReportesContablesPage({ initialTab }: ReportesContablesP
       fechaDesde: pnlDesde,
       fechaHasta: pnlHasta,
       incluirUsd,
+      ambito,
+      moneda,
+      idCentroCosto: centroCostoId,
     }),
     queryFn: () =>
       contabilidadService.getEstadoResultados({
@@ -185,6 +205,9 @@ export default function ReportesContablesPage({ initialTab }: ReportesContablesP
         fecha_desde: pnlDesde || undefined,
         fecha_hasta: pnlHasta || undefined,
         incluir_equivalentes_usd: incluirUsd,
+        ambito,
+        moneda,
+        id_centro_costo: centroCostoId || undefined,
       }),
     enabled: Boolean(empresaId) && tab === 'estado-resultados',
   });
@@ -194,12 +217,18 @@ export default function ReportesContablesPage({ initialTab }: ReportesContablesP
       empresaId,
       fechaCorte,
       incluirUsd,
+      ambito,
+      moneda,
+      idCentroCosto: centroCostoId,
     }),
     queryFn: () =>
       contabilidadService.getBalanceGeneral({
         empresa_id: empresaId,
         fecha_corte: fechaCorte || undefined,
         incluir_equivalentes_usd: incluirUsd,
+        ambito,
+        moneda,
+        id_centro_costo: centroCostoId || undefined,
       }),
     enabled: Boolean(empresaId) && tab === 'balance-general',
   });
@@ -213,6 +242,9 @@ export default function ReportesContablesPage({ initialTab }: ReportesContablesP
       fechaDesde: mayorDesde,
       fechaHasta: mayorHasta,
       incluirUsd,
+      ambito,
+      moneda,
+      idCentroCosto: centroCostoId,
     }),
     queryFn: () =>
       contabilidadService.getLibroMayorAuxiliar({
@@ -223,6 +255,9 @@ export default function ReportesContablesPage({ initialTab }: ReportesContablesP
         fecha_desde: mayorDesde || undefined,
         fecha_hasta: mayorHasta || undefined,
         incluir_equivalentes_usd: incluirUsd,
+        ambito,
+        moneda,
+        id_centro_costo: centroCostoId || undefined,
       }),
     enabled: Boolean(empresaId) && tab === 'mayor-auxiliar',
   });
@@ -269,6 +304,9 @@ export default function ReportesContablesPage({ initialTab }: ReportesContablesP
         fecha_hasta: fechaHasta || undefined,
         id_diario: diarioId || undefined,
         incluir_equivalentes_usd: incluirUsd,
+        ambito,
+        moneda,
+        id_centro_costo: centroCostoId || undefined,
       };
     } else if (tab === 'estado-resultados') {
       filtros = {
@@ -276,12 +314,18 @@ export default function ReportesContablesPage({ initialTab }: ReportesContablesP
         fecha_desde: pnlDesde || undefined,
         fecha_hasta: pnlHasta || undefined,
         incluir_equivalentes_usd: incluirUsd,
+        ambito,
+        moneda,
+        id_centro_costo: centroCostoId || undefined,
       };
     } else if (tab === 'balance-general') {
       filtros = {
         empresa_id: empresaId,
         fecha_corte: fechaCorte || undefined,
         incluir_equivalentes_usd: incluirUsd,
+        ambito,
+        moneda,
+        id_centro_costo: centroCostoId || undefined,
       };
     } else {
       filtros = {
@@ -292,6 +336,9 @@ export default function ReportesContablesPage({ initialTab }: ReportesContablesP
         fecha_desde: mayorDesde || undefined,
         fecha_hasta: mayorHasta || undefined,
         incluir_equivalentes_usd: incluirUsd,
+        ambito,
+        moneda,
+        id_centro_costo: centroCostoId || undefined,
       };
     }
 
@@ -569,6 +616,48 @@ export default function ReportesContablesPage({ initialTab }: ReportesContablesP
               />
             </>
           )}
+
+          <TextField
+            select
+            size="small"
+            label={t('contabilidad.reportes.libro')}
+            value={ambito}
+            onChange={(e) => setAmbito(e.target.value as AmbitoReporte)}
+            sx={{ minWidth: 190 }}
+          >
+            <MenuItem value="CONSOLIDADO">{t('contabilidad.reportes.libroConsolidado')}</MenuItem>
+            <MenuItem value="FISCAL">{t('contabilidad.reportes.libroFiscal')}</MenuItem>
+            <MenuItem value="GERENCIAL">{t('contabilidad.reportes.libroGerencial')}</MenuItem>
+          </TextField>
+
+          <TextField
+            select
+            size="small"
+            label={t('contabilidad.reportes.monedaReporte')}
+            value={moneda}
+            onChange={(e) => setMoneda(e.target.value as MonedaReporte)}
+            sx={{ minWidth: 165 }}
+          >
+            <MenuItem value="BASE">{t('contabilidad.reportes.monedaBase')}</MenuItem>
+            <MenuItem value="PAIS">{t('contabilidad.reportes.monedaPais')}</MenuItem>
+            <MenuItem value="REFERENCIA">{t('contabilidad.reportes.monedaReferencia')}</MenuItem>
+          </TextField>
+
+          <TextField
+            select
+            size="small"
+            label={t('contabilidad.reportes.centroCosto')}
+            value={centroCostoId}
+            onChange={(e) => setCentroCostoId(e.target.value)}
+            sx={{ minWidth: 190 }}
+          >
+            <MenuItem value="">{t('contabilidad.reportes.todosCentrosCosto')}</MenuItem>
+            {centrosCosto.map((cc) => (
+              <MenuItem key={cc.id_centro_costo} value={cc.id_centro_costo}>
+                {cc.codigo} — {cc.nombre}
+              </MenuItem>
+            ))}
+          </TextField>
 
           <FormControlLabel
             control={<Switch checked={incluirUsd} onChange={(e) => setIncluirUsd(e.target.checked)} />}
