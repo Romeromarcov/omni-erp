@@ -215,6 +215,10 @@
 | `^comisiones/resumen/$` | ComisionVentaViewSet | ComisionVenta | ✅ | ✅ | IsAuthenticated |
 | `^comisiones/resumen\.(?P<format>[a-z0-9]+)/?$` | ComisionVentaViewSet | ComisionVenta | ✅ | ✅ | IsAuthenticated |
 | `^comisiones\.(?P<format>[a-z0-9]+)/?$` | ComisionVentaViewSet | ComisionVenta | ✅ | ✅ | IsAuthenticated |
+| `^conceptos-islr/$` | ConceptoRetencionISLRViewSet | ConceptoRetencionISLR | — | ✅ | IsAuthenticated |
+| `^conceptos-islr/(?P<pk>[^/.]+)/$` | ConceptoRetencionISLRViewSet | ConceptoRetencionISLR | — | ✅ | IsAuthenticated |
+| `^conceptos-islr/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConceptoRetencionISLRViewSet | ConceptoRetencionISLR | — | ✅ | IsAuthenticated |
+| `^conceptos-islr\.(?P<format>[a-z0-9]+)/?$` | ConceptoRetencionISLRViewSet | ConceptoRetencionISLR | — | ✅ | IsAuthenticated |
 | `^conceptos-nomina/$` | ConceptoNominaViewSet | ConceptoNomina | ✅ | ✅ | IsAuthenticated |
 | `^conceptos-nomina/(?P<pk>[^/.]+)/$` | ConceptoNominaViewSet | ConceptoNomina | ✅ | ✅ | IsAuthenticated |
 | `^conceptos-nomina/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConceptoNominaViewSet | ConceptoNomina | ✅ | ✅ | IsAuthenticated |
@@ -649,6 +653,14 @@
 | `^horarios-trabajo/activos/$` | HorarioTrabajoViewSet | HorarioTrabajo | ✅ | ✅ | IsAuthenticated |
 | `^horarios-trabajo/activos\.(?P<format>[a-z0-9]+)/?$` | HorarioTrabajoViewSet | HorarioTrabajo | ✅ | ✅ | IsAuthenticated |
 | `^horarios-trabajo\.(?P<format>[a-z0-9]+)/?$` | HorarioTrabajoViewSet | HorarioTrabajo | ✅ | ✅ | IsAuthenticated |
+| `^imprenta-digital/$` | DocumentoImprentaDigitalViewSet | DocumentoImprentaDigital | ✅ | ✅ | IsAuthenticated |
+| `^imprenta-digital/(?P<pk>[^/.]+)/$` | DocumentoImprentaDigitalViewSet | DocumentoImprentaDigital | ✅ | ✅ | IsAuthenticated |
+| `^imprenta-digital/(?P<pk>[^/.]+)/anular/$` | DocumentoImprentaDigitalViewSet | DocumentoImprentaDigital | ✅ | ✅ | IsAuthenticated |
+| `^imprenta-digital/(?P<pk>[^/.]+)/anular\.(?P<format>[a-z0-9]+)/?$` | DocumentoImprentaDigitalViewSet | DocumentoImprentaDigital | ✅ | ✅ | IsAuthenticated |
+| `^imprenta-digital/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DocumentoImprentaDigitalViewSet | DocumentoImprentaDigital | ✅ | ✅ | IsAuthenticated |
+| `^imprenta-digital/emitir/$` | DocumentoImprentaDigitalViewSet | DocumentoImprentaDigital | ✅ | ✅ | IsAuthenticated |
+| `^imprenta-digital/emitir\.(?P<format>[a-z0-9]+)/?$` | DocumentoImprentaDigitalViewSet | DocumentoImprentaDigital | ✅ | ✅ | IsAuthenticated |
+| `^imprenta-digital\.(?P<format>[a-z0-9]+)/?$` | DocumentoImprentaDigitalViewSet | DocumentoImprentaDigital | ✅ | ✅ | IsAuthenticated |
 | `^ingest/$` | IngestaBotViewSet | IngestaBot | ✅ | ✅ | PuedeIngestar |
 | `^ingest/(?P<pk>[^/.]+)/$` | IngestaBotViewSet | IngestaBot | ✅ | ✅ | PuedeIngestar |
 | `^ingest/(?P<pk>[^/.]+)/completar/$` | IngestaBotViewSet | IngestaBot | ✅ | ✅ | PuedeIngestar |
@@ -1309,6 +1321,30 @@
 | `^resumenes-asistencia-diario/reporte_mensual/$` | ResumenAsistenciaDiarioViewSet | ResumenAsistenciaDiario | — | ✅ | IsAuthenticated |
 | `^resumenes-asistencia-diario/reporte_mensual\.(?P<format>[a-z0-9]+)/?$` | ResumenAsistenciaDiarioViewSet | ResumenAsistenciaDiario | — | ✅ | IsAuthenticated |
 | `^resumenes-asistencia-diario\.(?P<format>[a-z0-9]+)/?$` | ResumenAsistenciaDiarioViewSet | ResumenAsistenciaDiario | — | ✅ | IsAuthenticated |
+| `^retenciones-islr/$` | ComprobanteRetencionISLRViewSet | ComprobanteRetencionISLR | ✅ | ✅ | IsAuthenticated |
+| `^retenciones-islr/(?P<pk>[^/.]+)/$` | ComprobanteRetencionISLRViewSet | ComprobanteRetencionISLR | ✅ | ✅ | IsAuthenticated |
+| `^retenciones-islr/(?P<pk>[^/.]+)/anular/$` | ComprobanteRetencionISLRViewSet | ComprobanteRetencionISLR | ✅ | ✅ | IsAuthenticated |
+| `^retenciones-islr/(?P<pk>[^/.]+)/anular\.(?P<format>[a-z0-9]+)/?$` | ComprobanteRetencionISLRViewSet | ComprobanteRetencionISLR | ✅ | ✅ | IsAuthenticated |
+| `^retenciones-islr/(?P<pk>[^/.]+)/pdf/$` | ComprobanteRetencionISLRViewSet | ComprobanteRetencionISLR | ✅ | ✅ | IsAuthenticated |
+| `^retenciones-islr/(?P<pk>[^/.]+)/pdf\.(?P<format>[a-z0-9]+)/?$` | ComprobanteRetencionISLRViewSet | ComprobanteRetencionISLR | ✅ | ✅ | IsAuthenticated |
+| `^retenciones-islr/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ComprobanteRetencionISLRViewSet | ComprobanteRetencionISLR | ✅ | ✅ | IsAuthenticated |
+| `^retenciones-islr/emitir/$` | ComprobanteRetencionISLRViewSet | ComprobanteRetencionISLR | ✅ | ✅ | IsAuthenticated |
+| `^retenciones-islr/emitir\.(?P<format>[a-z0-9]+)/?$` | ComprobanteRetencionISLRViewSet | ComprobanteRetencionISLR | ✅ | ✅ | IsAuthenticated |
+| `^retenciones-islr/exportar-xml/$` | ComprobanteRetencionISLRViewSet | ComprobanteRetencionISLR | ✅ | ✅ | IsAuthenticated |
+| `^retenciones-islr/exportar-xml\.(?P<format>[a-z0-9]+)/?$` | ComprobanteRetencionISLRViewSet | ComprobanteRetencionISLR | ✅ | ✅ | IsAuthenticated |
+| `^retenciones-islr\.(?P<format>[a-z0-9]+)/?$` | ComprobanteRetencionISLRViewSet | ComprobanteRetencionISLR | ✅ | ✅ | IsAuthenticated |
+| `^retenciones-iva/$` | ComprobanteRetencionIVAViewSet | ComprobanteRetencionIVA | ✅ | ✅ | IsAuthenticated |
+| `^retenciones-iva/(?P<pk>[^/.]+)/$` | ComprobanteRetencionIVAViewSet | ComprobanteRetencionIVA | ✅ | ✅ | IsAuthenticated |
+| `^retenciones-iva/(?P<pk>[^/.]+)/anular/$` | ComprobanteRetencionIVAViewSet | ComprobanteRetencionIVA | ✅ | ✅ | IsAuthenticated |
+| `^retenciones-iva/(?P<pk>[^/.]+)/anular\.(?P<format>[a-z0-9]+)/?$` | ComprobanteRetencionIVAViewSet | ComprobanteRetencionIVA | ✅ | ✅ | IsAuthenticated |
+| `^retenciones-iva/(?P<pk>[^/.]+)/pdf/$` | ComprobanteRetencionIVAViewSet | ComprobanteRetencionIVA | ✅ | ✅ | IsAuthenticated |
+| `^retenciones-iva/(?P<pk>[^/.]+)/pdf\.(?P<format>[a-z0-9]+)/?$` | ComprobanteRetencionIVAViewSet | ComprobanteRetencionIVA | ✅ | ✅ | IsAuthenticated |
+| `^retenciones-iva/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ComprobanteRetencionIVAViewSet | ComprobanteRetencionIVA | ✅ | ✅ | IsAuthenticated |
+| `^retenciones-iva/emitir/$` | ComprobanteRetencionIVAViewSet | ComprobanteRetencionIVA | ✅ | ✅ | IsAuthenticated |
+| `^retenciones-iva/emitir\.(?P<format>[a-z0-9]+)/?$` | ComprobanteRetencionIVAViewSet | ComprobanteRetencionIVA | ✅ | ✅ | IsAuthenticated |
+| `^retenciones-iva/exportar-txt/$` | ComprobanteRetencionIVAViewSet | ComprobanteRetencionIVA | ✅ | ✅ | IsAuthenticated |
+| `^retenciones-iva/exportar-txt\.(?P<format>[a-z0-9]+)/?$` | ComprobanteRetencionIVAViewSet | ComprobanteRetencionIVA | ✅ | ✅ | IsAuthenticated |
+| `^retenciones-iva\.(?P<format>[a-z0-9]+)/?$` | ComprobanteRetencionIVAViewSet | ComprobanteRetencionIVA | ✅ | ✅ | IsAuthenticated |
 | `^roles/$` | RolesViewSet | Roles | ✅ | ✅ | IsAuthenticated |
 | `^roles/(?P<pk>[^/.]+)/$` | RolesViewSet | Roles | ✅ | ✅ | IsAuthenticated |
 | `^roles/(?P<pk>[^/.]+)/activar/$` | RolesViewSet | Roles | ✅ | ✅ | IsAuthenticated |
@@ -1521,6 +1557,7 @@
 | `api/health/` | health_view | — | — | — | AllowAny |
 | `api/redoc/` | SchemaView | — | — | — | IsAuthenticated |
 | `bitacora/` | BotBitacoraView | — | — | — | PuedePanelBots |
+| `calcular-igtf-itf/` | CalcularIGTFITFView | — | — | — | IsAuthenticated |
 | `cartera/dashboard/` | CarteraDashboardView | — | — | — | IsAuthenticated |
 | `chat/` | AsistenteChatView | — | — | — | IsAuthenticated |
 | `configuracion/` | ConfiguracionSeguimientoView | — | — | — | PermisoTareas |
@@ -1534,6 +1571,7 @@
 | `heartbeat/` | BotHeartbeatView | — | — | — | PuedeEnviarLatido |
 | `libro-compras-pdf/` | LibroComprasPDFView | — | — | — | IsAuthenticated |
 | `libro-compras/` | LibroComprasView | — | — | — | IsAuthenticated |
+| `libro-inventario-art177/` | LibroInventarioArt177View | — | — | — | IsAuthenticated |
 | `libro-maestro-caja/` | LibroMaestroCajaView | — | — | — | IsAuthenticated |
 | `libro-ventas-pdf/` | LibroVentasPDFView | — | — | — | IsAuthenticated |
 | `libro-ventas/` | LibroVentasView | — | — | — | IsAuthenticated |
@@ -1557,4 +1595,4 @@
 | `validar-cuenta-ve/` | ValidarCuentaVeView | — | — | — | IsAuthenticated |
 | `validar-referencia/` | ValidarReferenciaView | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 281_
+_Total ViewSets: 287_

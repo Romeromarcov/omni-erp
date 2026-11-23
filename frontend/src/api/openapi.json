@@ -28300,6 +28300,116 @@
                 }
             ]
         },
+        "/fiscal/calcular-igtf-itf/": {
+            "post": {
+                "operationId": "fiscal_calcular-igtf-itf_create",
+                "description": "POST /api/fiscal/calcular-igtf-itf/ — desglosa IGTF 3% (divisa) e ITF bancario 2% (SPE).",
+                "parameters": [],
+                "responses": {
+                    "201": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "fiscal"
+                ]
+            },
+            "parameters": []
+        },
+        "/fiscal/conceptos-islr/": {
+            "get": {
+                "operationId": "fiscal_conceptos-islr_list",
+                "description": "Catálogo global Decreto 1808 de conceptos de retención ISLR.",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/ConceptoRetencionISLR"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "fiscal"
+                ]
+            },
+            "parameters": []
+        },
+        "/fiscal/conceptos-islr/{id}/": {
+            "get": {
+                "operationId": "fiscal_conceptos-islr_read",
+                "description": "Catálogo global Decreto 1808 de conceptos de retención ISLR.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ConceptoRetencionISLR"
+                        }
+                    }
+                },
+                "tags": [
+                    "fiscal"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Concepto de Retención ISLR (Decreto 1808).",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
         "/fiscal/configuracion-fiscal/": {
             "get": {
                 "operationId": "fiscal_configuracion-fiscal_list",
@@ -28482,6 +28592,165 @@
                 }
             ]
         },
+        "/fiscal/imprenta-digital/": {
+            "get": {
+                "operationId": "fiscal_imprenta-digital_list",
+                "description": "Emisión y anulación ante Imprenta Digital SENIAT (Providencia 000102/000121).",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/DocumentoImprentaDigital"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "fiscal"
+                ]
+            },
+            "parameters": []
+        },
+        "/fiscal/imprenta-digital/emitir/": {
+            "post": {
+                "operationId": "fiscal_imprenta-digital_emitir",
+                "description": "Emite documento ante la Imprenta Digital configurada (Simulado o Unidigital).",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/DocumentoImprentaDigital"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/DocumentoImprentaDigital"
+                        }
+                    }
+                },
+                "tags": [
+                    "fiscal"
+                ]
+            },
+            "parameters": []
+        },
+        "/fiscal/imprenta-digital/{id_emision}/": {
+            "get": {
+                "operationId": "fiscal_imprenta-digital_read",
+                "description": "Emisión y anulación ante Imprenta Digital SENIAT (Providencia 000102/000121).",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/DocumentoImprentaDigital"
+                        }
+                    }
+                },
+                "tags": [
+                    "fiscal"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_emision",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Documento Imprenta Digital SENIAT.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/fiscal/imprenta-digital/{id_emision}/anular/": {
+            "post": {
+                "operationId": "fiscal_imprenta-digital_anular",
+                "description": "Anula una emisión fiscal previa ante la Imprenta Digital.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/DocumentoImprentaDigital"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/DocumentoImprentaDigital"
+                        }
+                    }
+                },
+                "tags": [
+                    "fiscal"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_emision",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Documento Imprenta Digital SENIAT.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
         "/fiscal/libro-compras-pdf/": {
             "get": {
                 "operationId": "fiscal_libro-compras-pdf_list",
@@ -28502,6 +28771,22 @@
             "get": {
                 "operationId": "fiscal_libro-compras_list",
                 "description": "",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "fiscal"
+                ]
+            },
+            "parameters": []
+        },
+        "/fiscal/libro-inventario-art177/": {
+            "get": {
+                "operationId": "fiscal_libro-inventario-art177_list",
+                "description": "GET /api/fiscal/libro-inventario-art177/?empresa=<uuid>&periodo=YYYY-MM.",
                 "parameters": [],
                 "responses": {
                     "200": {
@@ -28845,6 +29130,512 @@
                     "in": "path",
                     "required": true,
                     "type": "string"
+                }
+            ]
+        },
+        "/fiscal/retenciones-islr/": {
+            "get": {
+                "operationId": "fiscal_retenciones-islr_list",
+                "description": "Comprobantes de Retención ISLR (Decreto 1808): emisión, anulación, PDF y exportador XML SENIAT.",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/ComprobanteRetencionISLR"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "fiscal"
+                ]
+            },
+            "parameters": []
+        },
+        "/fiscal/retenciones-islr/emitir/": {
+            "post": {
+                "operationId": "fiscal_retenciones-islr_emitir",
+                "description": "Emite atómicamente un Comprobante de Retención ISLR (Decreto 1808).",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ComprobanteRetencionISLR"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ComprobanteRetencionISLR"
+                        }
+                    }
+                },
+                "tags": [
+                    "fiscal"
+                ]
+            },
+            "parameters": []
+        },
+        "/fiscal/retenciones-islr/exportar-xml/": {
+            "get": {
+                "operationId": "fiscal_retenciones-islr_exportar_xml",
+                "description": "Exporta XML SENIAT de retenciones ISLR para ?periodo=AAAAMM.",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/ComprobanteRetencionISLR"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "fiscal"
+                ]
+            },
+            "parameters": []
+        },
+        "/fiscal/retenciones-islr/{id_comprobante}/": {
+            "get": {
+                "operationId": "fiscal_retenciones-islr_read",
+                "description": "Comprobantes de Retención ISLR (Decreto 1808): emisión, anulación, PDF y exportador XML SENIAT.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ComprobanteRetencionISLR"
+                        }
+                    }
+                },
+                "tags": [
+                    "fiscal"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_comprobante",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Comprobante de Retención ISLR.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/fiscal/retenciones-islr/{id_comprobante}/anular/": {
+            "post": {
+                "operationId": "fiscal_retenciones-islr_anular",
+                "description": "Anula lógicamente un Comprobante de Retención ISLR.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ComprobanteRetencionISLR"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ComprobanteRetencionISLR"
+                        }
+                    }
+                },
+                "tags": [
+                    "fiscal"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_comprobante",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Comprobante de Retención ISLR.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/fiscal/retenciones-islr/{id_comprobante}/pdf/": {
+            "get": {
+                "operationId": "fiscal_retenciones-islr_pdf",
+                "description": "Descarga PDF del comprobante de retención ISLR.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ComprobanteRetencionISLR"
+                        }
+                    }
+                },
+                "tags": [
+                    "fiscal"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_comprobante",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Comprobante de Retención ISLR.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/fiscal/retenciones-iva/": {
+            "get": {
+                "operationId": "fiscal_retenciones-iva_list",
+                "description": "Comprobantes de Retención IVA: emisión, anulación, PDF y exportador TXT 16 columnas SENIAT.",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/ComprobanteRetencionIVA"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "fiscal"
+                ]
+            },
+            "parameters": []
+        },
+        "/fiscal/retenciones-iva/emitir/": {
+            "post": {
+                "operationId": "fiscal_retenciones-iva_emitir",
+                "description": "Emite atómicamente un Comprobante de Retención de IVA.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ComprobanteRetencionIVA"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ComprobanteRetencionIVA"
+                        }
+                    }
+                },
+                "tags": [
+                    "fiscal"
+                ]
+            },
+            "parameters": []
+        },
+        "/fiscal/retenciones-iva/exportar-txt/": {
+            "get": {
+                "operationId": "fiscal_retenciones-iva_exportar_txt",
+                "description": "Exporta relación TXT SENIAT de 16 columnas para el período ?periodo=AAAAMM.",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/ComprobanteRetencionIVA"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "fiscal"
+                ]
+            },
+            "parameters": []
+        },
+        "/fiscal/retenciones-iva/{id_comprobante}/": {
+            "get": {
+                "operationId": "fiscal_retenciones-iva_read",
+                "description": "Comprobantes de Retención IVA: emisión, anulación, PDF y exportador TXT 16 columnas SENIAT.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ComprobanteRetencionIVA"
+                        }
+                    }
+                },
+                "tags": [
+                    "fiscal"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_comprobante",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Comprobante de Retención IVA.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/fiscal/retenciones-iva/{id_comprobante}/anular/": {
+            "post": {
+                "operationId": "fiscal_retenciones-iva_anular",
+                "description": "Anula lógicamente un Comprobante de Retención IVA.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ComprobanteRetencionIVA"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ComprobanteRetencionIVA"
+                        }
+                    }
+                },
+                "tags": [
+                    "fiscal"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_comprobante",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Comprobante de Retención IVA.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/fiscal/retenciones-iva/{id_comprobante}/pdf/": {
+            "get": {
+                "operationId": "fiscal_retenciones-iva_pdf",
+                "description": "Descarga PDF del comprobante de retención IVA.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ComprobanteRetencionIVA"
+                        }
+                    }
+                },
+                "tags": [
+                    "fiscal"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_comprobante",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Comprobante de Retención IVA.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
                 }
             ]
         },
@@ -58417,7 +59208,10 @@
                         "NOMINA",
                         "CAMBIO_DIVISA",
                         "PAGO_TERCERO",
-                        "PAGO_PARAFISCAL"
+                        "PAGO_PARAFISCAL",
+                        "RETENCION_IVA_COMPRA",
+                        "RETENCION_IVA_VENTA",
+                        "RETENCION_ISLR"
                     ]
                 },
                 "descripcion_plantilla": {
@@ -64013,7 +64807,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-23T02:25:51.951630-04:00"
+                    "default": "2026-11-23T03:31:06.761950-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",
@@ -67390,6 +68184,68 @@
                 }
             }
         },
+        "ConceptoRetencionISLR": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "title": "Id",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "codigo": {
+                    "title": "Codigo",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "nombre": {
+                    "title": "Nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "tipo_persona_fiscal": {
+                    "title": "Tipo persona fiscal",
+                    "type": "string",
+                    "enum": [
+                        "PNR",
+                        "PNNR",
+                        "PJDO",
+                        "PJND"
+                    ],
+                    "readOnly": true
+                },
+                "base_imponible_pct": {
+                    "title": "Base imponible pct",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "porcentaje_retencion": {
+                    "title": "Porcentaje retencion",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "aplica_sustraendo": {
+                    "title": "Aplica sustraendo",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "factor_sustraendo_ut": {
+                    "title": "Factor sustraendo ut",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "activo": {
+                    "title": "Activo",
+                    "type": "boolean",
+                    "readOnly": true
+                }
+            }
+        },
         "ConfiguracionFiscalEmpresa": {
             "required": [
                 "id_empresa"
@@ -67415,6 +68271,32 @@
                     "type": "string",
                     "format": "decimal"
                 },
+                "valor_unidad_tributaria": {
+                    "title": "Valor unidad tributaria",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "imprenta_digital_proveedor": {
+                    "title": "Imprenta digital proveedor",
+                    "type": "string",
+                    "enum": [
+                        "",
+                        "SIMULADO",
+                        "UNIDIGITAL",
+                        "THE_FACTORY_HKA"
+                    ]
+                },
+                "imprenta_digital_url": {
+                    "title": "Imprenta digital url",
+                    "type": "string",
+                    "format": "uri",
+                    "maxLength": 200
+                },
+                "imprenta_digital_serie": {
+                    "title": "Imprenta digital serie",
+                    "type": "string",
+                    "maxLength": 16
+                },
                 "fecha_creacion": {
                     "title": "Fecha creacion",
                     "type": "string",
@@ -67431,6 +68313,99 @@
                     "title": "Id empresa",
                     "type": "string",
                     "format": "uuid"
+                }
+            }
+        },
+        "DocumentoImprentaDigital": {
+            "type": "object",
+            "properties": {
+                "id_emision": {
+                    "title": "Id emision",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "proveedor": {
+                    "title": "Proveedor",
+                    "type": "string",
+                    "enum": [
+                        "SIMULADO",
+                        "UNIDIGITAL",
+                        "THE_FACTORY_HKA"
+                    ],
+                    "readOnly": true
+                },
+                "tipo_documento": {
+                    "title": "Tipo documento",
+                    "type": "string",
+                    "enum": [
+                        "FACTURA",
+                        "NOTA_CREDITO",
+                        "NOTA_DEBITO",
+                        "GUIA_DESPACHO"
+                    ],
+                    "readOnly": true
+                },
+                "referencia_documento": {
+                    "title": "Referencia documento",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "numero_control_asignado": {
+                    "title": "Numero control asignado",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "codigo_validacion": {
+                    "title": "Codigo validacion",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "url_verificacion": {
+                    "title": "Url verificacion",
+                    "type": "string",
+                    "format": "uri",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "estado": {
+                    "title": "Estado",
+                    "type": "string",
+                    "enum": [
+                        "EMITIDO",
+                        "ANULADO",
+                        "ERROR"
+                    ],
+                    "readOnly": true
+                },
+                "emitido_en": {
+                    "title": "Emitido en",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_actualizacion": {
+                    "title": "Fecha de Actualización",
+                    "description": "Fecha y hora de la última modificación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
                 }
             }
         },
@@ -67567,6 +68542,332 @@
                     "description": "Indica si el registro está activo (False = borrado lógico).",
                     "type": "boolean",
                     "readOnly": true
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_actualizacion": {
+                    "title": "Fecha de Actualización",
+                    "description": "Fecha y hora de la última modificación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
+        "ComprobanteRetencionISLR": {
+            "type": "object",
+            "properties": {
+                "id_comprobante": {
+                    "title": "Id comprobante",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "numero_comprobante": {
+                    "title": "Numero comprobante",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "contacto": {
+                    "title": "Contacto",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "contacto_nombre": {
+                    "title": "Contacto nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "contacto_rif": {
+                    "title": "Contacto rif",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "concepto": {
+                    "title": "Concepto",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "concepto_codigo": {
+                    "title": "Concepto codigo",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "concepto_nombre": {
+                    "title": "Concepto nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "factura_compra": {
+                    "title": "Factura compra",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "fecha_emision": {
+                    "title": "Fecha emision",
+                    "type": "string",
+                    "format": "date",
+                    "readOnly": true
+                },
+                "periodo_impositivo": {
+                    "title": "Periodo impositivo",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "numero_factura": {
+                    "title": "Numero factura",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "numero_control": {
+                    "title": "Numero control",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "monto_operacion": {
+                    "title": "Monto operacion",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "valor_ut_aplicado": {
+                    "title": "Valor ut aplicado",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "sustraendo": {
+                    "title": "Sustraendo",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "porcentaje_retencion": {
+                    "title": "Porcentaje retencion",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "monto_retenido": {
+                    "title": "Monto retenido",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "estado": {
+                    "title": "Estado",
+                    "type": "string",
+                    "enum": [
+                        "EMITIDO",
+                        "ANULADO"
+                    ],
+                    "readOnly": true
+                },
+                "asiento_contable": {
+                    "title": "Asiento contable",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_actualizacion": {
+                    "title": "Fecha de Actualización",
+                    "description": "Fecha y hora de la última modificación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
+        "ComprobanteRetencionIVA": {
+            "type": "object",
+            "properties": {
+                "id_comprobante": {
+                    "title": "Id comprobante",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "numero_comprobante": {
+                    "title": "Numero comprobante",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "tipo_operacion": {
+                    "title": "Tipo operacion",
+                    "type": "string",
+                    "enum": [
+                        "COMPRA",
+                        "VENTA"
+                    ],
+                    "readOnly": true
+                },
+                "contacto": {
+                    "title": "Contacto",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "contacto_nombre": {
+                    "title": "Contacto nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "contacto_rif": {
+                    "title": "Contacto rif",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "factura_compra": {
+                    "title": "Factura compra",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "factura_venta": {
+                    "title": "Factura venta",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "fecha_emision": {
+                    "title": "Fecha emision",
+                    "type": "string",
+                    "format": "date",
+                    "readOnly": true
+                },
+                "periodo_impositivo": {
+                    "title": "Periodo impositivo",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "numero_documento": {
+                    "title": "Numero documento",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "numero_control": {
+                    "title": "Numero control",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "numero_documento_afectado": {
+                    "title": "Numero documento afectado",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "tipo_transaccion": {
+                    "title": "Tipo transaccion",
+                    "type": "string",
+                    "enum": [
+                        "01",
+                        "02",
+                        "03"
+                    ],
+                    "readOnly": true
+                },
+                "monto_total_documento": {
+                    "title": "Monto total documento",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "monto_exento": {
+                    "title": "Monto exento",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "base_imponible": {
+                    "title": "Base imponible",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "alicuota_iva": {
+                    "title": "Alicuota iva",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "monto_iva": {
+                    "title": "Monto iva",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "porcentaje_retencion": {
+                    "title": "Porcentaje retencion",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "monto_retenido": {
+                    "title": "Monto retenido",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "estado": {
+                    "title": "Estado",
+                    "type": "string",
+                    "enum": [
+                        "EMITIDO",
+                        "ANULADO"
+                    ],
+                    "readOnly": true
+                },
+                "asiento_contable": {
+                    "title": "Asiento contable",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
                 },
                 "fecha_creacion": {
                     "title": "Fecha de Creación",

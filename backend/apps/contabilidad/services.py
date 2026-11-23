@@ -72,6 +72,9 @@ TIPOS_ASIENTO = frozenset(
         "CAMBIO_DIVISA",  # CTF-013: asiento de la operación de cambio de divisa
         "PAGO_TERCERO",  # Capa B §6.6: pago de terceros (Zelle) — abono CxP / reintegro
         "PAGO_PARAFISCAL",  # Capa B §6.7: pago de contribución parafiscal (IVSS/FAOV/INCES…)
+        "RETENCION_IVA_COMPRA",
+        "RETENCION_IVA_VENTA",
+        "RETENCION_ISLR",
     }
 )
 
@@ -83,6 +86,7 @@ _TIPO_ASIENTO_TO_DIARIO: dict[str, str] = {
     "DEVOLUCION_VENTA_IVA": "VENTAS",
     "NOTA_DEBITO_FISCAL": "VENTAS",
     "NOTA_DEBITO_FISCAL_IVA": "VENTAS",
+    "RETENCION_IVA_VENTA": "VENTAS",
     "COSTO_VENTA": "VENTAS",
     "PAGO_CXC": "VENTAS",
     "FACTURA_COMPRA": "COMPRAS",
@@ -91,6 +95,8 @@ _TIPO_ASIENTO_TO_DIARIO: dict[str, str] = {
     "RECEPCION_MERCANCIA": "COMPRAS",
     "PAGO_CXP": "COMPRAS",
     "PAGO_TERCERO": "COMPRAS",
+    "RETENCION_IVA_COMPRA": "COMPRAS",
+    "RETENCION_ISLR": "COMPRAS",
     "NOMINA": "NOMINA",
     "PAGO_PARAFISCAL": "NOMINA",
     "CAMBIO_DIVISA": "BANCO",
@@ -265,6 +271,10 @@ def _resolver_contacto_documento_asiento(documento: Any, empresa: Empresa) -> Co
     if directo is not None:
         return directo
 
+    directo_alt = _contacto_valido_empresa(getattr(documento, "contacto", None), empresa)
+    if directo_alt is not None:
+        return directo_alt
+
     cliente = getattr(documento, "id_cliente", None)
     if cliente is not None:
         c_cli = _contacto_valido_empresa(getattr(cliente, "contacto", None), empresa)
@@ -318,7 +328,15 @@ def _resolver_contacto_documento_asiento(documento: Any, empresa: Empresa) -> Co
 
 def _descripcion(plantilla: str, tipo: str, documento: Any) -> str:
     desc = plantilla.replace("{tipo}", tipo)
-    for attr in ("numero_factura", "numero_orden", "numero_nota", "numero_recepcion", "numero_pedido"):
+    for attr in (
+        "numero_comprobante",
+        "numero_documento",
+        "numero_factura",
+        "numero_orden",
+        "numero_nota",
+        "numero_recepcion",
+        "numero_pedido",
+    ):
         val = getattr(documento, attr, None)
         if val:
             return desc.replace("{numero}", str(val))

@@ -8887,6 +8887,60 @@ export interface paths {
         patch: operations["finanzas_transacciones-financieras_partial_update"];
         trace?: never;
     };
+    "/fiscal/calcular-igtf-itf/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description POST /api/fiscal/calcular-igtf-itf/ — desglosa IGTF 3% (divisa) e ITF bancario 2% (SPE). */
+        post: operations["fiscal_calcular-igtf-itf_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/fiscal/conceptos-islr/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Catálogo global Decreto 1808 de conceptos de retención ISLR. */
+        get: operations["fiscal_conceptos-islr_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/fiscal/conceptos-islr/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Concepto de Retención ISLR (Decreto 1808). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** @description Catálogo global Decreto 1808 de conceptos de retención ISLR. */
+        get: operations["fiscal_conceptos-islr_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/fiscal/configuracion-fiscal/": {
         parameters: {
             query?: never;
@@ -8922,6 +8976,80 @@ export interface paths {
         patch: operations["fiscal_configuracion-fiscal_partial_update"];
         trace?: never;
     };
+    "/fiscal/imprenta-digital/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Emisión y anulación ante Imprenta Digital SENIAT (Providencia 000102/000121). */
+        get: operations["fiscal_imprenta-digital_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/fiscal/imprenta-digital/emitir/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Emite documento ante la Imprenta Digital configurada (Simulado o Unidigital). */
+        post: operations["fiscal_imprenta-digital_emitir"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/fiscal/imprenta-digital/{id_emision}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Documento Imprenta Digital SENIAT. */
+                id_emision: string;
+            };
+            cookie?: never;
+        };
+        /** @description Emisión y anulación ante Imprenta Digital SENIAT (Providencia 000102/000121). */
+        get: operations["fiscal_imprenta-digital_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/fiscal/imprenta-digital/{id_emision}/anular/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Documento Imprenta Digital SENIAT. */
+                id_emision: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Anula una emisión fiscal previa ante la Imprenta Digital. */
+        post: operations["fiscal_imprenta-digital_anular"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/fiscal/libro-compras-pdf/": {
         parameters: {
             query?: never;
@@ -8946,6 +9074,23 @@ export interface paths {
             cookie?: never;
         };
         get: operations["fiscal_libro-compras_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/fiscal/libro-inventario-art177/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description GET /api/fiscal/libro-inventario-art177/?empresa=<uuid>&periodo=YYYY-MM. */
+        get: operations["fiscal_libro-inventario-art177_list"];
         put?: never;
         post?: never;
         delete?: never;
@@ -9097,6 +9242,228 @@ export interface paths {
          * @description Marca el período como cerrado; idempotente si ya estaba cerrado.
          */
         post: operations["fiscal_periodos-fiscales_cerrar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/fiscal/retenciones-islr/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Comprobantes de Retención ISLR (Decreto 1808): emisión, anulación, PDF y exportador XML SENIAT. */
+        get: operations["fiscal_retenciones-islr_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/fiscal/retenciones-islr/emitir/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Emite atómicamente un Comprobante de Retención ISLR (Decreto 1808). */
+        post: operations["fiscal_retenciones-islr_emitir"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/fiscal/retenciones-islr/exportar-xml/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Exporta XML SENIAT de retenciones ISLR para ?periodo=AAAAMM. */
+        get: operations["fiscal_retenciones-islr_exportar_xml"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/fiscal/retenciones-islr/{id_comprobante}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Comprobante de Retención ISLR. */
+                id_comprobante: string;
+            };
+            cookie?: never;
+        };
+        /** @description Comprobantes de Retención ISLR (Decreto 1808): emisión, anulación, PDF y exportador XML SENIAT. */
+        get: operations["fiscal_retenciones-islr_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/fiscal/retenciones-islr/{id_comprobante}/anular/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Comprobante de Retención ISLR. */
+                id_comprobante: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Anula lógicamente un Comprobante de Retención ISLR. */
+        post: operations["fiscal_retenciones-islr_anular"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/fiscal/retenciones-islr/{id_comprobante}/pdf/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Comprobante de Retención ISLR. */
+                id_comprobante: string;
+            };
+            cookie?: never;
+        };
+        /** @description Descarga PDF del comprobante de retención ISLR. */
+        get: operations["fiscal_retenciones-islr_pdf"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/fiscal/retenciones-iva/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Comprobantes de Retención IVA: emisión, anulación, PDF y exportador TXT 16 columnas SENIAT. */
+        get: operations["fiscal_retenciones-iva_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/fiscal/retenciones-iva/emitir/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Emite atómicamente un Comprobante de Retención de IVA. */
+        post: operations["fiscal_retenciones-iva_emitir"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/fiscal/retenciones-iva/exportar-txt/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Exporta relación TXT SENIAT de 16 columnas para el período ?periodo=AAAAMM. */
+        get: operations["fiscal_retenciones-iva_exportar_txt"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/fiscal/retenciones-iva/{id_comprobante}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Comprobante de Retención IVA. */
+                id_comprobante: string;
+            };
+            cookie?: never;
+        };
+        /** @description Comprobantes de Retención IVA: emisión, anulación, PDF y exportador TXT 16 columnas SENIAT. */
+        get: operations["fiscal_retenciones-iva_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/fiscal/retenciones-iva/{id_comprobante}/anular/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Comprobante de Retención IVA. */
+                id_comprobante: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Anula lógicamente un Comprobante de Retención IVA. */
+        post: operations["fiscal_retenciones-iva_anular"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/fiscal/retenciones-iva/{id_comprobante}/pdf/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Comprobante de Retención IVA. */
+                id_comprobante: string;
+            };
+            cookie?: never;
+        };
+        /** @description Descarga PDF del comprobante de retención IVA. */
+        get: operations["fiscal_retenciones-iva_pdf"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -18688,7 +19055,7 @@ export interface components {
              * Tipo asiento
              * @enum {string}
              */
-            tipo_asiento: "FACTURA_VENTA" | "DEVOLUCION_VENTA" | "DEVOLUCION_VENTA_IVA" | "NOTA_DEBITO_FISCAL" | "NOTA_DEBITO_FISCAL_IVA" | "FACTURA_COMPRA" | "GASTO" | "GASTO_IVA" | "RECEPCION_MERCANCIA" | "COSTO_VENTA" | "AJUSTE_INVENTARIO" | "SALIDA_INTERNA" | "PAGO_CXC" | "PAGO_CXP" | "GANANCIA_CAMBIARIA" | "PERDIDA_CAMBIARIA" | "NOMINA" | "CAMBIO_DIVISA" | "PAGO_TERCERO" | "PAGO_PARAFISCAL";
+            tipo_asiento: "FACTURA_VENTA" | "DEVOLUCION_VENTA" | "DEVOLUCION_VENTA_IVA" | "NOTA_DEBITO_FISCAL" | "NOTA_DEBITO_FISCAL_IVA" | "FACTURA_COMPRA" | "GASTO" | "GASTO_IVA" | "RECEPCION_MERCANCIA" | "COSTO_VENTA" | "AJUSTE_INVENTARIO" | "SALIDA_INTERNA" | "PAGO_CXC" | "PAGO_CXP" | "GANANCIA_CAMBIARIA" | "PERDIDA_CAMBIARIA" | "NOMINA" | "CAMBIO_DIVISA" | "PAGO_TERCERO" | "PAGO_PARAFISCAL" | "RETENCION_IVA_COMPRA" | "RETENCION_IVA_VENTA" | "RETENCION_ISLR";
             /**
              * Descripcion plantilla
              * @description Plantilla de descripción. Use {tipo}, {numero}.
@@ -22145,7 +22512,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-23T02:25:51.951630-04:00
+             * @default 2026-11-23T03:31:06.761950-04:00
              */
             fecha_despacho: string;
             /**
@@ -24180,6 +24547,41 @@ export interface components {
             /** Monto base */
             monto_base?: string;
         };
+        ConceptoRetencionISLR: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            readonly id?: string;
+            /** Codigo */
+            readonly codigo?: string;
+            /** Nombre */
+            readonly nombre?: string;
+            /**
+             * Tipo persona fiscal
+             * @enum {string}
+             */
+            readonly tipo_persona_fiscal?: "PNR" | "PNNR" | "PJDO" | "PJND";
+            /**
+             * Base imponible pct
+             * Format: decimal
+             */
+            readonly base_imponible_pct?: string;
+            /**
+             * Porcentaje retencion
+             * Format: decimal
+             */
+            readonly porcentaje_retencion?: string;
+            /** Aplica sustraendo */
+            readonly aplica_sustraendo?: boolean;
+            /**
+             * Factor sustraendo ut
+             * Format: decimal
+             */
+            readonly factor_sustraendo_ut?: string;
+            /** Activo */
+            readonly activo?: boolean;
+        };
         ConfiguracionFiscalEmpresa: {
             /**
              * Id
@@ -24196,6 +24598,23 @@ export interface components {
              */
             tasa_igtf?: string;
             /**
+             * Valor unidad tributaria
+             * Format: decimal
+             */
+            valor_unidad_tributaria?: string;
+            /**
+             * Imprenta digital proveedor
+             * @enum {string}
+             */
+            imprenta_digital_proveedor?: "" | "SIMULADO" | "UNIDIGITAL" | "THE_FACTORY_HKA";
+            /**
+             * Imprenta digital url
+             * Format: uri
+             */
+            imprenta_digital_url?: string;
+            /** Imprenta digital serie */
+            imprenta_digital_serie?: string;
+            /**
              * Fecha creacion
              * Format: date-time
              */
@@ -24210,6 +24629,61 @@ export interface components {
              * Format: uuid
              */
             id_empresa: string;
+        };
+        DocumentoImprentaDigital: {
+            /**
+             * Id emision
+             * Format: uuid
+             */
+            readonly id_emision?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /**
+             * Proveedor
+             * @enum {string}
+             */
+            readonly proveedor?: "SIMULADO" | "UNIDIGITAL" | "THE_FACTORY_HKA";
+            /**
+             * Tipo documento
+             * @enum {string}
+             */
+            readonly tipo_documento?: "FACTURA" | "NOTA_CREDITO" | "NOTA_DEBITO" | "GUIA_DESPACHO";
+            /** Referencia documento */
+            readonly referencia_documento?: string;
+            /** Numero control asignado */
+            readonly numero_control_asignado?: string;
+            /** Codigo validacion */
+            readonly codigo_validacion?: string;
+            /**
+             * Url verificacion
+             * Format: uri
+             */
+            readonly url_verificacion?: string;
+            /**
+             * Estado
+             * @enum {string}
+             */
+            readonly estado?: "EMITIDO" | "ANULADO" | "ERROR";
+            /**
+             * Emitido en
+             * Format: date-time
+             */
+            readonly emitido_en?: string;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
         };
         PagoContribucionParafiscal: {
             /**
@@ -24299,6 +24773,214 @@ export interface components {
              * @description Indica si el registro está activo (False = borrado lógico).
              */
             readonly activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        ComprobanteRetencionISLR: {
+            /**
+             * Id comprobante
+             * Format: uuid
+             */
+            readonly id_comprobante?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /** Numero comprobante */
+            readonly numero_comprobante?: string;
+            /**
+             * Contacto
+             * Format: uuid
+             */
+            readonly contacto?: string;
+            /** Contacto nombre */
+            readonly contacto_nombre?: string;
+            /** Contacto rif */
+            readonly contacto_rif?: string;
+            /**
+             * Concepto
+             * Format: uuid
+             */
+            readonly concepto?: string;
+            /** Concepto codigo */
+            readonly concepto_codigo?: string;
+            /** Concepto nombre */
+            readonly concepto_nombre?: string;
+            /**
+             * Factura compra
+             * Format: uuid
+             */
+            readonly factura_compra?: string | null;
+            /**
+             * Fecha emision
+             * Format: date
+             */
+            readonly fecha_emision?: string;
+            /** Periodo impositivo */
+            readonly periodo_impositivo?: string;
+            /** Numero factura */
+            readonly numero_factura?: string;
+            /** Numero control */
+            readonly numero_control?: string;
+            /**
+             * Monto operacion
+             * Format: decimal
+             */
+            readonly monto_operacion?: string;
+            /**
+             * Valor ut aplicado
+             * Format: decimal
+             */
+            readonly valor_ut_aplicado?: string;
+            /**
+             * Sustraendo
+             * Format: decimal
+             */
+            readonly sustraendo?: string;
+            /**
+             * Porcentaje retencion
+             * Format: decimal
+             */
+            readonly porcentaje_retencion?: string;
+            /**
+             * Monto retenido
+             * Format: decimal
+             */
+            readonly monto_retenido?: string;
+            /**
+             * Estado
+             * @enum {string}
+             */
+            readonly estado?: "EMITIDO" | "ANULADO";
+            /**
+             * Asiento contable
+             * Format: uuid
+             */
+            readonly asiento_contable?: string | null;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        ComprobanteRetencionIVA: {
+            /**
+             * Id comprobante
+             * Format: uuid
+             */
+            readonly id_comprobante?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /** Numero comprobante */
+            readonly numero_comprobante?: string;
+            /**
+             * Tipo operacion
+             * @enum {string}
+             */
+            readonly tipo_operacion?: "COMPRA" | "VENTA";
+            /**
+             * Contacto
+             * Format: uuid
+             */
+            readonly contacto?: string;
+            /** Contacto nombre */
+            readonly contacto_nombre?: string;
+            /** Contacto rif */
+            readonly contacto_rif?: string;
+            /**
+             * Factura compra
+             * Format: uuid
+             */
+            readonly factura_compra?: string | null;
+            /**
+             * Factura venta
+             * Format: uuid
+             */
+            readonly factura_venta?: string | null;
+            /**
+             * Fecha emision
+             * Format: date
+             */
+            readonly fecha_emision?: string;
+            /** Periodo impositivo */
+            readonly periodo_impositivo?: string;
+            /** Numero documento */
+            readonly numero_documento?: string;
+            /** Numero control */
+            readonly numero_control?: string;
+            /** Numero documento afectado */
+            readonly numero_documento_afectado?: string;
+            /**
+             * Tipo transaccion
+             * @enum {string}
+             */
+            readonly tipo_transaccion?: "01" | "02" | "03";
+            /**
+             * Monto total documento
+             * Format: decimal
+             */
+            readonly monto_total_documento?: string;
+            /**
+             * Monto exento
+             * Format: decimal
+             */
+            readonly monto_exento?: string;
+            /**
+             * Base imponible
+             * Format: decimal
+             */
+            readonly base_imponible?: string;
+            /**
+             * Alicuota iva
+             * Format: decimal
+             */
+            readonly alicuota_iva?: string;
+            /**
+             * Monto iva
+             * Format: decimal
+             */
+            readonly monto_iva?: string;
+            /**
+             * Porcentaje retencion
+             * Format: decimal
+             */
+            readonly porcentaje_retencion?: string;
+            /**
+             * Monto retenido
+             * Format: decimal
+             */
+            readonly monto_retenido?: string;
+            /**
+             * Estado
+             * @enum {string}
+             */
+            readonly estado?: "EMITIDO" | "ANULADO";
+            /**
+             * Asiento contable
+             * Format: uuid
+             */
+            readonly asiento_contable?: string | null;
             /**
              * Fecha de Creación
              * Format: date-time
@@ -31207,6 +31889,11 @@ export interface components {
                 "application/json": components["schemas"]["CategoriaGasto"];
             };
         };
+        ComprobanteRetencionISLR: {
+            content: {
+                "application/json": components["schemas"]["ComprobanteRetencionISLR"];
+            };
+        };
         VinculoDocumento: {
             content: {
                 "application/json": components["schemas"]["VinculoDocumento"];
@@ -31665,6 +32352,16 @@ export interface components {
         ConfiguracionFiscalEmpresa: {
             content: {
                 "application/json": components["schemas"]["ConfiguracionFiscalEmpresa"];
+            };
+        };
+        DocumentoImprentaDigital: {
+            content: {
+                "application/json": components["schemas"]["DocumentoImprentaDigital"];
+            };
+        };
+        ComprobanteRetencionIVA: {
+            content: {
+                "application/json": components["schemas"]["ComprobanteRetencionIVA"];
             };
         };
         TasaIVAEmpresa: {
@@ -51948,6 +52645,78 @@ export interface operations {
             };
         };
     };
+    "fiscal_calcular-igtf-itf_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "fiscal_conceptos-islr_list": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["ConceptoRetencionISLR"][];
+                    };
+                };
+            };
+        };
+    };
+    "fiscal_conceptos-islr_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Concepto de Retención ISLR (Decreto 1808). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConceptoRetencionISLR"];
+                };
+            };
+        };
+    };
     "fiscal_configuracion-fiscal_list": {
         parameters: {
             query?: {
@@ -52086,6 +52855,102 @@ export interface operations {
             };
         };
     };
+    "fiscal_imprenta-digital_list": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["DocumentoImprentaDigital"][];
+                    };
+                };
+            };
+        };
+    };
+    "fiscal_imprenta-digital_emitir": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["DocumentoImprentaDigital"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentoImprentaDigital"];
+                };
+            };
+        };
+    };
+    "fiscal_imprenta-digital_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Documento Imprenta Digital SENIAT. */
+                id_emision: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentoImprentaDigital"];
+                };
+            };
+        };
+    };
+    "fiscal_imprenta-digital_anular": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Documento Imprenta Digital SENIAT. */
+                id_emision: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["DocumentoImprentaDigital"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentoImprentaDigital"];
+                };
+            };
+        };
+    };
     "fiscal_libro-compras-pdf_list": {
         parameters: {
             query?: never;
@@ -52104,6 +52969,23 @@ export interface operations {
         };
     };
     "fiscal_libro-compras_list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "fiscal_libro-inventario-art177_list": {
         parameters: {
             query?: never;
             header?: never;
@@ -52370,6 +53252,308 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    "fiscal_retenciones-islr_list": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["ComprobanteRetencionISLR"][];
+                    };
+                };
+            };
+        };
+    };
+    "fiscal_retenciones-islr_emitir": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ComprobanteRetencionISLR"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComprobanteRetencionISLR"];
+                };
+            };
+        };
+    };
+    "fiscal_retenciones-islr_exportar_xml": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["ComprobanteRetencionISLR"][];
+                    };
+                };
+            };
+        };
+    };
+    "fiscal_retenciones-islr_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Comprobante de Retención ISLR. */
+                id_comprobante: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComprobanteRetencionISLR"];
+                };
+            };
+        };
+    };
+    "fiscal_retenciones-islr_anular": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Comprobante de Retención ISLR. */
+                id_comprobante: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ComprobanteRetencionISLR"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComprobanteRetencionISLR"];
+                };
+            };
+        };
+    };
+    "fiscal_retenciones-islr_pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Comprobante de Retención ISLR. */
+                id_comprobante: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComprobanteRetencionISLR"];
+                };
+            };
+        };
+    };
+    "fiscal_retenciones-iva_list": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["ComprobanteRetencionIVA"][];
+                    };
+                };
+            };
+        };
+    };
+    "fiscal_retenciones-iva_emitir": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ComprobanteRetencionIVA"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComprobanteRetencionIVA"];
+                };
+            };
+        };
+    };
+    "fiscal_retenciones-iva_exportar_txt": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["ComprobanteRetencionIVA"][];
+                    };
+                };
+            };
+        };
+    };
+    "fiscal_retenciones-iva_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Comprobante de Retención IVA. */
+                id_comprobante: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComprobanteRetencionIVA"];
+                };
+            };
+        };
+    };
+    "fiscal_retenciones-iva_anular": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Comprobante de Retención IVA. */
+                id_comprobante: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ComprobanteRetencionIVA"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComprobanteRetencionIVA"];
+                };
+            };
+        };
+    };
+    "fiscal_retenciones-iva_pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Comprobante de Retención IVA. */
+                id_comprobante: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComprobanteRetencionIVA"];
+                };
             };
         };
     };

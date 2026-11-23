@@ -135,8 +135,8 @@
 | **Ola 1B-1 (P0)** | **Fase 1.2** (Contabilidad Dual `FISCAL`/`GERENCIAL` + Analítica `CentroCosto` + Reportes comparativos) | ✅ **COMPLETADA (`#338`)** |
 | **Ola 1B-2 (P0)** | **Fase 1.2 + 2.1–2.2** (`ambito` en documentos origen + exclusión SENIAT + Perfil fiscal VE `core.Contacto` + `NotaDebitoFiscal` + MCP/Libros) | ✅ **COMPLETADA (`#339`)** |
 | **Ola 2A (P0)** | **Fase 3.1–3.3** (Precios dinámicos por brecha + Flujo dual Nota Venta Gerencial + Crédito por mora real + Comisiones por cobro efectivo y metas + MCP) | ✅ **COMPLETADA (`#340`)** |
-| **Ola 2B (P0)** | **Fase 7.1** (RBAC/ABAC Granular por módulo × acción × ámbito × alcance + Access Studio UI/API) | 🔄 **EN CURSO (PR-39)** |
-| **Ola 3 (P1)** | **Fase 2.3–2.5** (Retenciones IVA `.txt`/ISLR `.xml` + Imprenta Digital Unidigital + Libro Inv.) + **Fase 4** (Nómina Dual VE LOTTT + Bonificaciones) | Ola 1 |
+| **Ola 2B (P0)** | **Fase 7.1** (RBAC/ABAC Granular por módulo × acción × ámbito × alcance + Access Studio UI/API) | ✅ **COMPLETADA (`#341`)** |
+| **Ola 3 (P1)** | **Fase 2.3–2.5** (Retenciones IVA `.txt`/ISLR `.xml` + Imprenta Digital Unidigital + Libro Inv.) + **Fase 4** (Nómina Dual VE LOTTT + Bonificaciones) | 🔄 **EN CURSO — Ola 3A (`PR-40` Blindaje SENIAT)** |
 | **Ola 4 (P1)** | **Fase 6** (Logística TMS IA/GPS/Delivery/ePOD) + **Fase 5** (Landed Costs + Costo Reposición + Conteo Físico + Barcode) | Ola 1 + Ola 2 |
 | **Ola 5 (P2)** | **Fase 7.2–7.4** (Portales independientes: Vendedores SFA, Clientes Self-Service, Conductores) + cierre operativo campo `CTF-008` | Ola 2 + Ola 4 |
 | **Ola 6B / Fase 8 (P2/P3)** | **Fase 8** (WhatsApp/Chatter, Agentes IA operativos, RLS prod `CTF-012` + firma apps `CTF-010`, Migrador 1-Click Odoo) | Ola 3 + Ola 5 |

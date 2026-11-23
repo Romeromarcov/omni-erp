@@ -129,11 +129,15 @@
 | finanzas | TipoTasaCambio | ✅ | ✅ | — |
 | finanzas | TransaccionDatafono | — | ✅ | — |
 | finanzas | TransaccionFinanciera | ✅ | ✅ | — |
+| fiscal | ComprobanteRetencionISLR | ✅ | ✅ | id_empresa+numero_comprobante |
+| fiscal | ComprobanteRetencionIVA | ✅ | ✅ | id_empresa+numero_comprobante |
+| fiscal | ConceptoRetencionISLR | — | ✅ | — |
 | fiscal | ConfiguracionFiscalEmpresa | ✅ | ✅ | — |
 | fiscal | ConfiguracionImpuesto | ✅ | — | — |
 | fiscal | ConfiguracionRetencion | ✅ | — | — |
 | fiscal | ContribucionEmpresaActiva | ✅ | — | empresa+contribucion |
 | fiscal | ContribucionParafiscal | ✅ | — | — |
+| fiscal | DocumentoImprentaDigital | ✅ | ✅ | — |
 | fiscal | EmpresaContribucionParafiscal | ✅ | — | — |
 | fiscal | Impuesto | ✅ | — | — |
 | fiscal | ImpuestoEmpresaActiva | ✅ | — | empresa+impuesto |
@@ -272,4 +276,4 @@
 | ventas | Pedido | ✅ | ✅ | id_empresa+numero_pedido |
 | ventas | ReglaPrecioDinamico | ✅ | ✅ | id_empresa+codigo |
 
-_Total modelos: 269_
+_Total modelos: 273_
