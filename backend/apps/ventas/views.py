@@ -10,9 +10,15 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from apps.core.exceptions import DomainError, domain_error_response
 from apps.core.idempotency import IdempotentCreateMixin, idempotent
 from apps.core.serializer_mixins import TenantFKScopeMixin
-from apps.core.viewsets import EmpresaInjectMixin, get_empresas_visible
+from apps.core.viewsets import (
+    EmpresaInjectMixin,
+    NulSafeFilterMixin,
+    filtrar_ambito_queryset,
+    get_empresas_visible,
+)
 
 from .models import (
     ComisionVenta,
@@ -22,6 +28,7 @@ from .models import (
     DetalleFacturaFiscal,
     DetalleNotaCreditoFiscal,
     DetalleNotaCreditoVenta,
+    DetalleNotaDebitoFiscal,
     DetalleNotaVenta,
     DetallePedido,
     DetallePrecio,
@@ -32,6 +39,7 @@ from .models import (
     ListaPrecio,
     NotaCreditoFiscal,
     NotaCreditoVenta,
+    NotaDebitoFiscal,
     NotaVenta,
     Pedido,
 )
@@ -43,6 +51,7 @@ from .serializers import (
     DetalleFacturaFiscalSerializer,
     DetalleNotaCreditoFiscalSerializer,
     DetalleNotaCreditoVentaSerializer,
+    DetalleNotaDebitoFiscalSerializer,
     DetalleNotaVentaSerializer,
     DetallePedidoSerializer,
     DetallePrecioSerializer,
@@ -54,6 +63,7 @@ from .serializers import (
     LiquidarComisionesInputSerializer,
     NotaCreditoFiscalSerializer,
     NotaCreditoVentaSerializer,
+    NotaDebitoFiscalSerializer,
     NotaVentaSerializer,
     PedidoSerializer,
 )
@@ -197,8 +207,10 @@ class NotaVentaViewSet(
         # POS devoluciones (1.G): búsqueda de la venta original por número exacto.
         numero = self.request.query_params.get("numero_nota")
         if numero:
+            if "\x00" in numero:
+                raise ValidationError("Parámetro 'numero_nota' inválido.")
             qs = qs.filter(numero_nota__iexact=numero.strip())
-        return qs
+        return filtrar_ambito_queryset(qs, self.request)
 
     @idempotent("ventas:devolver")
     @action(detail=True, methods=["post"], url_path="devolver")
@@ -671,6 +683,92 @@ class DetalleNotaCreditoFiscalViewSet(TenantFKScopeMixin, viewsets.ModelViewSet)
     def get_queryset(self):
         # R-CODE-1 via parent
         return DetalleNotaCreditoFiscal.objects.filter(id_nota_credito_fiscal__id_empresa__in=_empresas(self.request))
+
+
+class NotaDebitoFiscalViewSet(NulSafeFilterMixin, TenantFKScopeMixin, EmpresaInjectMixin, viewsets.ModelViewSet):
+    queryset = NotaDebitoFiscal.objects.all()
+    serializer_class = NotaDebitoFiscalSerializer
+    permission_classes = [IsAuthenticated]
+    filterset_fields = ["estado", "motivo", "ambito", "id_cliente", "id_factura_origen"]
+    search_fields = ["numero_nota_debito", "numero_control", "observaciones"]
+    ordering_fields = ["fecha_emision", "monto_total", "fecha_creacion"]
+
+    def get_queryset(self):
+        # R-CODE-1
+        qs = (
+            NotaDebitoFiscal.objects.filter(id_empresa__in=_empresas(self.request))
+            .select_related("id_cliente", "id_factura_origen")
+            .order_by("-fecha_emision", "-fecha_creacion")
+        )
+        return filtrar_ambito_queryset(qs, self.request)
+
+    def update(self, request, *args, **kwargs):
+        if self.get_object().estado != "BORRADOR":
+            return domain_error_response(
+                DomainError("No se puede modificar ni eliminar una nota de débito fiscal fuera de BORRADOR."),
+                status_code=status.HTTP_400_BAD_REQUEST,
+                extra={"codigo": "NOTA_DEBITO_INMUTABLE"},
+            )
+        return super().update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        if self.get_object().estado != "BORRADOR":
+            return domain_error_response(
+                DomainError("No se puede modificar ni eliminar una nota de débito fiscal fuera de BORRADOR."),
+                status_code=status.HTTP_400_BAD_REQUEST,
+                extra={"codigo": "NOTA_DEBITO_INMUTABLE"},
+            )
+        return super().destroy(request, *args, **kwargs)
+
+    @idempotent("ventas:emitir-nota-debito")
+    @action(detail=True, methods=["post"], url_path="emitir")
+    def emitir(self, request, pk=None):
+        """
+        POST /api/ventas/notas-debito-fiscales/{pk}/emitir/
+
+        Emite la Nota de Débito Fiscal generando correlativo SENIAT ``NOTA_DEBITO``,
+        CxC adicional y asientos contables ``NOTA_DEBITO_FISCAL`` / ``NOTA_DEBITO_FISCAL_IVA``.
+        """
+        from .services import VentaError, emitir_nota_debito_fiscal
+
+        nota_debito = self.get_object()
+        try:
+            resultado = emitir_nota_debito_fiscal(nota_debito, usuario=request.user)
+        except VentaError as exc:
+            return domain_error_response(
+                exc,
+                status_code=status.HTTP_400_BAD_REQUEST,
+                extra={"codigo": "NOTA_DEBITO_ERROR"},
+            )
+
+        return Response(
+            {
+                "nota_debito": NotaDebitoFiscalSerializer(resultado["nota_debito"]).data,
+                "cxc_id": str(resultado["cxc"].pk),
+                "asiento_id": str(resultado["asiento"].pk) if resultado["asiento"] else None,
+                "asiento_iva_id": str(resultado["asiento_iva"].pk) if resultado["asiento_iva"] else None,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class DetalleNotaDebitoFiscalViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
+    queryset = DetalleNotaDebitoFiscal.objects.all()
+    serializer_class = DetalleNotaDebitoFiscalSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # R-CODE-1 via parent
+        return DetalleNotaDebitoFiscal.objects.filter(id_nota_debito_fiscal__id_empresa__in=_empresas(self.request))
+
+    def destroy(self, request, *args, **kwargs):
+        if self.get_object().id_nota_debito_fiscal.estado != "BORRADOR":
+            return domain_error_response(
+                DomainError("No se pueden eliminar detalles de una nota de débito fiscal fuera de BORRADOR."),
+                status_code=status.HTTP_400_BAD_REQUEST,
+                extra={"codigo": "NOTA_DEBITO_INMUTABLE"},
+            )
+        return super().destroy(request, *args, **kwargs)
 
 
 class ListaPrecioViewSet(TenantFKScopeMixin, EmpresaInjectMixin, viewsets.ModelViewSet):  # H-API-1

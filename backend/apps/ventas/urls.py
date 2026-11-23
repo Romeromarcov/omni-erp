@@ -9,6 +9,7 @@ from .views import (
     DetalleFacturaFiscalViewSet,
     DetalleNotaCreditoFiscalViewSet,
     DetalleNotaCreditoVentaViewSet,
+    DetalleNotaDebitoFiscalViewSet,
     DetalleNotaVentaViewSet,
     DetallePedidoViewSet,
     DetallePrecioViewSet,
@@ -19,6 +20,7 @@ from .views import (
     ListaPrecioViewSet,
     NotaCreditoFiscalViewSet,
     NotaCreditoVentaViewSet,
+    NotaDebitoFiscalViewSet,
     NotaVentaViewSet,
     PedidoViewSet,
 )
@@ -38,6 +40,8 @@ router.register(r"cotizaciones", CotizacionViewSet)
 router.register(r"detalles-cotizacion", DetalleCotizacionViewSet)
 router.register(r"notas-credito-fiscal", NotaCreditoFiscalViewSet)
 router.register(r"detalles-nota-credito-fiscal", DetalleNotaCreditoFiscalViewSet)
+router.register(r"notas-debito-fiscales", NotaDebitoFiscalViewSet)
+router.register(r"detalles-nota-debito-fiscal", DetalleNotaDebitoFiscalViewSet)
 router.register(r"listas-precio", ListaPrecioViewSet)
 router.register(r"detalles-precio", DetallePrecioViewSet)
 router.register(r"esquemas-comision", EsquemaComisionViewSet)

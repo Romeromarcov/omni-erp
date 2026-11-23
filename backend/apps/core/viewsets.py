@@ -46,6 +46,19 @@ def validar_uuid_param(valor: str, campo: str) -> str:
         raise ValidationError({campo: f"'{valor}' no es un UUID válido."}) from exc
 
 
+def filtrar_ambito_queryset(qs, request):
+    """Filtra un queryset por ``?ambito=FISCAL|GERENCIAL`` rechazando NUL o valores inválidos."""
+    ambito = request.query_params.get("ambito")
+    if ambito is None or ambito == "":
+        return qs
+    if "\x00" in str(ambito):
+        raise ValidationError({"ambito": "Parámetro 'ambito' inválido."})
+    val = str(ambito).strip().upper()
+    if val not in ("FISCAL", "GERENCIAL"):
+        raise ValidationError({"ambito": "El ámbito debe ser 'FISCAL' o 'GERENCIAL'."})
+    return qs.filter(ambito=val)
+
+
 class BaseModelViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     """
     ViewSet base para CRUD genérico con paginación, búsqueda y permisos estándar.
@@ -655,6 +668,14 @@ class ContactoViewSet(ActiveFilterMixin, BaseModelViewSet):
             val = self.request.query_params.get(rol)
             if val is not None:
                 qs = qs.filter(**{rol: val.lower() in ("true", "1", "yes")})
+        for flag_fiscal in ("es_agente_retencion_iva", "es_agente_retencion_islr", "exento_islr"):
+            val = self.request.query_params.get(flag_fiscal)
+            if val is not None:
+                qs = qs.filter(**{flag_fiscal: val.lower() in ("true", "1", "yes")})
+        tipo_contrib = self.request.query_params.get("tipo_contribuyente")
+        if tipo_contrib:
+            limpio = str(tipo_contrib).replace("\x00", "").strip().upper()
+            qs = qs.filter(tipo_contribuyente=limpio)
         return qs
 
     def perform_create(self, serializer):

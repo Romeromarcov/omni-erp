@@ -14,6 +14,7 @@ from apps.core.viewsets import (
     BaseModelViewSet,
     EmpresaInjectMixin,
     NulSafeFilterMixin,
+    filtrar_ambito_queryset,
     get_empresa_primaria,
     get_empresas_visible,
     validar_uuid_param,
@@ -222,15 +223,17 @@ class MovimientoInventarioViewSet(NulSafeFilterMixin, BaseModelViewSet):
     queryset = MovimientoInventario.objects.all()
     serializer_class = MovimientoInventarioSerializer
     http_method_names = ["get", "post", "head", "options"]
+    filterset_fields = ["tipo_movimiento", "ambito", "id_empresa", "id_producto"]
     search_fields = ["id_producto__nombre_producto", "id_producto__sku", "observaciones", "tipo_movimiento"]
     ordering_fields = ["fecha_hora_movimiento", "tipo_movimiento", "cantidad", "fecha_creacion"]
 
     def get_queryset(self):
-        return (
+        qs = (
             MovimientoInventario.objects.filter(id_empresa__in=_empresas(self.request))
             .select_related("id_producto", "id_almacen_origen", "id_almacen_destino", "id_lote")
             .order_by("-fecha_hora_movimiento")
         )
+        return filtrar_ambito_queryset(qs, self.request)
 
     def perform_create(self, serializer):
         from .services import MovimientoInvalidoError, StockInsuficienteError, registrar_movimiento
@@ -255,6 +258,7 @@ class MovimientoInventarioViewSet(NulSafeFilterMixin, BaseModelViewSet):
                 lote=lote_arg,
                 fecha_fabricacion=vd.get("fecha_fabricacion"),
                 fecha_vencimiento=vd.get("fecha_vencimiento"),
+                ambito=vd.get("ambito", "FISCAL"),
             )
         except (StockInsuficienteError, MovimientoInvalidoError) as exc:
             raise ValidationError(str(exc)) from exc

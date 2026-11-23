@@ -203,6 +203,7 @@ class StockActualSerializer(serializers.ModelSerializer):
 
 
 class MovimientoInventarioSerializer(serializers.ModelSerializer):
+    ambito_display = serializers.CharField(source="get_ambito_display", read_only=True)
     producto_nombre = serializers.CharField(source="id_producto.nombre_producto", read_only=True)
     almacen_origen_nombre = serializers.CharField(
         source="id_almacen_origen.nombre_almacen", read_only=True, allow_null=True
@@ -232,6 +233,8 @@ class MovimientoInventarioSerializer(serializers.ModelSerializer):
             "costo_unitario_movimiento",
             "id_documento_origen",
             "nombre_modelo_origen",
+            "ambito",
+            "ambito_display",
             "observaciones",
             "id_empresa",
             "id_producto",

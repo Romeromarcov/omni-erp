@@ -461,6 +461,7 @@ RLS_TABLES = {
     "ventas_lista_precio": "id_empresa_id",
     "ventas_nota_credito_fiscal": "id_empresa_id",
     "ventas_nota_credito_venta": "id_empresa_id",
+    "ventas_nota_debito_fiscal": "id_empresa_id",
 }
 
 # Catálogos compartidos: la columna de empresa es *nullable* y una fila con

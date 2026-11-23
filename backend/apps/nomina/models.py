@@ -1,3 +1,4 @@
+from apps.core.base_models import AMBITO_CONTABLE_CHOICES
 from apps.core.uuid import uuid7
 
 from django.db import models
@@ -92,6 +93,12 @@ class ProcesoNomina(models.Model):
             ("CANCELADO", "Cancelado"),
         ],
         default="EN_PROCESO",
+    )
+    ambito = models.CharField(
+        max_length=12,
+        choices=AMBITO_CONTABLE_CHOICES,
+        default="FISCAL",
+        db_index=True,
     )
     observaciones = models.TextField(null=True, blank=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)

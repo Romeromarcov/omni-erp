@@ -47,6 +47,8 @@ class ConceptoNominaSerializer(serializers.ModelSerializer):
 
 
 class ProcesoNominaSerializer(serializers.ModelSerializer):
+    ambito_display = serializers.CharField(source="get_ambito_display", read_only=True)
+
     class Meta:
         model = models.ProcesoNomina
         fields = [
@@ -58,6 +60,8 @@ class ProcesoNominaSerializer(serializers.ModelSerializer):
             "total_deducciones",
             "total_neto",
             "estado",
+            "ambito",
+            "ambito_display",
             "observaciones",
             "fecha_creacion",
             "id_empresa",

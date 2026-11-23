@@ -14917,6 +14917,41 @@ export interface paths {
         patch: operations["ventas_detalles-nota-credito-venta_partial_update"];
         trace?: never;
     };
+    "/ventas/detalles-nota-debito-fiscal/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ventas_detalles-nota-debito-fiscal_list"];
+        put?: never;
+        post: operations["ventas_detalles-nota-debito-fiscal_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ventas/detalles-nota-debito-fiscal/{id_detalle_nota_debito}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Detalle de Nota de Débito Fiscal. */
+                id_detalle_nota_debito: string;
+            };
+            cookie?: never;
+        };
+        get: operations["ventas_detalles-nota-debito-fiscal_read"];
+        put: operations["ventas_detalles-nota-debito-fiscal_update"];
+        post?: never;
+        delete: operations["ventas_detalles-nota-debito-fiscal_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["ventas_detalles-nota-debito-fiscal_partial_update"];
+        trace?: never;
+    };
     "/ventas/detalles-nota-venta/": {
         parameters: {
             query?: never;
@@ -15352,6 +15387,65 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["ventas_notas-credito-venta_partial_update"];
+        trace?: never;
+    };
+    "/ventas/notas-debito-fiscales/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ventas_notas-debito-fiscales_list"];
+        put?: never;
+        post: operations["ventas_notas-debito-fiscales_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ventas/notas-debito-fiscales/{id_nota_debito_fiscal}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Nota de Débito Fiscal. */
+                id_nota_debito_fiscal: string;
+            };
+            cookie?: never;
+        };
+        get: operations["ventas_notas-debito-fiscales_read"];
+        put: operations["ventas_notas-debito-fiscales_update"];
+        post?: never;
+        delete: operations["ventas_notas-debito-fiscales_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["ventas_notas-debito-fiscales_partial_update"];
+        trace?: never;
+    };
+    "/ventas/notas-debito-fiscales/{id_nota_debito_fiscal}/emitir/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Nota de Débito Fiscal. */
+                id_nota_debito_fiscal: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * POST /api/ventas/notas-debito-fiscales/{pk}/emitir/
+         * @description Emite la Nota de Débito Fiscal generando correlativo SENIAT ``NOTA_DEBITO``,
+         *     CxC adicional y asientos contables ``NOTA_DEBITO_FISCAL`` / ``NOTA_DEBITO_FISCAL_IVA``.
+         */
+        post: operations["ventas_notas-debito-fiscales_emitir"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/ventas/notas-venta/": {
@@ -17224,6 +17318,13 @@ export interface components {
              * Format: decimal
              */
             monto_total: string;
+            /**
+             * Ambito
+             * @enum {string}
+             */
+            ambito?: "FISCAL" | "GERENCIAL";
+            /** Ambito display */
+            readonly ambito_display?: string;
             /** Observaciones */
             observaciones?: string | null;
             /** Activo */
@@ -18282,7 +18383,7 @@ export interface components {
              * Tipo asiento
              * @enum {string}
              */
-            tipo_asiento: "FACTURA_VENTA" | "DEVOLUCION_VENTA" | "DEVOLUCION_VENTA_IVA" | "FACTURA_COMPRA" | "GASTO" | "GASTO_IVA" | "RECEPCION_MERCANCIA" | "COSTO_VENTA" | "AJUSTE_INVENTARIO" | "SALIDA_INTERNA" | "PAGO_CXC" | "PAGO_CXP" | "GANANCIA_CAMBIARIA" | "PERDIDA_CAMBIARIA" | "NOMINA" | "CAMBIO_DIVISA" | "PAGO_TERCERO" | "PAGO_PARAFISCAL";
+            tipo_asiento: "FACTURA_VENTA" | "DEVOLUCION_VENTA" | "DEVOLUCION_VENTA_IVA" | "NOTA_DEBITO_FISCAL" | "NOTA_DEBITO_FISCAL_IVA" | "FACTURA_COMPRA" | "GASTO" | "GASTO_IVA" | "RECEPCION_MERCANCIA" | "COSTO_VENTA" | "AJUSTE_INVENTARIO" | "SALIDA_INTERNA" | "PAGO_CXC" | "PAGO_CXP" | "GANANCIA_CAMBIARIA" | "PERDIDA_CAMBIARIA" | "NOMINA" | "CAMBIO_DIVISA" | "PAGO_TERCERO" | "PAGO_PARAFISCAL";
             /**
              * Descripcion plantilla
              * @description Plantilla de descripción. Use {tipo}, {numero}.
@@ -19407,6 +19508,31 @@ export interface components {
             lista_precio?: string | null;
             /** Dias pago */
             dias_pago?: number;
+            /**
+             * Tipo contribuyente
+             * @enum {string}
+             */
+            tipo_contribuyente?: "ORDINARIO" | "ESPECIAL" | "FORMAL" | "EXENTO" | "NO_CONTRIBUYENTE";
+            /**
+             * Tipo persona fiscal
+             * @enum {string}
+             */
+            tipo_persona_fiscal?: "PNR" | "PNNR" | "PJDO" | "PJND";
+            /** Es agente retencion iva */
+            es_agente_retencion_iva?: boolean;
+            /**
+             * Porcentaje retencion iva
+             * Format: decimal
+             */
+            porcentaje_retencion_iva?: string;
+            /** Es agente retencion islr */
+            es_agente_retencion_islr?: boolean;
+            /** Exento islr */
+            exento_islr?: boolean;
+            /** Estado */
+            estado?: string;
+            /** Municipio */
+            municipio?: string;
             /**
              * Usuario
              * Format: uuid
@@ -21642,7 +21768,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-22T21:53:48.626335-04:00
+             * @default 2026-11-22T22:51:27.879066-04:00
              */
             fecha_despacho: string;
             /**
@@ -23938,6 +24064,13 @@ export interface components {
             numero_factura?: string | null;
             /** Sin respaldo */
             readonly sin_respaldo?: boolean;
+            /**
+             * Ambito
+             * @enum {string}
+             */
+            ambito?: "FISCAL" | "GERENCIAL";
+            /** Ambito display */
+            readonly ambito_display?: string;
             /** Id empleado responsable */
             id_empleado_responsable?: number | null;
             /**
@@ -25131,6 +25264,13 @@ export interface components {
             id_documento_origen?: string | null;
             /** Nombre modelo origen */
             nombre_modelo_origen?: string | null;
+            /**
+             * Ambito
+             * @enum {string}
+             */
+            ambito?: "FISCAL" | "GERENCIAL";
+            /** Ambito display */
+            readonly ambito_display?: string;
             /** Observaciones */
             observaciones?: string | null;
             /**
@@ -26705,6 +26845,13 @@ export interface components {
              * @enum {string}
              */
             estado?: "EN_PROCESO" | "COMPLETADO" | "APROBADO" | "CANCELADO";
+            /**
+             * Ambito
+             * @enum {string}
+             */
+            ambito?: "FISCAL" | "GERENCIAL";
+            /** Ambito display */
+            readonly ambito_display?: string;
             /** Observaciones */
             observaciones?: string | null;
             /**
@@ -29377,6 +29524,57 @@ export interface components {
             /** Observaciones */
             observaciones?: string | null;
         };
+        DetalleNotaDebitoFiscal: {
+            /**
+             * Id detalle nota debito
+             * Format: uuid
+             */
+            readonly id_detalle_nota_debito?: string;
+            /**
+             * Id nota debito fiscal
+             * Format: uuid
+             */
+            id_nota_debito_fiscal: string;
+            /**
+             * Id producto
+             * Format: uuid
+             */
+            id_producto?: string | null;
+            /** Descripcion */
+            descripcion?: string;
+            /**
+             * Cantidad
+             * Format: decimal
+             */
+            cantidad?: string;
+            /**
+             * Precio unitario
+             * Format: decimal
+             */
+            precio_unitario: string;
+            /**
+             * Alicuota iva
+             * Format: decimal
+             */
+            alicuota_iva?: string;
+            /**
+             * Subtotal
+             * Format: decimal
+             */
+            subtotal: string;
+            /**
+             * Monto impuesto
+             * Format: decimal
+             */
+            monto_impuesto?: string;
+            /**
+             * Total linea
+             * Format: decimal
+             */
+            total_linea: string;
+            /** Observaciones */
+            observaciones?: string | null;
+        };
         DetalleNotaVenta: {
             /**
              * Id detalle nota venta
@@ -29886,12 +30084,117 @@ export interface components {
              */
             readonly id_empresa?: string;
         };
+        NotaDebitoFiscal: {
+            /**
+             * Id nota debito fiscal
+             * Format: uuid
+             */
+            readonly id_nota_debito_fiscal?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /**
+             * Id cliente
+             * Format: uuid
+             */
+            id_cliente: string;
+            /** Cliente nombre */
+            readonly cliente_nombre?: string;
+            /**
+             * Id factura origen
+             * Format: uuid
+             */
+            id_factura_origen: string;
+            /** Factura numero */
+            readonly factura_numero?: string;
+            /**
+             * Numero control
+             * @description Número de control compartido o asignado
+             */
+            numero_control?: string;
+            /**
+             * Numero nota debito
+             * @description Número individual de la nota de débito
+             * @default
+             */
+            numero_nota_debito: string;
+            /**
+             * Fecha emision
+             * Format: date
+             */
+            fecha_emision: string;
+            /**
+             * Fecha vencimiento
+             * Format: date
+             */
+            fecha_vencimiento?: string | null;
+            /**
+             * Base imponible
+             * Format: decimal
+             */
+            base_imponible?: string;
+            /**
+             * Monto iva
+             * Format: decimal
+             */
+            monto_iva?: string;
+            /**
+             * Monto total
+             * Format: decimal
+             */
+            monto_total: string;
+            /**
+             * Id moneda
+             * Format: uuid
+             */
+            id_moneda: string;
+            /**
+             * Tasa cambio
+             * Format: decimal
+             */
+            tasa_cambio?: string;
+            /**
+             * Motivo
+             * @enum {string}
+             */
+            motivo?: "INTERES_MORA" | "DIFERENCIA_CAMBIARIA" | "AJUSTE_PRECIO" | "CARGO_ADICIONAL" | "ERROR_FACTURACION" | "OTRO";
+            /** Motivo display */
+            readonly motivo_display?: string;
+            /**
+             * Estado
+             * @enum {string}
+             */
+            readonly estado?: "BORRADOR" | "EMITIDA" | "APLICADA" | "ANULADA";
+            /** Estado display */
+            readonly estado_display?: string;
+            /**
+             * Ambito
+             * @enum {string}
+             */
+            readonly ambito?: "FISCAL" | "GERENCIAL";
+            /** Ambito display */
+            readonly ambito_display?: string;
+            /** Observaciones */
+            observaciones?: string | null;
+            /** Activo */
+            activo?: boolean;
+            /**
+             * Fecha creacion
+             * Format: date-time
+             */
+            readonly fecha_creacion?: string;
+            readonly detalles?: components["schemas"]["DetalleNotaDebitoFiscal"][];
+        };
         NotaVenta: {
             /**
              * Id nota venta
              * Format: uuid
              */
             readonly id_nota_venta?: string;
+            /** Ambito display */
+            readonly ambito_display?: string;
             /**
              * Id cliente
              * Format: uuid
@@ -29913,6 +30216,11 @@ export interface components {
             estado?: "BORRADOR" | "ENTREGADA" | "FACTURADA" | "ANULADA";
             /** Observaciones */
             observaciones?: string | null;
+            /**
+             * Ambito
+             * @enum {string}
+             */
+            ambito?: "FISCAL" | "GERENCIAL";
             /** Activo */
             activo?: boolean;
             /**
@@ -30579,6 +30887,11 @@ export interface components {
                 "application/json": components["schemas"]["FeedbackCliente"];
             };
         };
+        NotaDebitoFiscal: {
+            content: {
+                "application/json": components["schemas"]["NotaDebitoFiscal"];
+            };
+        };
         Cliente: {
             content: {
                 "application/json": components["schemas"]["Cliente"];
@@ -30592,6 +30905,11 @@ export interface components {
         DetalleRecepcionMercancia: {
             content: {
                 "application/json": components["schemas"]["DetalleRecepcionMercancia"];
+            };
+        };
+        DetalleNotaDebitoFiscal: {
+            content: {
+                "application/json": components["schemas"]["DetalleNotaDebitoFiscal"];
             };
         };
         CategoriaTicket: {
@@ -66477,6 +66795,144 @@ export interface operations {
             };
         };
     };
+    "ventas_detalles-nota-debito-fiscal_list": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["DetalleNotaDebitoFiscal"][];
+                    };
+                };
+            };
+        };
+    };
+    "ventas_detalles-nota-debito-fiscal_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["DetalleNotaDebitoFiscal"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetalleNotaDebitoFiscal"];
+                };
+            };
+        };
+    };
+    "ventas_detalles-nota-debito-fiscal_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Detalle de Nota de Débito Fiscal. */
+                id_detalle_nota_debito: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetalleNotaDebitoFiscal"];
+                };
+            };
+        };
+    };
+    "ventas_detalles-nota-debito-fiscal_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Detalle de Nota de Débito Fiscal. */
+                id_detalle_nota_debito: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["DetalleNotaDebitoFiscal"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetalleNotaDebitoFiscal"];
+                };
+            };
+        };
+    };
+    "ventas_detalles-nota-debito-fiscal_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Detalle de Nota de Débito Fiscal. */
+                id_detalle_nota_debito: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "ventas_detalles-nota-debito-fiscal_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Detalle de Nota de Débito Fiscal. */
+                id_detalle_nota_debito: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["DetalleNotaDebitoFiscal"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetalleNotaDebitoFiscal"];
+                };
+            };
+        };
+    };
     "ventas_detalles-nota-venta_list": {
         parameters: {
             query?: {
@@ -67897,6 +68353,166 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NotaCreditoVenta"];
+                };
+            };
+        };
+    };
+    "ventas_notas-debito-fiscales_list": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["NotaDebitoFiscal"][];
+                    };
+                };
+            };
+        };
+    };
+    "ventas_notas-debito-fiscales_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["NotaDebitoFiscal"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotaDebitoFiscal"];
+                };
+            };
+        };
+    };
+    "ventas_notas-debito-fiscales_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Nota de Débito Fiscal. */
+                id_nota_debito_fiscal: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotaDebitoFiscal"];
+                };
+            };
+        };
+    };
+    "ventas_notas-debito-fiscales_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Nota de Débito Fiscal. */
+                id_nota_debito_fiscal: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["NotaDebitoFiscal"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotaDebitoFiscal"];
+                };
+            };
+        };
+    };
+    "ventas_notas-debito-fiscales_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Nota de Débito Fiscal. */
+                id_nota_debito_fiscal: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "ventas_notas-debito-fiscales_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Nota de Débito Fiscal. */
+                id_nota_debito_fiscal: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["NotaDebitoFiscal"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotaDebitoFiscal"];
+                };
+            };
+        };
+    };
+    "ventas_notas-debito-fiscales_emitir": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Nota de Débito Fiscal. */
+                id_nota_debito_fiscal: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["NotaDebitoFiscal"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotaDebitoFiscal"];
                 };
             };
         };

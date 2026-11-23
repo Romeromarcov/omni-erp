@@ -456,6 +456,7 @@ def registrar_movimiento(
     lote=None,
     fecha_fabricacion=None,
     fecha_vencimiento=None,
+    ambito: str = "FISCAL",
 ) -> MovimientoInventario:
     """
     Crea un MovimientoInventario y actualiza StockActual de forma atómica.
@@ -573,6 +574,7 @@ def registrar_movimiento(
         nombre_modelo_origen=nombre_modelo_origen,
         id_usuario_registro=usuario,
         observaciones=observaciones,
+        ambito=ambito,
     )
 
     # ── Actualizar StockActual ────────────────────────────────────────────────

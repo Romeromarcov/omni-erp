@@ -146,6 +146,8 @@ class RecepcionMercanciaSerializer(serializers.ModelSerializer):
 
 
 class FacturaCompraSerializer(serializers.ModelSerializer):
+    ambito_display = serializers.CharField(source="get_ambito_display", read_only=True)
+
     class Meta:
         model = FacturaCompra
         # CTF-005: whitelist explícita (defensa en profundidad CWE-915);
@@ -159,6 +161,8 @@ class FacturaCompraSerializer(serializers.ModelSerializer):
             "numero_factura",
             "fecha_emision",
             "monto_total",
+            "ambito",
+            "ambito_display",
             "observaciones",
             "activo",
             "fecha_creacion",

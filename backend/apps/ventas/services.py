@@ -1267,3 +1267,101 @@ def liquidar_comisiones(empresas, vendedor, desde: date, hasta: date, usuario):
         total += comision.monto
     ComisionVenta.objects.bulk_update(pendientes, ["estado", "fecha_liquidacion", "liquidada_por"])
     return {"liquidadas": len(pendientes), "monto_total": total}
+
+
+@transaction.atomic
+def emitir_nota_debito_fiscal(nota_debito, usuario=None) -> dict:
+    """Emite una ``NotaDebitoFiscal`` en BORRADOR de forma atómica (R-CODE-11).
+
+    - Valida período fiscal abierto y pertenencia/estado de factura origen.
+    - Asigna correlativos si están vacíos y cambia estado a ``EMITIDA``.
+    - Crea una ``CuentaPorCobrar`` positiva por ``monto_total``.
+    - Registra asientos ``NOTA_DEBITO_FISCAL`` (+ ``NOTA_DEBITO_FISCAL_IVA`` si IVA > 0) en ámbito ``FISCAL``.
+    """
+    from apps.contabilidad.services import generar_asiento_o_fallar
+    from apps.cuentas_por_cobrar.models import CuentaPorCobrar
+    from apps.fiscal.services import PeriodoCerradoError, siguiente_numero, validar_periodo_abierto
+    from apps.ventas.models import NotaDebitoFiscal
+
+    nd = (
+        NotaDebitoFiscal.objects.select_for_update()
+        .select_related("id_factura_origen", "id_cliente", "id_empresa")
+        .get(pk=nota_debito.pk)
+    )
+    if nd.estado != "BORRADOR":
+        raise VentaError(f"Solo se pueden emitir notas de débito en BORRADOR. Estado actual: {nd.estado}")
+
+    factura = nd.id_factura_origen
+    if factura.id_empresa_id != nd.id_empresa_id:
+        raise VentaError("La factura de origen no pertenece a la empresa de la nota de débito.")
+    if factura.estado not in ("EMITIDA", "PAGADA", "VENCIDA"):
+        raise VentaError(
+            f"La factura de origen debe estar emitida para generar una nota de débito (actual: {factura.estado})."
+        )
+    if Decimal(str(nd.monto_total)) <= Decimal("0"):
+        raise VentaError("El monto total de la nota de débito debe ser mayor que cero.")
+
+    empresa = nd.id_empresa
+    fecha_emision = nd.fecha_emision or timezone.localdate()
+    try:
+        validar_periodo_abierto(empresa, fecha_emision)
+    except PeriodoCerradoError as exc:
+        raise VentaError(str(exc)) from exc
+
+    if not (nd.numero_nota_debito or "").strip():
+        nd.numero_nota_debito = siguiente_numero(empresa, "NOTA_DEBITO")
+    if not (nd.numero_control or "").strip():
+        nd.numero_control = factura.numero_control
+
+    nd.fecha_emision = fecha_emision
+    nd.estado = "EMITIDA"
+    nd.ambito = "FISCAL"
+    nd.save(update_fields=["numero_nota_debito", "numero_control", "fecha_emision", "estado", "ambito"])
+
+    fecha_venc = nd.fecha_vencimiento or (fecha_emision + timedelta(days=int(nd.id_cliente.dias_credito or 0)))
+    cxc = CuentaPorCobrar.objects.create(
+        cliente=nd.id_cliente,
+        empresa=empresa,
+        monto=nd.monto_total,
+        fecha_emision=fecha_emision,
+        fecha_vencimiento=fecha_venc,
+        estado="pendiente",
+        referencia_externa=nd.numero_nota_debito,
+        tipo_operacion="NOTA_DEBITO_FISCAL",
+        descripcion=f"Nota de Débito Fiscal {nd.numero_nota_debito} (Fac. {factura.numero_factura})",
+        documento_json={
+            "id_nota_debito_fiscal": str(nd.id_nota_debito_fiscal),
+            "id_factura": str(factura.id_factura),
+            "ambito": "FISCAL",
+        },
+    )
+
+    base = Decimal(str(nd.base_imponible or "0"))
+    iva = Decimal(str(nd.monto_iva or "0"))
+    asiento_base = None
+    asiento_iva = None
+    if base > Decimal("0"):
+        asiento_base, _ = generar_asiento_o_fallar(
+            "NOTA_DEBITO_FISCAL",
+            nd,
+            empresa,
+            monto=base,
+            usuario=usuario,
+            ambito="FISCAL",
+        )
+    if iva > Decimal("0"):
+        asiento_iva, _ = generar_asiento_o_fallar(
+            "NOTA_DEBITO_FISCAL_IVA",
+            nd,
+            empresa,
+            monto=iva,
+            usuario=usuario,
+            ambito="FISCAL",
+        )
+
+    return {
+        "nota_debito": nd,
+        "cxc": cxc,
+        "asiento": asiento_base,
+        "asiento_iva": asiento_iva,
+    }

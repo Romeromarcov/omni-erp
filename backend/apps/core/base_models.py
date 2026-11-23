@@ -28,6 +28,11 @@ from __future__ import annotations
 
 from django.db import models
 
+AMBITO_CONTABLE_CHOICES = [
+    ("FISCAL", "Fiscal (Legal / SENIAT)"),
+    ("GERENCIAL", "Gerencial (Interno)"),
+]
+
 # ── 1. Auditoría temporal ────────────────────────────────────────────────────
 
 
