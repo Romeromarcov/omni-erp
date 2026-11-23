@@ -2350,7 +2350,6 @@ class TestRevisionRonda1Fixes:
 class TestMigracion0013FacturaCompra:
     def test_migracion_0013_backfill_forward_idempotente_y_reversible(self, empresa_a, empresa_b):
         import importlib
-        from django.apps import apps as django_apps
         from django.db.migrations.executor import MigrationExecutor
 
         prov_a = Proveedor.objects.create(id_empresa=empresa_a, razon_social="Prov Mig A", rif="J-93000001-1")
@@ -2391,25 +2390,31 @@ class TestMigracion0013FacturaCompra:
             executor = MigrationExecutor(connection)
             executor.migrate([("compras", "0013_facturacompra_orden_opcional_y_proveedor")])
 
-            fc_ok_new = FacturaCompra.objects.get(pk=fc_ok.pk)
-            fc_cruz_new = FacturaCompra.objects.get(pk=fc_cruz.pk)
-            assert fc_ok_new.id_proveedor_id == prov_a.pk
-            assert fc_cruz_new.id_proveedor_id is None
+            executor = MigrationExecutor(connection)
+            apps_0013 = executor.loader.project_state(list(executor.loader.applied_migrations)).apps
+            Factura0013 = apps_0013.get_model("compras", "FacturaCompra")
 
-            # Preserva id_proveedor existente en corrida idempotente
-            fc_pres = FacturaCompra.objects.create(
-                id_empresa=empresa_a,
-                id_orden_compra=oc_a,
-                id_proveedor=prov_a2,
-                numero_factura="FC-MIG-PRES",
-                fecha_emision=_hoy(),
-                monto_total=Decimal("30.0000"),
-            )
+            with rls.rls_bypass():
+                fc_ok_new = Factura0013.objects.get(pk=fc_ok.pk)
+                fc_cruz_new = Factura0013.objects.get(pk=fc_cruz.pk)
+                assert fc_ok_new.id_proveedor_id == prov_a.pk
+                assert fc_cruz_new.id_proveedor_id is None
+
+                # Preserva id_proveedor existente en corrida idempotente
+                fc_pres = Factura0013.objects.create(
+                    id_empresa_id=empresa_a.pk,
+                    id_orden_compra_id=oc_a.pk,
+                    id_proveedor_id=prov_a2.pk,
+                    numero_factura="FC-MIG-PRES",
+                    fecha_emision=_hoy(),
+                    monto_total=Decimal("30.0000"),
+                )
             mod = importlib.import_module("apps.compras.migrations.0013_facturacompra_orden_opcional_y_proveedor")
             with connection.schema_editor() as editor:
-                mod._backfill_proveedor_factura_compra(django_apps, editor)
-            fc_pres.refresh_from_db()
-            assert fc_pres.id_proveedor_id == prov_a2.pk
+                mod._backfill_proveedor_factura_compra(apps_0013, editor)
+            with rls.rls_bypass():
+                fc_pres.refresh_from_db()
+                assert fc_pres.id_proveedor_id == prov_a2.pk
         finally:
             executor = MigrationExecutor(connection)
             executor.migrate(executor.loader.graph.leaf_nodes())
