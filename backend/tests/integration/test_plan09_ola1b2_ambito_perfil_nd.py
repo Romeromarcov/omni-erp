@@ -887,3 +887,310 @@ class TestAmbitoDocumentosOrigen:
         r_nom = client_a.get("/api/nomina/procesos-nomina/?ambito=GERENCIAL")
         assert r_nom.status_code == 200
         assert [x["numero_proceso"] for x in r_nom.data["results"]] == ["NOM-GER-001"]
+
+
+# ---------------------------------------------------------------------------
+# 4. Endurecimiento de seguridad e integridad fiscal (hallazgos PR #339)
+# ---------------------------------------------------------------------------
+
+
+class TestHardeningNotaDebitoFiscal:
+    def test_multi_empresa_no_puede_cruzar_factura_ni_cliente_en_post(
+        self, client_a, empresa_a, empresa_b, user_a, moneda_usd
+    ):
+        from apps.ventas.models import FacturaFiscal
+
+        hoy = timezone.localdate()
+        # Usuario A con acceso a empresa_a (primaria) y empresa_b (subsidiaria)
+        user_a.empresas.add(empresa_b)
+        cliente_b = ClienteFactory(id_empresa=empresa_b, rif="J-88881111-1")
+        fac_b = FacturaFiscal.objects.create(
+            id_empresa=empresa_b,
+            id_cliente=cliente_b,
+            numero_control="CTRL-SUB-01",
+            numero_factura="FAC-SUB-01",
+            fecha_emision=hoy,
+            base_imponible=Decimal("100.00"),
+            monto_iva=Decimal("16.00"),
+            monto_total=Decimal("116.00"),
+            id_moneda=moneda_usd,
+            estado="EMITIDA",
+        )
+        r_cross = client_a.post(
+            "/api/ventas/notas-debito-fiscales/",
+            {
+                "id_empresa": str(empresa_a.id_empresa),
+                "id_cliente": str(cliente_b.id_cliente),
+                "id_factura_origen": str(fac_b.id_factura),
+                "fecha_emision": str(hoy),
+                "base_imponible": "10.00",
+                "monto_iva": "1.60",
+                "monto_total": "11.60",
+                "id_moneda": str(moneda_usd.id_moneda),
+            },
+            format="json",
+        )
+        assert r_cross.status_code == 400
+        assert "id_factura_origen" in r_cross.data or "id_cliente" in r_cross.data
+
+    def test_detalle_inmutable_en_patch_y_no_reasignable_entre_borradores(self, client_a, empresa_a, moneda_usd):
+        from apps.ventas.models import FacturaFiscal
+
+        _setup_contabilidad_nd(empresa_a)
+        cliente = ClienteFactory(id_empresa=empresa_a, rif="J-77112233-4")
+        hoy = timezone.localdate()
+        fac = FacturaFiscal.objects.create(
+            id_empresa=empresa_a,
+            id_cliente=cliente,
+            numero_control="CTRL-PATCH-01",
+            numero_factura="FAC-PATCH-01",
+            fecha_emision=hoy,
+            base_imponible=Decimal("200.00"),
+            monto_iva=Decimal("32.00"),
+            monto_total=Decimal("232.00"),
+            id_moneda=moneda_usd,
+            estado="EMITIDA",
+        )
+        nd_emitida_id = client_a.post(
+            "/api/ventas/notas-debito-fiscales/",
+            {
+                "id_cliente": str(cliente.id_cliente),
+                "id_factura_origen": str(fac.id_factura),
+                "fecha_emision": str(hoy),
+                "base_imponible": "50.00",
+                "monto_iva": "8.00",
+                "monto_total": "58.00",
+                "id_moneda": str(moneda_usd.id_moneda),
+            },
+            format="json",
+        ).data["id_nota_debito_fiscal"]
+        det_emitida_id = client_a.post(
+            "/api/ventas/detalles-nota-debito-fiscal/",
+            {
+                "id_nota_debito_fiscal": nd_emitida_id,
+                "descripcion": "Cargo emitido",
+                "cantidad": "1.0000",
+                "precio_unitario": "50.0000",
+                "alicuota_iva": "16.00",
+                "subtotal": "50.0000",
+                "monto_impuesto": "8.0000",
+                "total_linea": "58.0000",
+            },
+            format="json",
+        ).data["id_detalle_nota_debito"]
+        assert (
+            client_a.post(f"/api/ventas/notas-debito-fiscales/{nd_emitida_id}/emitir/", {}, format="json").status_code
+            == 200
+        )
+
+        nd_borrador_1 = client_a.post(
+            "/api/ventas/notas-debito-fiscales/",
+            {
+                "id_cliente": str(cliente.id_cliente),
+                "id_factura_origen": str(fac.id_factura),
+                "fecha_emision": str(hoy),
+                "base_imponible": "10.00",
+                "monto_iva": "1.60",
+                "monto_total": "11.60",
+                "id_moneda": str(moneda_usd.id_moneda),
+            },
+            format="json",
+        ).data["id_nota_debito_fiscal"]
+        nd_borrador_2 = client_a.post(
+            "/api/ventas/notas-debito-fiscales/",
+            {
+                "id_cliente": str(cliente.id_cliente),
+                "id_factura_origen": str(fac.id_factura),
+                "fecha_emision": str(hoy),
+                "base_imponible": "10.00",
+                "monto_iva": "1.60",
+                "monto_total": "11.60",
+                "id_moneda": str(moneda_usd.id_moneda),
+            },
+            format="json",
+        ).data["id_nota_debito_fiscal"]
+        det_borrador_id = client_a.post(
+            "/api/ventas/detalles-nota-debito-fiscal/",
+            {
+                "id_nota_debito_fiscal": nd_borrador_1,
+                "descripcion": "Cargo borrador",
+                "cantidad": "1.0000",
+                "precio_unitario": "10.0000",
+                "alicuota_iva": "16.00",
+                "subtotal": "10.0000",
+                "monto_impuesto": "1.6000",
+                "total_linea": "11.6000",
+            },
+            format="json",
+        ).data["id_detalle_nota_debito"]
+
+        # Intentar mover detalle de ND emitida hacia ND en borrador -> 400 NOTA_DEBITO_INMUTABLE
+        r_move_emitida = client_a.patch(
+            f"/api/ventas/detalles-nota-debito-fiscal/{det_emitida_id}/",
+            {"id_nota_debito_fiscal": nd_borrador_1},
+            format="json",
+        )
+        assert r_move_emitida.status_code == 400
+        assert r_move_emitida.data["codigo"] == "NOTA_DEBITO_INMUTABLE"
+
+        # Intentar reasignar detalle de borrador_1 hacia borrador_2 -> 400
+        r_reassign = client_a.patch(
+            f"/api/ventas/detalles-nota-debito-fiscal/{det_borrador_id}/",
+            {"id_nota_debito_fiscal": nd_borrador_2},
+            format="json",
+        )
+        assert r_reassign.status_code == 400
+        assert "id_nota_debito_fiscal" in r_reassign.data
+
+    def test_emitir_sin_mapeo_contable_retorna_400_y_rollback(self, client_a, empresa_a, moneda_usd):
+        from apps.cuentas_por_cobrar.models import CuentaPorCobrar
+        from apps.ventas.models import FacturaFiscal, NotaDebitoFiscal
+
+        empresa_a.contabilidad_activa = True
+        empresa_a.save(update_fields=["contabilidad_activa"])
+        cliente = ClienteFactory(id_empresa=empresa_a, rif="J-66554433-2")
+        hoy = timezone.localdate()
+        fac = FacturaFiscal.objects.create(
+            id_empresa=empresa_a,
+            id_cliente=cliente,
+            numero_control="CTRL-SINMAP-01",
+            numero_factura="FAC-SINMAP-01",
+            fecha_emision=hoy,
+            base_imponible=Decimal("100.00"),
+            monto_iva=Decimal("16.00"),
+            monto_total=Decimal("116.00"),
+            id_moneda=moneda_usd,
+            estado="EMITIDA",
+        )
+        r_nd = client_a.post(
+            "/api/ventas/notas-debito-fiscales/",
+            {
+                "id_cliente": str(cliente.id_cliente),
+                "id_factura_origen": str(fac.id_factura),
+                "fecha_emision": str(hoy),
+                "base_imponible": "10.00",
+                "monto_iva": "1.60",
+                "monto_total": "11.60",
+                "id_moneda": str(moneda_usd.id_moneda),
+            },
+            format="json",
+        )
+        assert r_nd.status_code == 201
+        nd_id = r_nd.data["id_nota_debito_fiscal"]
+
+        r_emit = client_a.post(f"/api/ventas/notas-debito-fiscales/{nd_id}/emitir/", {}, format="json")
+        assert r_emit.status_code == 400
+        assert r_emit.data["codigo"] == "NOTA_DEBITO_ERROR"
+        assert NotaDebitoFiscal.objects.get(pk=nd_id).estado == "BORRADOR"
+        assert CuentaPorCobrar.objects.filter(empresa=empresa_a, tipo_operacion="NOTA_DEBITO_FISCAL").count() == 0
+
+    def test_consistencia_montos_unicidad_y_guardas_servicio(self, client_a, empresa_a, moneda_usd):
+        from apps.ventas.models import FacturaFiscal, NotaDebitoFiscal
+        from apps.ventas.services import VentaError, emitir_nota_debito_fiscal
+
+        cliente = ClienteFactory(id_empresa=empresa_a, rif="J-99001122-5")
+        cliente_otro = ClienteFactory(id_empresa=empresa_a, rif="J-99001122-6")
+        hoy = timezone.localdate()
+        fac = FacturaFiscal.objects.create(
+            id_empresa=empresa_a,
+            id_cliente=cliente,
+            numero_control="CTRL-VAL-01",
+            numero_factura="FAC-VAL-01",
+            fecha_emision=hoy,
+            base_imponible=Decimal("100.00"),
+            monto_iva=Decimal("16.00"),
+            monto_total=Decimal("116.00"),
+            id_moneda=moneda_usd,
+            estado="EMITIDA",
+        )
+
+        # Descuadre base + iva != total -> 400
+        r_unbalanced = client_a.post(
+            "/api/ventas/notas-debito-fiscales/",
+            {
+                "id_cliente": str(cliente.id_cliente),
+                "id_factura_origen": str(fac.id_factura),
+                "fecha_emision": str(hoy),
+                "base_imponible": "10.00",
+                "monto_iva": "1.60",
+                "monto_total": "20.00",
+                "id_moneda": str(moneda_usd.id_moneda),
+            },
+            format="json",
+        )
+        assert r_unbalanced.status_code == 400
+        assert "monto_total" in r_unbalanced.data
+
+        # Unicidad parcial por numero_nota_debito no vacío -> 400 (sin 500 IntegrityError)
+        r_num_1 = client_a.post(
+            "/api/ventas/notas-debito-fiscales/",
+            {
+                "id_cliente": str(cliente.id_cliente),
+                "id_factura_origen": str(fac.id_factura),
+                "numero_nota_debito": "ND-UNIQ-01",
+                "fecha_emision": str(hoy),
+                "base_imponible": "10.00",
+                "monto_iva": "1.60",
+                "monto_total": "11.60",
+                "id_moneda": str(moneda_usd.id_moneda),
+            },
+            format="json",
+        )
+        assert r_num_1.status_code == 201
+        r_num_dup = client_a.post(
+            "/api/ventas/notas-debito-fiscales/",
+            {
+                "id_cliente": str(cliente.id_cliente),
+                "id_factura_origen": str(fac.id_factura),
+                "numero_nota_debito": "ND-UNIQ-01",
+                "fecha_emision": str(hoy),
+                "base_imponible": "10.00",
+                "monto_iva": "1.60",
+                "monto_total": "11.60",
+                "id_moneda": str(moneda_usd.id_moneda),
+            },
+            format="json",
+        )
+        assert r_num_dup.status_code == 400
+        assert "numero_nota_debito" in r_num_dup.data
+
+        # Guardas directas en emitir_nota_debito_fiscal
+        nd_inactiva = NotaDebitoFiscal.objects.create(
+            id_empresa=empresa_a,
+            id_cliente=cliente,
+            id_factura_origen=fac,
+            fecha_emision=hoy,
+            base_imponible=Decimal("10.00"),
+            monto_iva=Decimal("1.60"),
+            monto_total=Decimal("11.60"),
+            id_moneda=moneda_usd,
+            activo=False,
+        )
+        with pytest.raises(VentaError, match="inactiva"):
+            emitir_nota_debito_fiscal(nd_inactiva)
+
+        nd_cliente_distinto = NotaDebitoFiscal.objects.create(
+            id_empresa=empresa_a,
+            id_cliente=cliente_otro,
+            id_factura_origen=fac,
+            fecha_emision=hoy,
+            base_imponible=Decimal("10.00"),
+            monto_iva=Decimal("1.60"),
+            monto_total=Decimal("11.60"),
+            id_moneda=moneda_usd,
+        )
+        with pytest.raises(VentaError, match="no coincide con la factura"):
+            emitir_nota_debito_fiscal(nd_cliente_distinto)
+
+        nd_descuadrada = NotaDebitoFiscal.objects.create(
+            id_empresa=empresa_a,
+            id_cliente=cliente,
+            id_factura_origen=fac,
+            fecha_emision=hoy,
+            base_imponible=Decimal("10.00"),
+            monto_iva=Decimal("1.60"),
+            monto_total=Decimal("50.00"),
+            id_moneda=moneda_usd,
+        )
+        with pytest.raises(VentaError, match="base_imponible \\+ monto_iva"):
+            emitir_nota_debito_fiscal(nd_descuadrada)

@@ -761,6 +761,15 @@ class DetalleNotaDebitoFiscalViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
         # R-CODE-1 via parent
         return DetalleNotaDebitoFiscal.objects.filter(id_nota_debito_fiscal__id_empresa__in=_empresas(self.request))
 
+    def update(self, request, *args, **kwargs):
+        if self.get_object().id_nota_debito_fiscal.estado != "BORRADOR":
+            return domain_error_response(
+                DomainError("No se pueden modificar detalles de una nota de débito fiscal fuera de BORRADOR."),
+                status_code=status.HTTP_400_BAD_REQUEST,
+                extra={"codigo": "NOTA_DEBITO_INMUTABLE"},
+            )
+        return super().update(request, *args, **kwargs)
+
     def destroy(self, request, *args, **kwargs):
         if self.get_object().id_nota_debito_fiscal.estado != "BORRADOR":
             return domain_error_response(

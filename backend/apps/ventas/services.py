@@ -1278,7 +1278,7 @@ def emitir_nota_debito_fiscal(nota_debito, usuario=None) -> dict:
     - Crea una ``CuentaPorCobrar`` positiva por ``monto_total``.
     - Registra asientos ``NOTA_DEBITO_FISCAL`` (+ ``NOTA_DEBITO_FISCAL_IVA`` si IVA > 0) en ámbito ``FISCAL``.
     """
-    from apps.contabilidad.services import generar_asiento_o_fallar
+    from apps.contabilidad.services import AsientoError, generar_asiento_o_fallar
     from apps.cuentas_por_cobrar.models import CuentaPorCobrar
     from apps.fiscal.services import PeriodoCerradoError, siguiente_numero, validar_periodo_abierto
     from apps.ventas.models import NotaDebitoFiscal
@@ -1288,18 +1288,27 @@ def emitir_nota_debito_fiscal(nota_debito, usuario=None) -> dict:
         .select_related("id_factura_origen", "id_cliente", "id_empresa")
         .get(pk=nota_debito.pk)
     )
+    if not nd.activo:
+        raise VentaError("No se puede emitir una nota de débito fiscal inactiva.")
     if nd.estado != "BORRADOR":
         raise VentaError(f"Solo se pueden emitir notas de débito en BORRADOR. Estado actual: {nd.estado}")
 
     factura = nd.id_factura_origen
     if factura.id_empresa_id != nd.id_empresa_id:
         raise VentaError("La factura de origen no pertenece a la empresa de la nota de débito.")
+    if nd.id_cliente_id != factura.id_cliente_id:
+        raise VentaError("El cliente de la nota de débito no coincide con la factura de origen.")
     if factura.estado not in ("EMITIDA", "PAGADA", "VENCIDA"):
         raise VentaError(
             f"La factura de origen debe estar emitida para generar una nota de débito (actual: {factura.estado})."
         )
-    if Decimal(str(nd.monto_total)) <= Decimal("0"):
+    base = Decimal(str(nd.base_imponible or "0"))
+    iva = Decimal(str(nd.monto_iva or "0"))
+    total = Decimal(str(nd.monto_total))
+    if total <= Decimal("0"):
         raise VentaError("El monto total de la nota de débito debe ser mayor que cero.")
+    if base + iva != total:
+        raise VentaError("El monto total de la nota de débito debe coincidir con base_imponible + monto_iva.")
 
     empresa = nd.id_empresa
     fecha_emision = nd.fecha_emision or timezone.localdate()
@@ -1336,28 +1345,29 @@ def emitir_nota_debito_fiscal(nota_debito, usuario=None) -> dict:
         },
     )
 
-    base = Decimal(str(nd.base_imponible or "0"))
-    iva = Decimal(str(nd.monto_iva or "0"))
     asiento_base = None
     asiento_iva = None
-    if base > Decimal("0"):
-        asiento_base, _ = generar_asiento_o_fallar(
-            "NOTA_DEBITO_FISCAL",
-            nd,
-            empresa,
-            monto=base,
-            usuario=usuario,
-            ambito="FISCAL",
-        )
-    if iva > Decimal("0"):
-        asiento_iva, _ = generar_asiento_o_fallar(
-            "NOTA_DEBITO_FISCAL_IVA",
-            nd,
-            empresa,
-            monto=iva,
-            usuario=usuario,
-            ambito="FISCAL",
-        )
+    try:
+        if base > Decimal("0"):
+            asiento_base, _ = generar_asiento_o_fallar(
+                "NOTA_DEBITO_FISCAL",
+                nd,
+                empresa,
+                monto=base,
+                usuario=usuario,
+                ambito="FISCAL",
+            )
+        if iva > Decimal("0"):
+            asiento_iva, _ = generar_asiento_o_fallar(
+                "NOTA_DEBITO_FISCAL_IVA",
+                nd,
+                empresa,
+                monto=iva,
+                usuario=usuario,
+                ambito="FISCAL",
+            )
+    except AsientoError as exc:
+        raise VentaError(f"Error generando asiento de nota de débito fiscal: {exc}") from exc
 
     return {
         "nota_debito": nd,

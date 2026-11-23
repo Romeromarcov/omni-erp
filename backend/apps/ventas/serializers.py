@@ -1,4 +1,5 @@
 import logging
+from decimal import Decimal
 
 from rest_framework import serializers
 
@@ -646,11 +647,21 @@ class DetalleNotaDebitoFiscalSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         attrs = super().validate(attrs)
-        nota = attrs.get("id_nota_debito_fiscal") or getattr(self.instance, "id_nota_debito_fiscal", None)
-        if nota is not None and nota.estado != "BORRADOR":
+        nota_actual = getattr(self.instance, "id_nota_debito_fiscal", None)
+        nota_nueva = attrs.get("id_nota_debito_fiscal")
+        if nota_actual is not None and nota_actual.estado != "BORRADOR":
             raise serializers.ValidationError(
                 {"id_nota_debito_fiscal": "Solo se pueden modificar detalles de una nota de débito en BORRADOR."}
             )
+        if nota_actual is not None and nota_nueva is not None and nota_nueva.pk != nota_actual.pk:
+            raise serializers.ValidationError(
+                {"id_nota_debito_fiscal": "No se puede reasignar un detalle a otra nota de débito fiscal."}
+            )
+        if nota_nueva is not None and nota_nueva.estado != "BORRADOR":
+            raise serializers.ValidationError(
+                {"id_nota_debito_fiscal": "Solo se pueden modificar detalles de una nota de débito en BORRADOR."}
+            )
+        nota = nota_nueva or nota_actual
         prod = attrs.get("id_producto") if "id_producto" in attrs else getattr(self.instance, "id_producto", None)
         if nota is not None and prod is not None and prod.id_empresa_id != nota.id_empresa_id:
             raise serializers.ValidationError({"id_producto": "El producto no pertenece a la empresa de la nota."})
@@ -716,7 +727,7 @@ class NotaDebitoFiscalSerializer(serializers.ModelSerializer):
         if empresa_ctx is None and request is not None:
             from apps.core.viewsets import get_empresa_primaria
 
-            empresa_ctx = get_empresa_primaria(request)
+            empresa_ctx = get_empresa_primaria(request.user)
 
         if empresa_ctx is not None:
             if factura is not None and factura.id_empresa_id != empresa_ctx.pk:
@@ -729,6 +740,16 @@ class NotaDebitoFiscalSerializer(serializers.ModelSerializer):
         if factura is not None and cliente is not None and factura.id_cliente_id != cliente.pk:
             raise serializers.ValidationError({"id_cliente": "El cliente no coincide con el de la factura de origen."})
 
+        nro = (attrs.get("numero_nota_debito", getattr(self.instance, "numero_nota_debito", "")) or "").strip()
+        if nro and empresa_ctx is not None:
+            dup_qs = NotaDebitoFiscal.objects.filter(id_empresa=empresa_ctx, numero_nota_debito=nro)
+            if self.instance is not None:
+                dup_qs = dup_qs.exclude(pk=self.instance.pk)
+            if dup_qs.exists():
+                raise serializers.ValidationError(
+                    {"numero_nota_debito": "Ya existe una nota de débito fiscal con este número en la empresa."}
+                )
+
         for campo in ("base_imponible", "monto_iva"):
             val = attrs.get(campo, getattr(self.instance, campo, None))
             if val is not None and val < 0:
@@ -736,6 +757,13 @@ class NotaDebitoFiscalSerializer(serializers.ModelSerializer):
         total = attrs.get("monto_total", getattr(self.instance, "monto_total", None))
         if total is not None and total <= 0:
             raise serializers.ValidationError({"monto_total": "El monto total debe ser mayor que cero."})
+        base = attrs.get("base_imponible", getattr(self.instance, "base_imponible", Decimal("0.00")))
+        iva = attrs.get("monto_iva", getattr(self.instance, "monto_iva", Decimal("0.00")))
+        if total is not None and base is not None and iva is not None:
+            if Decimal(str(base)) + Decimal(str(iva)) != Decimal(str(total)):
+                raise serializers.ValidationError(
+                    {"monto_total": "El monto total debe coincidir con base_imponible + monto_iva."}
+                )
         return attrs
 
 
