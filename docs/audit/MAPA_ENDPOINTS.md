@@ -206,6 +206,10 @@
 | `^comisiones/$` | ComisionVentaViewSet | ComisionVenta | ✅ | ✅ | IsAuthenticated |
 | `^comisiones/(?P<pk>[^/.]+)/$` | ComisionVentaViewSet | ComisionVenta | ✅ | ✅ | IsAuthenticated |
 | `^comisiones/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ComisionVentaViewSet | ComisionVenta | ✅ | ✅ | IsAuthenticated |
+| `^comisiones/avance-meta/$` | ComisionVentaViewSet | ComisionVenta | ✅ | ✅ | IsAuthenticated |
+| `^comisiones/avance-meta\.(?P<format>[a-z0-9]+)/?$` | ComisionVentaViewSet | ComisionVenta | ✅ | ✅ | IsAuthenticated |
+| `^comisiones/devengar-cobro/$` | ComisionVentaViewSet | ComisionVenta | ✅ | ✅ | IsAuthenticated |
+| `^comisiones/devengar-cobro\.(?P<format>[a-z0-9]+)/?$` | ComisionVentaViewSet | ComisionVenta | ✅ | ✅ | IsAuthenticated |
 | `^comisiones/liquidar/$` | ComisionVentaViewSet | ComisionVenta | ✅ | ✅ | IsAuthenticated |
 | `^comisiones/liquidar\.(?P<format>[a-z0-9]+)/?$` | ComisionVentaViewSet | ComisionVenta | ✅ | ✅ | IsAuthenticated |
 | `^comisiones/resumen/$` | ComisionVentaViewSet | ComisionVenta | ✅ | ✅ | IsAuthenticated |
@@ -1001,6 +1005,8 @@
 | `^pedidos/(?P<pk>[^/.]+)/convertir-nota-venta\.(?P<format>[a-z0-9]+)/?$` | PedidoViewSet | Pedido | ✅ | ✅ | IsAuthenticated |
 | `^pedidos/(?P<pk>[^/.]+)/desactivar/$` | PedidoLubrikcaViewSet | PedidoLubrikca | ✅ | — | IsAuthenticated |
 | `^pedidos/(?P<pk>[^/.]+)/desactivar\.(?P<format>[a-z0-9]+)/?$` | PedidoLubrikcaViewSet | PedidoLubrikca | ✅ | — | IsAuthenticated |
+| `^pedidos/(?P<pk>[^/.]+)/evaluar-credito/$` | PedidoViewSet | Pedido | ✅ | ✅ | IsAuthenticated |
+| `^pedidos/(?P<pk>[^/.]+)/evaluar-credito\.(?P<format>[a-z0-9]+)/?$` | PedidoViewSet | Pedido | ✅ | ✅ | IsAuthenticated |
 | `^pedidos/(?P<pk>[^/.]+)/recalcular/$` | PedidoLubrikcaViewSet | PedidoLubrikca | ✅ | — | IsAuthenticated |
 | `^pedidos/(?P<pk>[^/.]+)/recalcular\.(?P<format>[a-z0-9]+)/?$` | PedidoLubrikcaViewSet | PedidoLubrikca | ✅ | — | IsAuthenticated |
 | `^pedidos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PedidoLubrikcaViewSet | PedidoLubrikca | ✅ | — | IsAuthenticated |
@@ -1241,6 +1247,12 @@
 | `^registros-operacion/(?P<pk>[^/.]+)/$` | RegistroOperacionViewSet | RegistroOperacion | — | ✅ | IsAuthenticated |
 | `^registros-operacion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | RegistroOperacionViewSet | RegistroOperacion | — | ✅ | IsAuthenticated |
 | `^registros-operacion\.(?P<format>[a-z0-9]+)/?$` | RegistroOperacionViewSet | RegistroOperacion | — | ✅ | IsAuthenticated |
+| `^reglas-precio-dinamico/$` | ReglaPrecioDinamicoViewSet | ReglaPrecioDinamico | ✅ | ✅ | IsAuthenticated |
+| `^reglas-precio-dinamico/(?P<pk>[^/.]+)/$` | ReglaPrecioDinamicoViewSet | ReglaPrecioDinamico | ✅ | ✅ | IsAuthenticated |
+| `^reglas-precio-dinamico/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ReglaPrecioDinamicoViewSet | ReglaPrecioDinamico | ✅ | ✅ | IsAuthenticated |
+| `^reglas-precio-dinamico/cotizar/$` | ReglaPrecioDinamicoViewSet | ReglaPrecioDinamico | ✅ | ✅ | IsAuthenticated |
+| `^reglas-precio-dinamico/cotizar\.(?P<format>[a-z0-9]+)/?$` | ReglaPrecioDinamicoViewSet | ReglaPrecioDinamico | ✅ | ✅ | IsAuthenticated |
+| `^reglas-precio-dinamico\.(?P<format>[a-z0-9]+)/?$` | ReglaPrecioDinamicoViewSet | ReglaPrecioDinamico | ✅ | ✅ | IsAuthenticated |
 | `^reglas-reabastecimiento/$` | ReglaReabastecimientoViewSet | ReglaReabastecimiento | ✅ | ✅ | IsAuthenticated |
 | `^reglas-reabastecimiento/(?P<pk>[^/.]+)/$` | ReglaReabastecimientoViewSet | ReglaReabastecimiento | ✅ | ✅ | IsAuthenticated |
 | `^reglas-reabastecimiento/(?P<pk>[^/.]+)/generar-borrador/$` | ReglaReabastecimientoViewSet | ReglaReabastecimiento | ✅ | ✅ | IsAuthenticated |
@@ -1525,4 +1537,4 @@
 | `validar-cuenta-ve/` | ValidarCuentaVeView | — | — | — | IsAuthenticated |
 | `validar-referencia/` | ValidarReferenciaView | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 279_
+_Total ViewSets: 280_

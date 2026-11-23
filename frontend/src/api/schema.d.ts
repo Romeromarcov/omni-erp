@@ -4829,7 +4829,7 @@ export interface paths {
         };
         /**
          * @description GET /api/crm/clientes/{pk}/credito-disponible/
-         *     Devuelve saldo de CxC pendiente y crédito disponible.
+         *     Devuelve saldo neto (descontando abonos y asignaciones), mora real y crédito disponible.
          */
         get: operations["crm_clientes_credito_disponible"];
         put?: never;
@@ -14621,6 +14621,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ventas/comisiones/avance-meta/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description GET /api/ventas/comisiones/avance-meta/?vendedor=&anio=&mes= — Cumplimiento mensual del vendedor. */
+        get: operations["ventas_comisiones_avance_meta"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ventas/comisiones/devengar-cobro/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description POST /api/ventas/comisiones/devengar-cobro/ — Devenga comisión sobre cobro efectivo. */
+        post: operations["ventas_comisiones_devengar_cobro"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ventas/comisiones/liquidar/": {
         parameters: {
             query?: never;
@@ -15651,6 +15685,84 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/ventas/pedidos/{id_pedido}/evaluar-credito/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Pedido. */
+                id_pedido: string;
+            };
+            cookie?: never;
+        };
+        /** @description GET /api/ventas/pedidos/{pk}/evaluar-credito/ — Evalúa mora real y límite del cliente. */
+        get: operations["ventas_pedidos_evaluar_credito"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ventas/reglas-precio-dinamico/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Reglas componibles de precios dinámicos por brecha cambiaria, moneda de pago, zona, segmento y volumen. */
+        get: operations["ventas_reglas-precio-dinamico_list"];
+        put?: never;
+        /** @description Reglas componibles de precios dinámicos por brecha cambiaria, moneda de pago, zona, segmento y volumen. */
+        post: operations["ventas_reglas-precio-dinamico_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ventas/reglas-precio-dinamico/cotizar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description POST /api/ventas/reglas-precio-dinamico/cotizar/ — Simula precio dinámico + equivalencias trimonetarias. */
+        post: operations["ventas_reglas-precio-dinamico_cotizar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ventas/reglas-precio-dinamico/{id_regla}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Regla de Precio Dinámico. */
+                id_regla: string;
+            };
+            cookie?: never;
+        };
+        /** @description Reglas componibles de precios dinámicos por brecha cambiaria, moneda de pago, zona, segmento y volumen. */
+        get: operations["ventas_reglas-precio-dinamico_read"];
+        /** @description Reglas componibles de precios dinámicos por brecha cambiaria, moneda de pago, zona, segmento y volumen. */
+        put: operations["ventas_reglas-precio-dinamico_update"];
+        post?: never;
+        /** @description Reglas componibles de precios dinámicos por brecha cambiaria, moneda de pago, zona, segmento y volumen. */
+        delete: operations["ventas_reglas-precio-dinamico_delete"];
+        options?: never;
+        head?: never;
+        /** @description Reglas componibles de precios dinámicos por brecha cambiaria, moneda de pago, zona, segmento y volumen. */
+        patch: operations["ventas_reglas-precio-dinamico_partial_update"];
         trace?: never;
     };
 }
@@ -20414,6 +20526,16 @@ export interface components {
              */
             dias_credito?: number;
             /**
+             * Dias gracia mora
+             * @description Días de gracia posteriores al vencimiento antes de considerar mora real.
+             */
+            dias_gracia_mora?: number;
+            /**
+             * Bloquear por mora
+             * @description Si True, bloquea confirmación de pedidos mientras existan CxC vencidas con saldo pendiente.
+             */
+            bloquear_por_mora?: boolean;
+            /**
              * Id empresa
              * Format: uuid
              */
@@ -21768,7 +21890,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-22T22:51:27.879066-04:00
+             * @default 2026-11-23T00:29:22.263022-04:00
              */
             fecha_despacho: string;
             /**
@@ -29170,6 +29292,16 @@ export interface components {
              */
             readonly estado?: "DEVENGADA" | "LIQUIDADA" | "ANULADA";
             /**
+             * Origen devengo
+             * @enum {string}
+             */
+            readonly origen_devengo?: "ENTREGA" | "COBRO_EFECTIVO";
+            /**
+             * Moneda cobro tipo
+             * @enum {string}
+             */
+            readonly moneda_cobro_tipo?: "DIVISA" | "MONEDA_LOCAL" | "MIXTO" | "NA";
+            /**
              * Fecha devengo
              * Format: date
              */
@@ -29794,6 +29926,37 @@ export interface components {
              */
             porcentaje_base: string;
             /**
+             * Modalidad devengo
+             * @enum {string}
+             */
+            modalidad_devengo?: "ENTREGA" | "COBRO_EFECTIVO";
+            /** Modalidad devengo display */
+            readonly modalidad_devengo_display?: string;
+            /**
+             * Porcentaje cobro divisa
+             * Format: decimal
+             * @description Porcentaje cuando el cobro efectivo ocurre en divisa (0–100).
+             */
+            porcentaje_cobro_divisa?: string | null;
+            /**
+             * Porcentaje cobro bs
+             * Format: decimal
+             * @description Porcentaje cuando el cobro efectivo ocurre en moneda local VES/Bs (0–100).
+             */
+            porcentaje_cobro_bs?: string | null;
+            /**
+             * Meta mensual monto
+             * Format: decimal
+             * @description Meta mensual acumulada de base comisionable para bono adicional.
+             */
+            meta_mensual_monto?: string;
+            /**
+             * Bono meta porcentaje
+             * Format: decimal
+             * @description Porcentaje de bono adicional al alcanzar la meta mensual (0–100).
+             */
+            bono_meta_porcentaje?: string;
+            /**
              * Vigente desde
              * Format: date
              */
@@ -30354,6 +30517,88 @@ export interface components {
              */
             id_vendedor?: string | null;
         };
+        ReglaPrecioDinamico: {
+            /**
+             * Id regla
+             * Format: uuid
+             */
+            readonly id_regla?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /** Nombre */
+            nombre: string;
+            /** Codigo */
+            codigo: string;
+            /**
+             * Tipo factor
+             * @enum {string}
+             */
+            tipo_factor: "MONEDA_PAGO" | "ZONA" | "SEGMENTO" | "VOLUMEN" | "BRECHA_CAMBIARIA";
+            /** Tipo factor display */
+            readonly tipo_factor_display?: string;
+            /**
+             * Clave condicion
+             * @description Valor a emparejar según tipo_factor (ej: USD, VES, USDT, CARABOBO, MAYORISTA). Vacío = aplica a todos.
+             */
+            clave_condicion?: string;
+            /**
+             * Categoria
+             * Format: uuid
+             */
+            categoria?: string | null;
+            /**
+             * Producto
+             * Format: uuid
+             */
+            producto?: string | null;
+            /**
+             * Cantidad minima
+             * Format: decimal
+             */
+            cantidad_minima?: string;
+            /**
+             * Modo calculo
+             * @enum {string}
+             */
+            modo_calculo?: "MULTIPLICADOR" | "PORCENTAJE" | "BRECHA_TASA";
+            /** Modo calculo display */
+            readonly modo_calculo_display?: string;
+            /**
+             * Valor factor
+             * Format: decimal
+             * @description Multiplicador (ej 0.90), % (ej -10 o +15), o % de traslado de la brecha en BRECHA_TASA (0..100).
+             */
+            valor_factor?: string;
+            /**
+             * Codigo tipo tasa referencia
+             * @description Código TipoTasaCambio de referencia para BRECHA_TASA (ej PARALELO, BINANCE_P2P).
+             */
+            codigo_tipo_tasa_referencia?: string;
+            /** Prioridad */
+            prioridad?: number;
+            /** Acumulable */
+            acumulable?: boolean;
+            /**
+             * Vigente desde
+             * Format: date
+             */
+            vigente_desde?: string | null;
+            /**
+             * Vigente hasta
+             * Format: date
+             */
+            vigente_hasta?: string | null;
+            /** Activo */
+            activo?: boolean;
+            /**
+             * Fecha creacion
+             * Format: date-time
+             */
+            readonly fecha_creacion?: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -30543,9 +30788,19 @@ export interface components {
                 "application/json": components["schemas"]["ConfiguracionFlujoDocumentos"];
             };
         };
+        ComisionVenta: {
+            content: {
+                "application/json": components["schemas"]["ComisionVenta"];
+            };
+        };
         PedidoLubrikca: {
             content: {
                 "application/json": components["schemas"]["PedidoLubrikca"];
+            };
+        };
+        ReglaPrecioDinamico: {
+            content: {
+                "application/json": components["schemas"]["ReglaPrecioDinamico"];
             };
         };
         EsquemaComision: {
@@ -65867,6 +66122,58 @@ export interface operations {
             };
         };
     };
+    ventas_comisiones_avance_meta: {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["ComisionVenta"][];
+                    };
+                };
+            };
+        };
+    };
+    ventas_comisiones_devengar_cobro: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ComisionVenta"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComisionVenta"];
+                };
+            };
+        };
+    };
     ventas_comisiones_liquidar: {
         parameters: {
             query?: never;
@@ -65874,11 +66181,7 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ComisionVenta"];
-            };
-        };
+        requestBody: components["requestBodies"]["ComisionVenta"];
         responses: {
             201: {
                 headers: {
@@ -68921,6 +69224,185 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Pedido"];
+                };
+            };
+        };
+    };
+    ventas_pedidos_evaluar_credito: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Pedido. */
+                id_pedido: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Pedido"];
+                };
+            };
+        };
+    };
+    "ventas_reglas-precio-dinamico_list": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["ReglaPrecioDinamico"][];
+                    };
+                };
+            };
+        };
+    };
+    "ventas_reglas-precio-dinamico_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ReglaPrecioDinamico"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReglaPrecioDinamico"];
+                };
+            };
+        };
+    };
+    "ventas_reglas-precio-dinamico_cotizar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ReglaPrecioDinamico"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReglaPrecioDinamico"];
+                };
+            };
+        };
+    };
+    "ventas_reglas-precio-dinamico_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Regla de Precio Dinámico. */
+                id_regla: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReglaPrecioDinamico"];
+                };
+            };
+        };
+    };
+    "ventas_reglas-precio-dinamico_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Regla de Precio Dinámico. */
+                id_regla: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ReglaPrecioDinamico"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReglaPrecioDinamico"];
+                };
+            };
+        };
+    };
+    "ventas_reglas-precio-dinamico_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Regla de Precio Dinámico. */
+                id_regla: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "ventas_reglas-precio-dinamico_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Regla de Precio Dinámico. */
+                id_regla: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ReglaPrecioDinamico"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReglaPrecioDinamico"];
                 };
             };
         };

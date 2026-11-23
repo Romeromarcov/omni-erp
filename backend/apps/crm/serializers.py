@@ -67,6 +67,8 @@ class ClienteSerializer(serializers.ModelSerializer):
             "tipo_cliente",
             "limite_credito",
             "dias_credito",
+            "dias_gracia_mora",
+            "bloquear_por_mora",
             "id_empresa",
             "contacto",
         ]

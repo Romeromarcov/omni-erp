@@ -15,6 +15,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 
 import pytest
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 
@@ -228,7 +229,7 @@ def test_precio_fuera_de_vigencia_retorna_none(empresa_a, producto, lista_refere
     from apps.ventas.services import obtener_precio
 
     # Precio vencido (1 año atrás)
-    ayer = date.today() - timedelta(days=1)
+    ayer = timezone.localdate() - timedelta(days=1)
     DetallePrecio.objects.create(
         id_lista=lista_referencia,
         id_producto=producto,
@@ -249,7 +250,7 @@ def test_precio_vigente_desde_futuro_no_aplica(empresa_a, producto, lista_refere
     from apps.ventas.models import DetallePrecio
     from apps.ventas.services import obtener_precio
 
-    manana = date.today() + timedelta(days=1)
+    manana = timezone.localdate() + timedelta(days=1)
     DetallePrecio.objects.create(
         id_lista=lista_referencia,
         id_producto=producto,

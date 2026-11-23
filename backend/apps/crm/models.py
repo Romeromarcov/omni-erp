@@ -49,6 +49,14 @@ class Cliente(OmniBaseModel, IntegrationFieldsMixin):
         default=0,
         help_text="Días de plazo de crédito.",
     )
+    dias_gracia_mora = models.PositiveSmallIntegerField(
+        default=0,
+        help_text="Días de gracia posteriores al vencimiento antes de considerar mora real.",
+    )
+    bloquear_por_mora = models.BooleanField(
+        default=False,
+        help_text="Si True, bloquea confirmación de pedidos mientras existan CxC vencidas con saldo pendiente.",
+    )
 
     # Enlace al Contacto unificado (strangler fig — nullable durante transición)
     contacto = models.OneToOneField(

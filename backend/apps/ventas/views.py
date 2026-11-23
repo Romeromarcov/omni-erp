@@ -42,10 +42,12 @@ from .models import (
     NotaDebitoFiscal,
     NotaVenta,
     Pedido,
+    ReglaPrecioDinamico,
 )
 from .serializers import (
     ComisionVentaSerializer,
     CotizacionSerializer,
+    CotizarPrecioDinamicoInputSerializer,
     DetalleCotizacionSerializer,
     DetalleDevolucionVentaSerializer,
     DetalleFacturaFiscalSerializer,
@@ -55,6 +57,7 @@ from .serializers import (
     DetalleNotaVentaSerializer,
     DetallePedidoSerializer,
     DetallePrecioSerializer,
+    DevengarComisionCobroInputSerializer,
     DevolucionVentaSerializer,
     EsquemaComisionCategoriaSerializer,
     EsquemaComisionSerializer,
@@ -66,6 +69,7 @@ from .serializers import (
     NotaDebitoFiscalSerializer,
     NotaVentaSerializer,
     PedidoSerializer,
+    ReglaPrecioDinamicoSerializer,
 )
 
 logger = logging.getLogger(__name__)
@@ -132,7 +136,32 @@ class PedidoViewSet(TenantFKScopeMixin, EmpresaInjectMixin, viewsets.ModelViewSe
 
         generar_cxc = request.data.get("generar_cxc")
         if generar_cxc is not None:
-            generar_cxc = bool(generar_cxc)
+            generar_cxc = (
+                generar_cxc
+                if isinstance(generar_cxc, bool)
+                else str(generar_cxc).strip().lower() in ("1", "true", "yes", "si")
+            )
+
+        raw_validar = request.data.get("validar_credito", False)
+        validar_cred = (
+            raw_validar
+            if isinstance(raw_validar, bool)
+            else str(raw_validar).strip().lower() in ("1", "true", "yes", "si")
+        )
+        raw_omitir = request.data.get("omitir_bloqueo_credito", False)
+        omitir_bloqueo = (
+            raw_omitir
+            if isinstance(raw_omitir, bool)
+            else str(raw_omitir).strip().lower() in ("1", "true", "yes", "si")
+        )
+        if omitir_bloqueo and not (
+            getattr(request.user, "es_superusuario_omni", False) or getattr(request.user, "is_staff", False)
+        ):
+            return domain_error_response(
+                DomainError("Solo administradores pueden omitir el bloqueo de crédito."),
+                status_code=status.HTTP_403_FORBIDDEN,
+                extra={"codigo": "CREDITO_OVERRIDE_DENEGADO"},
+            )
 
         try:
             resultado = confirmar_pedido(
@@ -140,6 +169,8 @@ class PedidoViewSet(TenantFKScopeMixin, EmpresaInjectMixin, viewsets.ModelViewSe
                 almacen=almacen,
                 usuario=request.user,
                 generar_cxc=generar_cxc,
+                validar_credito=validar_cred,
+                omitir_bloqueo_credito=omitir_bloqueo,
             )
         except PedidoConfirmacionError as exc:
             raise ValidationError(str(exc)) from exc
@@ -152,6 +183,33 @@ class PedidoViewSet(TenantFKScopeMixin, EmpresaInjectMixin, viewsets.ModelViewSe
                 "reservas_creadas": len(resultado["reservas"]),
                 "cxc_generada": resultado["cxc"] is not None,
                 "cxc_id": str(resultado["cxc"].pk) if resultado["cxc"] else None,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @action(detail=True, methods=["get"], url_path="evaluar-credito")
+    def evaluar_credito(self, request, pk=None):
+        """GET /api/ventas/pedidos/{pk}/evaluar-credito/ — Evalúa mora real y límite del cliente."""
+        from .services_credito import evaluar_credito_cliente
+
+        pedido = self.get_object()
+        subtotal = sum((Decimal(str(d.subtotal)) for d in pedido.detalles.all()), Decimal("0"))
+        ev = evaluar_credito_cliente(pedido.id_cliente, pedido.id_empresa, monto_nuevo=subtotal)
+        return Response(
+            {
+                "pedido_id": str(pedido.id_pedido),
+                "cliente_id": ev["cliente_id"],
+                "monto_pedido": str(subtotal),
+                "saldo_pendiente": str(ev["saldo_pendiente"]),
+                "monto_vencido": str(ev["monto_vencido"]),
+                "cxc_vencidas": ev["cxc_vencidas"],
+                "dias_mora_max": ev["dias_mora_max"],
+                "limite_credito": str(ev["limite_credito"]),
+                "credito_disponible": str(ev["credito_disponible"]) if ev["credito_disponible"] is not None else None,
+                "bloqueado_por_mora": ev["bloqueado_por_mora"],
+                "excede_limite": ev["excede_limite"],
+                "bloqueado": ev["bloqueado"],
+                "motivo_bloqueo": ev["motivo_bloqueo"],
             },
             status=status.HTTP_200_OK,
         )
@@ -916,6 +974,103 @@ class DetallePrecioViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
         return DetallePrecio.objects.filter(id_lista__id_empresa__in=_empresas(self.request))
 
 
+class ReglaPrecioDinamicoViewSet(NulSafeFilterMixin, TenantFKScopeMixin, EmpresaInjectMixin, viewsets.ModelViewSet):
+    """Reglas componibles de precios dinámicos por brecha cambiaria, moneda de pago, zona, segmento y volumen."""
+
+    queryset = ReglaPrecioDinamico.objects.all()
+    serializer_class = ReglaPrecioDinamicoSerializer
+    permission_classes = [IsAuthenticated]
+    filterset_fields = ["activo", "tipo_factor", "modo_calculo"]
+    search_fields = ["codigo", "nombre", "clave_condicion"]
+    ordering_fields = ["prioridad", "codigo", "fecha_creacion"]
+    ordering = ["prioridad"]
+
+    def get_queryset(self):
+        # R-CODE-1
+        return ReglaPrecioDinamico.objects.filter(id_empresa__in=_empresas(self.request)).order_by(
+            "prioridad", "fecha_creacion"
+        )
+
+    @action(detail=False, methods=["post"], url_path="cotizar")
+    def cotizar(self, request):
+        """POST /api/ventas/reglas-precio-dinamico/cotizar/ — Simula precio dinámico + equivalencias trimonetarias."""
+        from apps.core.models import Contacto
+        from apps.core.viewsets import get_empresa_primaria
+        from apps.inventario.models import Producto
+
+        from .services import VentaError
+        from .services_precios import calcular_precio_dinamico
+
+        entrada = CotizarPrecioDinamicoInputSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        vd = entrada.validated_data
+
+        empresas = _empresas(request)
+        empresa = get_empresa_primaria(request.user)
+        if empresa is None:
+            raise ValidationError({"empresa": "El usuario no tiene empresa asignada."})
+        producto = Producto.objects.filter(pk=vd["id_producto"], id_empresa__in=empresas).first()
+        if producto is None:
+            raise ValidationError({"id_producto": "Producto no encontrado en sus empresas."})
+
+        empresa_target = producto.id_empresa or empresa
+        contacto = None
+        if vd.get("id_contacto"):
+            contacto = Contacto.objects.filter(pk=vd["id_contacto"], id_empresa=empresa_target).first()
+            if contacto is None:
+                raise ValidationError({"id_contacto": "Contacto no encontrado en la empresa del producto."})
+
+        try:
+            res = calcular_precio_dinamico(
+                producto,
+                empresa_target,
+                contacto=contacto,
+                cantidad=vd["cantidad"],
+                moneda_pago=vd.get("moneda_pago", "USD"),
+                zona=vd.get("zona", ""),
+                segmento=vd.get("segmento", ""),
+                fecha=vd.get("fecha"),
+                tipo_tasa_referencia=vd.get("tipo_tasa_referencia") or None,
+            )
+        except VentaError as exc:
+            return domain_error_response(
+                exc, status_code=status.HTTP_400_BAD_REQUEST, extra={"codigo": "PRECIO_ERROR"}
+            )
+
+        eq = res["equivalencias"]
+        eq_out = None
+        if eq is not None:
+            eq_out = {
+                "moneda_base_iso": eq["moneda_base_iso"],
+                "monto_base": str(eq["monto_base"]) if eq["monto_base"] is not None else None,
+                "moneda_pais_iso": eq["moneda_pais_iso"],
+                "monto_pais_fiscal": str(eq["monto_pais_fiscal"]) if eq["monto_pais_fiscal"] is not None else None,
+                "moneda_referencia_iso": eq["moneda_referencia_iso"],
+                "monto_referencia": str(eq["monto_referencia"]) if eq["monto_referencia"] is not None else None,
+            }
+
+        return Response(
+            {
+                "producto_id": res["producto_id"],
+                "cantidad": str(res["cantidad"]),
+                "moneda_pago": res["moneda_pago"],
+                "zona": res["zona"],
+                "segmento": res["segmento"],
+                "precio_base": str(res["precio_base"]),
+                "precio_final": str(res["precio_final"]),
+                "total_linea": str(res["total_linea"]),
+                "precio_minimo_aplicado": res["precio_minimo_aplicado"],
+                "descuento_recargo_pct": str(res["descuento_recargo_pct"]),
+                "brecha_cambiaria_pct": str(res["brecha_cambiaria_pct"])
+                if res["brecha_cambiaria_pct"] is not None
+                else None,
+                "reglas_aplicadas": res["reglas_aplicadas"],
+                "equivalencias": eq_out,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
 # ── Comisiones de vendedores (1.G) ────────────────────────────────────────────
 
 
@@ -1083,6 +1238,109 @@ class ComisionVentaViewSet(viewsets.ReadOnlyModelViewSet):
                 "hasta": str(entrada.validated_data["hasta"]),
                 "liquidadas": resultado["liquidadas"],
                 "monto_total": str(resultado["monto_total"]),
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @idempotent("ventas:comisiones-devengar-cobro")
+    @action(detail=False, methods=["post"], url_path="devengar-cobro")
+    def devengar_cobro(self, request):
+        """POST /api/ventas/comisiones/devengar-cobro/ — Devenga comisión sobre cobro efectivo."""
+        from apps.finanzas.models import Pago
+
+        from .services import VentaError, devengar_comision_por_cobro
+
+        entrada = DevengarComisionCobroInputSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        vd = entrada.validated_data
+
+        empresas = _empresas(request)
+        nota = NotaVenta.objects.filter(pk=vd["id_nota_venta"], id_empresa__in=empresas).first()
+        if nota is None:
+            raise ValidationError({"id_nota_venta": "Nota de venta no encontrada en sus empresas."})
+
+        pago = None
+        if vd.get("id_pago"):
+            pago = Pago.objects.filter(pk=vd["id_pago"], id_empresa__in=empresas).first()
+            if pago is None:
+                raise ValidationError({"id_pago": "Pago no encontrado en sus empresas."})
+
+        try:
+            comision = devengar_comision_por_cobro(
+                nota,
+                pago=pago,
+                moneda_cobro_iso=vd.get("moneda_cobro_iso") or None,
+                fecha_cobro=vd.get("fecha_cobro"),
+            )
+        except VentaError as exc:
+            return domain_error_response(
+                exc, status_code=status.HTTP_400_BAD_REQUEST, extra={"codigo": "COMISION_ERROR"}
+            )
+
+        return Response(
+            {
+                "devengada": comision is not None,
+                "comision": ComisionVentaSerializer(comision).data if comision is not None else None,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @action(detail=False, methods=["get"], url_path="avance-meta")
+    def avance_meta(self, request):
+        """GET /api/ventas/comisiones/avance-meta/?vendedor=&anio=&mes= — Cumplimiento mensual del vendedor."""
+        import uuid as uuid_mod
+        from django.contrib.auth import get_user_model
+        from django.utils import timezone
+
+        from apps.core.viewsets import get_empresa_primaria, validar_uuid_param
+
+        from .services import calcular_avance_meta_vendedor
+
+        empresas = _empresas(request)
+        empresa_raw = request.query_params.get("id_empresa") or request.query_params.get("empresa")
+        if empresa_raw:
+            emp_uuid = validar_uuid_param(empresa_raw, "id_empresa")
+            empresa = empresas.filter(pk=emp_uuid).first()
+            if empresa is None:
+                raise ValidationError({"id_empresa": "Empresa no encontrada o sin acceso."})
+        else:
+            empresa = get_empresa_primaria(request.user)
+            if empresa is None:
+                raise ValidationError({"empresa": "El usuario no tiene empresa asignada."})
+        vendedor_raw = request.query_params.get("vendedor")
+        if vendedor_raw:
+            try:
+                vendedor_uuid = uuid_mod.UUID(vendedor_raw)
+            except ValueError as exc:
+                raise ValidationError({"vendedor": "UUID inválido."}) from exc
+            vendedor = get_user_model().objects.filter(pk=vendedor_uuid, empresas__in=empresas).distinct().first()
+            if vendedor is None:
+                raise ValidationError({"vendedor": "Vendedor no encontrado en sus empresas."})
+        else:
+            vendedor = request.user
+
+        hoy = timezone.localdate()
+        try:
+            anio = int(request.query_params.get("anio", hoy.year))
+            mes = int(request.query_params.get("mes", hoy.month))
+            if not (1 <= mes <= 12):
+                raise ValueError("mes fuera de 1..12")
+        except (TypeError, ValueError) as exc:
+            raise ValidationError({"periodo": "Parámetros 'anio' y 'mes' inválidos."}) from exc
+
+        res = calcular_avance_meta_vendedor(empresa, vendedor, anio, mes)
+        return Response(
+            {
+                "vendedor": res["vendedor"],
+                "anio": res["anio"],
+                "mes": res["mes"],
+                "meta_mensual_monto": str(res["meta_mensual_monto"]),
+                "bono_meta_porcentaje": str(res["bono_meta_porcentaje"]),
+                "acumulado_mes": str(res["acumulado_mes"]),
+                "comision_total": str(res["comision_total"]),
+                "cantidad_ventas": res["cantidad_ventas"],
+                "porcentaje_cumplimiento": str(res["porcentaje_cumplimiento"]),
+                "meta_alcanzada": res["meta_alcanzada"],
             },
             status=status.HTTP_200_OK,
         )

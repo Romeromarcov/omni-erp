@@ -264,6 +264,7 @@ def test_mcp_tools_exporta_las_herramientas_con_scope():
         "ventas_get_notas_venta",
         "ventas_get_facturas",
         "ventas_listar_notas_debito_fiscales",
+        "ventas_cotizar_precio_dinamico",
     }
     assert all(t["scope"] == "ventas:read" for t in MCP_TOOLS)
     assert all(callable(t["fn"]) for t in MCP_TOOLS)

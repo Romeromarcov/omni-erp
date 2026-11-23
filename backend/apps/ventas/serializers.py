@@ -28,6 +28,7 @@ from .models import (
     NotaDebitoFiscal,
     NotaVenta,
     Pedido,
+    ReglaPrecioDinamico,
 )
 
 logger = logging.getLogger(__name__)
@@ -554,6 +555,11 @@ class NotaVentaSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("El número de nota es obligatorio.")
         return value
 
+    def validate_ambito(self, value):
+        if self.instance is not None and self.instance.estado != "BORRADOR" and value != self.instance.ambito:
+            raise serializers.ValidationError("No se puede cambiar el ámbito de una nota de venta fuera de BORRADOR.")
+        return value
+
 
 class DetalleNotaVentaSerializer(serializers.ModelSerializer):
     class Meta:
@@ -842,9 +848,97 @@ class EsquemaComisionCategoriaSerializer(serializers.ModelSerializer):
         return data
 
 
+class ReglaPrecioDinamicoSerializer(serializers.ModelSerializer):
+    tipo_factor_display = serializers.CharField(source="get_tipo_factor_display", read_only=True)
+    modo_calculo_display = serializers.CharField(source="get_modo_calculo_display", read_only=True)
+
+    class Meta:
+        model = ReglaPrecioDinamico
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_regla",
+            "id_empresa",
+            "nombre",
+            "codigo",
+            "tipo_factor",
+            "tipo_factor_display",
+            "clave_condicion",
+            "categoria",
+            "producto",
+            "cantidad_minima",
+            "modo_calculo",
+            "modo_calculo_display",
+            "valor_factor",
+            "codigo_tipo_tasa_referencia",
+            "prioridad",
+            "acumulable",
+            "vigente_desde",
+            "vigente_hasta",
+            "activo",
+            "fecha_creacion",
+        ]
+        read_only_fields = ("id_regla", "id_empresa", "fecha_creacion")
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        request = self.context.get("request")
+        empresa_ctx = getattr(self.instance, "id_empresa", None)
+        if empresa_ctx is None and request is not None:
+            from apps.core.viewsets import get_empresa_primaria
+
+            empresa_ctx = get_empresa_primaria(request.user)
+
+        producto = attrs.get("producto", getattr(self.instance, "producto", None))
+        categoria = attrs.get("categoria", getattr(self.instance, "categoria", None))
+        if empresa_ctx is not None:
+            if producto is not None and producto.id_empresa_id != empresa_ctx.pk:
+                raise serializers.ValidationError({"producto": "El producto no pertenece a la empresa activa."})
+            if categoria is not None and categoria.id_empresa_id != empresa_ctx.pk:
+                raise serializers.ValidationError({"categoria": "La categoría no pertenece a la empresa activa."})
+
+        codigo = (attrs.get("codigo", getattr(self.instance, "codigo", "")) or "").strip()
+        if codigo and empresa_ctx is not None:
+            dup_qs = ReglaPrecioDinamico.objects.filter(id_empresa=empresa_ctx, codigo=codigo)
+            if self.instance is not None:
+                dup_qs = dup_qs.exclude(pk=self.instance.pk)
+            if dup_qs.exists():
+                raise serializers.ValidationError({"codigo": "Ya existe una regla de precio con este código."})
+
+        cant_min = attrs.get("cantidad_minima", getattr(self.instance, "cantidad_minima", Decimal("0")))
+        if cant_min is not None and cant_min < 0:
+            raise serializers.ValidationError({"cantidad_minima": "La cantidad mínima no puede ser negativa."})
+
+        modo = attrs.get("modo_calculo", getattr(self.instance, "modo_calculo", "PORCENTAJE"))
+        valor = attrs.get("valor_factor", getattr(self.instance, "valor_factor", Decimal("0")))
+        if modo == "MULTIPLICADOR" and valor is not None and valor <= 0:
+            raise serializers.ValidationError({"valor_factor": "El multiplicador debe ser mayor que cero."})
+
+        desde = attrs.get("vigente_desde", getattr(self.instance, "vigente_desde", None))
+        hasta = attrs.get("vigente_hasta", getattr(self.instance, "vigente_hasta", None))
+        if desde and hasta and desde > hasta:
+            raise serializers.ValidationError(
+                {"vigente_hasta": "La vigencia 'hasta' no puede ser anterior a 'desde'."}
+            )
+        return attrs
+
+
+class CotizarPrecioDinamicoInputSerializer(serializers.Serializer):
+    """Input de POST /reglas-precio-dinamico/cotizar/."""
+
+    id_producto = serializers.UUIDField()
+    cantidad = serializers.DecimalField(max_digits=18, decimal_places=4, default=Decimal("1.0000"))
+    moneda_pago = serializers.CharField(max_length=20, required=False, default="USD")
+    id_contacto = serializers.UUIDField(required=False, allow_null=True)
+    zona = serializers.CharField(max_length=80, required=False, allow_blank=True, default="")
+    segmento = serializers.CharField(max_length=80, required=False, allow_blank=True, default="")
+    fecha = serializers.DateField(required=False, allow_null=True)
+    tipo_tasa_referencia = serializers.CharField(max_length=30, required=False, allow_blank=True, default="")
+
+
 class EsquemaComisionSerializer(serializers.ModelSerializer):
     vendedor_username = serializers.CharField(source="vendedor.username", read_only=True)
     overrides_categoria = EsquemaComisionCategoriaSerializer(many=True, read_only=True)
+    modalidad_devengo_display = serializers.CharField(source="get_modalidad_devengo_display", read_only=True)
 
     class Meta:
         model = EsquemaComision
@@ -855,6 +949,12 @@ class EsquemaComisionSerializer(serializers.ModelSerializer):
             "vendedor_username",
             "overrides_categoria",
             "porcentaje_base",
+            "modalidad_devengo",
+            "modalidad_devengo_display",
+            "porcentaje_cobro_divisa",
+            "porcentaje_cobro_bs",
+            "meta_mensual_monto",
+            "bono_meta_porcentaje",
             "vigente_desde",
             "vigente_hasta",
             "activo",
@@ -866,6 +966,20 @@ class EsquemaComisionSerializer(serializers.ModelSerializer):
 
     def validate_porcentaje_base(self, value):
         return _validar_porcentaje_comision(value)
+
+    def validate_porcentaje_cobro_divisa(self, value):
+        return _validar_porcentaje_comision(value) if value is not None else None
+
+    def validate_porcentaje_cobro_bs(self, value):
+        return _validar_porcentaje_comision(value) if value is not None else None
+
+    def validate_bono_meta_porcentaje(self, value):
+        return _validar_porcentaje_comision(value)
+
+    def validate_meta_mensual_monto(self, value):
+        if value is not None and value < 0:
+            raise serializers.ValidationError("La meta mensual no puede ser negativa.")
+        return value
 
     def validate(self, data):
         desde = data.get("vigente_desde", getattr(self.instance, "vigente_desde", None))
@@ -889,6 +1003,15 @@ class LiquidarComisionesInputSerializer(serializers.Serializer):
     hasta = serializers.DateField()
 
 
+class DevengarComisionCobroInputSerializer(serializers.Serializer):
+    """Input de POST /comisiones/devengar-cobro/."""
+
+    id_nota_venta = serializers.UUIDField()
+    id_pago = serializers.UUIDField(required=False, allow_null=True)
+    moneda_cobro_iso = serializers.CharField(max_length=10, required=False, allow_blank=True)
+    fecha_cobro = serializers.DateField(required=False, allow_null=True)
+
+
 class ComisionVentaSerializer(serializers.ModelSerializer):
     """Solo lectura: las comisiones nacen del devengo y mutan vía /liquidar/."""
 
@@ -910,6 +1033,8 @@ class ComisionVentaSerializer(serializers.ModelSerializer):
             "base_comisionable",
             "monto",
             "estado",
+            "origen_devengo",
+            "moneda_cobro_tipo",
             "fecha_devengo",
             "fecha_liquidacion",
             "detalle_json",
