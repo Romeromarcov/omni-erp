@@ -513,6 +513,14 @@
 | `^direcciones-cliente/(?P<pk>[^/.]+)/$` | DireccionClienteViewSet | DireccionCliente | ✅ | ✅ | IsAuthenticated |
 | `^direcciones-cliente/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DireccionClienteViewSet | DireccionCliente | ✅ | ✅ | IsAuthenticated |
 | `^direcciones-cliente\.(?P<format>[a-z0-9]+)/?$` | DireccionClienteViewSet | DireccionCliente | ✅ | ✅ | IsAuthenticated |
+| `^dispersiones-nomina/$` | DispersionPagoNominaViewSet | DispersionPagoNomina | ✅ | ✅ | IsAuthenticated |
+| `^dispersiones-nomina/(?P<pk>[^/.]+)/$` | DispersionPagoNominaViewSet | DispersionPagoNomina | ✅ | ✅ | IsAuthenticated |
+| `^dispersiones-nomina/(?P<pk>[^/.]+)/marcar-pagado/$` | DispersionPagoNominaViewSet | DispersionPagoNomina | ✅ | ✅ | IsAuthenticated |
+| `^dispersiones-nomina/(?P<pk>[^/.]+)/marcar-pagado\.(?P<format>[a-z0-9]+)/?$` | DispersionPagoNominaViewSet | DispersionPagoNomina | ✅ | ✅ | IsAuthenticated |
+| `^dispersiones-nomina/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DispersionPagoNominaViewSet | DispersionPagoNomina | ✅ | ✅ | IsAuthenticated |
+| `^dispersiones-nomina/arqueo-efectivo/$` | DispersionPagoNominaViewSet | DispersionPagoNomina | ✅ | ✅ | IsAuthenticated |
+| `^dispersiones-nomina/arqueo-efectivo\.(?P<format>[a-z0-9]+)/?$` | DispersionPagoNominaViewSet | DispersionPagoNomina | ✅ | ✅ | IsAuthenticated |
+| `^dispersiones-nomina\.(?P<format>[a-z0-9]+)/?$` | DispersionPagoNominaViewSet | DispersionPagoNomina | ✅ | ✅ | IsAuthenticated |
 | `^dispositivos/$` | DispositivoViewSet | Dispositivo | ✅ | ✅ | IsAuthenticated |
 | `^dispositivos/(?P<pk>[^/.]+)/$` | DispositivoViewSet | Dispositivo | ✅ | ✅ | IsAuthenticated |
 | `^dispositivos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | DispositivoViewSet | Dispositivo | ✅ | ✅ | IsAuthenticated |
@@ -615,6 +623,10 @@
 | `^feriados/(?P<pk>[^/.]+)/desactivar\.(?P<format>[a-z0-9]+)/?$` | FeriadoViewSet | Feriado | ✅ | — | IsAuthenticated |
 | `^feriados/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | FeriadoViewSet | Feriado | ✅ | — | IsAuthenticated |
 | `^feriados\.(?P<format>[a-z0-9]+)/?$` | FeriadoViewSet | Feriado | ✅ | — | IsAuthenticated |
+| `^fichas-salariales-dual/$` | FichaSalarialDualViewSet | FichaSalarialDual | ✅ | ✅ | IsAuthenticated |
+| `^fichas-salariales-dual/(?P<pk>[^/.]+)/$` | FichaSalarialDualViewSet | FichaSalarialDual | ✅ | ✅ | IsAuthenticated |
+| `^fichas-salariales-dual/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | FichaSalarialDualViewSet | FichaSalarialDual | ✅ | ✅ | IsAuthenticated |
+| `^fichas-salariales-dual\.(?P<format>[a-z0-9]+)/?$` | FichaSalarialDualViewSet | FichaSalarialDual | ✅ | ✅ | IsAuthenticated |
 | `^flujo-documentos/$` | ConfiguracionFlujoDocumentosViewSet | ConfiguracionFlujoDocumentos | ✅ | ✅ | IsAuthenticated |
 | `^flujo-documentos/(?P<pk>[^/.]+)/$` | ConfiguracionFlujoDocumentosViewSet | ConfiguracionFlujoDocumentos | ✅ | ✅ | IsAuthenticated |
 | `^flujo-documentos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConfiguracionFlujoDocumentosViewSet | ConfiguracionFlujoDocumentos | ✅ | ✅ | IsAuthenticated |
@@ -867,6 +879,8 @@
 | `^nominas/(?P<pk>[^/.]+)/aprobar\.(?P<format>[a-z0-9]+)/?$` | NominaViewSet | Nomina | — | ✅ | IsAuthenticated |
 | `^nominas/(?P<pk>[^/.]+)/marcar_pagada/$` | NominaViewSet | Nomina | — | ✅ | IsAuthenticated |
 | `^nominas/(?P<pk>[^/.]+)/marcar_pagada\.(?P<format>[a-z0-9]+)/?$` | NominaViewSet | Nomina | — | ✅ | IsAuthenticated |
+| `^nominas/(?P<pk>[^/.]+)/recibo-pdf/$` | NominaViewSet | Nomina | — | ✅ | IsAuthenticated |
+| `^nominas/(?P<pk>[^/.]+)/recibo-pdf\.(?P<format>[a-z0-9]+)/?$` | NominaViewSet | Nomina | — | ✅ | IsAuthenticated |
 | `^nominas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | NominaViewSet | Nomina | — | ✅ | IsAuthenticated |
 | `^nominas\.(?P<format>[a-z0-9]+)/?$` | NominaViewSet | Nomina | — | ✅ | IsAuthenticated |
 | `^notas-credito-fiscal/$` | NotaCreditoFiscalViewSet | NotaCreditoFiscal | ✅ | ✅ | IsAuthenticated |
@@ -1155,6 +1169,12 @@
 | `^predicciones/sugerencias-activas/$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
 | `^predicciones/sugerencias-activas\.(?P<format>[a-z0-9]+)/?$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
 | `^predicciones\.(?P<format>[a-z0-9]+)/?$` | PrediccionAgenteViewSet | PrediccionAgente | ✅ | ✅ | IsAuthenticated |
+| `^prestamos-empleados/$` | PrestamoEmpleadoViewSet | PrestamoEmpleado | ✅ | ✅ | IsAuthenticated |
+| `^prestamos-empleados/(?P<pk>[^/.]+)/$` | PrestamoEmpleadoViewSet | PrestamoEmpleado | ✅ | ✅ | IsAuthenticated |
+| `^prestamos-empleados/(?P<pk>[^/.]+)/anular/$` | PrestamoEmpleadoViewSet | PrestamoEmpleado | ✅ | ✅ | IsAuthenticated |
+| `^prestamos-empleados/(?P<pk>[^/.]+)/anular\.(?P<format>[a-z0-9]+)/?$` | PrestamoEmpleadoViewSet | PrestamoEmpleado | ✅ | ✅ | IsAuthenticated |
+| `^prestamos-empleados/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PrestamoEmpleadoViewSet | PrestamoEmpleado | ✅ | ✅ | IsAuthenticated |
+| `^prestamos-empleados\.(?P<format>[a-z0-9]+)/?$` | PrestamoEmpleadoViewSet | PrestamoEmpleado | ✅ | ✅ | IsAuthenticated |
 | `^procesos-migracion/$` | ProcesoMigracionViewSet | ProcesoMigracion | ✅ | ✅ | IsAuthenticated |
 | `^procesos-migracion/(?P<pk>[^/.]+)/$` | ProcesoMigracionViewSet | ProcesoMigracion | ✅ | ✅ | IsAuthenticated |
 | `^procesos-migracion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ProcesoMigracionViewSet | ProcesoMigracion | ✅ | ✅ | IsAuthenticated |
@@ -1171,11 +1191,17 @@
 | `^procesos-nomina/(?P<pk>[^/.]+)/$` | ProcesoNominaViewSet | ProcesoNomina | ✅ | ✅ | IsAuthenticated |
 | `^procesos-nomina/(?P<pk>[^/.]+)/aprobar/$` | ProcesoNominaViewSet | ProcesoNomina | ✅ | ✅ | IsAuthenticated |
 | `^procesos-nomina/(?P<pk>[^/.]+)/aprobar\.(?P<format>[a-z0-9]+)/?$` | ProcesoNominaViewSet | ProcesoNomina | ✅ | ✅ | IsAuthenticated |
+| `^procesos-nomina/(?P<pk>[^/.]+)/exportar-banco/$` | ProcesoNominaViewSet | ProcesoNomina | ✅ | ✅ | IsAuthenticated |
+| `^procesos-nomina/(?P<pk>[^/.]+)/exportar-banco\.(?P<format>[a-z0-9]+)/?$` | ProcesoNominaViewSet | ProcesoNomina | ✅ | ✅ | IsAuthenticated |
+| `^procesos-nomina/(?P<pk>[^/.]+)/exportar-parafiscal/$` | ProcesoNominaViewSet | ProcesoNomina | ✅ | ✅ | IsAuthenticated |
+| `^procesos-nomina/(?P<pk>[^/.]+)/exportar-parafiscal\.(?P<format>[a-z0-9]+)/?$` | ProcesoNominaViewSet | ProcesoNomina | ✅ | ✅ | IsAuthenticated |
 | `^procesos-nomina/(?P<pk>[^/.]+)/procesar/$` | ProcesoNominaViewSet | ProcesoNomina | ✅ | ✅ | IsAuthenticated |
 | `^procesos-nomina/(?P<pk>[^/.]+)/procesar\.(?P<format>[a-z0-9]+)/?$` | ProcesoNominaViewSet | ProcesoNomina | ✅ | ✅ | IsAuthenticated |
 | `^procesos-nomina/(?P<pk>[^/.]+)/resumen/$` | ProcesoNominaViewSet | ProcesoNomina | ✅ | ✅ | IsAuthenticated |
 | `^procesos-nomina/(?P<pk>[^/.]+)/resumen\.(?P<format>[a-z0-9]+)/?$` | ProcesoNominaViewSet | ProcesoNomina | ✅ | ✅ | IsAuthenticated |
 | `^procesos-nomina/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ProcesoNominaViewSet | ProcesoNomina | ✅ | ✅ | IsAuthenticated |
+| `^procesos-nomina/procesar-dual/$` | ProcesoNominaViewSet | ProcesoNomina | ✅ | ✅ | IsAuthenticated |
+| `^procesos-nomina/procesar-dual\.(?P<format>[a-z0-9]+)/?$` | ProcesoNominaViewSet | ProcesoNomina | ✅ | ✅ | IsAuthenticated |
 | `^procesos-nomina\.(?P<format>[a-z0-9]+)/?$` | ProcesoNominaViewSet | ProcesoNomina | ✅ | ✅ | IsAuthenticated |
 | `^produccion-terminada/$` | ProduccionTerminadaViewSet | ProduccionTerminada | — | ✅ | IsAuthenticated |
 | `^produccion-terminada/(?P<pk>[^/.]+)/$` | ProduccionTerminadaViewSet | ProduccionTerminada | — | ✅ | IsAuthenticated |
@@ -1587,6 +1613,7 @@
 | `resumen/` | ResumenEjecutivoTareasView | — | — | — | PermisoTareas |
 | `seguimiento/ejecutar/` | EjecutarSeguimientoView | — | — | — | PermisoTareas |
 | `signup/` | SignupView | — | — | — | AllowAny |
+| `simulador-liquidacion/` | SimuladorLiquidacionLOTTTView | — | — | — | IsAuthenticated |
 | `status/` | IntegrationHubStatusView | — | — | — | IsAuthenticated |
 | `tasa-oficial-bcv/` | TasaCambioOficialBCVView | — | — | — | IsAuthenticated |
 | `usuario_roles/` | usuario_roles_view | — | — | — | IsAuthenticated |
@@ -1595,4 +1622,4 @@
 | `validar-cuenta-ve/` | ValidarCuentaVeView | — | — | — | IsAuthenticated |
 | `validar-referencia/` | ValidarReferenciaView | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 287_
+_Total ViewSets: 291_

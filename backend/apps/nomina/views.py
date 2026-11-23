@@ -1,10 +1,13 @@
 from django.db.models import Sum
-from apps.core.serializer_mixins import TenantFKScopeMixin
+from django.http import HttpResponse
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from apps.core.exceptions import domain_error_response
+from apps.core.idempotency import idempotent
+from apps.core.serializer_mixins import TenantFKScopeMixin
+from apps.core.throttling import EscrituraRateThrottle
 from apps.core.viewsets import filtrar_ambito_queryset, get_empresas_visible
 
 from .models import (
@@ -210,6 +213,91 @@ class ProcesoNominaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
 
         return Response(resumen)
 
+    @idempotent(scope="nomina:procesar_dual")
+    @action(
+        detail=False,
+        methods=["post"],
+        url_path="procesar-dual",
+        throttle_classes=[*viewsets.ModelViewSet.throttle_classes, EscrituraRateThrottle],
+    )
+    def procesar_dual(self, request):
+        """Ejecuta atómicamente nómina dual (FISCAL Bs + GERENCIAL USD/USDT) y dispersión."""
+        from apps.contabilidad.services import AsientoError
+
+        from .serializers_dual import ProcesarNominaDualInputSerializer
+        from .services_dual import NominaDualError, procesar_nomina_dual
+        from .views_dual import resolver_empresa_nomina
+
+        inp = ProcesarNominaDualInputSerializer(data=request.data)
+        inp.is_valid(raise_exception=True)
+        vd = inp.validated_data
+        empresa = resolver_empresa_nomina(request.user, vd.get("id_empresa"))
+        periodo = PeriodoNomina.objects.filter(pk=vd["id_periodo_nomina"], id_empresa=empresa, activo=True).first()
+        if periodo is None:
+            return Response(
+                {"error": "Período de nómina no encontrado en la empresa activa."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        try:
+            res = procesar_nomina_dual(
+                empresa,
+                periodo,
+                tasa_bcv=vd.get("tasa_bcv"),
+                incluir_asistencia=vd.get("incluir_asistencia", True),
+                amortizar_prestamos=vd.get("amortizar_prestamos", True),
+                generar_dispersion=vd.get("generar_dispersion", True),
+                datos_empleados=vd.get("empleados") or None,
+                usuario=request.user,
+            )
+        except NominaDualError as exc:
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST)
+        except AsientoError as exc:
+            return domain_error_response(exc, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+        return Response(
+            {
+                "tasa_bcv_aplicada": res["tasa_bcv_aplicada"],
+                "proceso_fiscal": self.get_serializer(res["proceso_fiscal"]).data,
+                "proceso_gerencial": self.get_serializer(res["proceso_gerencial"]).data,
+                "asiento_fiscal_id": res["asiento_fiscal_id"],
+                "asiento_gerencial_id": res["asiento_gerencial_id"],
+                "total_dispersiones": res["total_dispersiones"],
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+    @action(detail=True, methods=["get"], url_path="exportar-banco")
+    def exportar_banco(self, request, pk=None):
+        """Exporta TXT bancario VE (?banco=BANESCO_TXT|MERCANTIL_TXT|BDV_TXT)."""
+        from .exportadores_ve import generar_txt_bancario_nomina
+        from .services_dual import NominaDualError
+
+        proceso = self.get_object()
+        banco = request.query_params.get("banco") or "BANESCO_TXT"
+        try:
+            contenido = generar_txt_bancario_nomina(proceso, banco)
+        except NominaDualError as exc:
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST)
+        resp = HttpResponse(contenido, content_type="text/plain; charset=utf-8")
+        resp["Content-Disposition"] = f'attachment; filename="{banco.lower()}_{proceso.numero_proceso}.txt"'
+        return resp
+
+    @action(detail=True, methods=["get"], url_path="exportar-parafiscal")
+    def exportar_parafiscal(self, request, pk=None):
+        """Exporta TXT parafiscal VE (?ente=FAOV|IVSS_TIUNA|INCES|ISLR_ARC)."""
+        from .exportadores_ve import generar_exportacion_parafiscales_ve
+        from .services_dual import NominaDualError
+
+        proceso = self.get_object()
+        ente = request.query_params.get("ente") or "FAOV"
+        try:
+            contenido = generar_exportacion_parafiscales_ve(proceso, ente)
+        except NominaDualError as exc:
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST)
+        resp = HttpResponse(contenido, content_type="text/plain; charset=utf-8")
+        resp["Content-Disposition"] = f'attachment; filename="{ente.lower()}_{proceso.numero_proceso}.txt"'
+        return resp
+
 
 class NominaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
     queryset = Nomina.objects.all()
@@ -253,6 +341,22 @@ class NominaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):
 
         serializer = self.get_serializer(nomina)
         return Response(serializer.data)
+
+    @action(detail=True, methods=["get"], url_path="recibo-pdf")
+    def recibo_pdf(self, request, pk=None):
+        """Descarga recibo de nómina PDF (?modo=SEPARADO|CONSOLIDADO)."""
+        from .exportadores_ve import generar_pdf_recibo_nomina
+        from .services_dual import NominaDualError
+
+        nomina = self.get_object()
+        modo = request.query_params.get("modo") or "SEPARADO"
+        try:
+            contenido = generar_pdf_recibo_nomina(nomina, modo=modo)
+        except NominaDualError as exc:
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST)
+        resp = HttpResponse(contenido, content_type="application/pdf")
+        resp["Content-Disposition"] = f'inline; filename="recibo_{nomina.id_empleado.cedula}_{modo.lower()}.pdf"'
+        return resp
 
 
 class DetalleNominaViewSet(TenantFKScopeMixin, viewsets.ModelViewSet):

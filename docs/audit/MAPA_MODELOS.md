@@ -205,9 +205,12 @@
 | migracion_datos | ProcesoMigracion | ✅ | ✅ | — |
 | nomina | ConceptoNomina | ✅ | ✅ | id_empresa+codigo_concepto |
 | nomina | DetalleNomina | — | ✅ | — |
+| nomina | DispersionPagoNomina | ✅ | ✅ | — |
+| nomina | FichaSalarialDual | ✅ | ✅ | — |
 | nomina | Nomina | — | ✅ | — |
 | nomina | NominaExtrasalarial | — | ✅ | — |
 | nomina | PeriodoNomina | ✅ | ✅ | — |
+| nomina | PrestamoEmpleado | ✅ | ✅ | — |
 | nomina | ProcesoNomina | ✅ | ✅ | id_empresa+numero_proceso |
 | nomina | ProcesoNominaExtrasalarial | ✅ | ✅ | id_empresa+numero_proceso |
 | notificaciones | EventoNotificacion | ✅ | ✅ | codigo_evento+id_empresa |
@@ -276,4 +279,4 @@
 | ventas | Pedido | ✅ | ✅ | id_empresa+numero_pedido |
 | ventas | ReglaPrecioDinamico | ✅ | ✅ | id_empresa+codigo |
 
-_Total modelos: 273_
+_Total modelos: 276_

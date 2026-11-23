@@ -69,6 +69,8 @@ TIPOS_ASIENTO = frozenset(
         "GANANCIA_CAMBIARIA",  # Diferencia en cambio favorable al pagar una CxP en divisa
         "PERDIDA_CAMBIARIA",  # Diferencia en cambio desfavorable al pagar una CxP en divisa
         "NOMINA",  # CTF-013: asiento del proceso de nómina LOTTT
+        "NOMINA_GERENCIAL",  # Plan 09 Ola 3B: nómina gerencial / paquete bonificaciones
+        "PROVISION_NOMINA",  # Plan 09 Ola 3B: provisiones prestaciones/utilidades/vacaciones LOTTT
         "CAMBIO_DIVISA",  # CTF-013: asiento de la operación de cambio de divisa
         "PAGO_TERCERO",  # Capa B §6.6: pago de terceros (Zelle) — abono CxP / reintegro
         "PAGO_PARAFISCAL",  # Capa B §6.7: pago de contribución parafiscal (IVSS/FAOV/INCES…)
@@ -98,6 +100,8 @@ _TIPO_ASIENTO_TO_DIARIO: dict[str, str] = {
     "RETENCION_IVA_COMPRA": "COMPRAS",
     "RETENCION_ISLR": "COMPRAS",
     "NOMINA": "NOMINA",
+    "NOMINA_GERENCIAL": "NOMINA",
+    "PROVISION_NOMINA": "NOMINA",
     "PAGO_PARAFISCAL": "NOMINA",
     "CAMBIO_DIVISA": "BANCO",
 }

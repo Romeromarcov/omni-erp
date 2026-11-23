@@ -12375,6 +12375,121 @@ export interface paths {
         patch: operations["nomina_detalles-nomina_partial_update"];
         trace?: never;
     };
+    "/nomina/dispersiones-nomina/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Consulta, confirmación y arqueo de efectivo USD ($100..$1) de dispersiones de nómina. */
+        get: operations["nomina_dispersiones-nomina_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/nomina/dispersiones-nomina/arqueo-efectivo/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Calcula el arqueo de billetes USD ($100/$50/$20/$10/$5/$1) para dispersiones EFECTIVO_USD. */
+        get: operations["nomina_dispersiones-nomina_arqueo_efectivo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/nomina/dispersiones-nomina/{id_dispersion}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Dispersión de Pago de Nómina. */
+                id_dispersion: string;
+            };
+            cookie?: never;
+        };
+        /** @description Consulta, confirmación y arqueo de efectivo USD ($100..$1) de dispersiones de nómina. */
+        get: operations["nomina_dispersiones-nomina_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/nomina/dispersiones-nomina/{id_dispersion}/marcar-pagado/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Dispersión de Pago de Nómina. */
+                id_dispersion: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Marca una orden de dispersión PENDIENTE como PAGADO. */
+        post: operations["nomina_dispersiones-nomina_marcar_pagado"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/nomina/fichas-salariales-dual/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description CRUD multi-tenant de Fichas Salariales Duales (LOTTT formal Bs + Paquete Gerencial USD). */
+        get: operations["nomina_fichas-salariales-dual_list"];
+        put?: never;
+        /** @description CRUD multi-tenant de Fichas Salariales Duales (LOTTT formal Bs + Paquete Gerencial USD). */
+        post: operations["nomina_fichas-salariales-dual_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/nomina/fichas-salariales-dual/{id_ficha}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Ficha Salarial Dual. */
+                id_ficha: string;
+            };
+            cookie?: never;
+        };
+        /** @description CRUD multi-tenant de Fichas Salariales Duales (LOTTT formal Bs + Paquete Gerencial USD). */
+        get: operations["nomina_fichas-salariales-dual_read"];
+        /** @description CRUD multi-tenant de Fichas Salariales Duales (LOTTT formal Bs + Paquete Gerencial USD). */
+        put: operations["nomina_fichas-salariales-dual_update"];
+        post?: never;
+        /** @description CRUD multi-tenant de Fichas Salariales Duales (LOTTT formal Bs + Paquete Gerencial USD). */
+        delete: operations["nomina_fichas-salariales-dual_delete"];
+        options?: never;
+        head?: never;
+        /** @description CRUD multi-tenant de Fichas Salariales Duales (LOTTT formal Bs + Paquete Gerencial USD). */
+        patch: operations["nomina_fichas-salariales-dual_partial_update"];
+        trace?: never;
+    };
     "/nomina/nominas-extrasalarial/": {
         parameters: {
             query?: never;
@@ -12525,6 +12640,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/nomina/nominas/{id_nomina}/recibo-pdf/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Nómina. */
+                id_nomina: string;
+            };
+            cookie?: never;
+        };
+        /** @description Descarga recibo de nómina PDF (?modo=SEPARADO|CONSOLIDADO). */
+        get: operations["nomina_nominas_recibo_pdf"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/nomina/periodos-nomina/": {
         parameters: {
             query?: never;
@@ -12608,6 +12743,67 @@ export interface paths {
         put?: never;
         /** @description Cierra un período de nómina */
         post: operations["nomina_periodos-nomina_cerrar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/nomina/prestamos-empleados/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Gestión de préstamos/adelantos con amortización automática por ámbito. */
+        get: operations["nomina_prestamos-empleados_list"];
+        put?: never;
+        /** @description Gestión de préstamos/adelantos con amortización automática por ámbito. */
+        post: operations["nomina_prestamos-empleados_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/nomina/prestamos-empleados/{id_prestamo}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Préstamo a Empleado. */
+                id_prestamo: string;
+            };
+            cookie?: never;
+        };
+        /** @description Gestión de préstamos/adelantos con amortización automática por ámbito. */
+        get: operations["nomina_prestamos-empleados_read"];
+        /** @description Gestión de préstamos/adelantos con amortización automática por ámbito. */
+        put: operations["nomina_prestamos-empleados_update"];
+        post?: never;
+        /** @description Gestión de préstamos/adelantos con amortización automática por ámbito. */
+        delete: operations["nomina_prestamos-empleados_delete"];
+        options?: never;
+        head?: never;
+        /** @description Gestión de préstamos/adelantos con amortización automática por ámbito. */
+        patch: operations["nomina_prestamos-empleados_partial_update"];
+        trace?: never;
+    };
+    "/nomina/prestamos-empleados/{id_prestamo}/anular/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Préstamo a Empleado. */
+                id_prestamo: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Anula lógicamente un préstamo aún no saldado. */
+        post: operations["nomina_prestamos-empleados_anular"];
         delete?: never;
         options?: never;
         head?: never;
@@ -12705,6 +12901,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/nomina/procesos-nomina/procesar-dual/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Ejecuta atómicamente nómina dual (FISCAL Bs + GERENCIAL USD/USDT) y dispersión. */
+        post: operations["nomina_procesos-nomina_procesar_dual"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/nomina/procesos-nomina/{id_proceso_nomina}/": {
         parameters: {
             query?: never;
@@ -12738,6 +12951,46 @@ export interface paths {
         put?: never;
         /** @description Aprueba un proceso de nómina */
         post: operations["nomina_procesos-nomina_aprobar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/nomina/procesos-nomina/{id_proceso_nomina}/exportar-banco/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Proceso de Nómina. */
+                id_proceso_nomina: string;
+            };
+            cookie?: never;
+        };
+        /** @description Exporta TXT bancario VE (?banco=BANESCO_TXT|MERCANTIL_TXT|BDV_TXT). */
+        get: operations["nomina_procesos-nomina_exportar_banco"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/nomina/procesos-nomina/{id_proceso_nomina}/exportar-parafiscal/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Proceso de Nómina. */
+                id_proceso_nomina: string;
+            };
+            cookie?: never;
+        };
+        /** @description Exporta TXT parafiscal VE (?ente=FAOV|IVSS_TIUNA|INCES|ISLR_ARC). */
+        get: operations["nomina_procesos-nomina_exportar_parafiscal"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -12788,6 +13041,23 @@ export interface paths {
         get: operations["nomina_procesos-nomina_resumen"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/nomina/simulador-liquidacion/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description POST /api/nomina/simulador-liquidacion/ — calcula Art. 142 LOTTT, Art. 92 y préstamos. */
+        post: operations["nomina_simulador-liquidacion_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -19055,7 +19325,7 @@ export interface components {
              * Tipo asiento
              * @enum {string}
              */
-            tipo_asiento: "FACTURA_VENTA" | "DEVOLUCION_VENTA" | "DEVOLUCION_VENTA_IVA" | "NOTA_DEBITO_FISCAL" | "NOTA_DEBITO_FISCAL_IVA" | "FACTURA_COMPRA" | "GASTO" | "GASTO_IVA" | "RECEPCION_MERCANCIA" | "COSTO_VENTA" | "AJUSTE_INVENTARIO" | "SALIDA_INTERNA" | "PAGO_CXC" | "PAGO_CXP" | "GANANCIA_CAMBIARIA" | "PERDIDA_CAMBIARIA" | "NOMINA" | "CAMBIO_DIVISA" | "PAGO_TERCERO" | "PAGO_PARAFISCAL" | "RETENCION_IVA_COMPRA" | "RETENCION_IVA_VENTA" | "RETENCION_ISLR";
+            tipo_asiento: "FACTURA_VENTA" | "DEVOLUCION_VENTA" | "DEVOLUCION_VENTA_IVA" | "NOTA_DEBITO_FISCAL" | "NOTA_DEBITO_FISCAL_IVA" | "FACTURA_COMPRA" | "GASTO" | "GASTO_IVA" | "RECEPCION_MERCANCIA" | "COSTO_VENTA" | "AJUSTE_INVENTARIO" | "SALIDA_INTERNA" | "PAGO_CXC" | "PAGO_CXP" | "GANANCIA_CAMBIARIA" | "PERDIDA_CAMBIARIA" | "NOMINA" | "NOMINA_GERENCIAL" | "PROVISION_NOMINA" | "CAMBIO_DIVISA" | "PAGO_TERCERO" | "PAGO_PARAFISCAL" | "RETENCION_IVA_COMPRA" | "RETENCION_IVA_VENTA" | "RETENCION_ISLR";
             /**
              * Descripcion plantilla
              * @description Plantilla de descripción. Use {tipo}, {numero}.
@@ -22512,7 +22782,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-23T03:31:06.761950-04:00
+             * @default 2026-11-23T06:02:54.705336-04:00
              */
             fecha_despacho: string;
             /**
@@ -27657,6 +27927,157 @@ export interface components {
              */
             id_concepto_nomina: string;
         };
+        DispersionPagoNomina: {
+            /**
+             * Id dispersion
+             * Format: uuid
+             */
+            readonly id_dispersion?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /**
+             * Id proceso nomina
+             * Format: uuid
+             */
+            readonly id_proceso_nomina?: string;
+            /**
+             * Id nomina
+             * Format: uuid
+             */
+            readonly id_nomina?: string;
+            /** Id empleado */
+            readonly id_empleado?: number;
+            /** Empleado nombre */
+            readonly empleado_nombre?: string;
+            /** Empleado cedula */
+            readonly empleado_cedula?: string;
+            /**
+             * Ambito
+             * @enum {string}
+             */
+            readonly ambito?: "FISCAL" | "GERENCIAL";
+            /**
+             * Canal pago
+             * @enum {string}
+             */
+            readonly canal_pago?: "TRANSFERENCIA_BS" | "EFECTIVO_USD" | "ZELLE" | "USDT_BINANCE" | "PAGO_MOVIL" | "OTRO";
+            /**
+             * Moneda
+             * Format: uuid
+             */
+            readonly moneda?: string | null;
+            /**
+             * Monto
+             * Format: decimal
+             */
+            readonly monto?: string;
+            /** Desglose denominaciones */
+            readonly desglose_denominaciones?: Record<string, never>;
+            /** Referencia destino */
+            readonly referencia_destino?: string;
+            /**
+             * Estado
+             * @enum {string}
+             */
+            readonly estado?: "PENDIENTE" | "PAGADO" | "ANULADO";
+            /** Activo */
+            readonly activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        FichaSalarialDual: {
+            /**
+             * Id ficha
+             * Format: uuid
+             */
+            readonly id_ficha?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa: string;
+            /** Id empleado */
+            id_empleado: number;
+            /** Empleado nombre */
+            readonly empleado_nombre?: string;
+            /** Empleado cedula */
+            readonly empleado_cedula?: string;
+            /**
+             * Salario base formal ves
+             * Format: decimal
+             */
+            salario_base_formal_ves?: string;
+            /**
+             * Cestaticket mensual ves
+             * Format: decimal
+             */
+            cestaticket_mensual_ves?: string;
+            /**
+             * Porcentaje ari
+             * Format: decimal
+             */
+            porcentaje_ari?: string;
+            /** Cargas familiares */
+            cargas_familiares?: number;
+            /** Banco formal */
+            banco_formal?: string;
+            /** Cuenta bancaria formal */
+            cuenta_bancaria_formal?: string;
+            /**
+             * Tipo cuenta formal
+             * @enum {string}
+             */
+            tipo_cuenta_formal?: "CORRIENTE" | "AHORRO";
+            /**
+             * Paquete objetivo mensual
+             * Format: decimal
+             */
+            paquete_objetivo_mensual?: string;
+            /**
+             * Moneda paquete
+             * Format: uuid
+             */
+            moneda_paquete?: string | null;
+            /**
+             * Bono fijo gerencial
+             * Format: decimal
+             */
+            bono_fijo_gerencial?: string;
+            /**
+             * Canal pago gerencial
+             * @enum {string}
+             */
+            canal_pago_gerencial?: "TRANSFERENCIA_BS" | "EFECTIVO_USD" | "ZELLE" | "USDT_BINANCE" | "PAGO_MOVIL" | "OTRO";
+            /** Referencia pago gerencial */
+            referencia_pago_gerencial?: string;
+            /** Activo */
+            activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
         NominaExtrasalarial: {
             /**
              * Id nomina extrasalarial
@@ -27820,6 +28241,77 @@ export interface components {
              * Format: uuid
              */
             id_empresa: string;
+        };
+        PrestamoEmpleado: {
+            /**
+             * Id prestamo
+             * Format: uuid
+             */
+            readonly id_prestamo?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa: string;
+            /** Id empleado */
+            id_empleado: number;
+            /** Empleado nombre */
+            readonly empleado_nombre?: string;
+            /**
+             * Ambito descuento
+             * @enum {string}
+             */
+            ambito_descuento?: "FISCAL" | "GERENCIAL";
+            /**
+             * Moneda
+             * Format: uuid
+             */
+            moneda?: string | null;
+            /**
+             * Monto principal
+             * Format: decimal
+             */
+            monto_principal: string;
+            /** Cuotas totales */
+            cuotas_totales?: number;
+            /** Cuotas pagadas */
+            readonly cuotas_pagadas?: number;
+            /**
+             * Monto cuota
+             * Format: decimal
+             */
+            monto_cuota: string;
+            /**
+             * Saldo pendiente
+             * Format: decimal
+             */
+            saldo_pendiente: string;
+            /**
+             * Fecha otorgamiento
+             * Format: date
+             */
+            fecha_otorgamiento: string;
+            /**
+             * Estado
+             * @enum {string}
+             */
+            readonly estado?: "ACTIVO" | "PAGADO" | "ANULADO";
+            /** Observaciones */
+            observaciones?: string;
+            /** Activo */
+            activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
         };
         ProcesoNominaExtrasalarial: {
             /**
@@ -32134,6 +32626,11 @@ export interface components {
                 "application/json": components["schemas"]["AsientoContable"];
             };
         };
+        FichaSalarialDual: {
+            content: {
+                "application/json": components["schemas"]["FichaSalarialDual"];
+            };
+        };
         CajaFisica: {
             content: {
                 "application/json": components["schemas"]["CajaFisica"];
@@ -32512,6 +33009,11 @@ export interface components {
         PeriodoNomina: {
             content: {
                 "application/json": components["schemas"]["PeriodoNomina"];
+            };
+        };
+        PrestamoEmpleado: {
+            content: {
+                "application/json": components["schemas"]["PrestamoEmpleado"];
             };
         };
         ProcesoNominaExtrasalarial: {
@@ -61384,6 +61886,258 @@ export interface operations {
             };
         };
     };
+    "nomina_dispersiones-nomina_list": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["DispersionPagoNomina"][];
+                    };
+                };
+            };
+        };
+    };
+    "nomina_dispersiones-nomina_arqueo_efectivo": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["DispersionPagoNomina"][];
+                    };
+                };
+            };
+        };
+    };
+    "nomina_dispersiones-nomina_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Dispersión de Pago de Nómina. */
+                id_dispersion: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DispersionPagoNomina"];
+                };
+            };
+        };
+    };
+    "nomina_dispersiones-nomina_marcar_pagado": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Dispersión de Pago de Nómina. */
+                id_dispersion: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DispersionPagoNomina"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DispersionPagoNomina"];
+                };
+            };
+        };
+    };
+    "nomina_fichas-salariales-dual_list": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["FichaSalarialDual"][];
+                    };
+                };
+            };
+        };
+    };
+    "nomina_fichas-salariales-dual_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["FichaSalarialDual"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FichaSalarialDual"];
+                };
+            };
+        };
+    };
+    "nomina_fichas-salariales-dual_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Ficha Salarial Dual. */
+                id_ficha: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FichaSalarialDual"];
+                };
+            };
+        };
+    };
+    "nomina_fichas-salariales-dual_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Ficha Salarial Dual. */
+                id_ficha: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["FichaSalarialDual"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FichaSalarialDual"];
+                };
+            };
+        };
+    };
+    "nomina_fichas-salariales-dual_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Ficha Salarial Dual. */
+                id_ficha: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "nomina_fichas-salariales-dual_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Ficha Salarial Dual. */
+                id_ficha: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["FichaSalarialDual"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FichaSalarialDual"];
+                };
+            };
+        };
+    };
     "nomina_nominas-extrasalarial_list": {
         parameters: {
             query?: {
@@ -61748,6 +62502,28 @@ export interface operations {
             };
         };
     };
+    nomina_nominas_recibo_pdf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Nómina. */
+                id_nomina: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Nomina"];
+                };
+            };
+        };
+    };
     "nomina_periodos-nomina_list": {
         parameters: {
             query?: {
@@ -61970,6 +62746,166 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PeriodoNomina"];
+                };
+            };
+        };
+    };
+    "nomina_prestamos-empleados_list": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["PrestamoEmpleado"][];
+                    };
+                };
+            };
+        };
+    };
+    "nomina_prestamos-empleados_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PrestamoEmpleado"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrestamoEmpleado"];
+                };
+            };
+        };
+    };
+    "nomina_prestamos-empleados_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Préstamo a Empleado. */
+                id_prestamo: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrestamoEmpleado"];
+                };
+            };
+        };
+    };
+    "nomina_prestamos-empleados_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Préstamo a Empleado. */
+                id_prestamo: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PrestamoEmpleado"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrestamoEmpleado"];
+                };
+            };
+        };
+    };
+    "nomina_prestamos-empleados_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Préstamo a Empleado. */
+                id_prestamo: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "nomina_prestamos-empleados_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Préstamo a Empleado. */
+                id_prestamo: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PrestamoEmpleado"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrestamoEmpleado"];
+                };
+            };
+        };
+    };
+    "nomina_prestamos-empleados_anular": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Préstamo a Empleado. */
+                id_prestamo: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PrestamoEmpleado"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrestamoEmpleado"];
                 };
             };
         };
@@ -62208,6 +63144,25 @@ export interface operations {
             };
         };
     };
+    "nomina_procesos-nomina_procesar_dual": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["ProcesoNomina"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcesoNomina"];
+                };
+            };
+        };
+    };
     "nomina_procesos-nomina_read": {
         parameters: {
             query?: never;
@@ -62316,6 +63271,50 @@ export interface operations {
             };
         };
     };
+    "nomina_procesos-nomina_exportar_banco": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Proceso de Nómina. */
+                id_proceso_nomina: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcesoNomina"];
+                };
+            };
+        };
+    };
+    "nomina_procesos-nomina_exportar_parafiscal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Proceso de Nómina. */
+                id_proceso_nomina: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcesoNomina"];
+                };
+            };
+        };
+    };
     "nomina_procesos-nomina_procesar": {
         parameters: {
             query?: never;
@@ -62357,6 +63356,23 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ProcesoNomina"];
                 };
+            };
+        };
+    };
+    "nomina_simulador-liquidacion_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

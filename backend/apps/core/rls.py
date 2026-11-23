@@ -413,7 +413,10 @@ RLS_TABLES = {
     "migracion_datos_procesomigracion": "id_empresa_id",
     # nomina
     "nomina_concepto_nomina": "id_empresa_id",
+    "nomina_dispersion_pago": "id_empresa_id",
+    "nomina_ficha_salarial_dual": "id_empresa_id",
     "nomina_periodo_nomina": "id_empresa_id",
+    "nomina_prestamo_empleado": "id_empresa_id",
     "nomina_proceso_nomina": "id_empresa_id",
     "nomina_proceso_nomina_extrasalarial": "id_empresa_id",
     # notificaciones
