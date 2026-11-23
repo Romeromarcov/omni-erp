@@ -6,6 +6,7 @@ import { PageHeader } from '../../../components/ui';
 import { fetchRol, updateRol } from '../../../services/roles';
 import type { Rol } from '../../../services/roles';
 import PageLayout from '../../../components/PageLayout';
+import AccessStudioMatrix from '../../../components/core/AccessStudioMatrix';
 
 const RoleDetailPage: React.FC = () => {
   const { id_rol } = useParams<{ id_rol: string }>();
@@ -61,25 +62,27 @@ const RoleDetailPage: React.FC = () => {
   );
 
   return (
-    <PageLayout maxWidth={480}>
+    <PageLayout maxWidth={1080}>
       <PageHeader title="Detalle/Edición de Rol" subtitle={rol.nombre_rol} />
-      <Box component="form" onSubmit={handleSubmit}>
-        <Stack spacing={2}>
-          <TextField name="nombre_rol" label="Nombre" value={form.nombre_rol || ''} onChange={handleChange} required fullWidth />
-          <TextField name="descripcion" label="Descripción" value={form.descripcion || ''} onChange={handleChange} fullWidth />
-          <FormControlLabel
-            control={<Checkbox name="activo" checked={!!form.activo} onChange={handleChange} />}
-            label="Activo"
-          />
-          <Stack direction="row" spacing={1} justifyContent="flex-end">
-            <Button type="submit" variant="contained" disabled={updateMutation.isPending}>Actualizar rol</Button>
+      <Stack spacing={3}>
+        <Box component="form" onSubmit={handleSubmit} sx={{ maxWidth: 480 }}>
+          <Stack spacing={2}>
+            <TextField name="nombre_rol" label="Nombre" value={form.nombre_rol || ''} onChange={handleChange} required fullWidth />
+            <TextField name="descripcion" label="Descripción" value={form.descripcion || ''} onChange={handleChange} fullWidth />
+            <FormControlLabel
+              control={<Checkbox name="activo" checked={!!form.activo} onChange={handleChange} />}
+              label="Activo"
+            />
+            <Stack direction="row" spacing={1} justifyContent="flex-end">
+              <Button type="submit" variant="contained" disabled={updateMutation.isPending}>Actualizar rol</Button>
+            </Stack>
+            {message && (
+              <Alert severity={message.includes('actualizado') ? 'success' : 'error'}>{message}</Alert>
+            )}
           </Stack>
-          {message && (
-            <Alert severity={message.includes('actualizado') ? 'success' : 'error'}>{message}</Alert>
-          )}
-        </Stack>
-      </Box>
-      {/* Aquí iría la gestión de permisos asignados al rol */}
+        </Box>
+        {id_rol && <AccessStudioMatrix idRol={id_rol} />}
+      </Stack>
     </PageLayout>
   );
 };

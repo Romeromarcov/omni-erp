@@ -60,6 +60,7 @@
 | core | Empresa | ✅ | ✅ | — |
 | core | Notificacion | ✅ | ✅ | — |
 | core | Permisos | — | ✅ | — |
+| core | PoliticaAccesoRol | ✅ | ✅ | id_empresa+id_rol+modulo+accion |
 | core | RegistroAuditoria | ✅ | ✅ | — |
 | core | RolPermisos | — | ✅ | id_rol+id_permiso |
 | core | Roles | ✅ | ✅ | id_empresa+nombre_rol |
@@ -271,4 +272,4 @@
 | ventas | Pedido | ✅ | ✅ | id_empresa+numero_pedido |
 | ventas | ReglaPrecioDinamico | ✅ | ✅ | id_empresa+codigo |
 
-_Total modelos: 268_
+_Total modelos: 269_

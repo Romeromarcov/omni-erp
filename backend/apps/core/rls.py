@@ -324,6 +324,7 @@ RLS_TABLES = {
     "core_contacto": "id_empresa_id",
     "core_dispositivo": "empresa_id",
     "core_notificacion": "id_empresa_id",
+    "core_politica_acceso_rol": "id_empresa",
     "departamentos": "id_empresa",
     "registro_auditoria": "id_empresa",
     "roles": "id_empresa",
