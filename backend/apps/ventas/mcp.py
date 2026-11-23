@@ -241,6 +241,51 @@ def ventas_listar_notas_debito_fiscales(
         ]
 
 
+def ventas_cotizar_precio_dinamico(
+    capability_token: str,
+    empresa_id: str,
+    producto_id: str,
+    cantidad: str = "1",
+    moneda_pago: str = "USD",
+    zona: str = "",
+    segmento: str = "",
+) -> dict:
+    """
+    Cotiza el precio unitario dinámico de un producto aplicando reglas de brecha,
+    moneda de pago, zona, segmento y volumen.
+
+    Scope requerido: ``ventas:read``
+    """
+    from decimal import Decimal
+
+    from apps.core.models import Empresa  # noqa: PLC0415
+    from apps.inventario.models import Producto  # noqa: PLC0415
+    from apps.ventas.services_precios import calcular_precio_dinamico  # noqa: PLC0415
+
+    with _ctx(capability_token, f"{_SCOPE}:read", empresa_id=empresa_id):
+        empresa = Empresa.objects.filter(pk=empresa_id).first()
+        producto = Producto.objects.filter(pk=producto_id, id_empresa=empresa_id).first()
+        if empresa is None or producto is None:
+            raise ValueError("Empresa o producto no encontrado.")
+        res = calcular_precio_dinamico(
+            producto,
+            empresa,
+            cantidad=Decimal(str(cantidad)),
+            moneda_pago=moneda_pago,
+            zona=zona,
+            segmento=segmento,
+        )
+        return {
+            "producto_id": res["producto_id"],
+            "precio_base": res["precio_base"],
+            "precio_final": res["precio_final"],
+            "total_linea": res["total_linea"],
+            "descuento_recargo_pct": res["descuento_recargo_pct"],
+            "brecha_cambiaria_pct": res["brecha_cambiaria_pct"],
+            "reglas_aplicadas": [r["codigo"] for r in res["reglas_aplicadas"]],
+        }
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Auto-discovery — exportar lista de herramientas
 # ─────────────────────────────────────────────────────────────────────────────
@@ -264,6 +309,11 @@ MCP_TOOLS: List[Dict[str, Any]] = [
     {
         "fn": ventas_listar_notas_debito_fiscales,
         "name": "ventas_listar_notas_debito_fiscales",
+        "scope": f"{_SCOPE}:read",
+    },
+    {
+        "fn": ventas_cotizar_precio_dinamico,
+        "name": "ventas_cotizar_precio_dinamico",
         "scope": f"{_SCOPE}:read",
     },
 ]

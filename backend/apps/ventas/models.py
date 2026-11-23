@@ -756,18 +756,105 @@ class DetallePrecio(models.Model):
         return f"{self.id_producto.nombre_producto} @ {self.id_lista.codigo}: {self.precio}"
 
 
-# ── Comisiones de vendedores (1.G) ───────────────────────────────────────────
+class ReglaPrecioDinamico(models.Model):
+    """Regla componible de precios dinámicos VE por moneda de pago, brecha cambiaria, zona, segmento o volumen (Plan 09 §3.1)."""
+
+    TIPO_FACTOR_CHOICES = [
+        ("MONEDA_PAGO", "Moneda / Medio de Pago"),
+        ("ZONA", "Zona / Ruta"),
+        ("SEGMENTO", "Segmento / Canal"),
+        ("VOLUMEN", "Volumen / Cantidad"),
+        ("BRECHA_CAMBIARIA", "Brecha Cambiaria"),
+    ]
+    MODO_CALCULO_CHOICES = [
+        ("MULTIPLICADOR", "Multiplicador directo"),
+        ("PORCENTAJE", "Ajuste porcentual (+/- %)"),
+        ("BRECHA_TASA", "Ajuste automático por brecha entre tasa referencia y BCV"),
+    ]
+
+    id_regla = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="reglas_precio_dinamico")
+    nombre = models.CharField(max_length=120)
+    codigo = models.CharField(max_length=40)
+    tipo_factor = models.CharField(max_length=25, choices=TIPO_FACTOR_CHOICES)
+    clave_condicion = models.CharField(
+        max_length=60,
+        blank=True,
+        default="",
+        help_text="Valor a emparejar según tipo_factor (ej: USD, VES, USDT, CARABOBO, MAYORISTA). Vacío = aplica a todos.",
+    )
+    categoria = models.ForeignKey(
+        "inventario.CategoriaProducto",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="reglas_precio_dinamico",
+    )
+    producto = models.ForeignKey(
+        "inventario.Producto",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="reglas_precio_dinamico",
+    )
+    cantidad_minima = models.DecimalField(max_digits=18, decimal_places=4, default=Decimal("0.0000"))
+    modo_calculo = models.CharField(max_length=20, choices=MODO_CALCULO_CHOICES, default="PORCENTAJE")
+    valor_factor = models.DecimalField(
+        max_digits=12,
+        decimal_places=6,
+        default=Decimal("0.000000"),
+        help_text="Multiplicador (ej 0.90), % (ej -10 o +15), o % de traslado de la brecha en BRECHA_TASA (0..100).",
+    )
+    codigo_tipo_tasa_referencia = models.CharField(
+        max_length=30,
+        blank=True,
+        default="",
+        help_text="Código TipoTasaCambio de referencia para BRECHA_TASA (ej PARALELO, BINANCE_P2P).",
+    )
+    prioridad = models.PositiveSmallIntegerField(default=100)
+    acumulable = models.BooleanField(default=True)
+    vigente_desde = models.DateField(null=True, blank=True)
+    vigente_hasta = models.DateField(null=True, blank=True)
+    activo = models.BooleanField(default=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "ventas_regla_precio_dinamico"
+        verbose_name = "Regla de Precio Dinámico"
+        verbose_name_plural = "Reglas de Precio Dinámico"
+        unique_together = [["id_empresa", "codigo"]]
+        ordering = ["prioridad", "fecha_creacion"]
+        indexes = [
+            models.Index(fields=["id_empresa", "activo", "prioridad"]),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(cantidad_minima__gte=0),
+                name="regla_precio_cantidad_minima_gte_0",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.codigo} ({self.tipo_factor}: {self.modo_calculo} {self.valor_factor})"
+
+
+# ── Comisiones de vendedores (1.G + Plan 09 3.3) ──────────────────────────────
 
 
 class EsquemaComision(models.Model):
     """
     Esquema de comisión de un vendedor en una empresa: % base sobre el subtotal
     de la venta (sin impuestos), con override opcional por categoría de producto
-    (EsquemaComisionCategoria) y vigencia por fechas (patrón DetallePrecio).
+    (EsquemaComisionCategoria), vigencia por fechas y modalidad (ENTREGA o COBRO_EFECTIVO).
 
     Resolución al devengar: esquema activo del vendedor vigente a la fecha de la
     nota; si hay varios, gana el de ``vigente_desde`` más reciente.
     """
+
+    MODALIDAD_DEVENGO_CHOICES = [
+        ("ENTREGA", "Al entregar / facturar"),
+        ("COBRO_EFECTIVO", "Al cobrar efectivamente"),
+    ]
 
     id_esquema_comision = models.UUIDField(primary_key=True, default=uuid7, editable=False)
     id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="esquemas_comision")
@@ -777,6 +864,37 @@ class EsquemaComision(models.Model):
         max_digits=7,
         decimal_places=4,
         help_text="Porcentaje de comisión sobre el subtotal sin impuestos (0–100).",
+    )
+    modalidad_devengo = models.CharField(
+        max_length=20,
+        choices=MODALIDAD_DEVENGO_CHOICES,
+        default="ENTREGA",
+    )
+    porcentaje_cobro_divisa = models.DecimalField(
+        max_digits=7,
+        decimal_places=4,
+        null=True,
+        blank=True,
+        help_text="Porcentaje cuando el cobro efectivo ocurre en divisa (0–100).",
+    )
+    porcentaje_cobro_bs = models.DecimalField(
+        max_digits=7,
+        decimal_places=4,
+        null=True,
+        blank=True,
+        help_text="Porcentaje cuando el cobro efectivo ocurre en moneda local VES/Bs (0–100).",
+    )
+    meta_mensual_monto = models.DecimalField(
+        max_digits=18,
+        decimal_places=4,
+        default=Decimal("0.0000"),
+        help_text="Meta mensual acumulada de base comisionable para bono adicional.",
+    )
+    bono_meta_porcentaje = models.DecimalField(
+        max_digits=7,
+        decimal_places=4,
+        default=Decimal("0.0000"),
+        help_text="Porcentaje de bono adicional al alcanzar la meta mensual (0–100).",
     )
     vigente_desde = models.DateField(null=True, blank=True)
     vigente_hasta = models.DateField(null=True, blank=True)
@@ -794,6 +912,24 @@ class EsquemaComision(models.Model):
             models.CheckConstraint(
                 condition=models.Q(porcentaje_base__gte=0) & models.Q(porcentaje_base__lte=100),
                 name="esquema_comision_porcentaje_0_100",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(porcentaje_cobro_divisa__isnull=True)
+                | (models.Q(porcentaje_cobro_divisa__gte=0) & models.Q(porcentaje_cobro_divisa__lte=100)),
+                name="esquema_comision_divisa_0_100",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(porcentaje_cobro_bs__isnull=True)
+                | (models.Q(porcentaje_cobro_bs__gte=0) & models.Q(porcentaje_cobro_bs__lte=100)),
+                name="esquema_comision_bs_0_100",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(bono_meta_porcentaje__gte=0) & models.Q(bono_meta_porcentaje__lte=100),
+                name="esquema_comision_bono_meta_0_100",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(meta_mensual_monto__gte=0),
+                name="esquema_comision_meta_gte_0",
             ),
         ]
 
@@ -835,11 +971,11 @@ class EsquemaComisionCategoria(models.Model):
 
 class ComisionVenta(models.Model):
     """
-    Comisión devengada de una venta (NotaVenta ENTREGADA con vendedor asignado).
+    Comisión devengada de una venta (NotaVenta ENTREGADA o COBRO_EFECTIVO con vendedor asignado).
 
-    Se crea en ``entregar_nota_venta`` dentro de la MISMA transacción que el
-    despacho (R-CODE-11: efectos de la venta atómicos). OneToOne con la nota:
-    la BD garantiza que una venta nunca devenga dos comisiones.
+    Se crea en ``entregar_nota_venta`` o ``devengar_comision_por_cobro`` dentro de
+    transacción atómica (R-CODE-11). OneToOne con la nota: la BD garantiza que
+    una venta nunca devenga dos comisiones.
 
     Ciclo: DEVENGADA → LIQUIDADA (acción liquidar) | ANULADA (la nota se anula).
     Montos en la moneda base de la empresa, igual que los subtotales de la nota.
@@ -849,6 +985,16 @@ class ComisionVenta(models.Model):
         ("DEVENGADA", "Devengada"),
         ("LIQUIDADA", "Liquidada"),
         ("ANULADA", "Anulada"),
+    ]
+    ORIGEN_DEVENGO_CHOICES = [
+        ("ENTREGA", "Entrega"),
+        ("COBRO_EFECTIVO", "Cobro Efectivo"),
+    ]
+    MONEDA_COBRO_TIPO_CHOICES = [
+        ("DIVISA", "Divisa"),
+        ("MONEDA_LOCAL", "Moneda Local (Bs)"),
+        ("MIXTO", "Mixto"),
+        ("NA", "No aplica"),
     ]
 
     id_comision_venta = models.UUIDField(primary_key=True, default=uuid7, editable=False)
@@ -869,6 +1015,8 @@ class ComisionVenta(models.Model):
         help_text="Moneda base de la empresa al momento del devengo.",
     )
     estado = models.CharField(max_length=20, choices=ESTADOS, default="DEVENGADA")
+    origen_devengo = models.CharField(max_length=20, choices=ORIGEN_DEVENGO_CHOICES, default="ENTREGA")
+    moneda_cobro_tipo = models.CharField(max_length=15, choices=MONEDA_COBRO_TIPO_CHOICES, default="NA")
     fecha_devengo = models.DateField()
     fecha_liquidacion = models.DateField(null=True, blank=True)
     liquidada_por = models.ForeignKey(

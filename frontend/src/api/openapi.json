@@ -15385,7 +15385,7 @@
         "/crm/clientes/{id_cliente}/credito-disponible/": {
             "get": {
                 "operationId": "crm_clientes_credito_disponible",
-                "description": "GET /api/crm/clientes/{pk}/credito-disponible/\nDevuelve saldo de CxC pendiente y crédito disponible.",
+                "description": "GET /api/crm/clientes/{pk}/credito-disponible/\nDevuelve saldo neto (descontando abonos y asignaciones), mora real y crédito disponible.",
                 "parameters": [],
                 "responses": {
                     "200": {
@@ -48593,6 +48593,100 @@
             },
             "parameters": []
         },
+        "/ventas/comisiones/avance-meta/": {
+            "get": {
+                "operationId": "ventas_comisiones_avance_meta",
+                "description": "GET /api/ventas/comisiones/avance-meta/?vendedor=&anio=&mes= — Cumplimiento mensual del vendedor.",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/ComisionVenta"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "ventas"
+                ]
+            },
+            "parameters": []
+        },
+        "/ventas/comisiones/devengar-cobro/": {
+            "post": {
+                "operationId": "ventas_comisiones_devengar_cobro",
+                "description": "POST /api/ventas/comisiones/devengar-cobro/ — Devenga comisión sobre cobro efectivo.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ComisionVenta"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ComisionVenta"
+                        }
+                    }
+                },
+                "tags": [
+                    "ventas"
+                ]
+            },
+            "parameters": []
+        },
         "/ventas/comisiones/liquidar/": {
             "post": {
                 "operationId": "ventas_comisiones_liquidar",
@@ -52704,6 +52798,244 @@
                     "name": "id_pedido",
                     "in": "path",
                     "description": "Un Cadena UUID que identifique este Pedido.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/ventas/pedidos/{id_pedido}/evaluar-credito/": {
+            "get": {
+                "operationId": "ventas_pedidos_evaluar_credito",
+                "description": "GET /api/ventas/pedidos/{pk}/evaluar-credito/ — Evalúa mora real y límite del cliente.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Pedido"
+                        }
+                    }
+                },
+                "tags": [
+                    "ventas"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_pedido",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Pedido.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/ventas/reglas-precio-dinamico/": {
+            "get": {
+                "operationId": "ventas_reglas-precio-dinamico_list",
+                "description": "Reglas componibles de precios dinámicos por brecha cambiaria, moneda de pago, zona, segmento y volumen.",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/ReglaPrecioDinamico"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "ventas"
+                ]
+            },
+            "post": {
+                "operationId": "ventas_reglas-precio-dinamico_create",
+                "description": "Reglas componibles de precios dinámicos por brecha cambiaria, moneda de pago, zona, segmento y volumen.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ReglaPrecioDinamico"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ReglaPrecioDinamico"
+                        }
+                    }
+                },
+                "tags": [
+                    "ventas"
+                ]
+            },
+            "parameters": []
+        },
+        "/ventas/reglas-precio-dinamico/cotizar/": {
+            "post": {
+                "operationId": "ventas_reglas-precio-dinamico_cotizar",
+                "description": "POST /api/ventas/reglas-precio-dinamico/cotizar/ — Simula precio dinámico + equivalencias trimonetarias.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ReglaPrecioDinamico"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ReglaPrecioDinamico"
+                        }
+                    }
+                },
+                "tags": [
+                    "ventas"
+                ]
+            },
+            "parameters": []
+        },
+        "/ventas/reglas-precio-dinamico/{id_regla}/": {
+            "get": {
+                "operationId": "ventas_reglas-precio-dinamico_read",
+                "description": "Reglas componibles de precios dinámicos por brecha cambiaria, moneda de pago, zona, segmento y volumen.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ReglaPrecioDinamico"
+                        }
+                    }
+                },
+                "tags": [
+                    "ventas"
+                ]
+            },
+            "put": {
+                "operationId": "ventas_reglas-precio-dinamico_update",
+                "description": "Reglas componibles de precios dinámicos por brecha cambiaria, moneda de pago, zona, segmento y volumen.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ReglaPrecioDinamico"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ReglaPrecioDinamico"
+                        }
+                    }
+                },
+                "tags": [
+                    "ventas"
+                ]
+            },
+            "patch": {
+                "operationId": "ventas_reglas-precio-dinamico_partial_update",
+                "description": "Reglas componibles de precios dinámicos por brecha cambiaria, moneda de pago, zona, segmento y volumen.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ReglaPrecioDinamico"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ReglaPrecioDinamico"
+                        }
+                    }
+                },
+                "tags": [
+                    "ventas"
+                ]
+            },
+            "delete": {
+                "operationId": "ventas_reglas-precio-dinamico_delete",
+                "description": "Reglas componibles de precios dinámicos por brecha cambiaria, moneda de pago, zona, segmento y volumen.",
+                "parameters": [],
+                "responses": {
+                    "204": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "ventas"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_regla",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Regla de Precio Dinámico.",
                     "required": true,
                     "type": "string",
                     "format": "uuid"
@@ -60811,6 +61143,18 @@
                     "maximum": 32767,
                     "minimum": 0
                 },
+                "dias_gracia_mora": {
+                    "title": "Dias gracia mora",
+                    "description": "Días de gracia posteriores al vencimiento antes de considerar mora real.",
+                    "type": "integer",
+                    "maximum": 32767,
+                    "minimum": 0
+                },
+                "bloquear_por_mora": {
+                    "title": "Bloquear por mora",
+                    "description": "Si True, bloquea confirmación de pedidos mientras existan CxC vencidas con saldo pendiente.",
+                    "type": "boolean"
+                },
                 "id_empresa": {
                     "title": "Id empresa",
                     "type": "string",
@@ -63010,7 +63354,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-22T22:51:27.879066-04:00"
+                    "default": "2026-11-23T00:29:22.263022-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",
@@ -75320,6 +75664,26 @@
                     ],
                     "readOnly": true
                 },
+                "origen_devengo": {
+                    "title": "Origen devengo",
+                    "type": "string",
+                    "enum": [
+                        "ENTREGA",
+                        "COBRO_EFECTIVO"
+                    ],
+                    "readOnly": true
+                },
+                "moneda_cobro_tipo": {
+                    "title": "Moneda cobro tipo",
+                    "type": "string",
+                    "enum": [
+                        "DIVISA",
+                        "MONEDA_LOCAL",
+                        "MIXTO",
+                        "NA"
+                    ],
+                    "readOnly": true
+                },
                 "fecha_devengo": {
                     "title": "Fecha devengo",
                     "type": "string",
@@ -76202,6 +76566,46 @@
                     "type": "string",
                     "format": "decimal"
                 },
+                "modalidad_devengo": {
+                    "title": "Modalidad devengo",
+                    "type": "string",
+                    "enum": [
+                        "ENTREGA",
+                        "COBRO_EFECTIVO"
+                    ]
+                },
+                "modalidad_devengo_display": {
+                    "title": "Modalidad devengo display",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "porcentaje_cobro_divisa": {
+                    "title": "Porcentaje cobro divisa",
+                    "description": "Porcentaje cuando el cobro efectivo ocurre en divisa (0–100).",
+                    "type": "string",
+                    "format": "decimal",
+                    "x-nullable": true
+                },
+                "porcentaje_cobro_bs": {
+                    "title": "Porcentaje cobro bs",
+                    "description": "Porcentaje cuando el cobro efectivo ocurre en moneda local VES/Bs (0–100).",
+                    "type": "string",
+                    "format": "decimal",
+                    "x-nullable": true
+                },
+                "meta_mensual_monto": {
+                    "title": "Meta mensual monto",
+                    "description": "Meta mensual acumulada de base comisionable para bono adicional.",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "bono_meta_porcentaje": {
+                    "title": "Bono meta porcentaje",
+                    "description": "Porcentaje de bono adicional al alcanzar la meta mensual (0–100).",
+                    "type": "string",
+                    "format": "decimal"
+                },
                 "vigente_desde": {
                     "title": "Vigente desde",
                     "type": "string",
@@ -77047,6 +77451,139 @@
                     "type": "string",
                     "format": "uuid",
                     "x-nullable": true
+                }
+            }
+        },
+        "ReglaPrecioDinamico": {
+            "required": [
+                "nombre",
+                "codigo",
+                "tipo_factor"
+            ],
+            "type": "object",
+            "properties": {
+                "id_regla": {
+                    "title": "Id regla",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "nombre": {
+                    "title": "Nombre",
+                    "type": "string",
+                    "maxLength": 120,
+                    "minLength": 1
+                },
+                "codigo": {
+                    "title": "Codigo",
+                    "type": "string",
+                    "maxLength": 40,
+                    "minLength": 1
+                },
+                "tipo_factor": {
+                    "title": "Tipo factor",
+                    "type": "string",
+                    "enum": [
+                        "MONEDA_PAGO",
+                        "ZONA",
+                        "SEGMENTO",
+                        "VOLUMEN",
+                        "BRECHA_CAMBIARIA"
+                    ]
+                },
+                "tipo_factor_display": {
+                    "title": "Tipo factor display",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "clave_condicion": {
+                    "title": "Clave condicion",
+                    "description": "Valor a emparejar según tipo_factor (ej: USD, VES, USDT, CARABOBO, MAYORISTA). Vacío = aplica a todos.",
+                    "type": "string",
+                    "maxLength": 60
+                },
+                "categoria": {
+                    "title": "Categoria",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "producto": {
+                    "title": "Producto",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "cantidad_minima": {
+                    "title": "Cantidad minima",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "modo_calculo": {
+                    "title": "Modo calculo",
+                    "type": "string",
+                    "enum": [
+                        "MULTIPLICADOR",
+                        "PORCENTAJE",
+                        "BRECHA_TASA"
+                    ]
+                },
+                "modo_calculo_display": {
+                    "title": "Modo calculo display",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "valor_factor": {
+                    "title": "Valor factor",
+                    "description": "Multiplicador (ej 0.90), % (ej -10 o +15), o % de traslado de la brecha en BRECHA_TASA (0..100).",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "codigo_tipo_tasa_referencia": {
+                    "title": "Codigo tipo tasa referencia",
+                    "description": "Código TipoTasaCambio de referencia para BRECHA_TASA (ej PARALELO, BINANCE_P2P).",
+                    "type": "string",
+                    "maxLength": 30
+                },
+                "prioridad": {
+                    "title": "Prioridad",
+                    "type": "integer",
+                    "maximum": 32767,
+                    "minimum": 0
+                },
+                "acumulable": {
+                    "title": "Acumulable",
+                    "type": "boolean"
+                },
+                "vigente_desde": {
+                    "title": "Vigente desde",
+                    "type": "string",
+                    "format": "date",
+                    "x-nullable": true
+                },
+                "vigente_hasta": {
+                    "title": "Vigente hasta",
+                    "type": "string",
+                    "format": "date",
+                    "x-nullable": true
+                },
+                "activo": {
+                    "title": "Activo",
+                    "type": "boolean"
+                },
+                "fecha_creacion": {
+                    "title": "Fecha creacion",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
                 }
             }
         }

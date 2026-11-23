@@ -23,6 +23,7 @@ from .views import (
     NotaDebitoFiscalViewSet,
     NotaVentaViewSet,
     PedidoViewSet,
+    ReglaPrecioDinamicoViewSet,
 )
 
 router = DefaultRouter()
@@ -44,6 +45,7 @@ router.register(r"notas-debito-fiscales", NotaDebitoFiscalViewSet)
 router.register(r"detalles-nota-debito-fiscal", DetalleNotaDebitoFiscalViewSet)
 router.register(r"listas-precio", ListaPrecioViewSet)
 router.register(r"detalles-precio", DetallePrecioViewSet)
+router.register(r"reglas-precio-dinamico", ReglaPrecioDinamicoViewSet)
 router.register(r"esquemas-comision", EsquemaComisionViewSet)
 router.register(r"esquemas-comision-categorias", EsquemaComisionCategoriaViewSet)
 router.register(r"comisiones", ComisionVentaViewSet)

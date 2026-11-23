@@ -112,7 +112,15 @@ PedidoConfirmacionError = VentaError
 
 
 @transaction.atomic
-def confirmar_pedido(pedido, almacen, usuario, generar_cxc: bool | None = None) -> dict:
+def confirmar_pedido(
+    pedido,
+    almacen,
+    usuario,
+    generar_cxc: bool | None = None,
+    *,
+    validar_credito: bool = False,
+    omitir_bloqueo_credito: bool = False,
+) -> dict:
     """
     Aprueba el pedido y reserva stock (cantidad_comprometida).
     NO crea MovimientoInventario — el stock físico sale en entregar_nota_venta().
@@ -122,6 +130,8 @@ def confirmar_pedido(pedido, almacen, usuario, generar_cxc: bool | None = None) 
         almacen:     Instancia Almacen de donde se despachará.
         usuario:     Instancia Usuarios que confirma.
         generar_cxc: None = auto (sigue tipo_cliente); True/False = forzar.
+        validar_credito: si True, evalúa límite de crédito y mora antes de aprobar.
+        omitir_bloqueo_credito: si True, permite aprobar por excepción gerencial.
 
     Returns:
         {"reservas": [StockActual, ...], "cxc": CuentaPorCobrar | None}
@@ -136,6 +146,19 @@ def confirmar_pedido(pedido, almacen, usuario, generar_cxc: bool | None = None) 
     detalles = list(pedido.detalles.select_related("id_producto"))
     if not detalles:
         raise VentaError("El pedido no tiene líneas de detalle.")
+
+    # Plan 09 §3.3: bloqueo inteligente por mora real / límite de crédito
+    if not omitir_bloqueo_credito and (validar_credito or getattr(pedido.id_cliente, "bloquear_por_mora", False)):
+        from apps.ventas.services_credito import evaluar_credito_cliente
+
+        subtotal_pedido = sum((Decimal(str(d.subtotal)) for d in detalles), Decimal("0"))
+        eval_cred = evaluar_credito_cliente(
+            pedido.id_cliente,
+            pedido.id_empresa,
+            monto_nuevo=subtotal_pedido,
+        )
+        if eval_cred["bloqueado"]:
+            raise VentaError(eval_cred["motivo_bloqueo"] or "Cliente bloqueado por política de crédito.")
 
     # T10: un producto solo-compra (es_vendible=False) no puede venderse.
     no_vendibles = [d.id_producto.nombre_producto for d in detalles if not d.id_producto.es_vendible]
@@ -406,6 +429,7 @@ def entregar_nota_venta(nota_venta, almacen, usuario, *, permitir_stock_negativo
                 usuario=usuario,
                 observaciones=f"Entrega nota {nota_venta.numero_nota}",
                 permitir_negativo=permitir_stock_negativo,
+                ambito=nota_venta.ambito,
             )
         except (StockInsuficienteError, MovimientoInvalidoError) as exc:
             raise VentaError(str(exc)) from exc
@@ -425,7 +449,10 @@ def entregar_nota_venta(nota_venta, almacen, usuario, *, permitir_stock_negativo
         cliente = nota_venta.id_cliente
         subtotal = sum(d.subtotal for d in detalles)
         dias = getattr(cliente, "dias_credito", None) or 30
-        documento_json = {"id_nota_venta": str(nota_venta.id_nota_venta)}
+        documento_json = {
+            "id_nota_venta": str(nota_venta.id_nota_venta),
+            "ambito": nota_venta.ambito,
+        }
         if pedido is not None:
             documento_json["id_pedido"] = str(pedido.id_pedido)
         cxc = CuentaPorCobrar.objects.create(
@@ -495,6 +522,7 @@ def confirmar_nota_venta(nota_venta, almacen, usuario, *, permitir_stock_negativ
             nota_venta.id_empresa,
             monto=subtotal,
             usuario=usuario,
+            ambito=nota_venta.ambito,
         )
     except (MapeoContableNoEncontrado, AsientoError) as exc:
         # H-BUG-1: si la empresa exige contabilidad, la falta de asiento es un
@@ -1133,23 +1161,76 @@ def _esquema_comision_vigente(empresa, vendedor, fecha: date):
     )
 
 
+def _calcular_detalle_y_meta_comision(
+    nota_venta,
+    esquema,
+    *,
+    fecha: date,
+    moneda_cobro_tipo: str = "NA",
+):
+    """Calcula base comisionable, monto por línea (y posible bono por meta mensual)."""
+    from apps.ventas.models import ComisionVenta
+
+    overrides = {o.categoria_id: o.porcentaje for o in esquema.overrides_categoria.all()}
+
+    override_modalidad = None
+    if moneda_cobro_tipo == "DIVISA" and esquema.porcentaje_cobro_divisa is not None:
+        override_modalidad = esquema.porcentaje_cobro_divisa
+    elif moneda_cobro_tipo == "MONEDA_LOCAL" and esquema.porcentaje_cobro_bs is not None:
+        override_modalidad = esquema.porcentaje_cobro_bs
+
+    base = Decimal("0")
+    monto = Decimal("0")
+    detalle: list[dict[str, object]] = []
+    for linea in nota_venta.detalles.select_related("id_producto"):
+        if override_modalidad is not None:
+            porcentaje = override_modalidad
+        else:
+            porcentaje = overrides.get(linea.id_producto.id_categoria_id, esquema.porcentaje_base)
+        subtotal = linea.subtotal
+        monto_linea = (subtotal * porcentaje / _CIEN).quantize(_CUATRO_DECIMALES, rounding=ROUND_HALF_UP)
+        base += subtotal
+        monto += monto_linea
+        detalle.append(
+            {
+                "id_producto": str(linea.id_producto_id),
+                "subtotal": str(subtotal),
+                "porcentaje": str(porcentaje),
+                "monto": str(monto_linea),
+            }
+        )
+
+    meta = Decimal(str(esquema.meta_mensual_monto or "0"))
+    bono_pct = Decimal(str(esquema.bono_meta_porcentaje or "0"))
+    if meta > Decimal("0") and bono_pct > Decimal("0") and base > Decimal("0"):
+        acumulado_previo = ComisionVenta.objects.filter(
+            id_empresa=nota_venta.id_empresa,
+            vendedor=esquema.vendedor,
+            fecha_devengo__year=fecha.year,
+            fecha_devengo__month=fecha.month,
+        ).exclude(estado="ANULADA").aggregate(total=models.Sum("base_comisionable"))["total"] or Decimal("0")
+        if (Decimal(str(acumulado_previo)) + base) >= meta:
+            bono_monto = (base * bono_pct / _CIEN).quantize(_CUATRO_DECIMALES, rounding=ROUND_HALF_UP)
+            monto += bono_monto
+            detalle.append(
+                {
+                    "id_producto": None,
+                    "concepto": "BONO_META_MENSUAL",
+                    "subtotal": str(base),
+                    "porcentaje": str(bono_pct),
+                    "monto": str(bono_monto),
+                }
+            )
+
+    return base, monto, detalle
+
+
 def devengar_comision_venta(nota_venta):
     """
     Registra la comisión devengada de la venta (NotaVenta recién ENTREGADA).
 
-    Reglas:
-      - Sin vendedor asignado o sin esquema vigente → no hay comisión (None);
-        no es un error: la venta procede igual.
-      - Base comisionable = subtotal de la nota (sin IVA/IGTF: las comisiones
-        no se pagan sobre impuestos).
-      - Porcentaje por línea: override de la categoría del producto si el
-        esquema lo define; si no, el porcentaje base del esquema.
-      - Todo en Decimal, cuantizado a 4 decimales ROUND_HALF_UP (R-CODE-4).
-      - El OneToOne nota↔comisión hace el devengo idempotente: si ya existe,
-        se devuelve la existente sin recalcular.
-
-    Debe invocarse DENTRO de la transacción de la entrega (R-CODE-11): si el
-    INSERT de la comisión falla, la entrega completa revierte.
+    Si el esquema vigente tiene ``modalidad_devengo == 'COBRO_EFECTIVO'``,
+    difiere el devengo hasta ``devengar_comision_por_cobro``.
     """
     from apps.ventas.models import ComisionVenta
 
@@ -1171,25 +1252,15 @@ def devengar_comision_venta(nota_venta):
         )
         return None
 
-    overrides = {o.categoria_id: o.porcentaje for o in esquema.overrides_categoria.all()}
+    if esquema.modalidad_devengo == "COBRO_EFECTIVO":
+        return None
 
-    base = Decimal("0")
-    monto = Decimal("0")
-    detalle = []
-    for linea in nota_venta.detalles.select_related("id_producto"):
-        porcentaje = overrides.get(linea.id_producto.id_categoria_id, esquema.porcentaje_base)
-        subtotal = linea.subtotal
-        monto_linea = (subtotal * porcentaje / _CIEN).quantize(_CUATRO_DECIMALES, rounding=ROUND_HALF_UP)
-        base += subtotal
-        monto += monto_linea
-        detalle.append(
-            {
-                "id_producto": str(linea.id_producto_id),
-                "subtotal": str(subtotal),
-                "porcentaje": str(porcentaje),
-                "monto": str(monto_linea),
-            }
-        )
+    base, monto, detalle = _calcular_detalle_y_meta_comision(
+        nota_venta,
+        esquema,
+        fecha=fecha,
+        moneda_cobro_tipo="NA",
+    )
 
     return ComisionVenta.objects.create(
         id_empresa=nota_venta.id_empresa,
@@ -1200,9 +1271,120 @@ def devengar_comision_venta(nota_venta):
         monto=monto,
         id_moneda=getattr(nota_venta.id_empresa, "id_moneda_base", None),
         estado="DEVENGADA",
+        origen_devengo="ENTREGA",
+        moneda_cobro_tipo="NA",
         fecha_devengo=fecha,
         detalle_json=detalle,
     )
+
+
+@transaction.atomic
+def devengar_comision_por_cobro(
+    nota_venta,
+    *,
+    pago=None,
+    moneda_cobro_iso: str | None = None,
+    fecha_cobro: date | None = None,
+):
+    """Devenga comisión cuando la cobranza se hace efectiva (divisa vs moneda local Bs)."""
+    from apps.ventas.models import ComisionVenta
+
+    if nota_venta.estado not in ("ENTREGADA", "FACTURADA"):
+        raise VentaError(
+            f"Solo se devengan comisiones por cobro sobre ventas ENTREGADA o FACTURADA (actual: {nota_venta.estado})."
+        )
+    vendedor = nota_venta.id_vendedor
+    if vendedor is None:
+        raise VentaError("La nota de venta no tiene un vendedor asignado.")
+
+    existente = ComisionVenta.objects.select_for_update().filter(nota_venta=nota_venta).first()
+    if existente is not None:
+        return existente
+
+    if pago is not None and pago.id_empresa_id != nota_venta.id_empresa_id:
+        raise VentaError("El pago no pertenece a la empresa de la nota de venta.")
+
+    fecha = fecha_cobro or timezone.localdate()
+    esquema = _esquema_comision_vigente(nota_venta.id_empresa, vendedor, fecha)
+    if esquema is None:
+        return None
+    if esquema.modalidad_devengo != "COBRO_EFECTIVO":
+        raise VentaError("El esquema de comisión del vendedor no corresponde a modalidad COBRO_EFECTIVO.")
+
+    iso = ""
+    if moneda_cobro_iso:
+        iso = moneda_cobro_iso.strip().upper()
+    elif pago is not None and getattr(pago, "id_moneda", None) is not None:
+        iso = (pago.id_moneda.codigo_iso or "").strip().upper()
+
+    moneda_pais = getattr(nota_venta.id_empresa, "id_moneda_pais", None)
+    pais_iso = (moneda_pais.codigo_iso if moneda_pais is not None else "VES").strip().upper()
+    moneda_cobro_tipo = "MONEDA_LOCAL" if iso and iso == pais_iso else "DIVISA"
+
+    base, monto, detalle = _calcular_detalle_y_meta_comision(
+        nota_venta,
+        esquema,
+        fecha=fecha,
+        moneda_cobro_tipo=moneda_cobro_tipo,
+    )
+
+    return ComisionVenta.objects.create(
+        id_empresa=nota_venta.id_empresa,
+        vendedor=vendedor,
+        nota_venta=nota_venta,
+        esquema=esquema,
+        base_comisionable=base,
+        monto=monto,
+        id_moneda=getattr(nota_venta.id_empresa, "id_moneda_base", None),
+        estado="DEVENGADA",
+        origen_devengo="COBRO_EFECTIVO",
+        moneda_cobro_tipo=moneda_cobro_tipo,
+        fecha_devengo=fecha,
+        detalle_json=detalle,
+    )
+
+
+def calcular_avance_meta_vendedor(empresa, vendedor, anio: int, mes: int) -> dict:
+    """Resumen mensual de avance de meta comisionable para un vendedor."""
+    from apps.ventas.models import ComisionVenta
+
+    fecha_ref = date(anio, mes, 1)
+    esquema = _esquema_comision_vigente(empresa, vendedor, fecha_ref)
+    meta = Decimal(str(esquema.meta_mensual_monto)) if esquema is not None else Decimal("0.0000")
+    bono_pct = Decimal(str(esquema.bono_meta_porcentaje)) if esquema is not None else Decimal("0.0000")
+
+    agg = (
+        ComisionVenta.objects.filter(
+            id_empresa=empresa,
+            vendedor=vendedor,
+            fecha_devengo__year=anio,
+            fecha_devengo__month=mes,
+        )
+        .exclude(estado="ANULADA")
+        .aggregate(
+            acumulado=models.Sum("base_comisionable"),
+            comision_total=models.Sum("monto"),
+            cantidad=models.Count("id_comision_venta"),
+        )
+    )
+    acumulado = Decimal(str(agg["acumulado"] or "0")).quantize(_CUATRO_DECIMALES, rounding=ROUND_HALF_UP)
+    comision_total = Decimal(str(agg["comision_total"] or "0")).quantize(_CUATRO_DECIMALES, rounding=ROUND_HALF_UP)
+    pct_cumplimiento = Decimal("0.00")
+    if meta > Decimal("0"):
+        pct_cumplimiento = ((acumulado / meta) * _CIEN).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+    return {
+        "vendedor": str(vendedor.pk),
+        "anio": anio,
+        "mes": mes,
+        "meta_mensual_monto": meta,
+        "bono_meta_porcentaje": bono_pct,
+        "acumulado_mes": acumulado,
+        "comision_total": comision_total,
+        "cantidad_ventas": int(agg["cantidad"] or 0),
+        "porcentaje_cumplimiento": pct_cumplimiento,
+        "meta_alcanzada": bool(meta > Decimal("0") and acumulado >= meta),
+    }
 
 
 def anular_comision_de_nota_venta(nota_venta):

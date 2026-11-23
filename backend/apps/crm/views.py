@@ -124,32 +124,31 @@ class ClienteViewSet(BaseModelViewSet):
     def credito_disponible(self, request, pk=None):
         """
         GET /api/crm/clientes/{pk}/credito-disponible/
-        Devuelve saldo de CxC pendiente y crédito disponible.
+        Devuelve saldo neto (descontando abonos y asignaciones), mora real y crédito disponible.
         """
-        from decimal import Decimal
-
-        from django.db.models import Sum
-
-        from apps.cuentas_por_cobrar.models import CuentaPorCobrar
+        from apps.ventas.services_credito import evaluar_credito_cliente
 
         cliente = self.get_object()
         if cliente.tipo_cliente != "CREDITO":
             return Response({"credito_disponible": None, "detalle": "Cliente de contado."})
 
-        saldo_pendiente = CuentaPorCobrar.objects.filter(
-            cliente=cliente,
-            empresa__in=_empresas(request),
-            estado__in=["pendiente", "parcial", "vencida"],
-        ).aggregate(total=Sum("monto"))["total"] or Decimal("0")
-
-        disponible = cliente.limite_credito - saldo_pendiente
+        eval_cred = evaluar_credito_cliente(cliente, cliente.id_empresa)
         return Response(
             {
-                "cliente_id": str(cliente.id_cliente),
-                "limite_credito": str(cliente.limite_credito),
-                "saldo_pendiente": str(saldo_pendiente),
-                "credito_disponible": str(max(disponible, Decimal("0"))),
-                "bloqueado": disponible < 0,
+                "cliente_id": eval_cred["cliente_id"],
+                "limite_credito": str(eval_cred["limite_credito"]),
+                "saldo_pendiente": str(eval_cred["saldo_pendiente"]),
+                "credito_disponible": str(
+                    eval_cred["credito_disponible"] if eval_cred["credito_disponible"] is not None else "0"
+                ),
+                "monto_vencido": str(eval_cred["monto_vencido"]),
+                "cxc_vencidas": eval_cred["cxc_vencidas"],
+                "dias_mora_max": eval_cred["dias_mora_max"],
+                "dias_gracia_mora": eval_cred["dias_gracia_mora"],
+                "bloqueado_por_mora": eval_cred["bloqueado_por_mora"],
+                "excede_limite": eval_cred["excede_limite"],
+                "bloqueado": eval_cred["bloqueado"],
+                "motivo_bloqueo": eval_cred["motivo_bloqueo"],
             }
         )
 

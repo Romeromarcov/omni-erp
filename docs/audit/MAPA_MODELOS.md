@@ -269,5 +269,6 @@
 | ventas | NotaDebitoFiscal | ✅ | ✅ | — |
 | ventas | NotaVenta | ✅ | ✅ | id_empresa+numero_nota |
 | ventas | Pedido | ✅ | ✅ | id_empresa+numero_pedido |
+| ventas | ReglaPrecioDinamico | ✅ | ✅ | id_empresa+codigo |
 
-_Total modelos: 267_
+_Total modelos: 268_
