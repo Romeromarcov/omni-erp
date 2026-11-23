@@ -1,9 +1,11 @@
 # apps/core/models.py
+import re
 from decimal import Decimal
 
 from apps.core.uuid import uuid7
 
 from django.contrib.auth.models import AbstractUser
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 
@@ -409,6 +411,7 @@ class RegistroAuditoria(models.Model):
             ("PAGO_CONFIRMADO", "Pago Confirmado"),
             ("ENTREGA_REGISTRADA", "Entrega Registrada"),
             ("INCIDENCIA_CREADA", "Incidencia Creada"),
+            ("ACCESO_MATRIZ_ACTUALIZADA", "Actualización de Matriz de Acceso"),
             # Añadir más tipos de eventos según sea necesario
         ],
         verbose_name="Tipo de Evento",
@@ -1235,3 +1238,115 @@ class ConfiguracionMFA(OmniBaseModel):
     def __str__(self) -> str:
         estado = "activo" if self.habilitado else "pendiente"
         return f"MFA({self.usuario_id}, {estado})"
+
+
+_CAMPO_OCULTO_RE = re.compile(r"^[a-z][a-z0-9_]{0,63}$")
+
+
+class PoliticaAccesoRol(OmniBaseModel):
+    """
+    Política granular RBAC/ABAC por Rol × Módulo × Acción × Ámbito × Alcance (Plan 09 Fase 7.1).
+
+    Permite gobernar visibilidad dual (FISCAL / GERENCIAL / AMBOS), alcance de datos
+    (PROPIO / SUCURSAL / ALMACEN / EMPRESA) y ocultamiento de campos sensibles por rol.
+    """
+
+    MODULO_CHOICES = [
+        ("ventas", "Ventas"),
+        ("compras", "Compras"),
+        ("inventario", "Inventario"),
+        ("contabilidad", "Contabilidad"),
+        ("finanzas", "Finanzas"),
+        ("tesoreria", "Tesorería"),
+        ("fiscal", "Fiscal / SENIAT"),
+        ("nomina", "Nómina"),
+        ("crm", "CRM"),
+        ("despacho", "Despacho / Logística"),
+        ("core", "Core / Administración"),
+        ("pos", "Punto de Venta (POS)"),
+    ]
+    ACCION_CHOICES = [
+        ("VER", "Ver"),
+        ("CREAR", "Crear"),
+        ("EDITAR", "Editar"),
+        ("ELIMINAR", "Eliminar"),
+        ("APROBAR", "Aprobar"),
+        ("EXPORTAR", "Exportar"),
+        ("ANULAR", "Anular"),
+    ]
+    AMBITO_CHOICES = [
+        ("FISCAL", "Fiscal"),
+        ("GERENCIAL", "Gerencial"),
+        ("AMBOS", "Ambos (Fiscal y Gerencial)"),
+    ]
+    ALCANCE_CHOICES = [
+        ("PROPIO", "Solo registros propios"),
+        ("SUCURSAL", "Por sucursal asignada"),
+        ("ALMACEN", "Por almacén asignado"),
+        ("EMPRESA", "Toda la empresa"),
+    ]
+
+    id_politica = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey(
+        Empresa,
+        on_delete=models.CASCADE,
+        db_column="id_empresa",
+        related_name="politicas_acceso_rol",
+        verbose_name="Empresa",
+    )
+    id_rol = models.ForeignKey(
+        Roles,
+        on_delete=models.CASCADE,
+        db_column="id_rol",
+        related_name="politicas_acceso",
+        verbose_name="Rol",
+    )
+    modulo = models.CharField(max_length=50, choices=MODULO_CHOICES, verbose_name="Módulo")
+    accion = models.CharField(max_length=32, choices=ACCION_CHOICES, verbose_name="Acción")
+    ambito = models.CharField(max_length=16, choices=AMBITO_CHOICES, default="AMBOS", verbose_name="Ámbito")
+    alcance = models.CharField(max_length=16, choices=ALCANCE_CHOICES, default="EMPRESA", verbose_name="Alcance")
+    permitido = models.BooleanField(default=True, verbose_name="Permitido")
+    campos_ocultos = models.JSONField(default=list, blank=True, verbose_name="Campos Ocultos")
+
+    class Meta:
+        db_table = "core_politica_acceso_rol"
+        verbose_name = "Política de Acceso de Rol"
+        verbose_name_plural = "Políticas de Acceso de Roles"
+        unique_together = (("id_empresa", "id_rol", "modulo", "accion"),)
+        indexes = [
+            models.Index(fields=["id_empresa", "id_rol"]),
+            models.Index(fields=["id_empresa", "modulo", "accion"]),
+        ]
+        ordering = ["modulo", "accion"]
+
+    def clean(self) -> None:
+        super().clean()
+        if self.id_rol_id and self.id_empresa_id:
+            if self.id_rol.id_empresa_id not in (None, self.id_empresa_id):
+                raise ValidationError({"id_rol": "El rol no pertenece a la empresa de la política."})
+
+        campos = self.campos_ocultos
+        if campos is None:
+            self.campos_ocultos = []
+            return
+        if not isinstance(campos, list):
+            raise ValidationError({"campos_ocultos": "campos_ocultos debe ser una lista de nombres de campo."})
+        normalizados: list[str] = []
+        vistos: set[str] = set()
+        for item in campos:
+            if not isinstance(item, str) or not _CAMPO_OCULTO_RE.match(item):
+                raise ValidationError(
+                    {
+                        "campos_ocultos": (
+                            f"Campo inválido '{item}'. Use snake_case en minúsculas (^[a-z][a-z0-9_]{{0,63}}$)."
+                        )
+                    }
+                )
+            if item not in vistos:
+                vistos.add(item)
+                normalizados.append(item)
+        self.campos_ocultos = normalizados
+
+    def __str__(self) -> str:
+        estado = "PERMITIR" if self.permitido else "DENEGAR"
+        return f"{self.id_rol_id} [{self.modulo}:{self.accion}] {estado} ({self.ambito}/{self.alcance})"

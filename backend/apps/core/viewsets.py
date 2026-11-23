@@ -551,6 +551,131 @@ class RolesViewSet(SoftDeleteModelMixin, ActiveFilterMixin, BaseModelViewSet):
         empresas = get_empresas_visible(self.request.user)
         return qs.filter(id_empresa__in=empresas)
 
+    @action(detail=True, methods=["get", "put"], url_path="matriz-acceso")
+    def matriz_acceso(self, request, pk=None):
+        """Obtiene o reemplaza atómicamente la matriz RBAC/ABAC del rol."""
+        from django.core.exceptions import ValidationError as DjangoValidationError
+
+        from .exceptions import domain_error_response
+        from .models import PoliticaAccesoRol, RolPermisos
+        from .serializers import GuardarMatrizAccesoInputSerializer, PoliticaAccesoRolSerializer
+        from .services_rbac import guardar_matriz_rol, obtener_catalogo_rbac
+
+        rol = self.get_object()
+        if request.method == "GET":
+            empresa = rol.id_empresa or _resolver_empresa_rbac(request.user, request.query_params.get("id_empresa"))
+            qs = PoliticaAccesoRol.objects.filter(id_empresa=empresa, id_rol=rol, activo=True).order_by(
+                "modulo", "accion"
+            )
+            permisos_ids = list(RolPermisos.objects.filter(id_rol=rol).values_list("id_permiso_id", flat=True))
+            return Response(
+                {
+                    "id_rol": str(rol.pk),
+                    "nombre_rol": rol.nombre_rol,
+                    "id_empresa": str(empresa.pk),
+                    "politicas": PoliticaAccesoRolSerializer(qs, many=True).data,
+                    "permisos_asignados": [str(pid) for pid in permisos_ids],
+                    "catalogo": obtener_catalogo_rbac(),
+                }
+            )
+
+        _assert_admin_rbac(request.user)
+        inp = GuardarMatrizAccesoInputSerializer(data=request.data)
+        inp.is_valid(raise_exception=True)
+        req_emp_id = inp.validated_data.get("id_empresa")
+        if rol.id_empresa_id is not None and req_emp_id and str(req_emp_id) != str(rol.id_empresa_id):
+            raise ValidationError({"id_empresa": "El rol pertenece a otra empresa."})
+        empresa = rol.id_empresa or _resolver_empresa_rbac(request.user, req_emp_id)
+        try:
+            creadas = guardar_matriz_rol(
+                rol,
+                empresa,
+                inp.validated_data["politicas"],
+                usuario=request.user,
+                direccion_ip=_ip_cliente_rbac(request),
+            )
+        except (DjangoValidationError, ValueError) as exc:
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {
+                "id_rol": str(rol.pk),
+                "id_empresa": str(empresa.pk),
+                "politicas": PoliticaAccesoRolSerializer(creadas, many=True).data,
+            }
+        )
+
+    @action(detail=True, methods=["post"], url_path="aplicar-plantilla")
+    def aplicar_plantilla(self, request, pk=None):
+        """Aplica una plantilla predefinida (CONTADOR_FISCAL, VENDEDOR, ALMACENISTA, GERENTE_GENERAL)."""
+        from django.core.exceptions import ValidationError as DjangoValidationError
+
+        from .exceptions import domain_error_response
+        from .serializers import AplicarPlantillaInputSerializer, PoliticaAccesoRolSerializer
+        from .services_rbac import aplicar_plantilla_rol
+
+        _assert_admin_rbac(request.user)
+        rol = self.get_object()
+        inp = AplicarPlantillaInputSerializer(data=request.data)
+        inp.is_valid(raise_exception=True)
+        req_emp_id = inp.validated_data.get("id_empresa")
+        if rol.id_empresa_id is not None and req_emp_id and str(req_emp_id) != str(rol.id_empresa_id):
+            raise ValidationError({"id_empresa": "El rol pertenece a otra empresa."})
+        empresa = rol.id_empresa or _resolver_empresa_rbac(request.user, req_emp_id)
+        try:
+            creadas = aplicar_plantilla_rol(
+                rol,
+                empresa,
+                inp.validated_data["codigo_plantilla"],
+                usuario=request.user,
+                direccion_ip=_ip_cliente_rbac(request),
+            )
+        except (DjangoValidationError, ValueError) as exc:
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {
+                "id_rol": str(rol.pk),
+                "id_empresa": str(empresa.pk),
+                "codigo_plantilla": inp.validated_data["codigo_plantilla"].strip().upper(),
+                "politicas": PoliticaAccesoRolSerializer(creadas, many=True).data,
+            }
+        )
+
+    @action(detail=True, methods=["post"], url_path="asignar-permisos")
+    def asignar_permisos(self, request, pk=None):
+        """Sincroniza los permisos globales (`RolPermisos`) asignados al rol."""
+        from django.db import transaction
+
+        from .models import RegistroAuditoria, RolPermisos
+        from .serializers import AsignarPermisosRolInputSerializer
+
+        _assert_admin_rbac(request.user)
+        rol = self.get_object()
+        inp = AsignarPermisosRolInputSerializer(data=request.data)
+        inp.is_valid(raise_exception=True)
+        ids = list(dict.fromkeys(inp.validated_data["permisos_ids"]))
+        permisos_qs = list(Permisos.objects.filter(activo=True, id_permiso__in=ids))
+        if len(permisos_qs) != len(ids):
+            raise ValidationError({"permisos_ids": "Uno o más permisos no existen o están inactivos."})
+
+        empresa = rol.id_empresa or _resolver_empresa_rbac(request.user)
+        with transaction.atomic():
+            RolPermisos.objects.filter(id_rol=rol).delete()
+            if permisos_qs:
+                RolPermisos.objects.bulk_create([RolPermisos(id_rol=rol, id_permiso=p) for p in permisos_qs])
+            RegistroAuditoria.objects.create(
+                id_empresa=empresa,
+                id_usuario=request.user,
+                tipo_evento="ACTUALIZAR",
+                modulo_afectado="core",
+                nombre_modelo_afectado="RolPermisos",
+                id_registro_afectado=str(rol.pk),
+                descripcion_accion=f"Sincronización de permisos del rol '{rol.nombre_rol}' ({len(ids)}).",
+                cambios_json={"id_rol": str(rol.pk), "permisos_ids": [str(x) for x in ids]},
+                direccion_ip=_ip_cliente_rbac(request),
+                resultado_evento="EXITO",
+            )
+        return Response({"id_rol": str(rol.pk), "permisos_ids": [str(x) for x in ids]})
+
 
 class PermisosViewSet(SoftDeleteModelMixin, ActiveFilterMixin, BaseModelViewSet):
     """
@@ -735,3 +860,133 @@ class NotificacionViewSet(BaseModelViewSet):
         qs = self.get_queryset().filter(leida=False)
         serializer = self.get_serializer(qs, many=True)
         return Response({"count": qs.count(), "notificaciones": serializer.data})
+
+
+# ── Access Studio: RBAC / ABAC Granular (Plan 09 Fase 7.1) ─────────────────────
+
+
+def _assert_admin_rbac(user):
+    if not (
+        getattr(user, "is_staff", False)
+        or getattr(user, "is_superuser", False)
+        or getattr(user, "es_superusuario_omni", False)
+    ):
+        from rest_framework.exceptions import PermissionDenied
+
+        raise PermissionDenied("Solo administradores pueden modificar políticas o permisos de acceso.")
+
+
+def _resolver_empresa_rbac(user, empresa_id=None):
+    empresas = get_empresas_visible(user)
+    if empresa_id:
+        uid = validar_uuid_param(str(empresa_id), "id_empresa")
+        empresa = empresas.filter(pk=uid).first()
+        if empresa is None:
+            raise ValidationError({"id_empresa": "Empresa no encontrada o sin acceso."})
+        return empresa
+    empresa = empresas.first()
+    if empresa is None:
+        raise ValidationError({"id_empresa": "No tiene una empresa activa asignada."})
+    return empresa
+
+
+def _ip_cliente_rbac(request):
+    forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.META.get("REMOTE_ADDR")
+
+
+from .models import PoliticaAccesoRol  # noqa: E402
+from .serializers import PoliticaAccesoRolSerializer  # noqa: E402
+
+
+class PoliticaAccesoRolViewSet(NulSafeFilterMixin, SoftDeleteModelMixin, ActiveFilterMixin, BaseModelViewSet):
+    """CRUD y motor de evaluación de políticas granulares RBAC/ABAC por rol y empresa."""
+
+    queryset = PoliticaAccesoRol.objects.all()
+    serializer_class = PoliticaAccesoRolSerializer
+    ordering_fields = ["modulo", "accion", "fecha_creacion"]
+    ordering = ["modulo", "accion"]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        empresas = get_empresas_visible(self.request.user)
+        qs = qs.filter(id_empresa__in=empresas)
+        id_rol = self.request.query_params.get("id_rol")
+        if id_rol:
+            qs = qs.filter(id_rol_id=validar_uuid_param(id_rol, "id_rol"))
+        modulo = self.request.query_params.get("modulo")
+        if modulo:
+            if "\x00" in str(modulo):
+                raise ValidationError({"modulo": "Parámetro inválido."})
+            qs = qs.filter(modulo=str(modulo).strip().lower())
+        ambito = self.request.query_params.get("ambito")
+        if ambito:
+            if "\x00" in str(ambito):
+                raise ValidationError({"ambito": "Parámetro inválido."})
+            qs = qs.filter(ambito=str(ambito).strip().upper())
+        return qs
+
+    def perform_create(self, serializer):
+        _assert_admin_rbac(self.request.user)
+        serializer.save()
+
+    def perform_update(self, serializer):
+        _assert_admin_rbac(self.request.user)
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        _assert_admin_rbac(self.request.user)
+        super().perform_destroy(instance)
+
+    @action(detail=True, methods=["post"])
+    def activar(self, request, pk=None):
+        """Reactiva una política de acceso (solo administradores)."""
+        _assert_admin_rbac(request.user)
+        return super().activar(request, pk=pk)
+
+    @action(detail=True, methods=["post"])
+    def desactivar(self, request, pk=None):
+        """Desactiva lógicamente una política de acceso (solo administradores)."""
+        _assert_admin_rbac(request.user)
+        return super().desactivar(request, pk=pk)
+
+    @action(detail=False, methods=["get"])
+    def catalogo(self, request):
+        """Devuelve módulos, acciones, ámbitos, alcances, campos sensibles y plantillas RBAC/ABAC."""
+        from .services_rbac import obtener_catalogo_rbac
+
+        return Response(obtener_catalogo_rbac())
+
+    @action(detail=False, methods=["get"], url_path="mi-matriz")
+    def mi_matriz(self, request):
+        """Devuelve la matriz efectiva de acceso del usuario autenticado para su empresa activa."""
+        from .services_rbac import obtener_matriz_acceso_usuario
+
+        emp_id = request.query_params.get("id_empresa") or request.query_params.get("empresa")
+        empresa = _resolver_empresa_rbac(request.user, emp_id)
+        return Response(obtener_matriz_acceso_usuario(request.user, empresa))
+
+    @action(detail=False, methods=["post"])
+    def evaluar(self, request):
+        """Evalúa acceso efectivo por Módulo × Acción × Ámbito × Alcance."""
+        from .exceptions import domain_error_response
+        from .serializers import EvaluarAccesoInputSerializer
+        from .services_rbac import verificar_acceso
+
+        inp = EvaluarAccesoInputSerializer(data=request.data)
+        inp.is_valid(raise_exception=True)
+        empresa = _resolver_empresa_rbac(request.user, inp.validated_data.get("id_empresa"))
+        try:
+            resultado = verificar_acceso(
+                request.user,
+                empresa,
+                inp.validated_data["modulo"],
+                inp.validated_data["accion"],
+                ambito=inp.validated_data.get("ambito", "AMBOS"),
+                alcance_requerido=inp.validated_data.get("alcance_requerido"),
+            )
+        except ValueError as exc:
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST)
+        return Response(resultado)

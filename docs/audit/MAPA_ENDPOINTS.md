@@ -1097,6 +1097,20 @@
 | `^plantillas/(?P<pk>[^/.]+)/$` | PlantillaCobranzaViewSet | PlantillaCobranza | ✅ | ✅ | IsAuthenticated |
 | `^plantillas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PlantillaCobranzaViewSet | PlantillaCobranza | ✅ | ✅ | IsAuthenticated |
 | `^plantillas\.(?P<format>[a-z0-9]+)/?$` | PlantillaCobranzaViewSet | PlantillaCobranza | ✅ | ✅ | IsAuthenticated |
+| `^politicas-acceso/$` | PoliticaAccesoRolViewSet | PoliticaAccesoRol | ✅ | ✅ | IsAuthenticated |
+| `^politicas-acceso/(?P<pk>[^/.]+)/$` | PoliticaAccesoRolViewSet | PoliticaAccesoRol | ✅ | ✅ | IsAuthenticated |
+| `^politicas-acceso/(?P<pk>[^/.]+)/activar/$` | PoliticaAccesoRolViewSet | PoliticaAccesoRol | ✅ | ✅ | IsAuthenticated |
+| `^politicas-acceso/(?P<pk>[^/.]+)/activar\.(?P<format>[a-z0-9]+)/?$` | PoliticaAccesoRolViewSet | PoliticaAccesoRol | ✅ | ✅ | IsAuthenticated |
+| `^politicas-acceso/(?P<pk>[^/.]+)/desactivar/$` | PoliticaAccesoRolViewSet | PoliticaAccesoRol | ✅ | ✅ | IsAuthenticated |
+| `^politicas-acceso/(?P<pk>[^/.]+)/desactivar\.(?P<format>[a-z0-9]+)/?$` | PoliticaAccesoRolViewSet | PoliticaAccesoRol | ✅ | ✅ | IsAuthenticated |
+| `^politicas-acceso/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | PoliticaAccesoRolViewSet | PoliticaAccesoRol | ✅ | ✅ | IsAuthenticated |
+| `^politicas-acceso/catalogo/$` | PoliticaAccesoRolViewSet | PoliticaAccesoRol | ✅ | ✅ | IsAuthenticated |
+| `^politicas-acceso/catalogo\.(?P<format>[a-z0-9]+)/?$` | PoliticaAccesoRolViewSet | PoliticaAccesoRol | ✅ | ✅ | IsAuthenticated |
+| `^politicas-acceso/evaluar/$` | PoliticaAccesoRolViewSet | PoliticaAccesoRol | ✅ | ✅ | IsAuthenticated |
+| `^politicas-acceso/evaluar\.(?P<format>[a-z0-9]+)/?$` | PoliticaAccesoRolViewSet | PoliticaAccesoRol | ✅ | ✅ | IsAuthenticated |
+| `^politicas-acceso/mi-matriz/$` | PoliticaAccesoRolViewSet | PoliticaAccesoRol | ✅ | ✅ | IsAuthenticated |
+| `^politicas-acceso/mi-matriz\.(?P<format>[a-z0-9]+)/?$` | PoliticaAccesoRolViewSet | PoliticaAccesoRol | ✅ | ✅ | IsAuthenticated |
+| `^politicas-acceso\.(?P<format>[a-z0-9]+)/?$` | PoliticaAccesoRolViewSet | PoliticaAccesoRol | ✅ | ✅ | IsAuthenticated |
 | `^precios-lista/$` | PrecioListaLubrikcaViewSet | PrecioListaLubrikca | ✅ | — | IsAuthenticated |
 | `^precios-lista/(?P<pk>[^/.]+)/$` | PrecioListaLubrikcaViewSet | PrecioListaLubrikca | ✅ | — | IsAuthenticated |
 | `^precios-lista/(?P<pk>[^/.]+)/activar/$` | PrecioListaLubrikcaViewSet | PrecioListaLubrikca | ✅ | — | IsAuthenticated |
@@ -1299,8 +1313,14 @@
 | `^roles/(?P<pk>[^/.]+)/$` | RolesViewSet | Roles | ✅ | ✅ | IsAuthenticated |
 | `^roles/(?P<pk>[^/.]+)/activar/$` | RolesViewSet | Roles | ✅ | ✅ | IsAuthenticated |
 | `^roles/(?P<pk>[^/.]+)/activar\.(?P<format>[a-z0-9]+)/?$` | RolesViewSet | Roles | ✅ | ✅ | IsAuthenticated |
+| `^roles/(?P<pk>[^/.]+)/aplicar-plantilla/$` | RolesViewSet | Roles | ✅ | ✅ | IsAuthenticated |
+| `^roles/(?P<pk>[^/.]+)/aplicar-plantilla\.(?P<format>[a-z0-9]+)/?$` | RolesViewSet | Roles | ✅ | ✅ | IsAuthenticated |
+| `^roles/(?P<pk>[^/.]+)/asignar-permisos/$` | RolesViewSet | Roles | ✅ | ✅ | IsAuthenticated |
+| `^roles/(?P<pk>[^/.]+)/asignar-permisos\.(?P<format>[a-z0-9]+)/?$` | RolesViewSet | Roles | ✅ | ✅ | IsAuthenticated |
 | `^roles/(?P<pk>[^/.]+)/desactivar/$` | RolesViewSet | Roles | ✅ | ✅ | IsAuthenticated |
 | `^roles/(?P<pk>[^/.]+)/desactivar\.(?P<format>[a-z0-9]+)/?$` | RolesViewSet | Roles | ✅ | ✅ | IsAuthenticated |
+| `^roles/(?P<pk>[^/.]+)/matriz-acceso/$` | RolesViewSet | Roles | ✅ | ✅ | IsAuthenticated |
+| `^roles/(?P<pk>[^/.]+)/matriz-acceso\.(?P<format>[a-z0-9]+)/?$` | RolesViewSet | Roles | ✅ | ✅ | IsAuthenticated |
 | `^roles/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | RolesViewSet | Roles | ✅ | ✅ | IsAuthenticated |
 | `^roles\.(?P<format>[a-z0-9]+)/?$` | RolesViewSet | Roles | ✅ | ✅ | IsAuthenticated |
 | `^rutas-produccion-detalle/$` | RutaProduccionDetalleViewSet | RutaProduccionDetalle | — | ✅ | IsAuthenticated |
@@ -1537,4 +1557,4 @@
 | `validar-cuenta-ve/` | ValidarCuentaVeView | — | — | — | IsAuthenticated |
 | `validar-referencia/` | ValidarReferenciaView | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 280_
+_Total ViewSets: 281_

@@ -4336,6 +4336,138 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/core/politicas-acceso/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description CRUD y motor de evaluación de políticas granulares RBAC/ABAC por rol y empresa. */
+        get: operations["core_politicas-acceso_list"];
+        put?: never;
+        /** @description CRUD y motor de evaluación de políticas granulares RBAC/ABAC por rol y empresa. */
+        post: operations["core_politicas-acceso_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/core/politicas-acceso/catalogo/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Devuelve módulos, acciones, ámbitos, alcances, campos sensibles y plantillas RBAC/ABAC. */
+        get: operations["core_politicas-acceso_catalogo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/core/politicas-acceso/evaluar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Evalúa acceso efectivo por Módulo × Acción × Ámbito × Alcance. */
+        post: operations["core_politicas-acceso_evaluar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/core/politicas-acceso/mi-matriz/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Devuelve la matriz efectiva de acceso del usuario autenticado para su empresa activa. */
+        get: operations["core_politicas-acceso_mi_matriz"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/core/politicas-acceso/{id_politica}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Política de Acceso de Rol. */
+                id_politica: string;
+            };
+            cookie?: never;
+        };
+        /** @description CRUD y motor de evaluación de políticas granulares RBAC/ABAC por rol y empresa. */
+        get: operations["core_politicas-acceso_read"];
+        /** @description CRUD y motor de evaluación de políticas granulares RBAC/ABAC por rol y empresa. */
+        put: operations["core_politicas-acceso_update"];
+        post?: never;
+        /** @description CRUD y motor de evaluación de políticas granulares RBAC/ABAC por rol y empresa. */
+        delete: operations["core_politicas-acceso_delete"];
+        options?: never;
+        head?: never;
+        /** @description CRUD y motor de evaluación de políticas granulares RBAC/ABAC por rol y empresa. */
+        patch: operations["core_politicas-acceso_partial_update"];
+        trace?: never;
+    };
+    "/core/politicas-acceso/{id_politica}/activar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Política de Acceso de Rol. */
+                id_politica: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Reactiva una política de acceso (solo administradores). */
+        post: operations["core_politicas-acceso_activar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/core/politicas-acceso/{id_politica}/desactivar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Política de Acceso de Rol. */
+                id_politica: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Desactiva lógicamente una política de acceso (solo administradores). */
+        post: operations["core_politicas-acceso_desactivar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/core/roles/": {
         parameters: {
             query?: never;
@@ -4401,6 +4533,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/core/roles/{id_rol}/aplicar-plantilla/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Rol. */
+                id_rol: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Aplica una plantilla predefinida (CONTADOR_FISCAL, VENDEDOR, ALMACENISTA, GERENTE_GENERAL). */
+        post: operations["core_roles_aplicar_plantilla"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/core/roles/{id_rol}/asignar-permisos/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Rol. */
+                id_rol: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Sincroniza los permisos globales (`RolPermisos`) asignados al rol. */
+        post: operations["core_roles_asignar_permisos"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/core/roles/{id_rol}/desactivar/": {
         parameters: {
             query?: never;
@@ -4418,6 +4590,27 @@ export interface paths {
          *     Desactiva (borrado lógico) un registro activo.
          */
         post: operations["core_roles_desactivar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/core/roles/{id_rol}/matriz-acceso/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Rol. */
+                id_rol: string;
+            };
+            cookie?: never;
+        };
+        /** @description Obtiene o reemplaza atómicamente la matriz RBAC/ABAC del rol. */
+        get: operations["core_roles_matriz-acceso_read"];
+        /** @description Obtiene o reemplaza atómicamente la matriz RBAC/ABAC del rol. */
+        put: operations["core_roles_matriz-acceso_update"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -20052,6 +20245,68 @@ export interface components {
              */
             documento_json?: Record<string, never> | null;
         };
+        PoliticaAccesoRol: {
+            /**
+             * Id politica
+             * Format: uuid
+             */
+            readonly id_politica?: string;
+            /**
+             * Empresa
+             * Format: uuid
+             */
+            id_empresa: string;
+            /**
+             * Rol
+             * Format: uuid
+             */
+            id_rol: string;
+            /**
+             * Módulo
+             * @enum {string}
+             */
+            modulo: "ventas" | "compras" | "inventario" | "contabilidad" | "finanzas" | "tesoreria" | "fiscal" | "nomina" | "crm" | "despacho" | "core" | "pos";
+            /** Modulo display */
+            readonly modulo_display?: string;
+            /**
+             * Acción
+             * @enum {string}
+             */
+            accion: "VER" | "CREAR" | "EDITAR" | "ELIMINAR" | "APROBAR" | "EXPORTAR" | "ANULAR";
+            /** Accion display */
+            readonly accion_display?: string;
+            /**
+             * Ámbito
+             * @enum {string}
+             */
+            ambito?: "FISCAL" | "GERENCIAL" | "AMBOS";
+            /**
+             * Alcance
+             * @enum {string}
+             */
+            alcance?: "PROPIO" | "SUCURSAL" | "ALMACEN" | "EMPRESA";
+            /** Permitido */
+            permitido?: boolean;
+            /** Campos Ocultos */
+            campos_ocultos?: Record<string, never>;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
         Roles: {
             /**
              * Id rol
@@ -21890,7 +22145,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-23T00:29:22.263022-04:00
+             * @default 2026-11-23T02:25:51.951630-04:00
              */
             fecha_despacho: string;
             /**
@@ -31015,6 +31270,11 @@ export interface components {
         SeccionProyecto: {
             content: {
                 "application/json": components["schemas"]["SeccionProyecto"];
+            };
+        };
+        PoliticaAccesoRol: {
+            content: {
+                "application/json": components["schemas"]["PoliticaAccesoRol"];
             };
         };
         Ingesta: {
@@ -41329,6 +41589,273 @@ export interface operations {
             };
         };
     };
+    "core_politicas-acceso_list": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["PoliticaAccesoRol"][];
+                    };
+                };
+            };
+        };
+    };
+    "core_politicas-acceso_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PoliticaAccesoRol"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PoliticaAccesoRol"];
+                };
+            };
+        };
+    };
+    "core_politicas-acceso_catalogo": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["PoliticaAccesoRol"][];
+                    };
+                };
+            };
+        };
+    };
+    "core_politicas-acceso_evaluar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PoliticaAccesoRol"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PoliticaAccesoRol"];
+                };
+            };
+        };
+    };
+    "core_politicas-acceso_mi_matriz": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["PoliticaAccesoRol"][];
+                    };
+                };
+            };
+        };
+    };
+    "core_politicas-acceso_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Política de Acceso de Rol. */
+                id_politica: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PoliticaAccesoRol"];
+                };
+            };
+        };
+    };
+    "core_politicas-acceso_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Política de Acceso de Rol. */
+                id_politica: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PoliticaAccesoRol"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PoliticaAccesoRol"];
+                };
+            };
+        };
+    };
+    "core_politicas-acceso_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Política de Acceso de Rol. */
+                id_politica: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "core_politicas-acceso_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Política de Acceso de Rol. */
+                id_politica: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PoliticaAccesoRol"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PoliticaAccesoRol"];
+                };
+            };
+        };
+    };
+    "core_politicas-acceso_activar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Política de Acceso de Rol. */
+                id_politica: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PoliticaAccesoRol"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PoliticaAccesoRol"];
+                };
+            };
+        };
+    };
+    "core_politicas-acceso_desactivar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Política de Acceso de Rol. */
+                id_politica: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["PoliticaAccesoRol"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PoliticaAccesoRol"];
+                };
+            };
+        };
+    };
     core_roles_list: {
         parameters: {
             query?: {
@@ -41489,6 +42016,50 @@ export interface operations {
             };
         };
     };
+    core_roles_aplicar_plantilla: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Rol. */
+                id_rol: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Roles"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Roles"];
+                };
+            };
+        };
+    };
+    core_roles_asignar_permisos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Rol. */
+                id_rol: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Roles"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Roles"];
+                };
+            };
+        };
+    };
     core_roles_desactivar: {
         parameters: {
             query?: never;
@@ -41502,6 +42073,50 @@ export interface operations {
         requestBody: components["requestBodies"]["Roles"];
         responses: {
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Roles"];
+                };
+            };
+        };
+    };
+    "core_roles_matriz-acceso_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Rol. */
+                id_rol: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Roles"];
+                };
+            };
+        };
+    };
+    "core_roles_matriz-acceso_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Rol. */
+                id_rol: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["Roles"];
+        responses: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

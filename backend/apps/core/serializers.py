@@ -6,6 +6,7 @@ from .models import (
     Dispositivo,
     Empresa,
     Permisos,
+    PoliticaAccesoRol,
     RegistroAuditoria,
     Roles,
     RolPermisos,
@@ -433,3 +434,93 @@ class NotificacionSerializer(BaseModelSerializer):
         ]
         read_only_fields = ["id_notificacion", "fecha_creacion"]
         ref_name = "NotificacionCore"  # evita colisión OpenAPI con notificaciones.NotificacionSerializer
+
+
+class PoliticaAccesoRolSerializer(BaseModelSerializer):
+    modulo_display = serializers.CharField(source="get_modulo_display", read_only=True)
+    accion_display = serializers.CharField(source="get_accion_display", read_only=True)
+
+    class Meta:
+        model = PoliticaAccesoRol
+        # CTF-005: whitelist explícita (defensa en profundidad CWE-915).
+        fields = [
+            "id_politica",
+            "id_empresa",
+            "id_rol",
+            "modulo",
+            "modulo_display",
+            "accion",
+            "accion_display",
+            "ambito",
+            "alcance",
+            "permitido",
+            "campos_ocultos",
+            "activo",
+            "fecha_creacion",
+            "fecha_actualizacion",
+        ]
+        read_only_fields = ["id_politica", "fecha_creacion", "fecha_actualizacion"]
+
+    def validate_campos_ocultos(self, value):
+        import re
+
+        if value is None:
+            return []
+        if not isinstance(value, list):
+            raise serializers.ValidationError("campos_ocultos debe ser una lista de cadenas.")
+        pattern = re.compile(r"^[a-z][a-z0-9_]{0,63}$")
+        normalizados = []
+        vistos = set()
+        for item in value:
+            if not isinstance(item, str) or not pattern.match(item):
+                raise serializers.ValidationError(f"Nombre de campo oculto inválido: '{item}'.")
+            if item not in vistos:
+                vistos.add(item)
+                normalizados.append(item)
+        return normalizados
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        empresa = attrs.get("id_empresa", getattr(self.instance, "id_empresa", None))
+        rol = attrs.get("id_rol", getattr(self.instance, "id_rol", None))
+        if empresa is not None and rol is not None:
+            if rol.id_empresa_id not in (None, empresa.pk):
+                raise serializers.ValidationError({"id_rol": "El rol no pertenece a la empresa indicada."})
+        return attrs
+
+
+class PoliticaAccesoItemInputSerializer(serializers.Serializer):
+    modulo = serializers.ChoiceField(choices=PoliticaAccesoRol.MODULO_CHOICES)
+    accion = serializers.ChoiceField(choices=PoliticaAccesoRol.ACCION_CHOICES)
+    ambito = serializers.ChoiceField(choices=PoliticaAccesoRol.AMBITO_CHOICES, default="AMBOS")
+    alcance = serializers.ChoiceField(choices=PoliticaAccesoRol.ALCANCE_CHOICES, default="EMPRESA")
+    permitido = serializers.BooleanField(default=True)
+    campos_ocultos = serializers.ListField(
+        child=serializers.RegexField(r"^[a-z][a-z0-9_]{0,63}$"),
+        required=False,
+        default=list,
+    )
+
+
+class GuardarMatrizAccesoInputSerializer(serializers.Serializer):
+    id_empresa = serializers.UUIDField(required=False)
+    politicas = PoliticaAccesoItemInputSerializer(many=True)
+
+
+class AplicarPlantillaInputSerializer(serializers.Serializer):
+    id_empresa = serializers.UUIDField(required=False)
+    codigo_plantilla = serializers.CharField(max_length=50)
+
+
+class AsignarPermisosRolInputSerializer(serializers.Serializer):
+    permisos_ids = serializers.ListField(child=serializers.UUIDField(), allow_empty=True)
+
+
+class EvaluarAccesoInputSerializer(serializers.Serializer):
+    id_empresa = serializers.UUIDField(required=False)
+    modulo = serializers.ChoiceField(choices=PoliticaAccesoRol.MODULO_CHOICES)
+    accion = serializers.ChoiceField(choices=PoliticaAccesoRol.ACCION_CHOICES)
+    ambito = serializers.ChoiceField(choices=PoliticaAccesoRol.AMBITO_CHOICES, required=False, default="AMBOS")
+    alcance_requerido = serializers.ChoiceField(
+        choices=PoliticaAccesoRol.ALCANCE_CHOICES, required=False, allow_null=True
+    )
