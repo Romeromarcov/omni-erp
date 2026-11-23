@@ -18,6 +18,19 @@ from tests.factories import AlmacenFactory, MonedaFactory, ProductoFactory
 pytestmark = [pytest.mark.django_db]
 
 
+@pytest.fixture(autouse=True)
+def _asegurar_seed_decreto_1808(db):
+    import importlib
+
+    from django.apps import apps
+
+    from apps.fiscal.models import ConceptoRetencionISLR
+
+    if ConceptoRetencionISLR.objects.filter(activo=True).count() < 35:
+        mod = importlib.import_module("apps.fiscal.migrations.0012_seed_conceptos_islr_decreto_1808")
+        mod._seed(apps, None)
+
+
 # ---------------------------------------------------------------------------
 # 1. Seed Decreto 1808 + PostgreSQL RLS en las 3 tablas fiscales nuevas
 # ---------------------------------------------------------------------------
