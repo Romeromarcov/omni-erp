@@ -72,6 +72,9 @@ TIPOS_ASIENTO = frozenset(
         "CAMBIO_DIVISA",  # CTF-013: asiento de la operación de cambio de divisa
         "PAGO_TERCERO",  # Capa B §6.6: pago de terceros (Zelle) — abono CxP / reintegro
         "PAGO_PARAFISCAL",  # Capa B §6.7: pago de contribución parafiscal (IVSS/FAOV/INCES…)
+        "RETENCION_IVA_COMPRA",
+        "RETENCION_IVA_VENTA",
+        "RETENCION_ISLR",
     }
 )
 
@@ -83,6 +86,7 @@ _TIPO_ASIENTO_TO_DIARIO: dict[str, str] = {
     "DEVOLUCION_VENTA_IVA": "VENTAS",
     "NOTA_DEBITO_FISCAL": "VENTAS",
     "NOTA_DEBITO_FISCAL_IVA": "VENTAS",
+    "RETENCION_IVA_VENTA": "VENTAS",
     "COSTO_VENTA": "VENTAS",
     "PAGO_CXC": "VENTAS",
     "FACTURA_COMPRA": "COMPRAS",
@@ -91,6 +95,8 @@ _TIPO_ASIENTO_TO_DIARIO: dict[str, str] = {
     "RECEPCION_MERCANCIA": "COMPRAS",
     "PAGO_CXP": "COMPRAS",
     "PAGO_TERCERO": "COMPRAS",
+    "RETENCION_IVA_COMPRA": "COMPRAS",
+    "RETENCION_ISLR": "COMPRAS",
     "NOMINA": "NOMINA",
     "PAGO_PARAFISCAL": "NOMINA",
     "CAMBIO_DIVISA": "BANCO",

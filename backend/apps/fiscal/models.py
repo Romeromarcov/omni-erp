@@ -1,6 +1,9 @@
+from decimal import Decimal
+
 from apps.core.uuid import uuid7
 
 from django.db import models
+from django.db.models import Q
 
 from apps.core.base_models import IntegrationFieldsMixin, TenantModel
 
@@ -15,6 +18,9 @@ class NumeroCorrelativo(models.Model):
         ("NOTA_ENTREGA", "Nota de Entrega"),
         ("ORDEN_COMPRA", "Orden de Compra"),
         ("DESPACHO", "Despacho"),
+        ("RETENCION_IVA", "Comprobante Retención IVA"),
+        ("RETENCION_ISLR", "Comprobante Retención ISLR"),
+        ("GUIA_DESPACHO", "Guía de Despacho"),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
@@ -229,6 +235,20 @@ class ConfiguracionFiscalEmpresa(models.Model):
     contribuyente_iva = models.BooleanField(default=True)
     aplica_igtf = models.BooleanField(default=True)
     tasa_igtf = models.DecimalField(max_digits=5, decimal_places=4, default="0.03")
+    valor_unidad_tributaria = models.DecimalField(max_digits=14, decimal_places=4, default=Decimal("9.0000"))
+    imprenta_digital_proveedor = models.CharField(
+        max_length=32,
+        blank=True,
+        default="",
+        choices=[
+            ("", "Sin imprenta digital"),
+            ("SIMULADO", "Simulado QA"),
+            ("UNIDIGITAL", "Unidigital"),
+            ("THE_FACTORY_HKA", "The Factory HKA"),
+        ],
+    )
+    imprenta_digital_url = models.URLField(blank=True, default="")
+    imprenta_digital_serie = models.CharField(max_length=16, blank=True, default="00")
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
 
@@ -427,3 +447,264 @@ class PeriodoFiscal(models.Model):
     def esta_cerrado(cls, empresa, año: int, mes: int) -> bool:
         """Retorna True si el período (año, mes) está cerrado para la empresa."""
         return cls.objects.filter(id_empresa=empresa, año=año, mes=mes, cerrado=True).exists()
+
+
+# ── Blindaje Fiscal SENIAT 360° (Plan 09 Fase 2.3–2.5) ───────────────────────
+
+
+class ConceptoRetencionISLR(models.Model):
+    """Catálogo oficial de conceptos y porcentajes de retención ISLR (Decreto 1808)."""
+
+    TIPO_PERSONA_CHOICES = [
+        ("PNR", "Persona Natural Residente"),
+        ("PNNR", "Persona Natural No Residente"),
+        ("PJDO", "Persona Jurídica Domiciliada"),
+        ("PJND", "Persona Jurídica No Domiciliada"),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    codigo = models.CharField(max_length=16, unique=True)
+    nombre = models.CharField(max_length=200)
+    tipo_persona_fiscal = models.CharField(max_length=10, choices=TIPO_PERSONA_CHOICES)
+    base_imponible_pct = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal("100.00"))
+    porcentaje_retencion = models.DecimalField(max_digits=5, decimal_places=2)
+    aplica_sustraendo = models.BooleanField(default=False)
+    factor_sustraendo_ut = models.DecimalField(max_digits=10, decimal_places=4, default=Decimal("0.0000"))
+    activo = models.BooleanField(default=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "fiscal_concepto_retencion_islr"
+        verbose_name = "Concepto de Retención ISLR (Decreto 1808)"
+        verbose_name_plural = "Conceptos de Retención ISLR (Decreto 1808)"
+        ordering = ["codigo"]
+
+    def __str__(self) -> str:
+        return f"{self.codigo} - {self.nombre} ({self.tipo_persona_fiscal} {self.porcentaje_retencion}%)"
+
+
+class ComprobanteRetencionIVA(TenantModel, IntegrationFieldsMixin):
+    """Comprobante de Retención de IVA (Providencia SNAT/2015/0049, TXT 16 columnas)."""
+
+    TIPO_OPERACION_CHOICES = [("COMPRA", "Compra"), ("VENTA", "Venta")]
+    TIPO_TRANSACCION_CHOICES = [
+        ("01", "01 - Registro"),
+        ("02", "02 - Nota de Débito"),
+        ("03", "03 - Nota de Crédito"),
+    ]
+    ESTADO_CHOICES = [("EMITIDO", "Emitido"), ("ANULADO", "Anulado")]
+
+    id_comprobante = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey(
+        "core.Empresa",
+        on_delete=models.CASCADE,
+        related_name="comprobantes_retencion_iva",
+    )
+    numero_comprobante = models.CharField(max_length=20)
+    tipo_operacion = models.CharField(max_length=16, choices=TIPO_OPERACION_CHOICES, default="COMPRA")
+    contacto = models.ForeignKey(
+        "core.Contacto",
+        on_delete=models.PROTECT,
+        related_name="comprobantes_retencion_iva",
+    )
+    factura_compra = models.ForeignKey(
+        "compras.FacturaCompra",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="retenciones_iva",
+    )
+    factura_venta = models.ForeignKey(
+        "ventas.FacturaFiscal",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="retenciones_iva",
+    )
+    fecha_emision = models.DateField(db_index=True)
+    periodo_impositivo = models.CharField(max_length=6, db_index=True)
+    numero_documento = models.CharField(max_length=64)
+    numero_control = models.CharField(max_length=64, blank=True, default="")
+    numero_documento_afectado = models.CharField(max_length=64, blank=True, default="0")
+    tipo_transaccion = models.CharField(max_length=4, choices=TIPO_TRANSACCION_CHOICES, default="01")
+    monto_total_documento = models.DecimalField(max_digits=18, decimal_places=4)
+    monto_exento = models.DecimalField(max_digits=18, decimal_places=4, default=Decimal("0.0000"))
+    base_imponible = models.DecimalField(max_digits=18, decimal_places=4)
+    alicuota_iva = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal("16.00"))
+    monto_iva = models.DecimalField(max_digits=18, decimal_places=4)
+    porcentaje_retencion = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal("75.00"))
+    monto_retenido = models.DecimalField(max_digits=18, decimal_places=4)
+    estado = models.CharField(max_length=16, choices=ESTADO_CHOICES, default="EMITIDO", db_index=True)
+    asiento_contable = models.ForeignKey(
+        "contabilidad.AsientoContable",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="retenciones_iva",
+    )
+
+    class Meta:
+        db_table = "fiscal_comprobante_retencion_iva"
+        verbose_name = "Comprobante de Retención IVA"
+        verbose_name_plural = "Comprobantes de Retención IVA"
+        unique_together = (("id_empresa", "numero_comprobante"),)
+        ordering = ["-fecha_emision", "-numero_comprobante"]
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(porcentaje_retencion__gte=Decimal("0")) & Q(porcentaje_retencion__lte=Decimal("100")),
+                name="ck_ret_iva_pct_rango",
+            ),
+            models.CheckConstraint(condition=Q(base_imponible__gte=Decimal("0")), name="ck_ret_iva_base_no_neg"),
+            models.CheckConstraint(condition=Q(monto_retenido__gte=Decimal("0")), name="ck_ret_iva_monto_no_neg"),
+        ]
+
+    def clean(self) -> None:
+        from django.core.exceptions import ValidationError
+
+        super().clean()
+        if self.contacto_id and self.id_empresa_id and self.contacto.id_empresa_id != self.id_empresa_id:
+            raise ValidationError({"contacto": "El contacto no pertenece a la empresa."})
+        if (
+            self.factura_compra is not None
+            and self.id_empresa_id
+            and self.factura_compra.id_empresa_id != self.id_empresa_id
+        ):
+            raise ValidationError({"factura_compra": "La factura de compra no pertenece a la empresa."})
+        if (
+            self.factura_venta is not None
+            and self.id_empresa_id
+            and self.factura_venta.id_empresa_id != self.id_empresa_id
+        ):
+            raise ValidationError({"factura_venta": "La factura de venta no pertenece a la empresa."})
+
+    def __str__(self) -> str:
+        return f"RetIVA {self.numero_comprobante} ({self.monto_retenido}) [{self.estado}]"
+
+
+class ComprobanteRetencionISLR(TenantModel, IntegrationFieldsMixin):
+    """Comprobante de Retención de ISLR (Decreto 1808 + XML SENIAT)."""
+
+    ESTADO_CHOICES = [("EMITIDO", "Emitido"), ("ANULADO", "Anulado")]
+
+    id_comprobante = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey(
+        "core.Empresa",
+        on_delete=models.CASCADE,
+        related_name="comprobantes_retencion_islr",
+    )
+    numero_comprobante = models.CharField(max_length=20)
+    contacto = models.ForeignKey(
+        "core.Contacto",
+        on_delete=models.PROTECT,
+        related_name="comprobantes_retencion_islr",
+    )
+    concepto = models.ForeignKey(
+        ConceptoRetencionISLR,
+        on_delete=models.PROTECT,
+        related_name="comprobantes",
+    )
+    factura_compra = models.ForeignKey(
+        "compras.FacturaCompra",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="retenciones_islr",
+    )
+    fecha_emision = models.DateField(db_index=True)
+    periodo_impositivo = models.CharField(max_length=6, db_index=True)
+    numero_factura = models.CharField(max_length=64)
+    numero_control = models.CharField(max_length=64, blank=True, default="")
+    monto_operacion = models.DecimalField(max_digits=18, decimal_places=4)
+    valor_ut_aplicado = models.DecimalField(max_digits=14, decimal_places=4, default=Decimal("0.0000"))
+    sustraendo = models.DecimalField(max_digits=18, decimal_places=4, default=Decimal("0.0000"))
+    porcentaje_retencion = models.DecimalField(max_digits=5, decimal_places=2)
+    monto_retenido = models.DecimalField(max_digits=18, decimal_places=4)
+    estado = models.CharField(max_length=16, choices=ESTADO_CHOICES, default="EMITIDO", db_index=True)
+    asiento_contable = models.ForeignKey(
+        "contabilidad.AsientoContable",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="retenciones_islr",
+    )
+
+    class Meta:
+        db_table = "fiscal_comprobante_retencion_islr"
+        verbose_name = "Comprobante de Retención ISLR"
+        verbose_name_plural = "Comprobantes de Retención ISLR"
+        unique_together = (("id_empresa", "numero_comprobante"),)
+        ordering = ["-fecha_emision", "-numero_comprobante"]
+        constraints = [
+            models.CheckConstraint(condition=Q(monto_operacion__gte=Decimal("0")), name="ck_ret_islr_base_no_neg"),
+            models.CheckConstraint(condition=Q(monto_retenido__gte=Decimal("0")), name="ck_ret_islr_monto_no_neg"),
+        ]
+
+    def clean(self) -> None:
+        from django.core.exceptions import ValidationError
+
+        super().clean()
+        if self.contacto_id and self.id_empresa_id and self.contacto.id_empresa_id != self.id_empresa_id:
+            raise ValidationError({"contacto": "El contacto no pertenece a la empresa."})
+        if (
+            self.factura_compra is not None
+            and self.id_empresa_id
+            and self.factura_compra.id_empresa_id != self.id_empresa_id
+        ):
+            raise ValidationError({"factura_compra": "La factura de compra no pertenece a la empresa."})
+
+    def __str__(self) -> str:
+        return f"RetISLR {self.numero_comprobante} ({self.monto_retenido}) [{self.estado}]"
+
+
+class DocumentoImprentaDigital(TenantModel, IntegrationFieldsMixin):
+    """Registro de emisión fiscal ante Imprenta Digital SENIAT (Providencia 000102 / 000121)."""
+
+    PROVEEDOR_CHOICES = [
+        ("SIMULADO", "Simulado QA"),
+        ("UNIDIGITAL", "Unidigital"),
+        ("THE_FACTORY_HKA", "The Factory HKA"),
+    ]
+    TIPO_DOC_CHOICES = [
+        ("FACTURA", "Factura Fiscal"),
+        ("NOTA_CREDITO", "Nota de Crédito"),
+        ("NOTA_DEBITO", "Nota de Débito"),
+        ("GUIA_DESPACHO", "Guía de Despacho"),
+    ]
+    ESTADO_CHOICES = [
+        ("EMITIDO", "Emitido"),
+        ("ANULADO", "Anulado"),
+        ("ERROR", "Error"),
+    ]
+
+    id_emision = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey(
+        "core.Empresa",
+        on_delete=models.CASCADE,
+        related_name="documentos_imprenta_digital",
+    )
+    proveedor = models.CharField(max_length=32, choices=PROVEEDOR_CHOICES, default="SIMULADO")
+    tipo_documento = models.CharField(max_length=24, choices=TIPO_DOC_CHOICES)
+    referencia_documento = models.CharField(max_length=64, db_index=True)
+    numero_control_asignado = models.CharField(max_length=64, blank=True, default="")
+    codigo_validacion = models.CharField(max_length=128, blank=True, default="")
+    url_verificacion = models.URLField(blank=True, default="")
+    estado = models.CharField(max_length=24, choices=ESTADO_CHOICES, default="EMITIDO", db_index=True)
+    payload_enviado = models.JSONField(default=dict, blank=True)
+    respuesta_proveedor = models.JSONField(default=dict, blank=True)
+    emitido_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "fiscal_documento_imprenta_digital"
+        verbose_name = "Documento Imprenta Digital SENIAT"
+        verbose_name_plural = "Documentos Imprenta Digital SENIAT"
+        ordering = ["-emitido_en"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["id_empresa", "numero_control_asignado"],
+                condition=Q(activo=True) & ~Q(numero_control_asignado=""),
+                name="uniq_imprenta_nro_ctrl_activo",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"Imprenta({self.proveedor}) {self.tipo_documento} {self.numero_control_asignado or self.referencia_documento}"

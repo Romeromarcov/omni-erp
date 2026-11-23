@@ -269,6 +269,9 @@ class MapeoContable(models.Model):
         ("CAMBIO_DIVISA", "Cambio de Divisa"),
         ("PAGO_TERCERO", "Pago de Terceros"),
         ("PAGO_PARAFISCAL", "Pago de Contribución Parafiscal"),
+        ("RETENCION_IVA_COMPRA", "Retención IVA en Compras"),
+        ("RETENCION_IVA_VENTA", "Retención IVA en Ventas"),
+        ("RETENCION_ISLR", "Retención ISLR"),
     ]
 
     id_mapeo = models.UUIDField(primary_key=True, default=uuid7, editable=False)
