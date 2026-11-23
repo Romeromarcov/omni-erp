@@ -40594,6 +40594,385 @@
                 }
             ]
         },
+        "/nomina/dispersiones-nomina/": {
+            "get": {
+                "operationId": "nomina_dispersiones-nomina_list",
+                "description": "Consulta, confirmación y arqueo de efectivo USD ($100..$1) de dispersiones de nómina.",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/DispersionPagoNomina"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "nomina"
+                ]
+            },
+            "parameters": []
+        },
+        "/nomina/dispersiones-nomina/arqueo-efectivo/": {
+            "get": {
+                "operationId": "nomina_dispersiones-nomina_arqueo_efectivo",
+                "description": "Calcula el arqueo de billetes USD ($100/$50/$20/$10/$5/$1) para dispersiones EFECTIVO_USD.",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/DispersionPagoNomina"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "nomina"
+                ]
+            },
+            "parameters": []
+        },
+        "/nomina/dispersiones-nomina/{id_dispersion}/": {
+            "get": {
+                "operationId": "nomina_dispersiones-nomina_read",
+                "description": "Consulta, confirmación y arqueo de efectivo USD ($100..$1) de dispersiones de nómina.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/DispersionPagoNomina"
+                        }
+                    }
+                },
+                "tags": [
+                    "nomina"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_dispersion",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Dispersión de Pago de Nómina.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/nomina/dispersiones-nomina/{id_dispersion}/marcar-pagado/": {
+            "post": {
+                "operationId": "nomina_dispersiones-nomina_marcar_pagado",
+                "description": "Marca una orden de dispersión PENDIENTE como PAGADO.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/DispersionPagoNomina"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/DispersionPagoNomina"
+                        }
+                    }
+                },
+                "tags": [
+                    "nomina"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_dispersion",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Dispersión de Pago de Nómina.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/nomina/fichas-salariales-dual/": {
+            "get": {
+                "operationId": "nomina_fichas-salariales-dual_list",
+                "description": "CRUD multi-tenant de Fichas Salariales Duales (LOTTT formal Bs + Paquete Gerencial USD).",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/FichaSalarialDual"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "nomina"
+                ]
+            },
+            "post": {
+                "operationId": "nomina_fichas-salariales-dual_create",
+                "description": "CRUD multi-tenant de Fichas Salariales Duales (LOTTT formal Bs + Paquete Gerencial USD).",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/FichaSalarialDual"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/FichaSalarialDual"
+                        }
+                    }
+                },
+                "tags": [
+                    "nomina"
+                ]
+            },
+            "parameters": []
+        },
+        "/nomina/fichas-salariales-dual/{id_ficha}/": {
+            "get": {
+                "operationId": "nomina_fichas-salariales-dual_read",
+                "description": "CRUD multi-tenant de Fichas Salariales Duales (LOTTT formal Bs + Paquete Gerencial USD).",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/FichaSalarialDual"
+                        }
+                    }
+                },
+                "tags": [
+                    "nomina"
+                ]
+            },
+            "put": {
+                "operationId": "nomina_fichas-salariales-dual_update",
+                "description": "CRUD multi-tenant de Fichas Salariales Duales (LOTTT formal Bs + Paquete Gerencial USD).",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/FichaSalarialDual"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/FichaSalarialDual"
+                        }
+                    }
+                },
+                "tags": [
+                    "nomina"
+                ]
+            },
+            "patch": {
+                "operationId": "nomina_fichas-salariales-dual_partial_update",
+                "description": "CRUD multi-tenant de Fichas Salariales Duales (LOTTT formal Bs + Paquete Gerencial USD).",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/FichaSalarialDual"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/FichaSalarialDual"
+                        }
+                    }
+                },
+                "tags": [
+                    "nomina"
+                ]
+            },
+            "delete": {
+                "operationId": "nomina_fichas-salariales-dual_delete",
+                "description": "CRUD multi-tenant de Fichas Salariales Duales (LOTTT formal Bs + Paquete Gerencial USD).",
+                "parameters": [],
+                "responses": {
+                    "204": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "nomina"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_ficha",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Ficha Salarial Dual.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
         "/nomina/nominas-extrasalarial/": {
             "get": {
                 "operationId": "nomina_nominas-extrasalarial_list",
@@ -41106,6 +41485,34 @@
                 }
             ]
         },
+        "/nomina/nominas/{id_nomina}/recibo-pdf/": {
+            "get": {
+                "operationId": "nomina_nominas_recibo_pdf",
+                "description": "Descarga recibo de nómina PDF (?modo=SEPARADO|CONSOLIDADO).",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Nomina"
+                        }
+                    }
+                },
+                "tags": [
+                    "nomina"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_nomina",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Nómina.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
         "/nomina/periodos-nomina/": {
             "get": {
                 "operationId": "nomina_periodos-nomina_list",
@@ -41451,6 +41858,225 @@
                     "name": "id_periodo_nomina",
                     "in": "path",
                     "description": "Un Cadena UUID que identifique este Período de Nómina.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/nomina/prestamos-empleados/": {
+            "get": {
+                "operationId": "nomina_prestamos-empleados_list",
+                "description": "Gestión de préstamos/adelantos con amortización automática por ámbito.",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/PrestamoEmpleado"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "nomina"
+                ]
+            },
+            "post": {
+                "operationId": "nomina_prestamos-empleados_create",
+                "description": "Gestión de préstamos/adelantos con amortización automática por ámbito.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PrestamoEmpleado"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/PrestamoEmpleado"
+                        }
+                    }
+                },
+                "tags": [
+                    "nomina"
+                ]
+            },
+            "parameters": []
+        },
+        "/nomina/prestamos-empleados/{id_prestamo}/": {
+            "get": {
+                "operationId": "nomina_prestamos-empleados_read",
+                "description": "Gestión de préstamos/adelantos con amortización automática por ámbito.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/PrestamoEmpleado"
+                        }
+                    }
+                },
+                "tags": [
+                    "nomina"
+                ]
+            },
+            "put": {
+                "operationId": "nomina_prestamos-empleados_update",
+                "description": "Gestión de préstamos/adelantos con amortización automática por ámbito.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PrestamoEmpleado"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/PrestamoEmpleado"
+                        }
+                    }
+                },
+                "tags": [
+                    "nomina"
+                ]
+            },
+            "patch": {
+                "operationId": "nomina_prestamos-empleados_partial_update",
+                "description": "Gestión de préstamos/adelantos con amortización automática por ámbito.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PrestamoEmpleado"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/PrestamoEmpleado"
+                        }
+                    }
+                },
+                "tags": [
+                    "nomina"
+                ]
+            },
+            "delete": {
+                "operationId": "nomina_prestamos-empleados_delete",
+                "description": "Gestión de préstamos/adelantos con amortización automática por ámbito.",
+                "parameters": [],
+                "responses": {
+                    "204": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "nomina"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_prestamo",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Préstamo a Empleado.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/nomina/prestamos-empleados/{id_prestamo}/anular/": {
+            "post": {
+                "operationId": "nomina_prestamos-empleados_anular",
+                "description": "Anula lógicamente un préstamo aún no saldado.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PrestamoEmpleado"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/PrestamoEmpleado"
+                        }
+                    }
+                },
+                "tags": [
+                    "nomina"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_prestamo",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Préstamo a Empleado.",
                     "required": true,
                     "type": "string",
                     "format": "uuid"
@@ -41804,6 +42430,34 @@
             },
             "parameters": []
         },
+        "/nomina/procesos-nomina/procesar-dual/": {
+            "post": {
+                "operationId": "nomina_procesos-nomina_procesar_dual",
+                "description": "Ejecuta atómicamente nómina dual (FISCAL Bs + GERENCIAL USD/USDT) y dispersión.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ProcesoNomina"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ProcesoNomina"
+                        }
+                    }
+                },
+                "tags": [
+                    "nomina"
+                ]
+            },
+            "parameters": []
+        },
         "/nomina/procesos-nomina/{id_proceso_nomina}/": {
             "get": {
                 "operationId": "nomina_procesos-nomina_read",
@@ -41932,6 +42586,62 @@
                 }
             ]
         },
+        "/nomina/procesos-nomina/{id_proceso_nomina}/exportar-banco/": {
+            "get": {
+                "operationId": "nomina_procesos-nomina_exportar_banco",
+                "description": "Exporta TXT bancario VE (?banco=BANESCO_TXT|MERCANTIL_TXT|BDV_TXT).",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ProcesoNomina"
+                        }
+                    }
+                },
+                "tags": [
+                    "nomina"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_proceso_nomina",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Proceso de Nómina.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/nomina/procesos-nomina/{id_proceso_nomina}/exportar-parafiscal/": {
+            "get": {
+                "operationId": "nomina_procesos-nomina_exportar_parafiscal",
+                "description": "Exporta TXT parafiscal VE (?ente=FAOV|IVSS_TIUNA|INCES|ISLR_ARC).",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/ProcesoNomina"
+                        }
+                    }
+                },
+                "tags": [
+                    "nomina"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_proceso_nomina",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Proceso de Nómina.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
         "/nomina/procesos-nomina/{id_proceso_nomina}/procesar/": {
             "post": {
                 "operationId": "nomina_procesos-nomina_procesar",
@@ -41997,6 +42707,22 @@
                     "format": "uuid"
                 }
             ]
+        },
+        "/nomina/simulador-liquidacion/": {
+            "post": {
+                "operationId": "nomina_simulador-liquidacion_create",
+                "description": "POST /api/nomina/simulador-liquidacion/ — calcula Art. 142 LOTTT, Art. 92 y préstamos.",
+                "parameters": [],
+                "responses": {
+                    "201": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "nomina"
+                ]
+            },
+            "parameters": []
         },
         "/notificaciones/notificaciones/mis-notificaciones/": {
             "get": {
@@ -59206,6 +59932,8 @@
                         "GANANCIA_CAMBIARIA",
                         "PERDIDA_CAMBIARIA",
                         "NOMINA",
+                        "NOMINA_GERENCIAL",
+                        "PROVISION_NOMINA",
                         "CAMBIO_DIVISA",
                         "PAGO_TERCERO",
                         "PAGO_PARAFISCAL",
@@ -64807,7 +65535,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-23T03:31:06.761950-04:00"
+                    "default": "2026-11-23T06:02:54.705336-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",
@@ -73234,6 +73962,251 @@
                 }
             }
         },
+        "DispersionPagoNomina": {
+            "type": "object",
+            "properties": {
+                "id_dispersion": {
+                    "title": "Id dispersion",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_proceso_nomina": {
+                    "title": "Id proceso nomina",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_nomina": {
+                    "title": "Id nomina",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empleado": {
+                    "title": "Id empleado",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "empleado_nombre": {
+                    "title": "Empleado nombre",
+                    "type": "string",
+                    "readOnly": true
+                },
+                "empleado_cedula": {
+                    "title": "Empleado cedula",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "ambito": {
+                    "title": "Ambito",
+                    "type": "string",
+                    "enum": [
+                        "FISCAL",
+                        "GERENCIAL"
+                    ],
+                    "readOnly": true
+                },
+                "canal_pago": {
+                    "title": "Canal pago",
+                    "type": "string",
+                    "enum": [
+                        "TRANSFERENCIA_BS",
+                        "EFECTIVO_USD",
+                        "ZELLE",
+                        "USDT_BINANCE",
+                        "PAGO_MOVIL",
+                        "OTRO"
+                    ],
+                    "readOnly": true
+                },
+                "moneda": {
+                    "title": "Moneda",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "monto": {
+                    "title": "Monto",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                },
+                "desglose_denominaciones": {
+                    "title": "Desglose denominaciones",
+                    "type": "object",
+                    "readOnly": true
+                },
+                "referencia_destino": {
+                    "title": "Referencia destino",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "estado": {
+                    "title": "Estado",
+                    "type": "string",
+                    "enum": [
+                        "PENDIENTE",
+                        "PAGADO",
+                        "ANULADO"
+                    ],
+                    "readOnly": true
+                },
+                "activo": {
+                    "title": "Activo",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_actualizacion": {
+                    "title": "Fecha de Actualización",
+                    "description": "Fecha y hora de la última modificación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
+        "FichaSalarialDual": {
+            "required": [
+                "id_empresa",
+                "id_empleado"
+            ],
+            "type": "object",
+            "properties": {
+                "id_ficha": {
+                    "title": "Id ficha",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "id_empleado": {
+                    "title": "Id empleado",
+                    "type": "integer"
+                },
+                "empleado_nombre": {
+                    "title": "Empleado nombre",
+                    "type": "string",
+                    "readOnly": true
+                },
+                "empleado_cedula": {
+                    "title": "Empleado cedula",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "salario_base_formal_ves": {
+                    "title": "Salario base formal ves",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "cestaticket_mensual_ves": {
+                    "title": "Cestaticket mensual ves",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "porcentaje_ari": {
+                    "title": "Porcentaje ari",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "cargas_familiares": {
+                    "title": "Cargas familiares",
+                    "type": "integer",
+                    "maximum": 32767,
+                    "minimum": 0
+                },
+                "banco_formal": {
+                    "title": "Banco formal",
+                    "type": "string",
+                    "maxLength": 80
+                },
+                "cuenta_bancaria_formal": {
+                    "title": "Cuenta bancaria formal",
+                    "type": "string",
+                    "maxLength": 32
+                },
+                "tipo_cuenta_formal": {
+                    "title": "Tipo cuenta formal",
+                    "type": "string",
+                    "enum": [
+                        "CORRIENTE",
+                        "AHORRO"
+                    ]
+                },
+                "paquete_objetivo_mensual": {
+                    "title": "Paquete objetivo mensual",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "moneda_paquete": {
+                    "title": "Moneda paquete",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "bono_fijo_gerencial": {
+                    "title": "Bono fijo gerencial",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "canal_pago_gerencial": {
+                    "title": "Canal pago gerencial",
+                    "type": "string",
+                    "enum": [
+                        "TRANSFERENCIA_BS",
+                        "EFECTIVO_USD",
+                        "ZELLE",
+                        "USDT_BINANCE",
+                        "PAGO_MOVIL",
+                        "OTRO"
+                    ]
+                },
+                "referencia_pago_gerencial": {
+                    "title": "Referencia pago gerencial",
+                    "type": "string",
+                    "maxLength": 120
+                },
+                "activo": {
+                    "title": "Activo",
+                    "type": "boolean"
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_actualizacion": {
+                    "title": "Fecha de Actualización",
+                    "description": "Fecha y hora de la última modificación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
         "NominaExtrasalarial": {
             "required": [
                 "periodo_inicio",
@@ -73476,6 +74449,116 @@
                     "title": "Id empresa",
                     "type": "string",
                     "format": "uuid"
+                }
+            }
+        },
+        "PrestamoEmpleado": {
+            "required": [
+                "id_empresa",
+                "id_empleado",
+                "monto_principal",
+                "monto_cuota",
+                "saldo_pendiente",
+                "fecha_otorgamiento"
+            ],
+            "type": "object",
+            "properties": {
+                "id_prestamo": {
+                    "title": "Id prestamo",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "id_empleado": {
+                    "title": "Id empleado",
+                    "type": "integer"
+                },
+                "empleado_nombre": {
+                    "title": "Empleado nombre",
+                    "type": "string",
+                    "readOnly": true
+                },
+                "ambito_descuento": {
+                    "title": "Ambito descuento",
+                    "type": "string",
+                    "enum": [
+                        "FISCAL",
+                        "GERENCIAL"
+                    ]
+                },
+                "moneda": {
+                    "title": "Moneda",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "monto_principal": {
+                    "title": "Monto principal",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "cuotas_totales": {
+                    "title": "Cuotas totales",
+                    "type": "integer",
+                    "maximum": 32767,
+                    "minimum": 0
+                },
+                "cuotas_pagadas": {
+                    "title": "Cuotas pagadas",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "monto_cuota": {
+                    "title": "Monto cuota",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "saldo_pendiente": {
+                    "title": "Saldo pendiente",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "fecha_otorgamiento": {
+                    "title": "Fecha otorgamiento",
+                    "type": "string",
+                    "format": "date"
+                },
+                "estado": {
+                    "title": "Estado",
+                    "type": "string",
+                    "enum": [
+                        "ACTIVO",
+                        "PAGADO",
+                        "ANULADO"
+                    ],
+                    "readOnly": true
+                },
+                "observaciones": {
+                    "title": "Observaciones",
+                    "type": "string"
+                },
+                "activo": {
+                    "title": "Activo",
+                    "type": "boolean"
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_actualizacion": {
+                    "title": "Fecha de Actualización",
+                    "description": "Fecha y hora de la última modificación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
                 }
             }
         },

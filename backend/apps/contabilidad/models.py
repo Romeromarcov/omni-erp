@@ -266,6 +266,8 @@ class MapeoContable(models.Model):
         ("GANANCIA_CAMBIARIA", "Ganancia Cambiaria"),
         ("PERDIDA_CAMBIARIA", "Pérdida Cambiaria"),
         ("NOMINA", "Proceso de Nómina"),
+        ("NOMINA_GERENCIAL", "Proceso de Nómina Gerencial"),
+        ("PROVISION_NOMINA", "Provisión de Prestaciones y Beneficios LOTTT"),
         ("CAMBIO_DIVISA", "Cambio de Divisa"),
         ("PAGO_TERCERO", "Pago de Terceros"),
         ("PAGO_PARAFISCAL", "Pago de Contribución Parafiscal"),

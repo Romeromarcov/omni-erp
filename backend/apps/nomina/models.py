@@ -1,7 +1,11 @@
-from apps.core.base_models import AMBITO_CONTABLE_CHOICES
-from apps.core.uuid import uuid7
+from decimal import Decimal
 
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Q
+
+from apps.core.base_models import AMBITO_CONTABLE_CHOICES, IntegrationFieldsMixin, TenantModel
+from apps.core.uuid import uuid7
 
 
 class PeriodoNomina(models.Model):
@@ -229,3 +233,179 @@ class NominaExtrasalarial(models.Model):
 
     def __str__(self):
         return f"{self.id_empleado.nombre} {self.id_empleado.apellido} - {self.id_proceso_extrasalarial.tipo_proceso}"
+
+
+CANALES_PAGO_NOMINA_CHOICES = [
+    ("TRANSFERENCIA_BS", "Transferencia Bancaria Bs"),
+    ("EFECTIVO_USD", "Efectivo USD (Arqueo)"),
+    ("ZELLE", "Zelle"),
+    ("USDT_BINANCE", "USDT / Binance Pay"),
+    ("PAGO_MOVIL", "Pago Móvil Bs"),
+    ("OTRO", "Otro"),
+]
+
+
+class FichaSalarialDual(TenantModel, IntegrationFieldsMixin):
+    """Ficha salarial dual VE: capa formal LOTTT (Bs) + paquete gerencial (USD/USDT/bonos)."""
+
+    TIPO_CUENTA_CHOICES = [("CORRIENTE", "Corriente"), ("AHORRO", "Ahorro")]
+
+    id_ficha = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="fichas_salariales_dual")
+    id_empleado = models.OneToOneField(
+        "rrhh.Empleado",
+        on_delete=models.CASCADE,
+        related_name="ficha_salarial_dual",
+    )
+    # Capa formal LOTTT (Bs / moneda_pais)
+    salario_base_formal_ves = models.DecimalField(max_digits=18, decimal_places=4, default=Decimal("0.0000"))
+    cestaticket_mensual_ves = models.DecimalField(max_digits=18, decimal_places=4, default=Decimal("0.0000"))
+    porcentaje_ari = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal("0.00"))
+    cargas_familiares = models.PositiveSmallIntegerField(default=0)
+    banco_formal = models.CharField(max_length=80, blank=True, default="")
+    cuenta_bancaria_formal = models.CharField(max_length=32, blank=True, default="")
+    tipo_cuenta_formal = models.CharField(max_length=16, choices=TIPO_CUENTA_CHOICES, default="CORRIENTE")
+    # Capa gerencial / paquete objetivo (USD / USDT / bonificaciones)
+    paquete_objetivo_mensual = models.DecimalField(max_digits=18, decimal_places=4, default=Decimal("0.0000"))
+    moneda_paquete = models.ForeignKey(
+        "finanzas.Moneda",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="fichas_salariales_paquete",
+    )
+    bono_fijo_gerencial = models.DecimalField(max_digits=18, decimal_places=4, default=Decimal("0.0000"))
+    canal_pago_gerencial = models.CharField(max_length=24, choices=CANALES_PAGO_NOMINA_CHOICES, default="EFECTIVO_USD")
+    referencia_pago_gerencial = models.CharField(max_length=120, blank=True, default="")
+    activo = models.BooleanField(default=True, db_index=True)
+
+    class Meta:
+        db_table = "nomina_ficha_salarial_dual"
+        verbose_name = "Ficha Salarial Dual"
+        verbose_name_plural = "Fichas Salariales Duales"
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(salario_base_formal_ves__gte=Decimal("0")), name="ck_ficha_sal_formal_no_neg"
+            ),
+            models.CheckConstraint(
+                condition=Q(cestaticket_mensual_ves__gte=Decimal("0")), name="ck_ficha_cestaticket_no_neg"
+            ),
+            models.CheckConstraint(
+                condition=Q(paquete_objetivo_mensual__gte=Decimal("0")), name="ck_ficha_paquete_no_neg"
+            ),
+            models.CheckConstraint(
+                condition=Q(bono_fijo_gerencial__gte=Decimal("0")), name="ck_ficha_bono_fijo_no_neg"
+            ),
+            models.CheckConstraint(
+                condition=Q(porcentaje_ari__gte=Decimal("0")) & Q(porcentaje_ari__lte=Decimal("100")),
+                name="ck_ficha_ari_rango",
+            ),
+        ]
+
+    def clean(self) -> None:
+        super().clean()
+        if self.id_empleado_id and self.id_empresa_id and self.id_empleado.empresa_id != self.id_empresa_id:
+            raise ValidationError({"id_empleado": "El empleado no pertenece a la empresa."})
+
+    def __str__(self) -> str:
+        return f"FichaDual({self.id_empleado.cedula}) Formal={self.salario_base_formal_ves} / Obj={self.paquete_objetivo_mensual}"
+
+
+class PrestamoEmpleado(TenantModel, IntegrationFieldsMixin):
+    """Préstamo o adelanto de nómina con amortización automática en ámbito FISCAL o GERENCIAL."""
+
+    ESTADO_CHOICES = [("ACTIVO", "Activo"), ("PAGADO", "Pagado"), ("ANULADO", "Anulado")]
+
+    id_prestamo = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="prestamos_empleados")
+    id_empleado = models.ForeignKey("rrhh.Empleado", on_delete=models.CASCADE, related_name="prestamos")
+    ambito_descuento = models.CharField(
+        max_length=12, choices=AMBITO_CONTABLE_CHOICES, default="GERENCIAL", db_index=True
+    )
+    moneda = models.ForeignKey(
+        "finanzas.Moneda",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="prestamos_nomina",
+    )
+    monto_principal = models.DecimalField(max_digits=18, decimal_places=4)
+    cuotas_totales = models.PositiveSmallIntegerField(default=1)
+    cuotas_pagadas = models.PositiveSmallIntegerField(default=0)
+    monto_cuota = models.DecimalField(max_digits=18, decimal_places=4)
+    saldo_pendiente = models.DecimalField(max_digits=18, decimal_places=4)
+    fecha_otorgamiento = models.DateField(db_index=True)
+    estado = models.CharField(max_length=16, choices=ESTADO_CHOICES, default="ACTIVO", db_index=True)
+    observaciones = models.TextField(blank=True, default="")
+    activo = models.BooleanField(default=True, db_index=True)
+
+    class Meta:
+        db_table = "nomina_prestamo_empleado"
+        verbose_name = "Préstamo a Empleado"
+        verbose_name_plural = "Préstamos a Empleados"
+        ordering = ["-fecha_otorgamiento"]
+        constraints = [
+            models.CheckConstraint(condition=Q(monto_principal__gt=Decimal("0")), name="ck_prestamo_principal_pos"),
+            models.CheckConstraint(condition=Q(monto_cuota__gt=Decimal("0")), name="ck_prestamo_cuota_pos"),
+            models.CheckConstraint(condition=Q(saldo_pendiente__gte=Decimal("0")), name="ck_prestamo_saldo_no_neg"),
+            models.CheckConstraint(condition=Q(cuotas_totales__gte=1), name="ck_prestamo_cuotas_tot_pos"),
+        ]
+
+    def clean(self) -> None:
+        super().clean()
+        if self.id_empleado_id and self.id_empresa_id and self.id_empleado.empresa_id != self.id_empresa_id:
+            raise ValidationError({"id_empleado": "El empleado no pertenece a la empresa."})
+
+    def __str__(self) -> str:
+        return f"Prestamo({self.id_empleado.cedula}) {self.saldo_pendiente}/{self.monto_principal} [{self.estado}]"
+
+
+class DispersionPagoNomina(TenantModel, IntegrationFieldsMixin):
+    """Registro de dispersión / orden de pago por empleado y canal (Banco Bs, Efectivo USD, Zelle, USDT)."""
+
+    ESTADO_CHOICES = [("PENDIENTE", "Pendiente"), ("PAGADO", "Pagado"), ("ANULADO", "Anulado")]
+
+    id_dispersion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="dispersiones_nomina")
+    id_proceso_nomina = models.ForeignKey(ProcesoNomina, on_delete=models.CASCADE, related_name="dispersiones")
+    id_nomina = models.ForeignKey(Nomina, on_delete=models.CASCADE, related_name="dispersiones")
+    id_empleado = models.ForeignKey("rrhh.Empleado", on_delete=models.CASCADE, related_name="dispersiones_pago")
+    ambito = models.CharField(max_length=12, choices=AMBITO_CONTABLE_CHOICES, default="FISCAL", db_index=True)
+    canal_pago = models.CharField(
+        max_length=24, choices=CANALES_PAGO_NOMINA_CHOICES, default="TRANSFERENCIA_BS", db_index=True
+    )
+    moneda = models.ForeignKey(
+        "finanzas.Moneda",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="dispersiones_nomina",
+    )
+    monto = models.DecimalField(max_digits=18, decimal_places=4)
+    desglose_denominaciones = models.JSONField(default=dict, blank=True)
+    referencia_destino = models.CharField(max_length=120, blank=True, default="")
+    estado = models.CharField(max_length=16, choices=ESTADO_CHOICES, default="PENDIENTE", db_index=True)
+    activo = models.BooleanField(default=True, db_index=True)
+
+    class Meta:
+        db_table = "nomina_dispersion_pago"
+        verbose_name = "Dispersión de Pago de Nómina"
+        verbose_name_plural = "Dispersiones de Pago de Nómina"
+        ordering = ["-fecha_creacion"]
+        constraints = [
+            models.CheckConstraint(condition=Q(monto__gte=Decimal("0")), name="ck_dispersion_monto_no_neg"),
+        ]
+
+    def clean(self) -> None:
+        super().clean()
+        if self.id_empleado_id and self.id_empresa_id and self.id_empleado.empresa_id != self.id_empresa_id:
+            raise ValidationError({"id_empleado": "El empleado no pertenece a la empresa."})
+        if (
+            self.id_proceso_nomina_id
+            and self.id_empresa_id
+            and self.id_proceso_nomina.id_empresa_id != self.id_empresa_id
+        ):
+            raise ValidationError({"id_proceso_nomina": "El proceso de nómina no pertenece a la empresa."})
+
+    def __str__(self) -> str:
+        return f"Disp({self.canal_pago}) {self.id_empleado.cedula} -> {self.monto} [{self.estado}]"
