@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from apps.core.uuid import uuid7
 
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import F, Q
 
@@ -76,6 +77,34 @@ class Producto(OmniBaseModel, IntegrationFieldsMixin):
         default=True, help_text="Si es False, el producto no puede comprarse (solo-venta)."
     )
     costo_promedio = models.DecimalField(max_digits=18, decimal_places=4, default=0.00)
+    costo_reposicion_usd = models.DecimalField(
+        max_digits=18,
+        decimal_places=4,
+        null=True,
+        blank=True,
+        help_text="Costo de reposición vigente en USD para cálculo de semáforo de margen real.",
+    )
+    margen_minimo_pct = models.DecimalField(
+        max_digits=6,
+        decimal_places=2,
+        default=Decimal("15.00"),
+        help_text="Porcentaje de margen mínimo sobre costo de reposición; debajo dispara alerta ROJA.",
+    )
+    margen_alerta_pct = models.DecimalField(
+        max_digits=6,
+        decimal_places=2,
+        default=Decimal("25.00"),
+        help_text="Porcentaje de margen preventivo; entre mínimo y alerta dispara semáforo AMARILLO.",
+    )
+    peso_unitario_kg = models.DecimalField(max_digits=12, decimal_places=4, null=True, blank=True)
+    volumen_unitario_m3 = models.DecimalField(max_digits=12, decimal_places=6, null=True, blank=True)
+    codigo_barras = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="Código EAN/UPC/Code128 para escaneo rápido en conteos y Pick-Pack-Ship.",
+    )
     metodo_valoracion = models.CharField(
         max_length=10,
         choices=[("PROMEDIO", "Costo Promedio"), ("FIFO", "FIFO (Primero en Entrar, Primero en Salir)")],
@@ -585,6 +614,12 @@ class OperacionInventarioLinea(models.Model):
     id_producto = models.ForeignKey("Producto", on_delete=models.PROTECT, related_name="lineas_operacion")
     id_variante = models.ForeignKey("VarianteProducto", on_delete=models.SET_NULL, null=True, blank=True)
     cantidad = models.DecimalField(max_digits=18, decimal_places=4)
+    cantidad_escaneada = models.DecimalField(
+        max_digits=18,
+        decimal_places=4,
+        default=Decimal("0"),
+        help_text="Cantidad verificada mediante escaneo de código de barras en Pick-Pack-Ship.",
+    )
     costo_unitario = models.DecimalField(
         max_digits=18,
         decimal_places=4,
@@ -736,3 +771,121 @@ class MovimientoLote(models.Model):
 
     def __str__(self):
         return f"{self.id_movimiento_id} -> {self.id_lote.numero_lote} x{self.cantidad}"
+
+
+# ── Conteo Físico Cíclico / Total Dual (Plan 09 Fase 5.3) ─────────────────────
+
+
+class ConteoInventario(OmniBaseModel):
+    """Sesión de conteo físico cíclico/total con soporte dual FISCAL / GERENCIAL."""
+
+    TIPOS = [
+        ("CICLICO", "Conteo Cíclico"),
+        ("TOTAL", "Inventario General / Total"),
+        ("ALEATORIO", "Muestreo Aleatorio"),
+    ]
+    ESTADOS = [
+        ("BORRADOR", "Borrador"),
+        ("EN_PROGRESO", "En Progreso"),
+        ("PENDIENTE_APROBACION", "Pendiente de Aprobación"),
+        ("APLICADO", "Aplicado (Ajustado)"),
+        ("ANULADO", "Anulado"),
+    ]
+
+    id_conteo = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="conteos_inventario")
+    numero = models.CharField(max_length=50)
+    id_almacen = models.ForeignKey("almacenes.Almacen", on_delete=models.PROTECT, related_name="conteos_inventario")
+    ambito = models.CharField(
+        max_length=12,
+        choices=AMBITO_CONTABLE_CHOICES,
+        default="FISCAL",
+        db_index=True,
+    )
+    tipo_conteo = models.CharField(max_length=15, choices=TIPOS, default="CICLICO")
+    estado = models.CharField(max_length=25, choices=ESTADOS, default="BORRADOR", db_index=True)
+    fecha_conteo = models.DateField()
+    id_responsable = models.ForeignKey(
+        "core.Usuarios", on_delete=models.PROTECT, related_name="conteos_inventario_responsable"
+    )
+    id_aprobador = models.ForeignKey(
+        "core.Usuarios",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="conteos_inventario_aprobador",
+    )
+    fecha_aprobacion = models.DateTimeField(null=True, blank=True)
+    observaciones = models.TextField(blank=True, default="")
+
+    class Meta:
+        db_table = "inventario_conteo"
+        verbose_name = "Conteo de Inventario"
+        verbose_name_plural = "Conteos de Inventario"
+        unique_together = [["id_empresa", "numero"]]
+        ordering = ["-fecha_conteo", "-fecha_creacion"]
+
+    def clean(self):
+        super().clean()
+        if self.id_almacen_id and self.id_empresa_id and self.id_almacen.id_empresa_id != self.id_empresa_id:
+            raise ValidationError({"id_almacen": "El almacén no pertenece a la empresa indicada."})
+
+    def __str__(self):
+        return f"{self.numero} - {self.id_almacen.nombre_almacen} [{self.estado}]"
+
+
+class LineaConteoInventario(OmniBaseModel):
+    """Línea de conteo físico comparando existencia teórica vs contada por código de barras."""
+
+    id_linea_conteo = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="lineas_conteo_inventario")
+    id_conteo = models.ForeignKey(ConteoInventario, on_delete=models.CASCADE, related_name="lineas")
+    id_producto = models.ForeignKey(Producto, on_delete=models.PROTECT, related_name="lineas_conteo")
+    id_variante = models.ForeignKey(
+        VarianteProducto, on_delete=models.SET_NULL, null=True, blank=True, related_name="lineas_conteo"
+    )
+    id_ubicacion = models.ForeignKey(
+        "almacenes.UbicacionAlmacen",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="lineas_conteo",
+    )
+    cantidad_sistema = models.DecimalField(max_digits=18, decimal_places=4, default=Decimal("0"))
+    cantidad_contada = models.DecimalField(max_digits=18, decimal_places=4, null=True, blank=True)
+    diferencia = models.DecimalField(max_digits=18, decimal_places=4, default=Decimal("0"))
+    costo_unitario_referencia = models.DecimalField(max_digits=18, decimal_places=4, default=Decimal("0"))
+    valor_diferencia = models.DecimalField(max_digits=18, decimal_places=4, default=Decimal("0"))
+    conteos_escaneados = models.PositiveIntegerField(default=0)
+    observaciones = models.TextField(blank=True, default="")
+
+    class Meta:
+        db_table = "inventario_linea_conteo"
+        verbose_name = "Línea de Conteo de Inventario"
+        verbose_name_plural = "Líneas de Conteo de Inventario"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["id_conteo", "id_producto", "id_ubicacion"],
+                condition=Q(id_variante__isnull=True),
+                name="inv_linea_conteo_unica_sin_var",
+            ),
+            models.UniqueConstraint(
+                fields=["id_conteo", "id_producto", "id_variante", "id_ubicacion"],
+                condition=Q(id_variante__isnull=False),
+                name="inv_linea_conteo_unica_con_var",
+            ),
+            models.CheckConstraint(
+                condition=Q(cantidad_contada__isnull=True) | Q(cantidad_contada__gte=0),
+                name="inv_linea_conteo_cant_gte_0",
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.id_producto_id and self.id_empresa_id and self.id_producto.id_empresa_id != self.id_empresa_id:
+            raise ValidationError({"id_producto": "El producto no pertenece a la empresa indicada."})
+        if self.id_ubicacion_id and self.id_empresa_id and self.id_ubicacion.id_empresa_id != self.id_empresa_id:
+            raise ValidationError({"id_ubicacion": "La ubicación no pertenece a la empresa indicada."})
+
+    def __str__(self):
+        return f"{self.id_conteo.numero} | {self.id_producto.nombre_producto}: dif={self.diferencia}"

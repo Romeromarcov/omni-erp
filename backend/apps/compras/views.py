@@ -248,6 +248,37 @@ class FacturaCompraViewSet(_NulSafeFilterMixin, EmpresaInjectMixin, BaseModelVie
             status=status.HTTP_201_CREATED,
         )
 
+    @action(detail=True, methods=["get", "post"], url_path="validar-three-way-matching")
+    def validar_three_way_matching(self, request, pk=None):
+        """Cruza OrdenCompra ↔ RecepcionMercancia ↔ FacturaCompra (3-Way Matching)."""
+        from decimal import Decimal
+
+        from .serializers_supply_chain import ValidarThreeWayMatchingInputSerializer
+        from .services_supply_chain import SupplyChainCompraError, validar_three_way_matching
+
+        factura = self.get_object()
+        raw = request.data if request.method == "POST" and isinstance(request.data, dict) else {}
+        if request.method == "GET":
+            for k in ("tolerancia_cantidad_pct", "tolerancia_precio_pct"):
+                val = request.query_params.get(k)
+                if val is not None:
+                    if "\x00" in val:
+                        raise ValidationError({k: "Parámetro inválido."})
+                    raw = {**raw, k: val}
+
+        ser = ValidarThreeWayMatchingInputSerializer(data=raw)
+        ser.is_valid(raise_exception=True)
+        vd = ser.validated_data
+        try:
+            res = validar_three_way_matching(
+                factura,
+                tolerancia_cantidad_pct=vd.get("tolerancia_cantidad_pct", Decimal("0")),
+                tolerancia_precio_pct=vd.get("tolerancia_precio_pct", Decimal("1.00")),
+            )
+        except SupplyChainCompraError as exc:
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail")
+        return Response(res, status=status.HTTP_200_OK)
+
 
 class RequisicionCompraViewSet(_NulSafeFilterMixin, EmpresaInjectMixin, BaseModelViewSet):  # H-API-2
     queryset = RequisicionCompra.objects.all()

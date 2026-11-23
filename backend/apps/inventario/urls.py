@@ -18,6 +18,7 @@ from .views import (
     UnidadMedidaViewSet,
     VarianteProductoViewSet,
 )
+from .views_supply_chain import ConteoInventarioViewSet
 
 router = DefaultRouter()
 router.register(r"unidades-medida", UnidadMedidaViewSet)
@@ -35,6 +36,7 @@ router.register(r"entregas", EntregaViewSet, basename="entrega")
 router.register(r"reportes", ReportesInventarioViewSet, basename="reportes-inventario")
 router.register(r"reglas-reabastecimiento", ReglaReabastecimientoViewSet)
 router.register(r"lotes-producto", LoteProductoViewSet)
+router.register(r"conteos-inventario", ConteoInventarioViewSet, basename="conteo-inventario")
 
 urlpatterns = [
     path("", include(router.urls)),

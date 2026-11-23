@@ -15,6 +15,7 @@ from .views import (
     RequisicionCompraViewSet,
     SolicitudCotizacionViewSet,
 )
+from .views_supply_chain import CostoDestinoViewSet, LineaCostoDestinoViewSet
 
 router = DefaultRouter()
 router.register(r"ordenes-compra", OrdenCompraViewSet)
@@ -29,6 +30,8 @@ router.register(r"ofertas-proveedor", OfertaProveedorViewSet)
 router.register(r"detalles-oferta-proveedor", DetalleOfertaProveedorViewSet)
 router.register(r"detalles-recepcion-mercancia", DetalleRecepcionMercanciaViewSet)
 router.register(r"detalles-factura-compra", DetalleFacturaCompraViewSet)
+router.register(r"costos-destino", CostoDestinoViewSet, basename="costo-destino")
+router.register(r"lineas-costo-destino", LineaCostoDestinoViewSet, basename="linea-costo-destino")
 
 urlpatterns = [
     path("", include(router.urls)),

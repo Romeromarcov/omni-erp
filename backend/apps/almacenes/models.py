@@ -1,8 +1,9 @@
 from decimal import Decimal
 
-from apps.core.base_models import OmniBaseModel
+from apps.core.base_models import AMBITO_CONTABLE_CHOICES, OmniBaseModel
 from apps.core.uuid import uuid7
 
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import F, Q
 
@@ -45,6 +46,7 @@ class UbicacionAlmacen(models.Model):
         ("PICKING", "Picking"),
         ("RECEPCION", "Recepción"),
         ("DESPACHO", "Despacho"),
+        ("TRANSITO", "Tránsito Inter-Almacén"),
     ]
 
     id_ubicacion = models.UUIDField(primary_key=True, default=uuid7, editable=False)
@@ -119,3 +121,114 @@ class StockUbicacion(OmniBaseModel):
 
     def __str__(self):
         return f"{self.id_ubicacion.codigo_ubicacion} | {self.id_producto.nombre_producto}: {self.cantidad_disponible}"
+
+
+# ── Transferencia Inter-Almacén en Tránsito 2 Pasos (Plan 09 Fase 5.4) ──────
+
+
+class TransferenciaTransito(OmniBaseModel):
+    """Transferencia inter-almacén en 2 pasos (Despacho -> En Tránsito -> Recepción)."""
+
+    ESTADOS = [
+        ("EN_TRANSITO", "En Tránsito"),
+        ("RECIBIDA", "Recibida"),
+        ("CANCELADA", "Cancelada"),
+    ]
+
+    id_transferencia_transito = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="transferencias_transito")
+    numero = models.CharField(max_length=50)
+    id_almacen_origen = models.ForeignKey(
+        Almacen, on_delete=models.PROTECT, related_name="transferencias_transito_salida"
+    )
+    id_almacen_destino = models.ForeignKey(
+        Almacen, on_delete=models.PROTECT, related_name="transferencias_transito_entrada"
+    )
+    id_ubicacion_transito = models.ForeignKey(
+        UbicacionAlmacen,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="transferencias_transito",
+    )
+    ambito = models.CharField(
+        max_length=12,
+        choices=AMBITO_CONTABLE_CHOICES,
+        default="FISCAL",
+        db_index=True,
+    )
+    estado = models.CharField(max_length=15, choices=ESTADOS, default="EN_TRANSITO", db_index=True)
+    fecha_despacho = models.DateTimeField()
+    fecha_recepcion = models.DateTimeField(null=True, blank=True)
+    id_usuario_despacho = models.ForeignKey(
+        "core.Usuarios", on_delete=models.PROTECT, related_name="transferencias_transito_despachadas"
+    )
+    id_usuario_recepcion = models.ForeignKey(
+        "core.Usuarios",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="transferencias_transito_recibidas",
+    )
+    observaciones = models.TextField(blank=True, default="")
+
+    class Meta:
+        db_table = "almacenes_transferencia_transito"
+        verbose_name = "Transferencia en Tránsito"
+        verbose_name_plural = "Transferencias en Tránsito"
+        unique_together = [["id_empresa", "numero"]]
+        ordering = ["-fecha_despacho", "-fecha_creacion"]
+        constraints = [
+            models.CheckConstraint(
+                condition=~Q(id_almacen_origen=F("id_almacen_destino")),
+                name="alm_transito_origen_distinto_destino",
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.id_almacen_origen_id == self.id_almacen_destino_id:
+            raise ValidationError({"id_almacen_destino": "El almacén de origen y destino deben ser distintos."})
+        if self.id_empresa_id:
+            if self.id_almacen_origen_id and self.id_almacen_origen.id_empresa_id != self.id_empresa_id:
+                raise ValidationError({"id_almacen_origen": "El almacén origen no pertenece a la empresa."})
+            if self.id_almacen_destino_id and self.id_almacen_destino.id_empresa_id != self.id_empresa_id:
+                raise ValidationError({"id_almacen_destino": "El almacén destino no pertenece a la empresa."})
+
+    def __str__(self):
+        return f"{self.numero} ({self.id_almacen_origen} -> {self.id_almacen_destino}) [{self.estado}]"
+
+
+class DetalleTransferenciaTransito(OmniBaseModel):
+    """Línea de producto de una TransferenciaTransito."""
+
+    id_detalle = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey(
+        "core.Empresa", on_delete=models.CASCADE, related_name="detalles_transferencia_transito"
+    )
+    id_transferencia = models.ForeignKey(TransferenciaTransito, on_delete=models.CASCADE, related_name="detalles")
+    id_producto = models.ForeignKey(
+        "inventario.Producto", on_delete=models.PROTECT, related_name="detalles_transferencia_transito"
+    )
+    id_variante = models.ForeignKey(
+        "inventario.VarianteProducto",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="detalles_transferencia_transito",
+    )
+    cantidad_despachada = models.DecimalField(max_digits=18, decimal_places=4)
+    cantidad_recibida = models.DecimalField(max_digits=18, decimal_places=4, default=Decimal("0"))
+    costo_unitario = models.DecimalField(max_digits=18, decimal_places=4, default=Decimal("0"))
+
+    class Meta:
+        db_table = "almacenes_detalle_transferencia_transito"
+        verbose_name = "Detalle de Transferencia en Tránsito"
+        verbose_name_plural = "Detalles de Transferencia en Tránsito"
+        constraints = [
+            models.CheckConstraint(condition=Q(cantidad_despachada__gt=0), name="alm_det_transito_desp_gt_0"),
+            models.CheckConstraint(condition=Q(cantidad_recibida__gte=0), name="alm_det_transito_rec_gte_0"),
+        ]
+
+    def __str__(self):
+        return f"{self.id_transferencia.numero} | {self.id_producto.nombre_producto} x{self.cantidad_despachada}"

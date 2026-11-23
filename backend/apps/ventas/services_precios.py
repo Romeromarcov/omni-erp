@@ -253,6 +253,10 @@ def calcular_precio_dinamico(
         except TasaCambioError:
             equivalencias = None
 
+    from apps.inventario.services_supply_chain import evaluar_semaforo_margen_producto
+
+    semaforo_margen = evaluar_semaforo_margen_producto(producto, precio_final)
+
     return {
         "producto_id": str(producto.pk),
         "cantidad": cant,
@@ -268,4 +272,5 @@ def calcular_precio_dinamico(
         "brecha_cambiaria_pct": brecha_pct_detectada,
         "reglas_aplicadas": reglas_aplicadas,
         "equivalencias": equivalencias,
+        "semaforo_margen": semaforo_margen,
     }

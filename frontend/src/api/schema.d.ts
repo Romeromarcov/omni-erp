@@ -720,6 +720,98 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/almacenes/transferencias-transito/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["almacenes_transferencias-transito_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/almacenes/transferencias-transito/despachar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Despacha mercancía desde el almacén origen dejándola EN_TRANSITO. */
+        post: operations["almacenes_transferencias-transito_despachar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/almacenes/transferencias-transito/{id_transferencia_transito}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Transferencia en Tránsito. */
+                id_transferencia_transito: string;
+            };
+            cookie?: never;
+        };
+        get: operations["almacenes_transferencias-transito_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/almacenes/transferencias-transito/{id_transferencia_transito}/cancelar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Transferencia en Tránsito. */
+                id_transferencia_transito: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Cancela una transferencia EN_TRANSITO y devuelve el stock al almacén origen. */
+        post: operations["almacenes_transferencias-transito_cancelar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/almacenes/transferencias-transito/{id_transferencia_transito}/recibir/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Transferencia en Tránsito. */
+                id_transferencia_transito: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Recibe en almacén destino una transferencia EN_TRANSITO (total o parcial). */
+        post: operations["almacenes_transferencias-transito_recibir"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/almacenes/ubicaciones-almacen/": {
         parameters: {
             query?: never;
@@ -1760,6 +1852,81 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/compras/costos-destino/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["compras_costos-destino_list"];
+        put?: never;
+        post: operations["compras_costos-destino_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/compras/costos-destino/{id_costo_destino}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Costo en Destino. */
+                id_costo_destino: string;
+            };
+            cookie?: never;
+        };
+        get: operations["compras_costos-destino_read"];
+        put: operations["compras_costos-destino_update"];
+        post?: never;
+        delete: operations["compras_costos-destino_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["compras_costos-destino_partial_update"];
+        trace?: never;
+    };
+    "/compras/costos-destino/{id_costo_destino}/anular/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Costo en Destino. */
+                id_costo_destino: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Anula un costo en destino en BORRADOR. */
+        post: operations["compras_costos-destino_anular"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/compras/costos-destino/{id_costo_destino}/aplicar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Costo en Destino. */
+                id_costo_destino: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Aplica el prorrateo del costo en destino sobre la recepción y revalúa el inventario. */
+        post: operations["compras_costos-destino_aplicar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/compras/detalles-factura-compra/": {
         parameters: {
             query?: never;
@@ -2020,6 +2187,62 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["compras_facturas-compra_partial_update"];
+        trace?: never;
+    };
+    "/compras/facturas-compra/{id_factura_compra}/validar-three-way-matching/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Factura de Compra. */
+                id_factura_compra: string;
+            };
+            cookie?: never;
+        };
+        /** @description Cruza OrdenCompra ↔ RecepcionMercancia ↔ FacturaCompra (3-Way Matching). */
+        get: operations["compras_facturas-compra_validar-three-way-matching_read"];
+        put?: never;
+        /** @description Cruza OrdenCompra ↔ RecepcionMercancia ↔ FacturaCompra (3-Way Matching). */
+        post: operations["compras_facturas-compra_validar-three-way-matching_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/compras/lineas-costo-destino/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["compras_lineas-costo-destino_list"];
+        put?: never;
+        post: operations["compras_lineas-costo-destino_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/compras/lineas-costo-destino/{id_linea_costo_destino}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Línea de Costo en Destino. */
+                id_linea_costo_destino: string;
+            };
+            cookie?: never;
+        };
+        get: operations["compras_lineas-costo-destino_read"];
+        put: operations["compras_lineas-costo-destino_update"];
+        post?: never;
+        delete: operations["compras_lineas-costo-destino_delete"];
+        options?: never;
+        head?: never;
+        patch: operations["compras_lineas-costo-destino_partial_update"];
         trace?: never;
     };
     "/compras/ofertas-proveedor/": {
@@ -10802,6 +11025,121 @@ export interface paths {
         patch: operations["inventario_categorias-producto_partial_update"];
         trace?: never;
     };
+    "/inventario/conteos-inventario/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["inventario_conteos-inventario_list"];
+        put?: never;
+        post: operations["inventario_conteos-inventario_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inventario/conteos-inventario/{id_conteo}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Conteo de Inventario. */
+                id_conteo: string;
+            };
+            cookie?: never;
+        };
+        get: operations["inventario_conteos-inventario_read"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inventario/conteos-inventario/{id_conteo}/anular/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Conteo de Inventario. */
+                id_conteo: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Anula un conteo aún no aplicado. */
+        post: operations["inventario_conteos-inventario_anular"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inventario/conteos-inventario/{id_conteo}/aprobar-aplicar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Conteo de Inventario. */
+                id_conteo: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Aprueba diferencias y dispara los ajustes de inventario con ámbito del conteo. */
+        post: operations["inventario_conteos-inventario_aprobar_aplicar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inventario/conteos-inventario/{id_conteo}/enviar-aprobacion/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Conteo de Inventario. */
+                id_conteo: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Finaliza captura y deja el conteo en PENDIENTE_APROBACION. */
+        post: operations["inventario_conteos-inventario_enviar_aprobacion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inventario/conteos-inventario/{id_conteo}/escanear/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Conteo de Inventario. */
+                id_conteo: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Registra escaneo de código de barras / SKU durante la captura física. */
+        post: operations["inventario_conteos-inventario_escanear"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/inventario/conversiones-unidad-medida/": {
         parameters: {
             query?: never;
@@ -10869,6 +11207,25 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["inventario_entregas_partial_update"];
+        trace?: never;
+    };
+    "/inventario/entregas/{id}/escanear/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Verifica líneas Pick-Pack-Ship mediante código de barras o SKU. */
+        post: operations["inventario_entregas_escanear"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/inventario/entregas/{id}/step/{step_id}/confirm/": {
@@ -11017,6 +11374,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/inventario/productos/buscar-barcode/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Busca un producto activo por código de barras o SKU (?codigo=). */
+        get: operations["inventario_productos_buscar_barcode"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/inventario/productos/{id_producto}/": {
         parameters: {
             query?: never;
@@ -11062,6 +11436,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/inventario/productos/{id_producto}/semaforo-margen/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Producto. */
+                id_producto: string;
+            };
+            cookie?: never;
+        };
+        /** @description Evalúa el margen real respecto a ``costo_reposicion_usd`` (?precio_venta_usd=). */
+        get: operations["inventario_productos_semaforo_margen"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/inventario/recepciones/": {
         parameters: {
             query?: never;
@@ -11094,6 +11488,25 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["inventario_recepciones_partial_update"];
+        trace?: never;
+    };
+    "/inventario/recepciones/{id}/escanear/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Verifica líneas Pick-Pack-Ship mediante código de barras o SKU. */
+        post: operations["inventario_recepciones_escanear"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/inventario/recepciones/{id}/step/{step_id}/confirm/": {
@@ -11213,6 +11626,23 @@ export interface paths {
         };
         /** @description Historial de movimientos. Filtros: ?producto=&almacen=&tipo=&fecha_desde=&fecha_hasta=. */
         get: operations["inventario_reportes_movimientos"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/inventario/reportes/resumen-dual/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Consolida inventario y movimientos por ámbito FISCAL vs GERENCIAL (?almacen=). */
+        get: operations["inventario_reportes_resumen_dual"];
         put?: never;
         post?: never;
         delete?: never;
@@ -17178,6 +17608,203 @@ export interface components {
             /** Tipo movimiento */
             tipo_movimiento: string;
         };
+        DetalleTransferenciaTransito: {
+            /**
+             * Id detalle
+             * Format: uuid
+             */
+            readonly id_detalle?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /**
+             * Id transferencia
+             * Format: uuid
+             */
+            readonly id_transferencia?: string;
+            /**
+             * Id producto
+             * Format: uuid
+             */
+            readonly id_producto?: string;
+            /** Producto nombre */
+            readonly producto_nombre?: string;
+            /**
+             * Id variante
+             * Format: uuid
+             */
+            readonly id_variante?: string | null;
+            /**
+             * Cantidad despachada
+             * Format: decimal
+             */
+            readonly cantidad_despachada?: string;
+            /**
+             * Cantidad recibida
+             * Format: decimal
+             */
+            readonly cantidad_recibida?: string;
+            /**
+             * Costo unitario
+             * Format: decimal
+             */
+            readonly costo_unitario?: string;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+        };
+        TransferenciaTransito: {
+            /**
+             * Id transferencia transito
+             * Format: uuid
+             */
+            readonly id_transferencia_transito?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /** Numero */
+            readonly numero?: string;
+            /**
+             * Id almacen origen
+             * Format: uuid
+             */
+            readonly id_almacen_origen?: string;
+            /** Almacen origen nombre */
+            readonly almacen_origen_nombre?: string;
+            /**
+             * Id almacen destino
+             * Format: uuid
+             */
+            readonly id_almacen_destino?: string;
+            /** Almacen destino nombre */
+            readonly almacen_destino_nombre?: string;
+            /**
+             * Id ubicacion transito
+             * Format: uuid
+             */
+            readonly id_ubicacion_transito?: string | null;
+            /**
+             * Ambito
+             * @enum {string}
+             */
+            readonly ambito?: "FISCAL" | "GERENCIAL";
+            /**
+             * Estado
+             * @enum {string}
+             */
+            readonly estado?: "EN_TRANSITO" | "RECIBIDA" | "CANCELADA";
+            /** Estado display */
+            readonly estado_display?: string;
+            /**
+             * Fecha despacho
+             * Format: date-time
+             */
+            readonly fecha_despacho?: string;
+            /**
+             * Fecha recepcion
+             * Format: date-time
+             */
+            readonly fecha_recepcion?: string | null;
+            /**
+             * Id usuario despacho
+             * Format: uuid
+             */
+            readonly id_usuario_despacho?: string;
+            /**
+             * Id usuario recepcion
+             * Format: uuid
+             */
+            readonly id_usuario_recepcion?: string | null;
+            /** Observaciones */
+            readonly observaciones?: string;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            readonly activo?: boolean;
+            readonly detalles?: components["schemas"]["DetalleTransferenciaTransito"][];
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        _DetalleDespachoTransitoInput: {
+            /**
+             * Producto
+             * Format: uuid
+             */
+            producto: string;
+            /**
+             * Variante
+             * Format: uuid
+             */
+            variante?: string | null;
+            /**
+             * Cantidad
+             * Format: decimal
+             */
+            cantidad: string;
+        };
+        DespacharTransferenciaTransitoInput: {
+            /**
+             * Id almacen origen
+             * Format: uuid
+             */
+            id_almacen_origen: string;
+            /**
+             * Id almacen destino
+             * Format: uuid
+             */
+            id_almacen_destino: string;
+            /**
+             * Id ubicacion transito
+             * Format: uuid
+             */
+            id_ubicacion_transito?: string | null;
+            /**
+             * Ambito
+             * @default FISCAL
+             * @enum {string}
+             */
+            ambito: "FISCAL" | "GERENCIAL";
+            /** Numero */
+            numero?: string;
+            /**
+             * Observaciones
+             * @default
+             */
+            observaciones: string;
+            items: components["schemas"]["_DetalleDespachoTransitoInput"][];
+        };
+        RecibirTransferenciaTransitoInput: {
+            /**
+             * Cantidades recibidas
+             * @default {}
+             */
+            cantidades_recibidas: {
+                [key: string]: string;
+            };
+            /**
+             * Observaciones
+             * @default
+             */
+            observaciones: string;
+        };
         UbicacionAlmacen: {
             /**
              * Id ubicacion
@@ -17192,7 +17819,7 @@ export interface components {
              * Tipo ubicacion
              * @enum {string}
              */
-            tipo_ubicacion: "ESTANTERIA" | "PISO" | "REFRIGERADO" | "CONGELADO" | "EXTERIOR" | "CUARENTENA" | "DEVOLUCION" | "PICKING" | "RECEPCION" | "DESPACHO";
+            tipo_ubicacion: "ESTANTERIA" | "PISO" | "REFRIGERADO" | "CONGELADO" | "EXTERIOR" | "CUARENTENA" | "DEVOLUCION" | "PICKING" | "RECEPCION" | "DESPACHO" | "TRANSITO";
             /** Pasillo */
             pasillo?: string | null;
             /** Estante */
@@ -17996,6 +18623,202 @@ export interface components {
              * Format: date-time
              */
             readonly created_at?: string;
+        };
+        LineaCostoDestino: {
+            /**
+             * Id linea costo destino
+             * Format: uuid
+             */
+            readonly id_linea_costo_destino?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /**
+             * Id costo destino
+             * Format: uuid
+             */
+            id_costo_destino: string;
+            /**
+             * Concepto
+             * @enum {string}
+             */
+            concepto: "FLETE" | "SEGURO" | "ARANCEL" | "NACIONALIZACION" | "ALMACENAJE_ADUANA" | "OTRO";
+            /** Concepto display */
+            readonly concepto_display?: string;
+            /** Descripcion */
+            descripcion: string;
+            /**
+             * Monto
+             * Format: decimal
+             */
+            monto: string;
+            /**
+             * Id factura compra
+             * Format: uuid
+             */
+            id_factura_compra?: string | null;
+            /** Observaciones */
+            observaciones?: string;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        AsignacionCostoDestino: {
+            /**
+             * Id asignacion
+             * Format: uuid
+             */
+            readonly id_asignacion?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /**
+             * Id costo destino
+             * Format: uuid
+             */
+            readonly id_costo_destino?: string;
+            /**
+             * Id detalle recepcion
+             * Format: uuid
+             */
+            readonly id_detalle_recepcion?: string;
+            /**
+             * Id producto
+             * Format: uuid
+             */
+            readonly id_producto?: string;
+            /** Producto nombre */
+            readonly producto_nombre?: string;
+            /**
+             * Base prorrateo
+             * Format: decimal
+             */
+            readonly base_prorrateo?: string;
+            /**
+             * Porcentaje prorrateo
+             * Format: decimal
+             */
+            readonly porcentaje_prorrateo?: string;
+            /**
+             * Costo adicional total
+             * Format: decimal
+             */
+            readonly costo_adicional_total?: string;
+            /**
+             * Costo adicional unitario
+             * Format: decimal
+             */
+            readonly costo_adicional_unitario?: string;
+            /**
+             * Costo unitario anterior
+             * Format: decimal
+             */
+            readonly costo_unitario_anterior?: string;
+            /**
+             * Costo unitario nuevo
+             * Format: decimal
+             */
+            readonly costo_unitario_nuevo?: string;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+        };
+        CostoDestino: {
+            /**
+             * Id costo destino
+             * Format: uuid
+             */
+            readonly id_costo_destino?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /**
+             * Id recepcion
+             * Format: uuid
+             */
+            id_recepcion: string;
+            /** Numero documento */
+            numero_documento: string;
+            /**
+             * Fecha
+             * Format: date
+             */
+            fecha: string;
+            /**
+             * Metodo prorrateo
+             * @enum {string}
+             */
+            metodo_prorrateo?: "VALOR" | "CANTIDAD" | "PESO" | "VOLUMEN";
+            /**
+             * Ambito
+             * @enum {string}
+             */
+            ambito?: "FISCAL" | "GERENCIAL";
+            /** Nro expediente impor */
+            nro_expediente_impor?: string;
+            /** Nro planilla impor */
+            nro_planilla_impor?: string;
+            /**
+             * Monto total
+             * Format: decimal
+             */
+            readonly monto_total?: string;
+            /**
+             * Estado
+             * @enum {string}
+             */
+            readonly estado?: "BORRADOR" | "APLICADO" | "ANULADO";
+            /** Estado display */
+            readonly estado_display?: string;
+            /**
+             * Id asiento
+             * Format: uuid
+             */
+            readonly id_asiento?: string | null;
+            /** Observaciones */
+            observaciones?: string;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            activo?: boolean;
+            readonly lineas?: components["schemas"]["LineaCostoDestino"][];
+            readonly asignaciones?: components["schemas"]["AsignacionCostoDestino"][];
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
         };
         DetalleFacturaCompra: {
             /**
@@ -19325,7 +20148,7 @@ export interface components {
              * Tipo asiento
              * @enum {string}
              */
-            tipo_asiento: "FACTURA_VENTA" | "DEVOLUCION_VENTA" | "DEVOLUCION_VENTA_IVA" | "NOTA_DEBITO_FISCAL" | "NOTA_DEBITO_FISCAL_IVA" | "FACTURA_COMPRA" | "GASTO" | "GASTO_IVA" | "RECEPCION_MERCANCIA" | "COSTO_VENTA" | "AJUSTE_INVENTARIO" | "SALIDA_INTERNA" | "PAGO_CXC" | "PAGO_CXP" | "GANANCIA_CAMBIARIA" | "PERDIDA_CAMBIARIA" | "NOMINA" | "NOMINA_GERENCIAL" | "PROVISION_NOMINA" | "CAMBIO_DIVISA" | "PAGO_TERCERO" | "PAGO_PARAFISCAL" | "RETENCION_IVA_COMPRA" | "RETENCION_IVA_VENTA" | "RETENCION_ISLR";
+            tipo_asiento: "FACTURA_VENTA" | "DEVOLUCION_VENTA" | "DEVOLUCION_VENTA_IVA" | "NOTA_DEBITO_FISCAL" | "NOTA_DEBITO_FISCAL_IVA" | "FACTURA_COMPRA" | "GASTO" | "GASTO_IVA" | "RECEPCION_MERCANCIA" | "COSTO_VENTA" | "AJUSTE_INVENTARIO" | "SALIDA_INTERNA" | "PAGO_CXC" | "PAGO_CXP" | "GANANCIA_CAMBIARIA" | "PERDIDA_CAMBIARIA" | "NOMINA" | "NOMINA_GERENCIAL" | "PROVISION_NOMINA" | "CAMBIO_DIVISA" | "PAGO_TERCERO" | "PAGO_PARAFISCAL" | "RETENCION_IVA_COMPRA" | "RETENCION_IVA_VENTA" | "RETENCION_ISLR" | "COSTO_DESTINO" | "AJUSTE_CONTEO";
             /**
              * Descripcion plantilla
              * @description Plantilla de descripción. Use {tipo}, {numero}.
@@ -22782,7 +23605,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-23T06:02:54.705336-04:00
+             * @default 2026-11-23T07:44:19.848614-04:00
              */
             fecha_despacho: string;
             /**
@@ -26295,6 +27118,248 @@ export interface components {
              */
             id_categoria_padre?: string | null;
         };
+        LineaConteoInventario: {
+            /**
+             * Id linea conteo
+             * Format: uuid
+             */
+            readonly id_linea_conteo?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /**
+             * Id conteo
+             * Format: uuid
+             */
+            readonly id_conteo?: string;
+            /**
+             * Id producto
+             * Format: uuid
+             */
+            readonly id_producto?: string;
+            /** Producto nombre */
+            readonly producto_nombre?: string;
+            /** Producto sku */
+            readonly producto_sku?: string;
+            /** Codigo barras */
+            readonly codigo_barras?: string;
+            /**
+             * Id variante
+             * Format: uuid
+             */
+            readonly id_variante?: string | null;
+            /**
+             * Id ubicacion
+             * Format: uuid
+             */
+            readonly id_ubicacion?: string | null;
+            /**
+             * Cantidad sistema
+             * Format: decimal
+             */
+            readonly cantidad_sistema?: string;
+            /**
+             * Cantidad contada
+             * Format: decimal
+             */
+            readonly cantidad_contada?: string | null;
+            /**
+             * Diferencia
+             * Format: decimal
+             */
+            readonly diferencia?: string;
+            /**
+             * Costo unitario referencia
+             * Format: decimal
+             */
+            readonly costo_unitario_referencia?: string;
+            /**
+             * Valor diferencia
+             * Format: decimal
+             */
+            readonly valor_diferencia?: string;
+            /** Conteos escaneados */
+            readonly conteos_escaneados?: number;
+            /** Observaciones */
+            readonly observaciones?: string;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            readonly activo?: boolean;
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        ConteoInventario: {
+            /**
+             * Id conteo
+             * Format: uuid
+             */
+            readonly id_conteo?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /** Numero */
+            readonly numero?: string;
+            /**
+             * Id almacen
+             * Format: uuid
+             */
+            readonly id_almacen?: string;
+            /** Almacen nombre */
+            readonly almacen_nombre?: string;
+            /**
+             * Ambito
+             * @enum {string}
+             */
+            readonly ambito?: "FISCAL" | "GERENCIAL";
+            /**
+             * Tipo conteo
+             * @enum {string}
+             */
+            readonly tipo_conteo?: "CICLICO" | "TOTAL" | "ALEATORIO";
+            /**
+             * Estado
+             * @enum {string}
+             */
+            readonly estado?: "BORRADOR" | "EN_PROGRESO" | "PENDIENTE_APROBACION" | "APLICADO" | "ANULADO";
+            /** Estado display */
+            readonly estado_display?: string;
+            /**
+             * Fecha conteo
+             * Format: date
+             */
+            readonly fecha_conteo?: string;
+            /**
+             * Id responsable
+             * Format: uuid
+             */
+            readonly id_responsable?: string;
+            /**
+             * Id aprobador
+             * Format: uuid
+             */
+            readonly id_aprobador?: string | null;
+            /**
+             * Fecha aprobacion
+             * Format: date-time
+             */
+            readonly fecha_aprobacion?: string | null;
+            /** Observaciones */
+            readonly observaciones?: string;
+            /**
+             * Activo
+             * @description Indica si el registro está activo (False = borrado lógico).
+             */
+            readonly activo?: boolean;
+            readonly lineas?: components["schemas"]["LineaConteoInventario"][];
+            /**
+             * Fecha de Creación
+             * Format: date-time
+             * @description Fecha y hora de creación del registro.
+             */
+            readonly fecha_creacion?: string;
+            /**
+             * Fecha de Actualización
+             * Format: date-time
+             * @description Fecha y hora de la última modificación del registro.
+             */
+            readonly fecha_actualizacion?: string;
+        };
+        ConteoLineaInicialInput: {
+            /**
+             * Producto
+             * Format: uuid
+             */
+            producto: string;
+            /**
+             * Variante
+             * Format: uuid
+             */
+            variante?: string | null;
+            /**
+             * Ubicacion
+             * Format: uuid
+             */
+            ubicacion?: string | null;
+        };
+        CrearConteoInventarioInput: {
+            /**
+             * Id almacen
+             * Format: uuid
+             */
+            id_almacen: string;
+            /**
+             * Tipo conteo
+             * @default CICLICO
+             * @enum {string}
+             */
+            tipo_conteo: "CICLICO" | "TOTAL" | "ALEATORIO";
+            /**
+             * Ambito
+             * @default FISCAL
+             * @enum {string}
+             */
+            ambito: "FISCAL" | "GERENCIAL";
+            /**
+             * Fecha conteo
+             * Format: date
+             */
+            fecha_conteo?: string;
+            /** Numero */
+            numero?: string;
+            /**
+             * Observaciones
+             * @default
+             */
+            observaciones: string;
+            items?: components["schemas"]["ConteoLineaInicialInput"][];
+        };
+        EscanearConteoInput: {
+            /** Codigo */
+            codigo: string;
+            /**
+             * Cantidad
+             * Format: decimal
+             * @default 1.0000
+             */
+            cantidad: string;
+            /**
+             * Modo
+             * @default INCREMENTAL
+             * @enum {string}
+             */
+            modo: "INCREMENTAL" | "REEMPLAZAR";
+            /**
+             * Variante
+             * Format: uuid
+             */
+            variante?: string | null;
+            /**
+             * Ubicacion
+             * Format: uuid
+             */
+            ubicacion?: string | null;
+            /**
+             * Observaciones
+             * @default
+             */
+            observaciones: string;
+        };
         ConversionUnidadMedida: {
             /**
              * Id conversion
@@ -26390,6 +27455,12 @@ export interface components {
              * Format: decimal
              */
             cantidad: string;
+            /**
+             * Cantidad escaneada
+             * Format: decimal
+             * @description Cantidad verificada mediante escaneo de código de barras en Pick-Pack-Ship.
+             */
+            cantidad_escaneada?: string;
             /**
              * Costo unitario
              * Format: decimal
@@ -26778,6 +27849,39 @@ export interface components {
              * Format: decimal
              */
             costo_promedio?: string;
+            /**
+             * Costo reposicion usd
+             * Format: decimal
+             * @description Costo de reposición vigente en USD para cálculo de semáforo de margen real.
+             */
+            costo_reposicion_usd?: string | null;
+            /**
+             * Margen minimo pct
+             * Format: decimal
+             * @description Porcentaje de margen mínimo sobre costo de reposición; debajo dispara alerta ROJA.
+             */
+            margen_minimo_pct?: string;
+            /**
+             * Margen alerta pct
+             * Format: decimal
+             * @description Porcentaje de margen preventivo; entre mínimo y alerta dispara semáforo AMARILLO.
+             */
+            margen_alerta_pct?: string;
+            /**
+             * Peso unitario kg
+             * Format: decimal
+             */
+            peso_unitario_kg?: string | null;
+            /**
+             * Volumen unitario m3
+             * Format: decimal
+             */
+            volumen_unitario_m3?: string | null;
+            /**
+             * Codigo barras
+             * @description Código EAN/UPC/Code128 para escaneo rápido en conteos y Pick-Pack-Ship.
+             */
+            codigo_barras?: string | null;
             /**
              * Metodo valoracion
              * @description Método de valoración de inventario usado al costear las salidas de este producto.
@@ -32386,6 +33490,11 @@ export interface components {
                 "application/json": components["schemas"]["ComprobanteRetencionISLR"];
             };
         };
+        CostoDestino: {
+            content: {
+                "application/json": components["schemas"]["CostoDestino"];
+            };
+        };
         VinculoDocumento: {
             content: {
                 "application/json": components["schemas"]["VinculoDocumento"];
@@ -32669,6 +33778,11 @@ export interface components {
         FacturaCompra: {
             content: {
                 "application/json": components["schemas"]["FacturaCompra"];
+            };
+        };
+        LineaCostoDestino: {
+            content: {
+                "application/json": components["schemas"]["LineaCostoDestino"];
             };
         };
         OfertaProveedor: {
@@ -34349,6 +35463,132 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StockUbicacion"];
+                };
+            };
+        };
+    };
+    "almacenes_transferencias-transito_list": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["TransferenciaTransito"][];
+                    };
+                };
+            };
+        };
+    };
+    "almacenes_transferencias-transito_despachar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DespacharTransferenciaTransitoInput"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DespacharTransferenciaTransitoInput"];
+                };
+            };
+        };
+    };
+    "almacenes_transferencias-transito_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Transferencia en Tránsito. */
+                id_transferencia_transito: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransferenciaTransito"];
+                };
+            };
+        };
+    };
+    "almacenes_transferencias-transito_cancelar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Transferencia en Tránsito. */
+                id_transferencia_transito: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransferenciaTransito"];
+                };
+            };
+        };
+    };
+    "almacenes_transferencias-transito_recibir": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Transferencia en Tránsito. */
+                id_transferencia_transito: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecibirTransferenciaTransitoInput"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecibirTransferenciaTransitoInput"];
                 };
             };
         };
@@ -36310,6 +37550,188 @@ export interface operations {
             };
         };
     };
+    "compras_costos-destino_list": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["CostoDestino"][];
+                    };
+                };
+            };
+        };
+    };
+    "compras_costos-destino_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["CostoDestino"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostoDestino"];
+                };
+            };
+        };
+    };
+    "compras_costos-destino_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Costo en Destino. */
+                id_costo_destino: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostoDestino"];
+                };
+            };
+        };
+    };
+    "compras_costos-destino_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Costo en Destino. */
+                id_costo_destino: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["CostoDestino"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostoDestino"];
+                };
+            };
+        };
+    };
+    "compras_costos-destino_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Costo en Destino. */
+                id_costo_destino: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "compras_costos-destino_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Costo en Destino. */
+                id_costo_destino: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["CostoDestino"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostoDestino"];
+                };
+            };
+        };
+    };
+    "compras_costos-destino_anular": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Costo en Destino. */
+                id_costo_destino: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostoDestino"];
+                };
+            };
+        };
+    };
+    "compras_costos-destino_aplicar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Costo en Destino. */
+                id_costo_destino: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostoDestino"];
+                };
+            };
+        };
+    };
     "compras_detalles-factura-compra_list": {
         parameters: {
             query?: {
@@ -37291,6 +38713,188 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FacturaCompra"];
+                };
+            };
+        };
+    };
+    "compras_facturas-compra_validar-three-way-matching_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Factura de Compra. */
+                id_factura_compra: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FacturaCompra"];
+                };
+            };
+        };
+    };
+    "compras_facturas-compra_validar-three-way-matching_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Factura de Compra. */
+                id_factura_compra: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["FacturaCompra"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FacturaCompra"];
+                };
+            };
+        };
+    };
+    "compras_lineas-costo-destino_list": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["LineaCostoDestino"][];
+                    };
+                };
+            };
+        };
+    };
+    "compras_lineas-costo-destino_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["LineaCostoDestino"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LineaCostoDestino"];
+                };
+            };
+        };
+    };
+    "compras_lineas-costo-destino_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Línea de Costo en Destino. */
+                id_linea_costo_destino: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LineaCostoDestino"];
+                };
+            };
+        };
+    };
+    "compras_lineas-costo-destino_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Línea de Costo en Destino. */
+                id_linea_costo_destino: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["LineaCostoDestino"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LineaCostoDestino"];
+                };
+            };
+        };
+    };
+    "compras_lineas-costo-destino_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Línea de Costo en Destino. */
+                id_linea_costo_destino: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "compras_lineas-costo-destino_partial_update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Línea de Costo en Destino. */
+                id_linea_costo_destino: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["LineaCostoDestino"];
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LineaCostoDestino"];
                 };
             };
         };
@@ -57374,6 +58978,176 @@ export interface operations {
             };
         };
     };
+    "inventario_conteos-inventario_list": {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["ConteoInventario"][];
+                    };
+                };
+            };
+        };
+    };
+    "inventario_conteos-inventario_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CrearConteoInventarioInput"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrearConteoInventarioInput"];
+                };
+            };
+        };
+    };
+    "inventario_conteos-inventario_read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Conteo de Inventario. */
+                id_conteo: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConteoInventario"];
+                };
+            };
+        };
+    };
+    "inventario_conteos-inventario_anular": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Conteo de Inventario. */
+                id_conteo: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConteoInventario"];
+                };
+            };
+        };
+    };
+    "inventario_conteos-inventario_aprobar_aplicar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Conteo de Inventario. */
+                id_conteo: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConteoInventario"];
+                };
+            };
+        };
+    };
+    "inventario_conteos-inventario_enviar_aprobacion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Conteo de Inventario. */
+                id_conteo: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConteoInventario"];
+                };
+            };
+        };
+    };
+    "inventario_conteos-inventario_escanear": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Conteo de Inventario. */
+                id_conteo: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EscanearConteoInput"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EscanearConteoInput"];
+                };
+            };
+        };
+    };
     "inventario_conversiones-unidad-medida_list": {
         parameters: {
             query?: {
@@ -57637,6 +59411,27 @@ export interface operations {
         requestBody: components["requestBodies"]["OperacionInventario"];
         responses: {
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperacionInventario"];
+                };
+            };
+        };
+    };
+    inventario_entregas_escanear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["OperacionInventario"];
+        responses: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -58032,6 +59827,39 @@ export interface operations {
             };
         };
     };
+    inventario_productos_buscar_barcode: {
+        parameters: {
+            query?: {
+                /** @description Un término de búsqueda. */
+                search?: string;
+                /** @description Qué campo usar para ordenar los resultados. */
+                ordering?: string;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        count: number;
+                        /** Format: uri */
+                        next?: string | null;
+                        /** Format: uri */
+                        previous?: string | null;
+                        results: components["schemas"]["Producto"][];
+                    };
+                };
+            };
+        };
+    };
     inventario_productos_read: {
         parameters: {
             query?: never;
@@ -58119,6 +59947,28 @@ export interface operations {
         };
     };
     inventario_productos_kardex: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un Cadena UUID que identifique este Producto. */
+                id_producto: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Producto"];
+                };
+            };
+        };
+    };
+    inventario_productos_semaforo_margen: {
         parameters: {
             query?: never;
             header?: never;
@@ -58265,6 +60115,27 @@ export interface operations {
         requestBody: components["requestBodies"]["OperacionInventario"];
         responses: {
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperacionInventario"];
+                };
+            };
+        };
+    };
+    inventario_recepciones_escanear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["OperacionInventario"];
+        responses: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -58501,6 +60372,23 @@ export interface operations {
         };
     };
     inventario_reportes_movimientos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    inventario_reportes_resumen_dual: {
         parameters: {
             query?: never;
             header?: never;

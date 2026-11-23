@@ -10,6 +10,7 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 
 from apps.core.exceptions import domain_error_response
+from apps.core.throttling import EscrituraRateThrottle
 from apps.core.viewsets import (
     BaseModelViewSet,
     EmpresaInjectMixin,
@@ -84,7 +85,7 @@ class CategoriaProductoViewSet(BaseModelViewSet):
 class ProductoViewSet(NulSafeFilterMixin, BaseModelViewSet):
     queryset = Producto.objects.all()
     serializer_class = ProductoSerializer
-    search_fields = ["nombre_producto", "sku", "descripcion", "referencia_externa"]
+    search_fields = ["nombre_producto", "sku", "codigo_barras", "descripcion", "referencia_externa"]
     ordering_fields = [
         "nombre_producto",
         "sku",
@@ -182,6 +183,37 @@ class ProductoViewSet(NulSafeFilterMixin, BaseModelViewSet):
                 "kardex": kardex_items,
             }
         )
+
+    @action(detail=True, methods=["get"], url_path="semaforo-margen")
+    def semaforo_margen(self, request, pk=None):
+        """Evalúa el margen real respecto a ``costo_reposicion_usd`` (?precio_venta_usd=)."""
+        from .services_supply_chain import InventarioSupplyChainError, evaluar_semaforo_margen_producto
+
+        producto = self.get_object()
+        raw_precio = request.query_params.get("precio_venta_usd")
+        if raw_precio is not None and "\x00" in raw_precio:
+            raise ValidationError({"precio_venta_usd": "Parámetro inválido."})
+        try:
+            res = evaluar_semaforo_margen_producto(producto, raw_precio)
+        except InventarioSupplyChainError as exc:
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail")
+        return Response(res)
+
+    @action(detail=False, methods=["get"], url_path="buscar-barcode")
+    def buscar_barcode(self, request):
+        """Busca un producto activo por código de barras o SKU (?codigo=)."""
+        from .serializers_supply_chain import resolver_empresa_usuario_inventario
+        from .services_supply_chain import InventarioSupplyChainError, buscar_producto_por_barcode
+
+        codigo = request.query_params.get("codigo", "")
+        if "\x00" in str(codigo):
+            raise ValidationError({"codigo": "Parámetro inválido."})
+        empresa = resolver_empresa_usuario_inventario(request, request.query_params.get("empresa"))
+        try:
+            prod = buscar_producto_por_barcode(empresa, codigo)
+        except InventarioSupplyChainError as exc:
+            return domain_error_response(exc, status_code=status.HTTP_404_NOT_FOUND, key="detail")
+        return Response(ProductoSerializer(prod, context={"request": request}).data)
 
 
 class VarianteProductoViewSet(BaseModelViewSet):
@@ -407,6 +439,31 @@ class _OperacionInventarioBaseViewSet(BaseModelViewSet):
         operacion.refresh_from_db()
         return Response(OperacionInventarioSerializer(operacion).data)
 
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="escanear",
+        throttle_classes=[*BaseModelViewSet.throttle_classes, EscrituraRateThrottle],
+    )
+    def escanear(self, request, pk=None):
+        """Verifica líneas Pick-Pack-Ship mediante código de barras o SKU."""
+        from .serializers_supply_chain import EscanearOperacionInputSerializer
+        from .services_supply_chain import InventarioSupplyChainError, escanear_linea_operacion
+
+        operacion = self.get_object()
+        ser = EscanearOperacionInputSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        vd = ser.validated_data
+        try:
+            res = escanear_linea_operacion(
+                operacion=operacion,
+                codigo=vd["codigo"],
+                cantidad=vd["cantidad"],
+            )
+        except InventarioSupplyChainError as exc:
+            return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail")
+        return Response(res, status=status.HTTP_200_OK)
+
 
 class RecepcionViewSet(_OperacionInventarioBaseViewSet):
     tipo_operacion = "RECEPCION"
@@ -540,6 +597,19 @@ class ReportesInventarioViewSet(viewsets.ViewSet):
             )
         data.sort(key=lambda d: (d["producto"], d["almacen"]))
         return Response({"valoracion": data})
+
+    @action(detail=False, methods=["get"], url_path="resumen-dual")
+    def resumen_dual(self, request):
+        """Consolida inventario y movimientos por ámbito FISCAL vs GERENCIAL (?almacen=)."""
+        from .serializers_supply_chain import resolver_empresa_usuario_inventario
+        from .services_supply_chain import resumen_inventario_dual
+
+        raw_almacen = request.query_params.get("almacen")
+        almacen_id = validar_uuid_param(raw_almacen, "almacen") if raw_almacen else None
+        raw_empresa = request.query_params.get("empresa")
+        empresa_id = validar_uuid_param(raw_empresa, "empresa") if raw_empresa else None
+        empresa = resolver_empresa_usuario_inventario(request, empresa_id)
+        return Response(resumen_inventario_dual(empresa, almacen_id=almacen_id))
 
 
 # ── Reabastecimiento y Lotes opt-in (Plan 08 §B.3) ────────────────────────────

@@ -91,6 +91,12 @@ class ProductoSerializer(serializers.ModelSerializer):
             "es_vendible",
             "es_comprable",
             "costo_promedio",
+            "costo_reposicion_usd",
+            "margen_minimo_pct",
+            "margen_alerta_pct",
+            "peso_unitario_kg",
+            "volumen_unitario_m3",
+            "codigo_barras",
             "metodo_valoracion",
             "precio_venta_sugerido",
             "punto_reorden",
@@ -406,6 +412,7 @@ class OperacionInventarioLineaSerializer(serializers.ModelSerializer):
             "producto_nombre",
             "id_variante",
             "cantidad",
+            "cantidad_escaneada",
             "costo_unitario",
         ]
 

@@ -301,6 +301,18 @@
 | `^contactos/(?P<pk>[^/.]+)/$` | ContactoViewSet | Contacto | ✅ | ✅ | IsAuthenticated |
 | `^contactos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ContactoViewSet | Contacto | ✅ | ✅ | IsAuthenticated |
 | `^contactos\.(?P<format>[a-z0-9]+)/?$` | ContactoViewSet | Contacto | ✅ | ✅ | IsAuthenticated |
+| `^conteos-inventario/$` | ConteoInventarioViewSet | ConteoInventario | ✅ | ✅ | IsAuthenticated |
+| `^conteos-inventario/(?P<pk>[^/.]+)/$` | ConteoInventarioViewSet | ConteoInventario | ✅ | ✅ | IsAuthenticated |
+| `^conteos-inventario/(?P<pk>[^/.]+)/anular/$` | ConteoInventarioViewSet | ConteoInventario | ✅ | ✅ | IsAuthenticated |
+| `^conteos-inventario/(?P<pk>[^/.]+)/anular\.(?P<format>[a-z0-9]+)/?$` | ConteoInventarioViewSet | ConteoInventario | ✅ | ✅ | IsAuthenticated |
+| `^conteos-inventario/(?P<pk>[^/.]+)/aprobar-aplicar/$` | ConteoInventarioViewSet | ConteoInventario | ✅ | ✅ | IsAuthenticated |
+| `^conteos-inventario/(?P<pk>[^/.]+)/aprobar-aplicar\.(?P<format>[a-z0-9]+)/?$` | ConteoInventarioViewSet | ConteoInventario | ✅ | ✅ | IsAuthenticated |
+| `^conteos-inventario/(?P<pk>[^/.]+)/enviar-aprobacion/$` | ConteoInventarioViewSet | ConteoInventario | ✅ | ✅ | IsAuthenticated |
+| `^conteos-inventario/(?P<pk>[^/.]+)/enviar-aprobacion\.(?P<format>[a-z0-9]+)/?$` | ConteoInventarioViewSet | ConteoInventario | ✅ | ✅ | IsAuthenticated |
+| `^conteos-inventario/(?P<pk>[^/.]+)/escanear/$` | ConteoInventarioViewSet | ConteoInventario | ✅ | ✅ | IsAuthenticated |
+| `^conteos-inventario/(?P<pk>[^/.]+)/escanear\.(?P<format>[a-z0-9]+)/?$` | ConteoInventarioViewSet | ConteoInventario | ✅ | ✅ | IsAuthenticated |
+| `^conteos-inventario/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConteoInventarioViewSet | ConteoInventario | ✅ | ✅ | IsAuthenticated |
+| `^conteos-inventario\.(?P<format>[a-z0-9]+)/?$` | ConteoInventarioViewSet | ConteoInventario | ✅ | ✅ | IsAuthenticated |
 | `^control/$` | BotControlViewSet | — | — | — | PuedePanelBots |
 | `^control/(?P<codigo>[^/.]+)/$` | BotControlViewSet | — | — | — | PuedePanelBots |
 | `^control/(?P<codigo>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | BotControlViewSet | — | — | — | PuedePanelBots |
@@ -309,6 +321,14 @@
 | `^conversiones-unidad-medida/(?P<pk>[^/.]+)/$` | ConversionUnidadMedidaViewSet | ConversionUnidadMedida | ✅ | ✅ | IsAuthenticated |
 | `^conversiones-unidad-medida/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ConversionUnidadMedidaViewSet | ConversionUnidadMedida | ✅ | ✅ | IsAuthenticated |
 | `^conversiones-unidad-medida\.(?P<format>[a-z0-9]+)/?$` | ConversionUnidadMedidaViewSet | ConversionUnidadMedida | ✅ | ✅ | IsAuthenticated |
+| `^costos-destino/$` | CostoDestinoViewSet | CostoDestino | ✅ | ✅ | IsAuthenticated |
+| `^costos-destino/(?P<pk>[^/.]+)/$` | CostoDestinoViewSet | CostoDestino | ✅ | ✅ | IsAuthenticated |
+| `^costos-destino/(?P<pk>[^/.]+)/anular/$` | CostoDestinoViewSet | CostoDestino | ✅ | ✅ | IsAuthenticated |
+| `^costos-destino/(?P<pk>[^/.]+)/anular\.(?P<format>[a-z0-9]+)/?$` | CostoDestinoViewSet | CostoDestino | ✅ | ✅ | IsAuthenticated |
+| `^costos-destino/(?P<pk>[^/.]+)/aplicar/$` | CostoDestinoViewSet | CostoDestino | ✅ | ✅ | IsAuthenticated |
+| `^costos-destino/(?P<pk>[^/.]+)/aplicar\.(?P<format>[a-z0-9]+)/?$` | CostoDestinoViewSet | CostoDestino | ✅ | ✅ | IsAuthenticated |
+| `^costos-destino/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CostoDestinoViewSet | CostoDestino | ✅ | ✅ | IsAuthenticated |
+| `^costos-destino\.(?P<format>[a-z0-9]+)/?$` | CostoDestinoViewSet | CostoDestino | ✅ | ✅ | IsAuthenticated |
 | `^costos-estandar-producto/$` | CostoEstandarProductoViewSet | CostoEstandarProducto | ✅ | ✅ | IsAuthenticated |
 | `^costos-estandar-producto/(?P<pk>[^/.]+)/$` | CostoEstandarProductoViewSet | CostoEstandarProducto | ✅ | ✅ | IsAuthenticated |
 | `^costos-estandar-producto/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CostoEstandarProductoViewSet | CostoEstandarProducto | ✅ | ✅ | IsAuthenticated |
@@ -549,6 +569,8 @@
 | `^empresas\.(?P<format>[a-z0-9]+)/?$` | EmpresaViewSet | Empresa | ✅ | ✅ | IsAuthenticated |
 | `^entregas/$` | EntregaViewSet | OperacionInventario | ✅ | — | IsAuthenticated |
 | `^entregas/(?P<pk>[^/.]+)/$` | EntregaViewSet | OperacionInventario | ✅ | — | IsAuthenticated |
+| `^entregas/(?P<pk>[^/.]+)/escanear/$` | EntregaViewSet | OperacionInventario | ✅ | — | IsAuthenticated |
+| `^entregas/(?P<pk>[^/.]+)/escanear\.(?P<format>[a-z0-9]+)/?$` | EntregaViewSet | OperacionInventario | ✅ | — | IsAuthenticated |
 | `^entregas/(?P<pk>[^/.]+)/step/(?P<step_id>[^/.]+)/confirm/$` | EntregaViewSet | OperacionInventario | ✅ | — | IsAuthenticated |
 | `^entregas/(?P<pk>[^/.]+)/step/(?P<step_id>[^/.]+)/confirm\.(?P<format>[a-z0-9]+)/?$` | EntregaViewSet | OperacionInventario | ✅ | — | IsAuthenticated |
 | `^entregas/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | EntregaViewSet | OperacionInventario | ✅ | — | IsAuthenticated |
@@ -595,6 +617,8 @@
 | `^extractos-bancarios\.(?P<format>[a-z0-9]+)/?$` | ExtractoBancarioArchivoViewSet | ExtractoBancarioArchivo | ✅ | ✅ | IsAuthenticated |
 | `^facturas-compra/$` | FacturaCompraViewSet | FacturaCompra | ✅ | ✅ | IsAuthenticated |
 | `^facturas-compra/(?P<pk>[^/.]+)/$` | FacturaCompraViewSet | FacturaCompra | ✅ | ✅ | IsAuthenticated |
+| `^facturas-compra/(?P<pk>[^/.]+)/validar-three-way-matching/$` | FacturaCompraViewSet | FacturaCompra | ✅ | ✅ | IsAuthenticated |
+| `^facturas-compra/(?P<pk>[^/.]+)/validar-three-way-matching\.(?P<format>[a-z0-9]+)/?$` | FacturaCompraViewSet | FacturaCompra | ✅ | ✅ | IsAuthenticated |
 | `^facturas-compra/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | FacturaCompraViewSet | FacturaCompra | ✅ | ✅ | IsAuthenticated |
 | `^facturas-compra/facturar/$` | FacturaCompraViewSet | FacturaCompra | ✅ | ✅ | IsAuthenticated |
 | `^facturas-compra/facturar\.(?P<format>[a-z0-9]+)/?$` | FacturaCompraViewSet | FacturaCompra | ✅ | ✅ | IsAuthenticated |
@@ -743,6 +767,10 @@
 | `^licencias-empleado/(?P<pk>[^/.]+)/$` | LicenciaEmpleadoViewSet | LicenciaEmpleado | — | ✅ | IsAuthenticated |
 | `^licencias-empleado/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | LicenciaEmpleadoViewSet | LicenciaEmpleado | — | ✅ | IsAuthenticated |
 | `^licencias-empleado\.(?P<format>[a-z0-9]+)/?$` | LicenciaEmpleadoViewSet | LicenciaEmpleado | — | ✅ | IsAuthenticated |
+| `^lineas-costo-destino/$` | LineaCostoDestinoViewSet | LineaCostoDestino | ✅ | ✅ | IsAuthenticated |
+| `^lineas-costo-destino/(?P<pk>[^/.]+)/$` | LineaCostoDestinoViewSet | LineaCostoDestino | ✅ | ✅ | IsAuthenticated |
+| `^lineas-costo-destino/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | LineaCostoDestinoViewSet | LineaCostoDestino | ✅ | ✅ | IsAuthenticated |
+| `^lineas-costo-destino\.(?P<format>[a-z0-9]+)/?$` | LineaCostoDestinoViewSet | LineaCostoDestino | ✅ | ✅ | IsAuthenticated |
 | `^lineas-pedido/$` | LineaPedidoLubrikcaViewSet | LineaPedidoLubrikca | ✅ | — | IsAuthenticated |
 | `^lineas-pedido/(?P<pk>[^/.]+)/$` | LineaPedidoLubrikcaViewSet | LineaPedidoLubrikca | ✅ | — | IsAuthenticated |
 | `^lineas-pedido/(?P<pk>[^/.]+)/activar/$` | LineaPedidoLubrikcaViewSet | LineaPedidoLubrikca | ✅ | — | IsAuthenticated |
@@ -1211,7 +1239,11 @@
 | `^productos/(?P<pk>[^/.]+)/$` | ProductoViewSet | Producto | ✅ | ✅ | IsAuthenticated |
 | `^productos/(?P<pk>[^/.]+)/kardex/$` | ProductoViewSet | Producto | ✅ | ✅ | IsAuthenticated |
 | `^productos/(?P<pk>[^/.]+)/kardex\.(?P<format>[a-z0-9]+)/?$` | ProductoViewSet | Producto | ✅ | ✅ | IsAuthenticated |
+| `^productos/(?P<pk>[^/.]+)/semaforo-margen/$` | ProductoViewSet | Producto | ✅ | ✅ | IsAuthenticated |
+| `^productos/(?P<pk>[^/.]+)/semaforo-margen\.(?P<format>[a-z0-9]+)/?$` | ProductoViewSet | Producto | ✅ | ✅ | IsAuthenticated |
 | `^productos/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | ProductoViewSet | Producto | ✅ | ✅ | IsAuthenticated |
+| `^productos/buscar-barcode/$` | ProductoViewSet | Producto | ✅ | ✅ | IsAuthenticated |
+| `^productos/buscar-barcode\.(?P<format>[a-z0-9]+)/?$` | ProductoViewSet | Producto | ✅ | ✅ | IsAuthenticated |
 | `^productos\.(?P<format>[a-z0-9]+)/?$` | ProductoViewSet | Producto | ✅ | ✅ | IsAuthenticated |
 | `^promociones-primera-compra/$` | PromocionPrimeraCompraViewSet | PromocionPrimeraCompra | ✅ | — | IsAuthenticated |
 | `^promociones-primera-compra/(?P<pk>[^/.]+)/$` | PromocionPrimeraCompraViewSet | PromocionPrimeraCompra | ✅ | — | IsAuthenticated |
@@ -1257,6 +1289,8 @@
 | `^recepciones-mercancia\.(?P<format>[a-z0-9]+)/?$` | RecepcionMercanciaViewSet | RecepcionMercancia | ✅ | ✅ | IsAuthenticated |
 | `^recepciones/$` | RecepcionViewSet | OperacionInventario | ✅ | — | IsAuthenticated |
 | `^recepciones/(?P<pk>[^/.]+)/$` | RecepcionViewSet | OperacionInventario | ✅ | — | IsAuthenticated |
+| `^recepciones/(?P<pk>[^/.]+)/escanear/$` | RecepcionViewSet | OperacionInventario | ✅ | — | IsAuthenticated |
+| `^recepciones/(?P<pk>[^/.]+)/escanear\.(?P<format>[a-z0-9]+)/?$` | RecepcionViewSet | OperacionInventario | ✅ | — | IsAuthenticated |
 | `^recepciones/(?P<pk>[^/.]+)/step/(?P<step_id>[^/.]+)/confirm/$` | RecepcionViewSet | OperacionInventario | ✅ | — | IsAuthenticated |
 | `^recepciones/(?P<pk>[^/.]+)/step/(?P<step_id>[^/.]+)/confirm\.(?P<format>[a-z0-9]+)/?$` | RecepcionViewSet | OperacionInventario | ✅ | — | IsAuthenticated |
 | `^recepciones/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | RecepcionViewSet | OperacionInventario | ✅ | — | IsAuthenticated |
@@ -1325,6 +1359,8 @@
 | `^reportes/existencias\.(?P<format>[a-z0-9]+)/?$` | ReportesInventarioViewSet | — | — | — | IsAuthenticated |
 | `^reportes/movimientos/$` | ReportesInventarioViewSet | — | — | — | IsAuthenticated |
 | `^reportes/movimientos\.(?P<format>[a-z0-9]+)/?$` | ReportesInventarioViewSet | — | — | — | IsAuthenticated |
+| `^reportes/resumen-dual/$` | ReportesInventarioViewSet | — | — | — | IsAuthenticated |
+| `^reportes/resumen-dual\.(?P<format>[a-z0-9]+)/?$` | ReportesInventarioViewSet | — | — | — | IsAuthenticated |
 | `^reportes/valoracion/$` | ReportesInventarioViewSet | — | — | — | IsAuthenticated |
 | `^reportes/valoracion\.(?P<format>[a-z0-9]+)/?$` | ReportesInventarioViewSet | — | — | — | IsAuthenticated |
 | `^requisiciones-compra/$` | RequisicionCompraViewSet | RequisicionCompra | ✅ | ✅ | IsAuthenticated |
@@ -1521,6 +1557,16 @@
 | `^transacciones-financieras/(?P<pk>[^/.]+)/$` | TransaccionFinancieraViewSet | TransaccionFinanciera | ✅ | ✅ | IsAuthenticated |
 | `^transacciones-financieras/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | TransaccionFinancieraViewSet | TransaccionFinanciera | ✅ | ✅ | IsAuthenticated |
 | `^transacciones-financieras\.(?P<format>[a-z0-9]+)/?$` | TransaccionFinancieraViewSet | TransaccionFinanciera | ✅ | ✅ | IsAuthenticated |
+| `^transferencias-transito/$` | TransferenciaTransitoViewSet | TransferenciaTransito | ✅ | ✅ | IsAuthenticated |
+| `^transferencias-transito/(?P<pk>[^/.]+)/$` | TransferenciaTransitoViewSet | TransferenciaTransito | ✅ | ✅ | IsAuthenticated |
+| `^transferencias-transito/(?P<pk>[^/.]+)/cancelar/$` | TransferenciaTransitoViewSet | TransferenciaTransito | ✅ | ✅ | IsAuthenticated |
+| `^transferencias-transito/(?P<pk>[^/.]+)/cancelar\.(?P<format>[a-z0-9]+)/?$` | TransferenciaTransitoViewSet | TransferenciaTransito | ✅ | ✅ | IsAuthenticated |
+| `^transferencias-transito/(?P<pk>[^/.]+)/recibir/$` | TransferenciaTransitoViewSet | TransferenciaTransito | ✅ | ✅ | IsAuthenticated |
+| `^transferencias-transito/(?P<pk>[^/.]+)/recibir\.(?P<format>[a-z0-9]+)/?$` | TransferenciaTransitoViewSet | TransferenciaTransito | ✅ | ✅ | IsAuthenticated |
+| `^transferencias-transito/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | TransferenciaTransitoViewSet | TransferenciaTransito | ✅ | ✅ | IsAuthenticated |
+| `^transferencias-transito/despachar/$` | TransferenciaTransitoViewSet | TransferenciaTransito | ✅ | ✅ | IsAuthenticated |
+| `^transferencias-transito/despachar\.(?P<format>[a-z0-9]+)/?$` | TransferenciaTransitoViewSet | TransferenciaTransito | ✅ | ✅ | IsAuthenticated |
+| `^transferencias-transito\.(?P<format>[a-z0-9]+)/?$` | TransferenciaTransitoViewSet | TransferenciaTransito | ✅ | ✅ | IsAuthenticated |
 | `^ubicaciones-almacen/$` | UbicacionAlmacenViewSet | UbicacionAlmacen | ✅ | ✅ | IsAuthenticated |
 | `^ubicaciones-almacen/(?P<pk>[^/.]+)/$` | UbicacionAlmacenViewSet | UbicacionAlmacen | ✅ | ✅ | IsAuthenticated |
 | `^ubicaciones-almacen/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | UbicacionAlmacenViewSet | UbicacionAlmacen | ✅ | ✅ | IsAuthenticated |
@@ -1622,4 +1668,4 @@
 | `validar-cuenta-ve/` | ValidarCuentaVeView | — | — | — | IsAuthenticated |
 | `validar-referencia/` | ValidarReferenciaView | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 291_
+_Total ViewSets: 295_
