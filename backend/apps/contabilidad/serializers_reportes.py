@@ -7,6 +7,10 @@ from rest_framework import serializers
 
 class _BaseReporteMetaSerializer(serializers.Serializer):
     empresa_id = serializers.UUIDField(read_only=True)
+    ambito = serializers.CharField(read_only=True)
+    moneda_reporte = serializers.CharField(read_only=True)
+    id_centro_costo = serializers.UUIDField(allow_null=True, read_only=True)
+    centro_costo_nombre = serializers.CharField(allow_blank=True, read_only=True)
     moneda_base = serializers.CharField(read_only=True)
     moneda_base_simbolo = serializers.CharField(read_only=True)
     incluir_equivalentes_usd = serializers.BooleanField(read_only=True)

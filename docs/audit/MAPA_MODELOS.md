@@ -40,6 +40,7 @@
 | connect | Tarjeta | ✅ | ✅ | — |
 | connect | Toque | ✅ | ✅ | — |
 | contabilidad | AsientoContable | ✅ | ✅ | id_empresa+numero_asiento |
+| contabilidad | CentroCosto | ✅ | ✅ | id_empresa+codigo |
 | contabilidad | DetalleAsiento | — | ✅ | — |
 | contabilidad | DiarioContable | ✅ | ✅ | id_empresa+codigo |
 | contabilidad | MapeoContable | ✅ | ✅ | id_empresa+tipo_asiento |
@@ -267,4 +268,4 @@
 | ventas | NotaVenta | ✅ | ✅ | id_empresa+numero_nota |
 | ventas | Pedido | ✅ | ✅ | id_empresa+numero_pedido |
 
-_Total modelos: 264_
+_Total modelos: 265_

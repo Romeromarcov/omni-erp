@@ -8761,6 +8761,262 @@
                 }
             ]
         },
+        "/contabilidad/centros-costo/": {
+            "get": {
+                "operationId": "contabilidad_centros-costo_list",
+                "description": "CRUD de centros de costo analíticos aislado por tenant.",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Un término de búsqueda.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "ordering",
+                        "in": "query",
+                        "description": "Qué campo usar para ordenar los resultados.",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Un número de página dentro del conjunto de resultados paginado.",
+                        "required": false,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "required": [
+                                "count",
+                                "results"
+                            ],
+                            "type": "object",
+                            "properties": {
+                                "count": {
+                                    "type": "integer"
+                                },
+                                "next": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "previous": {
+                                    "type": "string",
+                                    "format": "uri",
+                                    "x-nullable": true
+                                },
+                                "results": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/CentroCosto"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "contabilidad"
+                ]
+            },
+            "post": {
+                "operationId": "contabilidad_centros-costo_create",
+                "description": "CRUD de centros de costo analíticos aislado por tenant.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CentroCosto"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/CentroCosto"
+                        }
+                    }
+                },
+                "tags": [
+                    "contabilidad"
+                ]
+            },
+            "parameters": []
+        },
+        "/contabilidad/centros-costo/{id_centro_costo}/": {
+            "get": {
+                "operationId": "contabilidad_centros-costo_read",
+                "description": "CRUD de centros de costo analíticos aislado por tenant.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/CentroCosto"
+                        }
+                    }
+                },
+                "tags": [
+                    "contabilidad"
+                ]
+            },
+            "put": {
+                "operationId": "contabilidad_centros-costo_update",
+                "description": "CRUD de centros de costo analíticos aislado por tenant.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CentroCosto"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/CentroCosto"
+                        }
+                    }
+                },
+                "tags": [
+                    "contabilidad"
+                ]
+            },
+            "patch": {
+                "operationId": "contabilidad_centros-costo_partial_update",
+                "description": "CRUD de centros de costo analíticos aislado por tenant.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CentroCosto"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/CentroCosto"
+                        }
+                    }
+                },
+                "tags": [
+                    "contabilidad"
+                ]
+            },
+            "delete": {
+                "operationId": "contabilidad_centros-costo_delete",
+                "description": "CRUD de centros de costo analíticos aislado por tenant.",
+                "parameters": [],
+                "responses": {
+                    "204": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "contabilidad"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_centro_costo",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Centro de Costo.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/contabilidad/centros-costo/{id_centro_costo}/activar/": {
+            "post": {
+                "operationId": "contabilidad_centros-costo_activar",
+                "description": "POST /{pk}/activar/\nReactiva un registro que fue desactivado.\nBusca el objeto incluyendo inactivos (necesario para reactivar).",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CentroCosto"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/CentroCosto"
+                        }
+                    }
+                },
+                "tags": [
+                    "contabilidad"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_centro_costo",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Centro de Costo.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
+        "/contabilidad/centros-costo/{id_centro_costo}/desactivar/": {
+            "post": {
+                "operationId": "contabilidad_centros-costo_desactivar",
+                "description": "POST /{pk}/desactivar/\nDesactiva (borrado lógico) un registro activo.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CentroCosto"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/CentroCosto"
+                        }
+                    }
+                },
+                "tags": [
+                    "contabilidad"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "id_centro_costo",
+                    "in": "path",
+                    "description": "Un Cadena UUID que identifique este Centro de Costo.",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }
+            ]
+        },
         "/contabilidad/detalles-asiento/": {
             "get": {
                 "operationId": "contabilidad_detalles-asiento_list",
@@ -10106,6 +10362,37 @@
                         "format": "uuid"
                     },
                     {
+                        "name": "ambito",
+                        "in": "query",
+                        "description": "Libro contable: CONSOLIDADO (default), FISCAL o GERENCIAL.",
+                        "type": "string",
+                        "enum": [
+                            "CONSOLIDADO",
+                            "FISCAL",
+                            "GERENCIAL"
+                        ],
+                        "default": "CONSOLIDADO"
+                    },
+                    {
+                        "name": "moneda",
+                        "in": "query",
+                        "description": "Moneda de agregación: BASE (default), PAIS o REFERENCIA.",
+                        "type": "string",
+                        "enum": [
+                            "BASE",
+                            "PAIS",
+                            "REFERENCIA"
+                        ],
+                        "default": "BASE"
+                    },
+                    {
+                        "name": "id_centro_costo",
+                        "in": "query",
+                        "description": "UUID de Centro de Costo analítico (opcional).",
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    {
                         "name": "incluir_equivalentes_usd",
                         "in": "query",
                         "description": "Si true, incluye equivalentes convertidos a USD cuando existe tasa disponible.",
@@ -10158,6 +10445,37 @@
                         "in": "query",
                         "type": "string",
                         "format": "date"
+                    },
+                    {
+                        "name": "ambito",
+                        "in": "query",
+                        "description": "Libro contable: CONSOLIDADO (default), FISCAL o GERENCIAL.",
+                        "type": "string",
+                        "enum": [
+                            "CONSOLIDADO",
+                            "FISCAL",
+                            "GERENCIAL"
+                        ],
+                        "default": "CONSOLIDADO"
+                    },
+                    {
+                        "name": "moneda",
+                        "in": "query",
+                        "description": "Moneda de agregación: BASE (default), PAIS o REFERENCIA.",
+                        "type": "string",
+                        "enum": [
+                            "BASE",
+                            "PAIS",
+                            "REFERENCIA"
+                        ],
+                        "default": "BASE"
+                    },
+                    {
+                        "name": "id_centro_costo",
+                        "in": "query",
+                        "description": "UUID de Centro de Costo analítico (opcional).",
+                        "type": "string",
+                        "format": "uuid"
                     },
                     {
                         "name": "incluir_equivalentes_usd",
@@ -10218,6 +10536,37 @@
                         "in": "query",
                         "type": "string",
                         "format": "date"
+                    },
+                    {
+                        "name": "ambito",
+                        "in": "query",
+                        "description": "Libro contable: CONSOLIDADO (default), FISCAL o GERENCIAL.",
+                        "type": "string",
+                        "enum": [
+                            "CONSOLIDADO",
+                            "FISCAL",
+                            "GERENCIAL"
+                        ],
+                        "default": "CONSOLIDADO"
+                    },
+                    {
+                        "name": "moneda",
+                        "in": "query",
+                        "description": "Moneda de agregación: BASE (default), PAIS o REFERENCIA.",
+                        "type": "string",
+                        "enum": [
+                            "BASE",
+                            "PAIS",
+                            "REFERENCIA"
+                        ],
+                        "default": "BASE"
+                    },
+                    {
+                        "name": "id_centro_costo",
+                        "in": "query",
+                        "description": "UUID de Centro de Costo analítico (opcional).",
+                        "type": "string",
+                        "format": "uuid"
                     },
                     {
                         "name": "incluir_equivalentes_usd",
@@ -10302,6 +10651,37 @@
                         "in": "query",
                         "type": "integer",
                         "default": 1000
+                    },
+                    {
+                        "name": "ambito",
+                        "in": "query",
+                        "description": "Libro contable: CONSOLIDADO (default), FISCAL o GERENCIAL.",
+                        "type": "string",
+                        "enum": [
+                            "CONSOLIDADO",
+                            "FISCAL",
+                            "GERENCIAL"
+                        ],
+                        "default": "CONSOLIDADO"
+                    },
+                    {
+                        "name": "moneda",
+                        "in": "query",
+                        "description": "Moneda de agregación: BASE (default), PAIS o REFERENCIA.",
+                        "type": "string",
+                        "enum": [
+                            "BASE",
+                            "PAIS",
+                            "REFERENCIA"
+                        ],
+                        "default": "BASE"
+                    },
+                    {
+                        "name": "id_centro_costo",
+                        "in": "query",
+                        "description": "UUID de Centro de Costo analítico (opcional).",
+                        "type": "string",
+                        "format": "uuid"
                     },
                     {
                         "name": "incluir_equivalentes_usd",
@@ -56228,6 +56608,54 @@
                     "type": "string",
                     "format": "decimal"
                 },
+                "debe_base": {
+                    "title": "Debe base",
+                    "type": "string",
+                    "format": "decimal",
+                    "x-nullable": true
+                },
+                "haber_base": {
+                    "title": "Haber base",
+                    "type": "string",
+                    "format": "decimal",
+                    "x-nullable": true
+                },
+                "debe_pais": {
+                    "title": "Debe pais",
+                    "type": "string",
+                    "format": "decimal",
+                    "x-nullable": true
+                },
+                "haber_pais": {
+                    "title": "Haber pais",
+                    "type": "string",
+                    "format": "decimal",
+                    "x-nullable": true
+                },
+                "debe_referencia": {
+                    "title": "Debe referencia",
+                    "type": "string",
+                    "format": "decimal",
+                    "x-nullable": true
+                },
+                "haber_referencia": {
+                    "title": "Haber referencia",
+                    "type": "string",
+                    "format": "decimal",
+                    "x-nullable": true
+                },
+                "tasa_bcv_aplicada": {
+                    "title": "Tasa bcv aplicada",
+                    "type": "string",
+                    "format": "decimal",
+                    "x-nullable": true
+                },
+                "tasa_referencia_aplicada": {
+                    "title": "Tasa referencia aplicada",
+                    "type": "string",
+                    "format": "decimal",
+                    "x-nullable": true
+                },
                 "descripcion_detalle": {
                     "title": "Descripcion detalle",
                     "type": "string",
@@ -56261,6 +56689,19 @@
                     "readOnly": true,
                     "default": "",
                     "x-nullable": true
+                },
+                "id_centro_costo": {
+                    "title": "Id centro costo",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "centro_costo_nombre": {
+                    "title": "Centro costo nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "default": "",
+                    "x-nullable": true
                 }
             }
         },
@@ -56286,6 +56727,21 @@
                         "$ref": "#/definitions/DetalleAsiento"
                     },
                     "readOnly": true
+                },
+                "ambito": {
+                    "title": "Ambito",
+                    "description": "Libro contable del asiento: FISCAL o GERENCIAL.",
+                    "type": "string",
+                    "enum": [
+                        "FISCAL",
+                        "GERENCIAL"
+                    ]
+                },
+                "ambito_display": {
+                    "title": "Ambito display",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
                 },
                 "fecha_asiento": {
                     "title": "Fecha asiento",
@@ -56398,6 +56854,88 @@
                 }
             }
         },
+        "CentroCosto": {
+            "required": [
+                "id_empresa",
+                "codigo",
+                "nombre"
+            ],
+            "type": "object",
+            "properties": {
+                "id_centro_costo": {
+                    "title": "Id centro costo",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "codigo": {
+                    "title": "Codigo",
+                    "type": "string",
+                    "maxLength": 30,
+                    "minLength": 1
+                },
+                "nombre": {
+                    "title": "Nombre",
+                    "type": "string",
+                    "maxLength": 150,
+                    "minLength": 1
+                },
+                "tipo": {
+                    "title": "Tipo",
+                    "type": "string",
+                    "enum": [
+                        "OPERATIVO",
+                        "ADMINISTRATIVO",
+                        "COMERCIAL",
+                        "LOGISTICA",
+                        "PRODUCCION"
+                    ]
+                },
+                "tipo_display": {
+                    "title": "Tipo display",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "id_padre": {
+                    "title": "Id padre",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "padre_nombre": {
+                    "title": "Padre nombre",
+                    "type": "string",
+                    "readOnly": true,
+                    "default": "",
+                    "x-nullable": true
+                },
+                "activo": {
+                    "title": "Activo",
+                    "description": "Indica si el registro está activo (False = borrado lógico).",
+                    "type": "boolean"
+                },
+                "fecha_creacion": {
+                    "title": "Fecha de Creación",
+                    "description": "Fecha y hora de creación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                },
+                "fecha_actualizacion": {
+                    "title": "Fecha de Actualización",
+                    "description": "Fecha y hora de la última modificación del registro.",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
         "DiarioContable": {
             "required": [
                 "id_empresa",
@@ -56443,6 +56981,21 @@
                 },
                 "tipo_display": {
                     "title": "Tipo display",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "ambito": {
+                    "title": "Ambito",
+                    "description": "Libro al que pertenece el diario: FISCAL (normativo) o GERENCIAL.",
+                    "type": "string",
+                    "enum": [
+                        "FISCAL",
+                        "GERENCIAL"
+                    ]
+                },
+                "ambito_display": {
+                    "title": "Ambito display",
                     "type": "string",
                     "readOnly": true,
                     "minLength": 1
@@ -57120,6 +57673,30 @@
                     "format": "uuid",
                     "readOnly": true
                 },
+                "ambito": {
+                    "title": "Ambito",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "moneda_reporte": {
+                    "title": "Moneda reporte",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "id_centro_costo": {
+                    "title": "Id centro costo",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "centro_costo_nombre": {
+                    "title": "Centro costo nombre",
+                    "type": "string",
+                    "readOnly": true
+                },
                 "moneda_base": {
                     "title": "Moneda base",
                     "type": "string",
@@ -57366,6 +57943,30 @@
                     "format": "uuid",
                     "readOnly": true
                 },
+                "ambito": {
+                    "title": "Ambito",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "moneda_reporte": {
+                    "title": "Moneda reporte",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "id_centro_costo": {
+                    "title": "Id centro costo",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "centro_costo_nombre": {
+                    "title": "Centro costo nombre",
+                    "type": "string",
+                    "readOnly": true
+                },
                 "moneda_base": {
                     "title": "Moneda base",
                     "type": "string",
@@ -57511,6 +58112,30 @@
                     "title": "Empresa id",
                     "type": "string",
                     "format": "uuid",
+                    "readOnly": true
+                },
+                "ambito": {
+                    "title": "Ambito",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "moneda_reporte": {
+                    "title": "Moneda reporte",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "id_centro_costo": {
+                    "title": "Id centro costo",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "centro_costo_nombre": {
+                    "title": "Centro costo nombre",
+                    "type": "string",
                     "readOnly": true
                 },
                 "moneda_base": {
@@ -57785,6 +58410,30 @@
                     "title": "Empresa id",
                     "type": "string",
                     "format": "uuid",
+                    "readOnly": true
+                },
+                "ambito": {
+                    "title": "Ambito",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "moneda_reporte": {
+                    "title": "Moneda reporte",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "id_centro_costo": {
+                    "title": "Id centro costo",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "centro_costo_nombre": {
+                    "title": "Centro costo nombre",
+                    "type": "string",
                     "readOnly": true
                 },
                 "moneda_base": {
@@ -61877,7 +62526,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-22T14:41:23.472161-04:00"
+                    "default": "2026-11-22T21:13:59.213994-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",

@@ -16,11 +16,11 @@ from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
 from typing import TYPE_CHECKING, Any
 
-from django.db.models import DecimalField, Q, Sum, Value
+from django.db.models import DecimalField, F, Q, Sum, Value
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 
-from .models import DetalleAsiento, DiarioContable, PlanCuentas
+from .models import CentroCosto, DetalleAsiento, DiarioContable, PlanCuentas
 
 if TYPE_CHECKING:
     from apps.core.models import Contacto, Empresa
@@ -30,6 +30,9 @@ _CENT = Decimal("0.01")
 _TASA_UNO = Decimal("1.00000000")
 _DEC_ZERO_EXPR = Value(_CERO, output_field=DecimalField(max_digits=18, decimal_places=2))
 _SIN_TASA_USD_MSG = "Sin tasa USD disponible"
+
+AMBITOS_REPORTE = frozenset({"CONSOLIDADO", "FISCAL", "GERENCIAL"})
+MONEDAS_REPORTE = frozenset({"BASE", "PAIS", "REFERENCIA"})
 
 
 class ReporteContableError(Exception):
@@ -106,6 +109,90 @@ def _resolver_contacto(empresa: Empresa, id_contacto: Contacto | uuid.UUID | str
     if contacto is None:
         raise ReporteTenantError("Contacto no encontrado en la empresa.")
     return contacto
+
+
+def _resolver_centro_costo(
+    empresa: Empresa,
+    id_centro_costo: CentroCosto | uuid.UUID | str | None,
+) -> CentroCosto | None:
+    if id_centro_costo is None or id_centro_costo == "":
+        return None
+    if isinstance(id_centro_costo, CentroCosto):
+        if id_centro_costo.id_empresa_id != empresa.pk:
+            raise ReporteTenantError("El centro de costo no pertenece a la empresa.")
+        return id_centro_costo
+    centro_uuid = _parse_uuid(id_centro_costo, "id_centro_costo")
+    centro = CentroCosto.objects.filter(pk=centro_uuid, id_empresa=empresa).first()
+    if centro is None:
+        raise ReporteTenantError("Centro de costo no encontrado en la empresa.")
+    return centro
+
+
+def _validar_ambito_reporte(ambito: str | None) -> str:
+    norm = str(ambito or "CONSOLIDADO").strip().upper()
+    if norm not in AMBITOS_REPORTE:
+        raise ReporteContableError(f"Ámbito de reporte inválido: {ambito!r}. Válidos: {sorted(AMBITOS_REPORTE)}.")
+    return norm
+
+
+def _validar_moneda_reporte(moneda: str | None) -> str:
+    norm = str(moneda or "BASE").strip().upper()
+    if norm not in MONEDAS_REPORTE:
+        raise ReporteContableError(f"Moneda de reporte inválida: {moneda!r}. Válidas: {sorted(MONEDAS_REPORTE)}.")
+    return norm
+
+
+def _expresiones_debe_haber(empresa: Empresa, moneda: str) -> tuple[Any, Any]:
+    if moneda == "BASE":
+        return F("debe"), F("haber")
+    if moneda == "PAIS":
+        base_id = getattr(empresa, "id_moneda_base_id", None)
+        pais_id = getattr(empresa, "id_moneda_pais_id", None)
+        if base_id is not None and pais_id is not None and base_id == pais_id:
+            return Coalesce("debe_pais", "debe", _DEC_ZERO_EXPR), Coalesce("haber_pais", "haber", _DEC_ZERO_EXPR)
+        return Coalesce("debe_pais", _DEC_ZERO_EXPR), Coalesce("haber_pais", _DEC_ZERO_EXPR)
+    return Coalesce("debe_referencia", _DEC_ZERO_EXPR), Coalesce("haber_referencia", _DEC_ZERO_EXPR)
+
+
+def _valores_linea_moneda(det: DetalleAsiento, empresa: Empresa, moneda: str) -> tuple[Decimal, Decimal]:
+    if moneda == "BASE":
+        return _q2(det.debe), _q2(det.haber)
+    if moneda == "PAIS":
+        if det.debe_pais is not None or det.haber_pais is not None:
+            return _q2(det.debe_pais), _q2(det.haber_pais)
+        base_id = getattr(empresa, "id_moneda_base_id", None)
+        pais_id = getattr(empresa, "id_moneda_pais_id", None)
+        if base_id is not None and pais_id is not None and base_id == pais_id:
+            return _q2(det.debe), _q2(det.haber)
+        return _CERO, _CERO
+    return _q2(det.debe_referencia), _q2(det.haber_referencia)
+
+
+def _aplicar_filtros_dual_analitico(
+    qs: Any,
+    *,
+    ambito: str,
+    centro_costo: CentroCosto | None,
+) -> Any:
+    if ambito != "CONSOLIDADO":
+        qs = qs.filter(id_asiento__ambito=ambito)
+    if centro_costo is not None:
+        qs = qs.filter(id_centro_costo=centro_costo)
+    return qs
+
+
+def _meta_dual_y_analitica(
+    *,
+    ambito: str,
+    moneda: str,
+    centro_costo: CentroCosto | None,
+) -> dict[str, Any]:
+    return {
+        "ambito": ambito,
+        "moneda_reporte": moneda,
+        "id_centro_costo": str(centro_costo.pk) if centro_costo is not None else None,
+        "centro_costo_nombre": centro_costo.nombre if centro_costo is not None else "",
+    }
 
 
 def _resolver_conversion_usd(
@@ -207,10 +294,17 @@ def generar_balance_comprobacion(
     fecha_hasta: date | None = None,
     id_diario: DiarioContable | uuid.UUID | str | None = None,
     incluir_equivalentes_usd: bool = False,
+    ambito: str = "CONSOLIDADO",
+    moneda: str = "BASE",
+    id_centro_costo: CentroCosto | uuid.UUID | str | None = None,
 ) -> dict[str, Any]:
     """Genera el Balance de Comprobación agregado en PostgreSQL."""
     _validar_rango_fechas(fecha_desde, fecha_hasta)
+    ambito_norm = _validar_ambito_reporte(ambito)
+    moneda_norm = _validar_moneda_reporte(moneda)
     diario = _resolver_diario(empresa, id_diario)
+    centro_costo = _resolver_centro_costo(empresa, id_centro_costo)
+    debe_expr, haber_expr = _expresiones_debe_haber(empresa, moneda_norm)
 
     meta_usd, tasa_usd, usd_disponible, es_inversa = _metadata_moneda_y_usd(
         empresa,
@@ -226,6 +320,7 @@ def generar_balance_comprobacion(
         qs = qs.filter(id_asiento__id_diario=diario)
     if fecha_hasta is not None:
         qs = qs.filter(id_asiento__fecha_asiento__lte=fecha_hasta)
+    qs = _aplicar_filtros_dual_analitico(qs, ambito=ambito_norm, centro_costo=centro_costo)
 
     if fecha_desde is not None:
         agregados = qs.values(
@@ -237,10 +332,16 @@ def generar_balance_comprobacion(
             "id_cuenta_contable__nivel",
             "id_cuenta_contable__id_cuenta_padre",
         ).annotate(
-            debe_inicial=Coalesce(Sum("debe", filter=Q(id_asiento__fecha_asiento__lt=fecha_desde)), _DEC_ZERO_EXPR),
-            haber_inicial=Coalesce(Sum("haber", filter=Q(id_asiento__fecha_asiento__lt=fecha_desde)), _DEC_ZERO_EXPR),
-            debe_periodo=Coalesce(Sum("debe", filter=Q(id_asiento__fecha_asiento__gte=fecha_desde)), _DEC_ZERO_EXPR),
-            haber_periodo=Coalesce(Sum("haber", filter=Q(id_asiento__fecha_asiento__gte=fecha_desde)), _DEC_ZERO_EXPR),
+            debe_inicial=Coalesce(Sum(debe_expr, filter=Q(id_asiento__fecha_asiento__lt=fecha_desde)), _DEC_ZERO_EXPR),
+            haber_inicial=Coalesce(
+                Sum(haber_expr, filter=Q(id_asiento__fecha_asiento__lt=fecha_desde)), _DEC_ZERO_EXPR
+            ),
+            debe_periodo=Coalesce(
+                Sum(debe_expr, filter=Q(id_asiento__fecha_asiento__gte=fecha_desde)), _DEC_ZERO_EXPR
+            ),
+            haber_periodo=Coalesce(
+                Sum(haber_expr, filter=Q(id_asiento__fecha_asiento__gte=fecha_desde)), _DEC_ZERO_EXPR
+            ),
         )
     else:
         agregados = qs.values(
@@ -254,8 +355,8 @@ def generar_balance_comprobacion(
         ).annotate(
             debe_inicial=_DEC_ZERO_EXPR,
             haber_inicial=_DEC_ZERO_EXPR,
-            debe_periodo=Coalesce(Sum("debe"), _DEC_ZERO_EXPR),
-            haber_periodo=Coalesce(Sum("haber"), _DEC_ZERO_EXPR),
+            debe_periodo=Coalesce(Sum(debe_expr), _DEC_ZERO_EXPR),
+            haber_periodo=Coalesce(Sum(haber_expr), _DEC_ZERO_EXPR),
         )
 
     filas = agregados.order_by("id_cuenta_contable__codigo_cuenta", "id_cuenta_contable")
@@ -362,6 +463,7 @@ def generar_balance_comprobacion(
         "fecha_hasta": fecha_hasta.isoformat() if fecha_hasta is not None else None,
         "id_diario": str(diario.pk) if diario is not None else None,
         "diario_nombre": diario.nombre if diario is not None else "",
+        **_meta_dual_y_analitica(ambito=ambito_norm, moneda=moneda_norm, centro_costo=centro_costo),
         **meta_usd,
         "cuentas": cuentas,
         "total_debe_inicial": total_debe_inicial,
@@ -430,9 +532,16 @@ def generar_estado_resultados(
     fecha_desde: date,
     fecha_hasta: date,
     incluir_equivalentes_usd: bool = False,
+    ambito: str = "CONSOLIDADO",
+    moneda: str = "BASE",
+    id_centro_costo: CentroCosto | uuid.UUID | str | None = None,
 ) -> dict[str, Any]:
     """Genera el Estado de Resultados (P&L) excluyendo asientos de cierre anual."""
     _validar_rango_fechas(fecha_desde, fecha_hasta)
+    ambito_norm = _validar_ambito_reporte(ambito)
+    moneda_norm = _validar_moneda_reporte(moneda)
+    centro_costo = _resolver_centro_costo(empresa, id_centro_costo)
+    debe_expr, haber_expr = _expresiones_debe_haber(empresa, moneda_norm)
 
     meta_usd, tasa_usd, usd_disponible, es_inversa = _metadata_moneda_y_usd(
         empresa,
@@ -440,16 +549,17 @@ def generar_estado_resultados(
         fecha_ref=fecha_hasta,
     )
 
+    qs = DetalleAsiento.objects.filter(
+        id_asiento__id_empresa=empresa,
+        id_asiento__estado_asiento="APROBADO",
+        id_asiento__es_cierre=False,
+        id_asiento__fecha_asiento__gte=fecha_desde,
+        id_asiento__fecha_asiento__lte=fecha_hasta,
+        id_cuenta_contable__tipo_cuenta__in=["INGRESO", "COSTO", "GASTO"],
+    )
+    qs = _aplicar_filtros_dual_analitico(qs, ambito=ambito_norm, centro_costo=centro_costo)
     filas = (
-        DetalleAsiento.objects.filter(
-            id_asiento__id_empresa=empresa,
-            id_asiento__estado_asiento="APROBADO",
-            id_asiento__es_cierre=False,
-            id_asiento__fecha_asiento__gte=fecha_desde,
-            id_asiento__fecha_asiento__lte=fecha_hasta,
-            id_cuenta_contable__tipo_cuenta__in=["INGRESO", "COSTO", "GASTO"],
-        )
-        .values(
+        qs.values(
             "id_cuenta_contable",
             "id_cuenta_contable__codigo_cuenta",
             "id_cuenta_contable__nombre_cuenta",
@@ -459,8 +569,8 @@ def generar_estado_resultados(
             "id_cuenta_contable__id_cuenta_padre",
         )
         .annotate(
-            sum_debe=Coalesce(Sum("debe"), _DEC_ZERO_EXPR),
-            sum_haber=Coalesce(Sum("haber"), _DEC_ZERO_EXPR),
+            sum_debe=Coalesce(Sum(debe_expr), _DEC_ZERO_EXPR),
+            sum_haber=Coalesce(Sum(haber_expr), _DEC_ZERO_EXPR),
         )
         .order_by("id_cuenta_contable__codigo_cuenta", "id_cuenta_contable")
     )
@@ -512,6 +622,7 @@ def generar_estado_resultados(
         "empresa_id": str(empresa.pk),
         "fecha_desde": fecha_desde.isoformat(),
         "fecha_hasta": fecha_hasta.isoformat(),
+        **_meta_dual_y_analitica(ambito=ambito_norm, moneda=moneda_norm, centro_costo=centro_costo),
         **meta_usd,
         "ingresos": ingresos,
         "costos": costos,
@@ -550,21 +661,30 @@ def generar_balance_general(
     *,
     fecha_corte: date,
     incluir_equivalentes_usd: bool = False,
+    ambito: str = "CONSOLIDADO",
+    moneda: str = "BASE",
+    id_centro_costo: CentroCosto | uuid.UUID | str | None = None,
 ) -> dict[str, Any]:
     """Genera el Balance General acumulado hasta ``fecha_corte`` verificando la ecuación patrimonial."""
+    ambito_norm = _validar_ambito_reporte(ambito)
+    moneda_norm = _validar_moneda_reporte(moneda)
+    centro_costo = _resolver_centro_costo(empresa, id_centro_costo)
+    debe_expr, haber_expr = _expresiones_debe_haber(empresa, moneda_norm)
+
     meta_usd, tasa_usd, usd_disponible, es_inversa = _metadata_moneda_y_usd(
         empresa,
         incluir_equivalentes_usd=incluir_equivalentes_usd,
         fecha_ref=fecha_corte,
     )
 
+    qs = DetalleAsiento.objects.filter(
+        id_asiento__id_empresa=empresa,
+        id_asiento__estado_asiento="APROBADO",
+        id_asiento__fecha_asiento__lte=fecha_corte,
+    )
+    qs = _aplicar_filtros_dual_analitico(qs, ambito=ambito_norm, centro_costo=centro_costo)
     filas = (
-        DetalleAsiento.objects.filter(
-            id_asiento__id_empresa=empresa,
-            id_asiento__estado_asiento="APROBADO",
-            id_asiento__fecha_asiento__lte=fecha_corte,
-        )
-        .values(
+        qs.values(
             "id_cuenta_contable",
             "id_cuenta_contable__codigo_cuenta",
             "id_cuenta_contable__nombre_cuenta",
@@ -574,8 +694,8 @@ def generar_balance_general(
             "id_cuenta_contable__id_cuenta_padre",
         )
         .annotate(
-            sum_debe=Coalesce(Sum("debe"), _DEC_ZERO_EXPR),
-            sum_haber=Coalesce(Sum("haber"), _DEC_ZERO_EXPR),
+            sum_debe=Coalesce(Sum(debe_expr), _DEC_ZERO_EXPR),
+            sum_haber=Coalesce(Sum(haber_expr), _DEC_ZERO_EXPR),
         )
         .order_by("id_cuenta_contable__codigo_cuenta", "id_cuenta_contable")
     )
@@ -636,6 +756,7 @@ def generar_balance_general(
     resultado: dict[str, Any] = {
         "empresa_id": str(empresa.pk),
         "fecha_corte": fecha_corte.isoformat(),
+        **_meta_dual_y_analitica(ambito=ambito_norm, moneda=moneda_norm, centro_costo=centro_costo),
         **meta_usd,
         "activos": activos,
         "pasivos": pasivos,
@@ -682,15 +803,22 @@ def generar_libro_mayor_auxiliar(
     fecha_hasta: date | None = None,
     limit: int = 1000,
     incluir_equivalentes_usd: bool = False,
+    ambito: str = "CONSOLIDADO",
+    moneda: str = "BASE",
+    id_centro_costo: CentroCosto | uuid.UUID | str | None = None,
 ) -> dict[str, Any]:
     """Genera el Libro Mayor Auxiliar con saldo inicial SQL y saldo corrido en ``Decimal``."""
     _validar_rango_fechas(fecha_desde, fecha_hasta)
     if limit < 1 or limit > 5000:
         raise ReporteContableError("El parámetro limit debe estar entre 1 y 5000.")
 
+    ambito_norm = _validar_ambito_reporte(ambito)
+    moneda_norm = _validar_moneda_reporte(moneda)
     cuenta = _resolver_cuenta(empresa, id_cuenta_contable)
     contacto = _resolver_contacto(empresa, id_contacto)
     diario = _resolver_diario(empresa, id_diario)
+    centro_costo = _resolver_centro_costo(empresa, id_centro_costo)
+    debe_expr, haber_expr = _expresiones_debe_haber(empresa, moneda_norm)
 
     meta_usd, tasa_usd, usd_disponible, es_inversa = _metadata_moneda_y_usd(
         empresa,
@@ -708,12 +836,13 @@ def generar_libro_mayor_auxiliar(
         base_qs = base_qs.filter(id_contacto=contacto)
     if diario is not None:
         base_qs = base_qs.filter(id_asiento__id_diario=diario)
+    base_qs = _aplicar_filtros_dual_analitico(base_qs, ambito=ambito_norm, centro_costo=centro_costo)
 
     saldo_inicial = _CERO
     if fecha_desde is not None:
         agg_ini = base_qs.filter(id_asiento__fecha_asiento__lt=fecha_desde).aggregate(
-            sum_debe=Coalesce(Sum("debe"), _DEC_ZERO_EXPR),
-            sum_haber=Coalesce(Sum("haber"), _DEC_ZERO_EXPR),
+            sum_debe=Coalesce(Sum(debe_expr), _DEC_ZERO_EXPR),
+            sum_haber=Coalesce(Sum(haber_expr), _DEC_ZERO_EXPR),
         )
         saldo_inicial = _q2(_q2(agg_ini["sum_debe"]) - _q2(agg_ini["sum_haber"]))
 
@@ -729,6 +858,7 @@ def generar_libro_mayor_auxiliar(
             "id_asiento__id_diario",
             "id_cuenta_contable",
             "id_contacto",
+            "id_centro_costo",
         ).order_by("id_asiento__fecha_asiento", "id_asiento__fecha_creacion", "pk")[: limit + 1]
     )
     truncado = len(rows) > limit
@@ -741,8 +871,7 @@ def generar_libro_mayor_auxiliar(
     total_haber = _CERO
 
     for det in rows:
-        debe = _q2(det.debe)
-        haber = _q2(det.haber)
+        debe, haber = _valores_linea_moneda(det, empresa, moneda_norm)
         corrido = _q2(corrido + debe - haber)
         total_debe = _q2(total_debe + debe)
         total_haber = _q2(total_haber + haber)
@@ -751,10 +880,12 @@ def generar_libro_mayor_auxiliar(
         diario_det = asiento.id_diario
         cuenta_det = det.id_cuenta_contable
         contacto_det = det.id_contacto
+        centro_det = det.id_centro_costo
 
         mov: dict[str, Any] = {
             "id_detalle_asiento": str(det.pk),
             "id_asiento": str(asiento.pk),
+            "ambito": asiento.ambito,
             "fecha_asiento": asiento.fecha_asiento.isoformat(),
             "numero_asiento": asiento.numero_asiento,
             "descripcion_asiento": asiento.descripcion,
@@ -767,6 +898,8 @@ def generar_libro_mayor_auxiliar(
             "nombre_cuenta": cuenta_det.nombre_cuenta,
             "id_contacto": str(contacto_det.pk) if contacto_det is not None else None,
             "contacto_nombre": contacto_det.nombre_completo if contacto_det is not None else "",
+            "id_centro_costo": str(centro_det.pk) if centro_det is not None else None,
+            "centro_costo_nombre": centro_det.nombre if centro_det is not None else "",
             "debe": debe,
             "haber": haber,
             "saldo_corrido": corrido,
@@ -795,6 +928,7 @@ def generar_libro_mayor_auxiliar(
         "contacto_label": contacto.nombre_completo if contacto is not None else "",
         "id_diario": str(diario.pk) if diario is not None else None,
         "diario_label": f"{diario.codigo} — {diario.nombre}" if diario is not None else "",
+        **_meta_dual_y_analitica(ambito=ambito_norm, moneda=moneda_norm, centro_costo=centro_costo),
         "limit": limit,
         **meta_usd,
         "saldo_inicial": saldo_inicial,

@@ -771,6 +771,7 @@ class TestContabilidadMCPReportes:
             "contabilidad_estado_resultados",
             "contabilidad_balance_general",
             "contabilidad_libro_mayor_auxiliar",
+            "contabilidad_listar_centros_costo",
         }
         assert {item["name"] for item in CONTABILIDAD_MCP_TOOLS} == nombres_esperados
         assert all(item["scope"] == "contabilidad:read" for item in CONTABILIDAD_MCP_TOOLS)

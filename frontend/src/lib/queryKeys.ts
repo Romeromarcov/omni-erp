@@ -474,6 +474,7 @@ export const costosKeys = {
 // invalidar la familia completa tras crear cuentas, asientos o mapeos.
 export const contabilidadKeys = {
   planCuentas: () => ['contabilidad', 'plan-cuentas'] as const,
+  centrosCosto: () => ['contabilidad', 'centros-costo'] as const,
   diariosAll: () => ['contabilidad', 'diarios'] as const,
   diarios: (tipo?: string | null) => ['contabilidad', 'diarios', 'list', tipo ?? null] as const,
   periodosAll: () => ['contabilidad', 'periodos'] as const,
@@ -500,6 +501,9 @@ export const contabilidadKeys = {
     fechaHasta?: string;
     idDiario?: string;
     incluirUsd?: boolean;
+    ambito?: string;
+    moneda?: string;
+    idCentroCosto?: string;
   }) =>
     [
       'contabilidad',
@@ -510,12 +514,18 @@ export const contabilidadKeys = {
       filtros.fechaHasta ?? '',
       filtros.idDiario ?? '',
       Boolean(filtros.incluirUsd),
+      filtros.ambito ?? 'CONSOLIDADO',
+      filtros.moneda ?? 'BASE',
+      filtros.idCentroCosto ?? '',
     ] as const,
   estadoResultados: (filtros: {
     empresaId: string;
     fechaDesde?: string;
     fechaHasta?: string;
     incluirUsd?: boolean;
+    ambito?: string;
+    moneda?: string;
+    idCentroCosto?: string;
   }) =>
     [
       'contabilidad',
@@ -525,11 +535,17 @@ export const contabilidadKeys = {
       filtros.fechaDesde ?? '',
       filtros.fechaHasta ?? '',
       Boolean(filtros.incluirUsd),
+      filtros.ambito ?? 'CONSOLIDADO',
+      filtros.moneda ?? 'BASE',
+      filtros.idCentroCosto ?? '',
     ] as const,
   balanceGeneral: (filtros: {
     empresaId: string;
     fechaCorte?: string;
     incluirUsd?: boolean;
+    ambito?: string;
+    moneda?: string;
+    idCentroCosto?: string;
   }) =>
     [
       'contabilidad',
@@ -538,6 +554,9 @@ export const contabilidadKeys = {
       filtros.empresaId,
       filtros.fechaCorte ?? '',
       Boolean(filtros.incluirUsd),
+      filtros.ambito ?? 'CONSOLIDADO',
+      filtros.moneda ?? 'BASE',
+      filtros.idCentroCosto ?? '',
     ] as const,
   libroMayorAuxiliar: (filtros: {
     empresaId: string;
@@ -547,6 +566,9 @@ export const contabilidadKeys = {
     fechaDesde?: string;
     fechaHasta?: string;
     incluirUsd?: boolean;
+    ambito?: string;
+    moneda?: string;
+    idCentroCosto?: string;
   }) =>
     [
       'contabilidad',
@@ -559,6 +581,9 @@ export const contabilidadKeys = {
       filtros.fechaDesde ?? '',
       filtros.fechaHasta ?? '',
       Boolean(filtros.incluirUsd),
+      filtros.ambito ?? 'CONSOLIDADO',
+      filtros.moneda ?? 'BASE',
+      filtros.idCentroCosto ?? '',
     ] as const,
   contactosSelector: (empresaId?: string | null) =>
     ['contabilidad', 'reportes', 'contactos', empresaId ?? null] as const,

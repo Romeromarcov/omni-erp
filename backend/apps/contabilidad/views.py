@@ -16,9 +16,18 @@ from apps.core.exceptions import domain_error_response
 from apps.core.serializer_mixins import TenantFKScopeMixin
 from apps.core.viewsets import SoftDeleteModelMixin, get_empresas_visible
 
-from .models import AsientoContable, DetalleAsiento, DiarioContable, MapeoContable, PeriodoContable, PlanCuentas
+from .models import (
+    AsientoContable,
+    CentroCosto,
+    DetalleAsiento,
+    DiarioContable,
+    MapeoContable,
+    PeriodoContable,
+    PlanCuentas,
+)
 from .serializers import (
     AsientoContableSerializer,
+    CentroCostoSerializer,
     CerrarEjercicioInputSerializer,
     CerrarEjercicioResponseSerializer,
     CerrarPeriodoDetalleInputSerializer,
@@ -101,9 +110,9 @@ class DiarioContableViewSet(_NulSafeFilterMixin, TenantFKScopeMixin, SoftDeleteM
     queryset = DiarioContable.objects.all()
     serializer_class = DiarioContableSerializer
     permission_classes = [IsAuthenticated]
-    filterset_fields = ["tipo", "activo", "id_empresa"]
+    filterset_fields = ["tipo", "ambito", "activo", "id_empresa"]
     search_fields = ["codigo", "nombre", "prefijo_secuencia"]
-    ordering_fields = ["codigo", "nombre", "tipo", "fecha_creacion"]
+    ordering_fields = ["codigo", "nombre", "tipo", "ambito", "fecha_creacion"]
     ordering = ["codigo"]
 
     def get_queryset(self) -> QuerySet[DiarioContable]:
@@ -111,6 +120,22 @@ class DiarioContableViewSet(_NulSafeFilterMixin, TenantFKScopeMixin, SoftDeleteM
         return DiarioContable.objects.filter(id_empresa__in=_empresas(self.request)).select_related(
             "cuenta_defecto_debe", "cuenta_defecto_haber", "id_cuenta_bancaria", "id_caja"
         )
+
+
+class CentroCostoViewSet(_NulSafeFilterMixin, TenantFKScopeMixin, SoftDeleteModelMixin, viewsets.ModelViewSet):
+    """CRUD de centros de costo analíticos aislado por tenant."""
+
+    queryset = CentroCosto.objects.all()
+    serializer_class = CentroCostoSerializer
+    permission_classes = [IsAuthenticated]
+    filterset_fields = ["tipo", "activo", "id_empresa", "id_padre"]
+    search_fields = ["codigo", "nombre"]
+    ordering_fields = ["codigo", "nombre", "tipo", "fecha_creacion"]
+    ordering = ["codigo"]
+
+    def get_queryset(self) -> QuerySet[CentroCosto]:
+        # R-CODE-1
+        return CentroCosto.objects.filter(id_empresa__in=_empresas(self.request)).select_related("id_padre")
 
 
 class PeriodoContableViewSet(_NulSafeFilterMixin, TenantFKScopeMixin, viewsets.ModelViewSet):
@@ -252,7 +277,7 @@ class AsientoContableViewSet(_NulSafeFilterMixin, TenantFKScopeMixin, viewsets.M
     queryset = AsientoContable.objects.all()
     serializer_class = AsientoContableSerializer
     permission_classes = [IsAuthenticated]
-    filterset_fields = ["estado_asiento", "id_empresa", "fecha_asiento", "id_diario", "es_cierre"]
+    filterset_fields = ["estado_asiento", "ambito", "id_empresa", "fecha_asiento", "id_diario", "es_cierre"]
     search_fields = ["numero_asiento", "descripcion"]
     ordering_fields = ["fecha_asiento", "numero_asiento", "fecha_creacion"]
     ordering = ["-fecha_asiento"]
@@ -263,7 +288,10 @@ class AsientoContableViewSet(_NulSafeFilterMixin, TenantFKScopeMixin, viewsets.M
             AsientoContable.objects.filter(id_empresa__in=_empresas(self.request))
             .select_related("id_diario", "asiento_revertido", "contra_asiento")
             .prefetch_related(
-                Prefetch("detalleasiento_set", queryset=DetalleAsiento.objects.select_related("id_contacto"))
+                Prefetch(
+                    "detalleasiento_set",
+                    queryset=DetalleAsiento.objects.select_related("id_contacto", "id_centro_costo"),
+                )
             )
         )
 
@@ -352,7 +380,7 @@ class DetalleAsientoViewSet(_NulSafeFilterMixin, TenantFKScopeMixin, viewsets.Mo
     queryset = DetalleAsiento.objects.all()
     serializer_class = DetalleAsientoSerializer
     permission_classes = [IsAuthenticated]
-    filterset_fields = ["id_asiento", "id_cuenta_contable", "id_contacto"]
+    filterset_fields = ["id_asiento", "id_cuenta_contable", "id_contacto", "id_centro_costo"]
     search_fields = ["descripcion_detalle", "id_cuenta_contable__codigo_cuenta", "id_cuenta_contable__nombre_cuenta"]
     ordering_fields = ["fecha_creacion", "debe", "haber"]
     ordering = ["fecha_creacion"]
@@ -360,7 +388,7 @@ class DetalleAsientoViewSet(_NulSafeFilterMixin, TenantFKScopeMixin, viewsets.Mo
     def get_queryset(self) -> QuerySet[DetalleAsiento]:
         # R-CODE-1 via parent AsientoContable
         return DetalleAsiento.objects.filter(id_asiento__id_empresa__in=_empresas(self.request)).select_related(
-            "id_cuenta_contable", "id_contacto"
+            "id_cuenta_contable", "id_contacto", "id_centro_costo"
         )
 
 

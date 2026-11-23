@@ -91,6 +91,9 @@ def contabilidad_balance_comprobacion(
     fecha_hasta: str = "",
     id_diario: str = "",
     incluir_equivalentes_usd: bool = False,
+    ambito: str = "CONSOLIDADO",
+    moneda: str = "BASE",
+    id_centro_costo: str = "",
 ) -> dict[str, Any]:
     """Consulta el Balance de Comprobación canónico de la empresa.
 
@@ -107,12 +110,16 @@ def contabilidad_balance_comprobacion(
             f_desde = _parse_fecha_mcp(fecha_desde, "fecha_desde")
             f_hasta = _parse_fecha_mcp(fecha_hasta, "fecha_hasta")
             diario_uuid = _parse_uuid_mcp(id_diario, "id_diario")
+            centro_uuid = _parse_uuid_mcp(id_centro_costo, "id_centro_costo")
             reporte = generar_balance_comprobacion(
                 empresa,
                 fecha_desde=f_desde,
                 fecha_hasta=f_hasta,
                 id_diario=diario_uuid,
                 incluir_equivalentes_usd=bool(incluir_equivalentes_usd),
+                ambito=ambito,
+                moneda=moneda,
+                id_centro_costo=centro_uuid,
             )
         except (ValueError, ReporteContableError) as exc:
             return {"error": str(exc)}
@@ -132,6 +139,9 @@ def contabilidad_estado_resultados(
     fecha_desde: str = "",
     fecha_hasta: str = "",
     incluir_equivalentes_usd: bool = False,
+    ambito: str = "CONSOLIDADO",
+    moneda: str = "BASE",
+    id_centro_costo: str = "",
 ) -> dict[str, Any]:
     """Consulta el Estado de Resultados (P&L) excluyendo asientos de cierre anual.
 
@@ -148,11 +158,15 @@ def contabilidad_estado_resultados(
             hoy = timezone.localdate()
             f_hasta = _parse_fecha_mcp(fecha_hasta, "fecha_hasta") or hoy
             f_desde = _parse_fecha_mcp(fecha_desde, "fecha_desde") or f_hasta.replace(month=1, day=1)
+            centro_uuid = _parse_uuid_mcp(id_centro_costo, "id_centro_costo")
             reporte = generar_estado_resultados(
                 empresa,
                 fecha_desde=f_desde,
                 fecha_hasta=f_hasta,
                 incluir_equivalentes_usd=bool(incluir_equivalentes_usd),
+                ambito=ambito,
+                moneda=moneda,
+                id_centro_costo=centro_uuid,
             )
         except (ValueError, ReporteContableError) as exc:
             return {"error": str(exc)}
@@ -171,6 +185,9 @@ def contabilidad_balance_general(
     empresa_id: str,
     fecha_corte: str = "",
     incluir_equivalentes_usd: bool = False,
+    ambito: str = "CONSOLIDADO",
+    moneda: str = "BASE",
+    id_centro_costo: str = "",
 ) -> dict[str, Any]:
     """Consulta el Balance General acumulado hasta ``fecha_corte`` con verificación de ecuación patrimonial.
 
@@ -185,10 +202,14 @@ def contabilidad_balance_general(
         try:
             empresa = _empresa_activa(ctx["empresa_id"])
             f_corte = _parse_fecha_mcp(fecha_corte, "fecha_corte") or timezone.localdate()
+            centro_uuid = _parse_uuid_mcp(id_centro_costo, "id_centro_costo")
             reporte = generar_balance_general(
                 empresa,
                 fecha_corte=f_corte,
                 incluir_equivalentes_usd=bool(incluir_equivalentes_usd),
+                ambito=ambito,
+                moneda=moneda,
+                id_centro_costo=centro_uuid,
             )
         except (ValueError, ReporteContableError) as exc:
             return {"error": str(exc)}
@@ -212,6 +233,9 @@ def contabilidad_libro_mayor_auxiliar(
     fecha_hasta: str = "",
     limit: int = 500,
     incluir_equivalentes_usd: bool = False,
+    ambito: str = "CONSOLIDADO",
+    moneda: str = "BASE",
+    id_centro_costo: str = "",
 ) -> dict[str, Any]:
     """Consulta el Libro Mayor Auxiliar filtrado por cuenta, contacto, diario y fechas.
 
@@ -228,6 +252,7 @@ def contabilidad_libro_mayor_auxiliar(
             cuenta_uuid = _parse_uuid_mcp(id_cuenta_contable, "id_cuenta_contable")
             contacto_uuid = _parse_uuid_mcp(id_contacto, "id_contacto")
             diario_uuid = _parse_uuid_mcp(id_diario, "id_diario")
+            centro_uuid = _parse_uuid_mcp(id_centro_costo, "id_centro_costo")
             f_desde = _parse_fecha_mcp(fecha_desde, "fecha_desde")
             f_hasta = _parse_fecha_mcp(fecha_hasta, "fecha_hasta")
             if isinstance(limit, bool):
@@ -245,6 +270,9 @@ def contabilidad_libro_mayor_auxiliar(
                 fecha_hasta=f_hasta,
                 limit=limite_int,
                 incluir_equivalentes_usd=bool(incluir_equivalentes_usd),
+                ambito=ambito,
+                moneda=moneda,
+                id_centro_costo=centro_uuid,
             )
         except (ValueError, ReporteContableError) as exc:
             return {"error": str(exc)}
@@ -256,6 +284,52 @@ def contabilidad_libro_mayor_auxiliar(
             len(reporte["movimientos"]),
         )
         return _serializar_salida(reporte)  # type: ignore[no-any-return]
+
+
+def contabilidad_listar_centros_costo(
+    capability_token: str,
+    empresa_id: str,
+    tipo: str = "",
+    solo_activos: bool = True,
+) -> dict[str, Any]:
+    """Lista los centros de costo analíticos de la empresa.
+
+    Scope requerido: ``contabilidad:read``
+    """
+    from apps.contabilidad.models import CentroCosto  # noqa: PLC0415
+
+    with _ctx(capability_token, _SCOPE, empresa_id=empresa_id) as ctx:
+        try:
+            empresa = _empresa_activa(ctx["empresa_id"])
+            qs = CentroCosto.objects.filter(id_empresa=empresa)
+            if solo_activos:
+                qs = qs.filter(activo=True)
+            tipo_limpio = str(tipo or "").strip().upper()
+            if tipo_limpio:
+                if "\x00" in tipo_limpio:
+                    raise ValueError("El parámetro 'tipo' contiene caracteres inválidos.")
+                qs = qs.filter(tipo=tipo_limpio)
+            items = [
+                {
+                    "id_centro_costo": str(c.id_centro_costo),
+                    "codigo": c.codigo,
+                    "nombre": c.nombre,
+                    "tipo": c.tipo,
+                    "id_padre": str(c.id_padre_id) if c.id_padre_id else None,
+                    "activo": c.activo,
+                }
+                for c in qs.order_by("codigo")[:200]
+            ]
+        except ValueError as exc:
+            return {"error": str(exc)}
+
+        logger.info(
+            "contabilidad_listar_centros_costo | actor=%s | tenant=%s | total=%d",
+            ctx["actor_id"],
+            ctx["tenant_id"],
+            len(items),
+        )
+        return {"centros_costo": items}
 
 
 MCP_TOOLS: list[dict[str, Any]] = [
@@ -277,6 +351,11 @@ MCP_TOOLS: list[dict[str, Any]] = [
     {
         "fn": contabilidad_libro_mayor_auxiliar,
         "name": "contabilidad_libro_mayor_auxiliar",
+        "scope": _SCOPE,
+    },
+    {
+        "fn": contabilidad_listar_centros_costo,
+        "name": "contabilidad_listar_centros_costo",
         "scope": _SCOPE,
     },
 ]

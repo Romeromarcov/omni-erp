@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 
 from .views import (
     AsientoContableViewSet,
+    CentroCostoViewSet,
     DetalleAsientoViewSet,
     DiarioContableViewSet,
     MapeoContableViewSet,
@@ -19,6 +20,7 @@ from .views_reportes import (
 router = DefaultRouter()
 router.register(r"plan-cuentas", PlanCuentasViewSet)
 router.register(r"diarios", DiarioContableViewSet)
+router.register(r"centros-costo", CentroCostoViewSet)
 router.register(r"periodos-contables", PeriodoContableViewSet)
 router.register(r"asientos-contables", AsientoContableViewSet)
 router.register(r"detalles-asiento", DetalleAsientoViewSet)

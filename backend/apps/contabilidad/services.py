@@ -19,7 +19,7 @@ from __future__ import annotations
 import logging
 import uuid
 from datetime import date
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 from typing import TYPE_CHECKING, Any
 
 from django.db import transaction
@@ -27,10 +27,22 @@ from django.db.models import Sum
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 
-from .models import AsientoContable, DetalleAsiento, DiarioContable, MapeoContable, PeriodoContable, PlanCuentas
+from .models import (
+    AMBITO_CONTABLE_CHOICES,
+    AsientoContable,
+    CentroCosto,
+    DetalleAsiento,
+    DiarioContable,
+    MapeoContable,
+    PeriodoContable,
+    PlanCuentas,
+)
 
 if TYPE_CHECKING:
     from apps.core.models import Contacto, Empresa, Usuarios
+
+_AMBITOS_VALIDOS = frozenset(k for k, _ in AMBITO_CONTABLE_CHOICES)
+_CENT = Decimal("0.01")
 
 logger = logging.getLogger(__name__)
 
@@ -124,6 +136,9 @@ def generar_asiento_o_fallar(
     empresa: Empresa | None = None,
     monto: Decimal | None = None,
     usuario: Usuarios | None = None,
+    *,
+    ambito: str | None = None,
+    centro_costo: CentroCosto | None = None,
 ) -> tuple[AsientoContable | None, str | None]:
     """Aplica la política R-CODE-11 de forma uniforme en todos los callsites.
 
@@ -141,7 +156,15 @@ def generar_asiento_o_fallar(
     """
     empresa_resuelta = empresa if empresa is not None else _extraer_empresa(documento)
     try:
-        asiento = generar_asiento(tipo, documento, empresa_resuelta, monto=monto, usuario=usuario)
+        asiento = generar_asiento(
+            tipo,
+            documento,
+            empresa_resuelta,
+            monto=monto,
+            usuario=usuario,
+            ambito=ambito,
+            centro_costo=centro_costo,
+        )
         return asiento, None
     except MapeoContableNoEncontrado as exc:
         if getattr(empresa_resuelta, "contabilidad_activa", False):
@@ -298,6 +321,78 @@ def _descripcion(plantilla: str, tipo: str, documento: Any) -> str:
     return desc.replace("{numero}", str(documento.pk)[:8])
 
 
+def _resolver_ambito_asiento(
+    ambito: str | None,
+    documento: Any,
+    diario: DiarioContable | None,
+) -> str:
+    """Resuelve y valida el ámbito dual del asiento (``FISCAL`` o ``GERENCIAL``)."""
+    candidato = ambito
+    if not candidato and documento is not None:
+        doc_ambito = getattr(documento, "ambito", None)
+        if isinstance(doc_ambito, str) and doc_ambito.strip():
+            candidato = doc_ambito
+    if not candidato and diario is not None:
+        candidato = getattr(diario, "ambito", None)
+    normalizado = str(candidato or "FISCAL").strip().upper()
+    if normalizado not in _AMBITOS_VALIDOS:
+        raise AsientoError(f"Ámbito contable inválido: {candidato!r}. Válidos: {sorted(_AMBITOS_VALIDOS)}")
+    return normalizado
+
+
+def _calcular_importes_trimonetarios_linea(
+    empresa: Empresa,
+    monto_base: Decimal,
+    fecha: date,
+) -> dict[str, Decimal | None]:
+    """Calcula importes Base, País/Fiscal (BCV) y Referencia + tasas aplicadas."""
+    base_q = monto_base.quantize(_CENT, rounding=ROUND_HALF_UP)
+    moneda_base = getattr(empresa, "id_moneda_base", None)
+    moneda_pais_id = getattr(empresa, "id_moneda_pais_id", None)
+
+    if moneda_base is None:
+        return {
+            "base": base_q,
+            "pais": base_q
+            if moneda_pais_id is not None and moneda_pais_id == getattr(empresa, "id_moneda_base_id", None)
+            else None,
+            "referencia": None,
+            "tasa_bcv": None,
+            "tasa_referencia": None,
+        }
+
+    try:
+        from apps.finanzas.services import TasaCambioError
+        from apps.finanzas.services_trimonetario import calcular_equivalencias_trimonetarias
+
+        eq = calcular_equivalencias_trimonetarias(base_q, moneda_base, empresa=empresa, fecha=fecha)
+        m_pais = eq.get("monto_pais_fiscal")
+        m_ref = eq.get("monto_referencia")
+        t_pais = eq.get("tasa_pais_fiscal")
+        t_ref = eq.get("tasa_referencia")
+        return {
+            "base": base_q,
+            "pais": Decimal(str(m_pais)).quantize(_CENT, rounding=ROUND_HALF_UP) if m_pais is not None else None,
+            "referencia": Decimal(str(m_ref)).quantize(_CENT, rounding=ROUND_HALF_UP) if m_ref is not None else None,
+            "tasa_bcv": Decimal(str(t_pais["valor_tasa"]))
+            if isinstance(t_pais, dict) and t_pais.get("valor_tasa") is not None
+            else None,
+            "tasa_referencia": Decimal(str(t_ref["valor_tasa"]))
+            if isinstance(t_ref, dict) and t_ref.get("valor_tasa") is not None
+            else None,
+        }
+    except TasaCambioError:
+        return {
+            "base": base_q,
+            "pais": base_q
+            if moneda_pais_id is not None and moneda_pais_id == getattr(empresa, "id_moneda_base_id", None)
+            else None,
+            "referencia": None,
+            "tasa_bcv": None,
+            "tasa_referencia": None,
+        }
+
+
 # ── Generación, aprobación y reversión de asientos ────────────────────────────
 
 
@@ -308,6 +403,9 @@ def generar_asiento(
     empresa: Empresa | None = None,
     monto: Decimal | None = None,
     usuario: Usuarios | None = None,
+    *,
+    ambito: str | None = None,
+    centro_costo: CentroCosto | None = None,
 ) -> AsientoContable:
     """
     Crea un AsientoContable con dos líneas (debe/haber) para el documento dado.
@@ -319,6 +417,9 @@ def generar_asiento(
         empresa = _extraer_empresa(documento)
 
     assert empresa is not None  # narrowing para mypy tras _extraer_empresa
+
+    if centro_costo is not None and centro_costo.id_empresa_id != empresa.pk:
+        raise AsientoError("El centro de costo no pertenece a la empresa del asiento.")
 
     if monto is None:
         monto = _extraer_monto(documento)
@@ -341,13 +442,17 @@ def generar_asiento(
         )
 
     diario = _resolver_diario_para_asiento(empresa, tipo, mapeo)
+    ambito_resuelto = _resolver_ambito_asiento(ambito, documento, diario)
     descripcion = _descripcion(mapeo.descripcion_plantilla, tipo, documento)
     numero = _siguiente_numero_asiento(tipo, diario)
     contacto = _resolver_contacto_documento_asiento(documento, empresa)
+    trimo = _calcular_importes_trimonetarios_linea(empresa, monto, fecha)
+    cero = Decimal("0.00")
 
     asiento = AsientoContable.objects.create(
         id_empresa=empresa,
         id_diario=diario,
+        ambito=ambito_resuelto,
         fecha_asiento=fecha,
         numero_asiento=numero,
         descripcion=descripcion,
@@ -361,16 +466,34 @@ def generar_asiento(
         id_asiento=asiento,
         id_cuenta_contable=mapeo.cuenta_debe,
         id_contacto=contacto,
+        id_centro_costo=centro_costo,
         debe=monto,
         haber=Decimal("0"),
+        debe_base=trimo["base"],
+        haber_base=cero,
+        debe_pais=trimo["pais"],
+        haber_pais=cero if trimo["pais"] is not None else None,
+        debe_referencia=trimo["referencia"],
+        haber_referencia=cero if trimo["referencia"] is not None else None,
+        tasa_bcv_aplicada=trimo["tasa_bcv"],
+        tasa_referencia_aplicada=trimo["tasa_referencia"],
         descripcion_detalle=descripcion,
     )
     DetalleAsiento.objects.create(
         id_asiento=asiento,
         id_cuenta_contable=mapeo.cuenta_haber,
         id_contacto=contacto,
+        id_centro_costo=centro_costo,
         debe=Decimal("0"),
         haber=monto,
+        debe_base=cero,
+        haber_base=trimo["base"],
+        debe_pais=cero if trimo["pais"] is not None else None,
+        haber_pais=trimo["pais"],
+        debe_referencia=cero if trimo["referencia"] is not None else None,
+        haber_referencia=trimo["referencia"],
+        tasa_bcv_aplicada=trimo["tasa_bcv"],
+        tasa_referencia_aplicada=trimo["tasa_referencia"],
         descripcion_detalle=descripcion,
     )
 
@@ -471,6 +594,7 @@ def revertir_asiento(
     contra = AsientoContable.objects.create(
         id_empresa=asiento_locked.id_empresa,
         id_diario=diario,
+        ambito=asiento_locked.ambito,
         asiento_revertido=asiento_locked,
         fecha_asiento=fecha_rev,
         numero_asiento=numero_contra,
@@ -490,8 +614,17 @@ def revertir_asiento(
             id_asiento=contra,
             id_cuenta_contable=det.id_cuenta_contable,
             id_contacto=det.id_contacto,
+            id_centro_costo=det.id_centro_costo,
             debe=rev_debe,
             haber=rev_haber,
+            debe_base=det.haber_base,
+            haber_base=det.debe_base,
+            debe_pais=det.haber_pais,
+            haber_pais=det.debe_pais,
+            debe_referencia=det.haber_referencia,
+            haber_referencia=det.debe_referencia,
+            tasa_bcv_aplicada=det.tasa_bcv_aplicada,
+            tasa_referencia_aplicada=det.tasa_referencia_aplicada,
             descripcion_detalle=f"Reversión: {det.descripcion_detalle or asiento_locked.descripcion}",
         )
         total_rev_debe += rev_debe

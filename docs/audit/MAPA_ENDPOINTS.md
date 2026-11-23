@@ -181,6 +181,14 @@
 | `^categorias-ticket/activas/$` | CategoriaTicketViewSet | CategoriaTicket | ✅ | ✅ | IsAuthenticated |
 | `^categorias-ticket/activas\.(?P<format>[a-z0-9]+)/?$` | CategoriaTicketViewSet | CategoriaTicket | ✅ | ✅ | IsAuthenticated |
 | `^categorias-ticket\.(?P<format>[a-z0-9]+)/?$` | CategoriaTicketViewSet | CategoriaTicket | ✅ | ✅ | IsAuthenticated |
+| `^centros-costo/$` | CentroCostoViewSet | CentroCosto | ✅ | ✅ | IsAuthenticated |
+| `^centros-costo/(?P<pk>[^/.]+)/$` | CentroCostoViewSet | CentroCosto | ✅ | ✅ | IsAuthenticated |
+| `^centros-costo/(?P<pk>[^/.]+)/activar/$` | CentroCostoViewSet | CentroCosto | ✅ | ✅ | IsAuthenticated |
+| `^centros-costo/(?P<pk>[^/.]+)/activar\.(?P<format>[a-z0-9]+)/?$` | CentroCostoViewSet | CentroCosto | ✅ | ✅ | IsAuthenticated |
+| `^centros-costo/(?P<pk>[^/.]+)/desactivar/$` | CentroCostoViewSet | CentroCosto | ✅ | ✅ | IsAuthenticated |
+| `^centros-costo/(?P<pk>[^/.]+)/desactivar\.(?P<format>[a-z0-9]+)/?$` | CentroCostoViewSet | CentroCosto | ✅ | ✅ | IsAuthenticated |
+| `^centros-costo/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CentroCostoViewSet | CentroCosto | ✅ | ✅ | IsAuthenticated |
+| `^centros-costo\.(?P<format>[a-z0-9]+)/?$` | CentroCostoViewSet | CentroCosto | ✅ | ✅ | IsAuthenticated |
 | `^centros-trabajo/$` | CentroTrabajoViewSet | CentroTrabajo | ✅ | ✅ | IsAuthenticated |
 | `^centros-trabajo/(?P<pk>[^/.]+)/$` | CentroTrabajoViewSet | CentroTrabajo | ✅ | ✅ | IsAuthenticated |
 | `^centros-trabajo/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CentroTrabajoViewSet | CentroTrabajo | ✅ | ✅ | IsAuthenticated |
@@ -1507,4 +1515,4 @@
 | `validar-cuenta-ve/` | ValidarCuentaVeView | — | — | — | IsAuthenticated |
 | `validar-referencia/` | ValidarReferenciaView | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 276_
+_Total ViewSets: 277_

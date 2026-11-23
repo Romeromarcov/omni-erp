@@ -22,7 +22,7 @@
  *
  * Todos los montos viajan como STRING decimal (R-CODE-4) — nunca number.
  */
-import { fetchBlob, get, patch, post } from './api';
+import { del, fetchBlob, get, patch, post } from './api';
 import { toList, type PaginatedResponse } from '../utils/api';
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -32,6 +32,38 @@ export type Naturaleza = 'DEUDORA' | 'ACREEDORA';
 export type EstadoAsiento = 'BORRADOR' | 'APROBADO' | 'ANULADO';
 export type TipoDiario = 'VENTAS' | 'COMPRAS' | 'BANCO' | 'CAJA' | 'NOMINA' | 'VARIOS';
 export type EstadoPeriodo = 'ABIERTO' | 'CERRADO';
+export type AmbitoContable = 'FISCAL' | 'GERENCIAL';
+export type AmbitoReporte = 'CONSOLIDADO' | 'FISCAL' | 'GERENCIAL';
+export type MonedaReporte = 'BASE' | 'PAIS' | 'REFERENCIA';
+export type TipoCentroCosto =
+  | 'OPERATIVO'
+  | 'ADMINISTRATIVO'
+  | 'COMERCIAL'
+  | 'LOGISTICA'
+  | 'PRODUCCION';
+
+export interface CentroCosto {
+  id_centro_costo: string;
+  id_empresa: string;
+  codigo: string;
+  nombre: string;
+  tipo: TipoCentroCosto | string;
+  tipo_display?: string;
+  id_padre: string | null;
+  padre_nombre?: string | null;
+  activo: boolean;
+  fecha_creacion: string;
+  fecha_actualizacion?: string;
+}
+
+export interface CentroCostoPayload {
+  id_empresa: string;
+  codigo: string;
+  nombre: string;
+  tipo: string;
+  id_padre?: string | null;
+  activo?: boolean;
+}
 
 export interface CuentaContable {
   id_cuenta_contable: string;
@@ -62,9 +94,19 @@ export interface DetalleAsiento {
   id_cuenta_contable: string;
   id_contacto?: string | null;
   contacto_nombre?: string | null;
+  id_centro_costo?: string | null;
+  centro_costo_nombre?: string | null;
   /** Montos como string decimal (R-CODE-4). */
   debe: string;
   haber: string;
+  debe_base?: string | null;
+  haber_base?: string | null;
+  debe_pais?: string | null;
+  haber_pais?: string | null;
+  debe_referencia?: string | null;
+  haber_referencia?: string | null;
+  tasa_bcv_aplicada?: string | null;
+  tasa_referencia_aplicada?: string | null;
   descripcion_detalle: string | null;
   fecha_creacion: string;
 }
@@ -74,6 +116,8 @@ export interface AsientoContable {
   id_empresa: string;
   id_diario?: string | null;
   diario_nombre?: string | null;
+  ambito?: AmbitoContable | string;
+  ambito_display?: string;
   asiento_revertido?: string | null;
   contra_asiento_id?: string | null;
   es_cierre?: boolean;
@@ -100,6 +144,8 @@ export interface DiarioContable {
   nombre: string;
   tipo: TipoDiario | string;
   tipo_display?: string;
+  ambito?: AmbitoContable | string;
+  ambito_display?: string;
   prefijo_secuencia: string;
   siguiente_numero: number;
   cuenta_defecto_debe: string | null;
@@ -118,6 +164,7 @@ export interface DiarioContablePayload {
   codigo: string;
   nombre: string;
   tipo: string;
+  ambito?: AmbitoContable | string;
   prefijo_secuencia?: string;
   siguiente_numero?: number;
   cuenta_defecto_debe?: string | null;
@@ -223,6 +270,10 @@ export interface ReporteContableMeta {
   tasa_usd: string | null;
   tasa_usd_inversa?: boolean;
   usd_mensaje: string;
+  ambito?: AmbitoReporte | string;
+  moneda_reporte?: MonedaReporte | string;
+  id_centro_costo?: string | null;
+  centro_costo_nombre?: string;
 }
 
 export interface BalanceComprobacionCuenta {
@@ -388,6 +439,9 @@ export interface ReporteBalanceComprobacionFiltros {
   fecha_hasta?: string;
   id_diario?: string;
   incluir_equivalentes_usd?: boolean;
+  ambito?: AmbitoReporte;
+  moneda?: MonedaReporte;
+  id_centro_costo?: string;
 }
 
 export interface ReporteEstadoResultadosFiltros {
@@ -395,12 +449,18 @@ export interface ReporteEstadoResultadosFiltros {
   fecha_desde?: string;
   fecha_hasta?: string;
   incluir_equivalentes_usd?: boolean;
+  ambito?: AmbitoReporte;
+  moneda?: MonedaReporte;
+  id_centro_costo?: string;
 }
 
 export interface ReporteBalanceGeneralFiltros {
   empresa_id: string;
   fecha_corte?: string;
   incluir_equivalentes_usd?: boolean;
+  ambito?: AmbitoReporte;
+  moneda?: MonedaReporte;
+  id_centro_costo?: string;
 }
 
 export interface ReporteLibroMayorFiltros {
@@ -412,6 +472,9 @@ export interface ReporteLibroMayorFiltros {
   fecha_hasta?: string;
   limit?: number;
   incluir_equivalentes_usd?: boolean;
+  ambito?: AmbitoReporte;
+  moneda?: MonedaReporte;
+  id_centro_costo?: string;
 }
 
 function buildReporteQuery(
@@ -606,5 +669,29 @@ export const contabilidadService = {
       '/core/contactos/?page_size=200',
     );
     return toList<ContactoContableItem>(response);
+  },
+
+  // ── Centros de costo analíticos (Plan 09 · PR-36) ────────────────────────
+
+  listCentrosCosto: async (): Promise<CentroCosto[]> => {
+    const response = await get<CentroCosto[] | PaginatedResponse<CentroCosto>>(
+      `${BASE}/centros-costo/?page_size=200`,
+    );
+    return toList<CentroCosto>(response);
+  },
+
+  createCentroCosto: async (payload: CentroCostoPayload): Promise<CentroCosto> => {
+    return post<CentroCosto>(`${BASE}/centros-costo/`, payload as unknown as Record<string, unknown>);
+  },
+
+  updateCentroCosto: async (
+    id: string,
+    payload: Partial<CentroCostoPayload>,
+  ): Promise<CentroCosto> => {
+    return patch<CentroCosto>(`${BASE}/centros-costo/${id}/`, payload as Record<string, unknown>);
+  },
+
+  deleteCentroCosto: async (id: string): Promise<void> => {
+    await del<void>(`${BASE}/centros-costo/${id}/`);
   },
 };
