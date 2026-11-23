@@ -129,7 +129,8 @@ def _factor_brecha_tasa(
     if brecha_rel <= _CERO:
         return _UNO, brecha_pct
 
-    peso = Decimal(str(regla.valor_factor or "100")) / _CIEN
+    valor_peso = regla.valor_factor if regla.valor_factor is not None else Decimal("100")
+    peso = Decimal(str(valor_peso)) / _CIEN
     factor = _UNO + (brecha_rel * peso)
     return factor, brecha_pct
 

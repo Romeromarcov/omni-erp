@@ -136,9 +136,24 @@ class PedidoViewSet(TenantFKScopeMixin, EmpresaInjectMixin, viewsets.ModelViewSe
 
         generar_cxc = request.data.get("generar_cxc")
         if generar_cxc is not None:
-            generar_cxc = bool(generar_cxc)
+            generar_cxc = (
+                generar_cxc
+                if isinstance(generar_cxc, bool)
+                else str(generar_cxc).strip().lower() in ("1", "true", "yes", "si")
+            )
 
-        omitir_bloqueo = bool(request.data.get("omitir_bloqueo_credito", False))
+        raw_validar = request.data.get("validar_credito", False)
+        validar_cred = (
+            raw_validar
+            if isinstance(raw_validar, bool)
+            else str(raw_validar).strip().lower() in ("1", "true", "yes", "si")
+        )
+        raw_omitir = request.data.get("omitir_bloqueo_credito", False)
+        omitir_bloqueo = (
+            raw_omitir
+            if isinstance(raw_omitir, bool)
+            else str(raw_omitir).strip().lower() in ("1", "true", "yes", "si")
+        )
         if omitir_bloqueo and not (
             getattr(request.user, "es_superusuario_omni", False) or getattr(request.user, "is_staff", False)
         ):
@@ -154,7 +169,7 @@ class PedidoViewSet(TenantFKScopeMixin, EmpresaInjectMixin, viewsets.ModelViewSe
                 almacen=almacen,
                 usuario=request.user,
                 generar_cxc=generar_cxc,
-                validar_credito=bool(request.data.get("validar_credito", False)),
+                validar_credito=validar_cred,
                 omitir_bloqueo_credito=omitir_bloqueo,
             )
         except PedidoConfirmacionError as exc:
@@ -1277,14 +1292,21 @@ class ComisionVentaViewSet(viewsets.ReadOnlyModelViewSet):
         from django.contrib.auth import get_user_model
         from django.utils import timezone
 
-        from apps.core.viewsets import get_empresa_primaria
+        from apps.core.viewsets import get_empresa_primaria, validar_uuid_param
 
         from .services import calcular_avance_meta_vendedor
 
         empresas = _empresas(request)
-        empresa = get_empresa_primaria(request.user)
-        if empresa is None:
-            raise ValidationError({"empresa": "El usuario no tiene empresa asignada."})
+        empresa_raw = request.query_params.get("id_empresa") or request.query_params.get("empresa")
+        if empresa_raw:
+            emp_uuid = validar_uuid_param(empresa_raw, "id_empresa")
+            empresa = empresas.filter(pk=emp_uuid).first()
+            if empresa is None:
+                raise ValidationError({"id_empresa": "Empresa no encontrada o sin acceso."})
+        else:
+            empresa = get_empresa_primaria(request.user)
+            if empresa is None:
+                raise ValidationError({"empresa": "El usuario no tiene empresa asignada."})
         vendedor_raw = request.query_params.get("vendedor")
         if vendedor_raw:
             try:

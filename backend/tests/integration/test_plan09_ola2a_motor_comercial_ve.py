@@ -902,3 +902,165 @@ class TestValidacionesYRutasNegativasOla2A:
             format="json",
         )
         assert r_allow.status_code == 200, r_allow.data
+
+    def test_regresion_revision_pr340(self, client_a, empresa_a, empresa_b, user_a, user_b, moneda_usd):
+        from calendar import monthrange
+        from datetime import date
+
+        from apps.cuentas_por_cobrar.models import CuentaPorCobrar
+        from apps.finanzas.models import TasaCambio, TipoTasaCambio
+        from apps.inventario.models import StockActual
+        from apps.ventas.models import (
+            ComisionVenta,
+            DetallePedido,
+            EsquemaComision,
+            NotaVenta,
+            Pedido,
+            ReglaPrecioDinamico,
+        )
+        from apps.ventas.services import (
+            confirmar_pedido,
+            convertir_pedido_a_nota_venta,
+            entregar_nota_venta,
+        )
+        from apps.ventas.services_precios import calcular_precio_dinamico
+
+        hoy = timezone.localdate()
+
+        # 1. BRECHA_TASA con valor_factor=0 no debe revertir a 100% de la brecha
+        moneda_ves = MonedaFactory(codigo_iso="VES", nombre="Bolívar", simbolo="Bs")
+        empresa_a.id_moneda_pais = moneda_ves
+        empresa_a.save(update_fields=["id_moneda_pais"])
+        tipo_bcv = TipoTasaCambio.objects.create(
+            id_empresa=empresa_a, codigo="OFICIAL_BCV", nombre="BCV Oficial", es_oficial_fiscal=True
+        )
+        tipo_par = TipoTasaCambio.objects.create(
+            id_empresa=empresa_a, codigo="PARALELO", nombre="Paralelo Mercado", es_oficial_fiscal=False
+        )
+        TasaCambio.objects.create(
+            id_empresa=empresa_a,
+            id_moneda_origen=moneda_usd,
+            id_moneda_destino=moneda_ves,
+            tipo_tasa="OFICIAL_BCV",
+            id_tipo_tasa=tipo_bcv,
+            valor_tasa=Decimal("40.00000000"),
+            fecha_tasa=hoy,
+        )
+        TasaCambio.objects.create(
+            id_empresa=empresa_a,
+            id_moneda_origen=moneda_usd,
+            id_moneda_destino=moneda_ves,
+            tipo_tasa="PERSONALIZADA",
+            id_tipo_tasa=tipo_par,
+            valor_tasa=Decimal("50.00000000"),
+            fecha_tasa=hoy,
+        )
+        prod = ProductoFactory(id_empresa=empresa_a, precio_venta_sugerido=Decimal("100.0000"))
+        ReglaPrecioDinamico.objects.create(
+            id_empresa=empresa_a,
+            nombre="Brecha Cero",
+            codigo="R-BRECHA-ZERO",
+            tipo_factor="BRECHA_CAMBIARIA",
+            modo_calculo="BRECHA_TASA",
+            valor_factor=Decimal("0"),
+        )
+        res_zero = calcular_precio_dinamico(prod, empresa_a)
+        assert res_zero["precio_final"] == Decimal("100.0000")
+
+        # 2. EsquemaComision a mitad de mes + /avance-meta/?id_empresa= autorizado vs 400 ajeno
+        assert (
+            client_a.get(
+                f"/api/ventas/comisiones/avance-meta/?id_empresa={empresa_b.id_empresa}&vendedor={user_b.pk}"
+            ).status_code
+            == 400
+        )
+        dia_mitad = min(15, monthrange(hoy.year, hoy.month)[1])
+        fecha_mid = date(hoy.year, hoy.month, dia_mitad)
+        esq_mid = EsquemaComision.objects.create(
+            id_empresa=empresa_b,
+            vendedor=user_b,
+            porcentaje_base=Decimal("5.0000"),
+            modalidad_devengo="COBRO_EFECTIVO",
+            meta_mensual_monto=Decimal("200.0000"),
+            vigente_desde=fecha_mid,
+        )
+        cli_b = ClienteFactory(id_empresa=empresa_b, rif="J-99990000-1")
+        nv_b = NotaVenta.objects.create(
+            id_empresa=empresa_b,
+            id_cliente=cli_b,
+            id_vendedor=user_b,
+            numero_nota="NV-REG-B1",
+            fecha_nota=fecha_mid,
+        )
+        ComisionVenta.objects.create(
+            id_empresa=empresa_b,
+            vendedor=user_b,
+            nota_venta=nv_b,
+            esquema=esq_mid,
+            base_comisionable=Decimal("100.0000"),
+            monto=Decimal("5.0000"),
+            fecha_devengo=fecha_mid,
+        )
+        user_a.empresas.add(empresa_b)
+        r_meta_b = client_a.get(
+            f"/api/ventas/comisiones/avance-meta/?id_empresa={empresa_b.id_empresa}&vendedor={user_b.pk}&anio={hoy.year}&mes={hoy.month}"
+        )
+        assert r_meta_b.status_code == 200, r_meta_b.data
+        assert Decimal(r_meta_b.data["meta_mensual_monto"]) == Decimal("200.0000")
+        assert Decimal(r_meta_b.data["porcentaje_cumplimiento"]) == Decimal("50.00")
+
+        # 3. confirmar_pedido -> convertir_pedido_a_nota_venta -> entregar_nota_venta actualiza CxC existente + ambito inmutable
+        almacen = AlmacenFactory(id_empresa=empresa_a)
+        StockActual.objects.create(
+            id_empresa=empresa_a, id_producto=prod, id_almacen=almacen, cantidad_disponible=Decimal("20.0000")
+        )
+        cli_cred = ClienteFactory(
+            id_empresa=empresa_a,
+            rif="J-88889999-1",
+            tipo_cliente="CREDITO",
+            limite_credito=Decimal("1000.00"),
+        )
+        ped = Pedido.objects.create(
+            id_empresa=empresa_a, id_cliente=cli_cred, id_vendedor=user_a, numero_pedido="PED-REG-1", fecha_pedido=hoy
+        )
+        DetallePedido.objects.create(
+            id_pedido=ped,
+            id_producto=prod,
+            cantidad=Decimal("2"),
+            precio_unitario=Decimal("50"),
+            subtotal=Decimal("100"),
+        )
+        confirmar_pedido(ped, almacen=almacen, generar_cxc=True, usuario=user_a)
+        nv = convertir_pedido_a_nota_venta(ped, usuario=user_a)
+        cxc_pre = CuentaPorCobrar.objects.get(empresa=empresa_a, documento_json__id_pedido=str(ped.id_pedido))
+        res_ent = entregar_nota_venta(nv, almacen, usuario=user_a)
+        cxc_pre.refresh_from_db()
+        assert res_ent["cxc"].pk == cxc_pre.pk
+        assert cxc_pre.documento_json["id_nota_venta"] == str(nv.id_nota_venta)
+        assert cxc_pre.documento_json["ambito"] == "GERENCIAL"
+
+        r_patch_amb = client_a.patch(
+            f"/api/ventas/notas-venta/{nv.id_nota_venta}/",
+            {"ambito": "FISCAL"},
+            format="json",
+        )
+        assert r_patch_amb.status_code == 400
+
+        # 4. omitir_bloqueo_credito="false" string no activa el 403 de override
+        assert not user_a.is_staff
+        ped_str = Pedido.objects.create(
+            id_empresa=empresa_a, id_cliente=cli_cred, numero_pedido="PED-REG-2", fecha_pedido=hoy
+        )
+        DetallePedido.objects.create(
+            id_pedido=ped_str,
+            id_producto=prod,
+            cantidad=Decimal("1"),
+            precio_unitario=Decimal("25"),
+            subtotal=Decimal("25"),
+        )
+        r_ok_str = client_a.post(
+            f"/api/ventas/pedidos/{ped_str.id_pedido}/confirmar/",
+            {"almacen_id": str(almacen.id_almacen), "omitir_bloqueo_credito": "false"},
+            format="json",
+        )
+        assert r_ok_str.status_code == 200, r_ok_str.data

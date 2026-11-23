@@ -467,6 +467,14 @@ def entregar_nota_venta(nota_venta, almacen, usuario, *, permitir_stock_negativo
             descripcion=f"Nota de venta {nota_venta.numero_nota}",
             documento_json=documento_json,
         )
+    else:
+        doc_actual = dict(cxc.documento_json) if isinstance(cxc.documento_json, dict) else {}
+        doc_actual["id_nota_venta"] = str(nota_venta.id_nota_venta)
+        doc_actual["ambito"] = nota_venta.ambito
+        if pedido is not None:
+            doc_actual["id_pedido"] = str(pedido.id_pedido)
+        cxc.documento_json = doc_actual
+        cxc.save(update_fields=["documento_json"])
 
     # 1.G — Comisiones: la entrega es el punto donde la venta es firme (sale
     # mercancía y nace el derecho de cobro), así que aquí se devenga la comisión
@@ -1287,25 +1295,30 @@ def devengar_comision_por_cobro(
     fecha_cobro: date | None = None,
 ):
     """Devenga comisión cuando la cobranza se hace efectiva (divisa vs moneda local Bs)."""
-    from apps.ventas.models import ComisionVenta
+    from apps.ventas.models import ComisionVenta, NotaVenta
 
-    if nota_venta.estado not in ("ENTREGADA", "FACTURADA"):
+    nota_locked = (
+        NotaVenta.objects.select_for_update(of=("self",))
+        .select_related("id_vendedor", "id_empresa", "id_empresa__id_moneda_base", "id_empresa__id_moneda_pais")
+        .get(pk=nota_venta.pk)
+    )
+    if nota_locked.estado not in ("ENTREGADA", "FACTURADA"):
         raise VentaError(
-            f"Solo se devengan comisiones por cobro sobre ventas ENTREGADA o FACTURADA (actual: {nota_venta.estado})."
+            f"Solo se devengan comisiones por cobro sobre ventas ENTREGADA o FACTURADA (actual: {nota_locked.estado})."
         )
-    vendedor = nota_venta.id_vendedor
+    vendedor = nota_locked.id_vendedor
     if vendedor is None:
         raise VentaError("La nota de venta no tiene un vendedor asignado.")
 
-    existente = ComisionVenta.objects.select_for_update().filter(nota_venta=nota_venta).first()
+    existente = ComisionVenta.objects.select_for_update().filter(nota_venta=nota_locked).first()
     if existente is not None:
         return existente
 
-    if pago is not None and pago.id_empresa_id != nota_venta.id_empresa_id:
+    if pago is not None and pago.id_empresa_id != nota_locked.id_empresa_id:
         raise VentaError("El pago no pertenece a la empresa de la nota de venta.")
 
     fecha = fecha_cobro or timezone.localdate()
-    esquema = _esquema_comision_vigente(nota_venta.id_empresa, vendedor, fecha)
+    esquema = _esquema_comision_vigente(nota_locked.id_empresa, vendedor, fecha)
     if esquema is None:
         return None
     if esquema.modalidad_devengo != "COBRO_EFECTIVO":
@@ -1317,25 +1330,25 @@ def devengar_comision_por_cobro(
     elif pago is not None and getattr(pago, "id_moneda", None) is not None:
         iso = (pago.id_moneda.codigo_iso or "").strip().upper()
 
-    moneda_pais = getattr(nota_venta.id_empresa, "id_moneda_pais", None)
+    moneda_pais = getattr(nota_locked.id_empresa, "id_moneda_pais", None)
     pais_iso = (moneda_pais.codigo_iso if moneda_pais is not None else "VES").strip().upper()
     moneda_cobro_tipo = "MONEDA_LOCAL" if iso and iso == pais_iso else "DIVISA"
 
     base, monto, detalle = _calcular_detalle_y_meta_comision(
-        nota_venta,
+        nota_locked,
         esquema,
         fecha=fecha,
         moneda_cobro_tipo=moneda_cobro_tipo,
     )
 
     return ComisionVenta.objects.create(
-        id_empresa=nota_venta.id_empresa,
+        id_empresa=nota_locked.id_empresa,
         vendedor=vendedor,
-        nota_venta=nota_venta,
+        nota_venta=nota_locked,
         esquema=esquema,
         base_comisionable=base,
         monto=monto,
-        id_moneda=getattr(nota_venta.id_empresa, "id_moneda_base", None),
+        id_moneda=getattr(nota_locked.id_empresa, "id_moneda_base", None),
         estado="DEVENGADA",
         origen_devengo="COBRO_EFECTIVO",
         moneda_cobro_tipo=moneda_cobro_tipo,
@@ -1346,10 +1359,19 @@ def devengar_comision_por_cobro(
 
 def calcular_avance_meta_vendedor(empresa, vendedor, anio: int, mes: int) -> dict:
     """Resumen mensual de avance de meta comisionable para un vendedor."""
-    from apps.ventas.models import ComisionVenta
+    import calendar
 
-    fecha_ref = date(anio, mes, 1)
-    esquema = _esquema_comision_vigente(empresa, vendedor, fecha_ref)
+    from apps.ventas.models import ComisionVenta, EsquemaComision
+
+    fecha_inicio = date(anio, mes, 1)
+    fecha_fin = date(anio, mes, calendar.monthrange(anio, mes)[1])
+    esquema = (
+        EsquemaComision.objects.filter(id_empresa=empresa, vendedor=vendedor, activo=True)
+        .filter(models.Q(vigente_desde__isnull=True) | models.Q(vigente_desde__lte=fecha_fin))
+        .filter(models.Q(vigente_hasta__isnull=True) | models.Q(vigente_hasta__gte=fecha_inicio))
+        .order_by(models.F("vigente_desde").desc(nulls_last=True), "-fecha_creacion")
+        .first()
+    )
     meta = Decimal(str(esquema.meta_mensual_monto)) if esquema is not None else Decimal("0.0000")
     bono_pct = Decimal(str(esquema.bono_meta_porcentaje)) if esquema is not None else Decimal("0.0000")
 

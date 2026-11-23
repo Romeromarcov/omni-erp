@@ -555,6 +555,11 @@ class NotaVentaSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("El número de nota es obligatorio.")
         return value
 
+    def validate_ambito(self, value):
+        if self.instance is not None and self.instance.estado != "BORRADOR" and value != self.instance.ambito:
+            raise serializers.ValidationError("No se puede cambiar el ámbito de una nota de venta fuera de BORRADOR.")
+        return value
+
 
 class DetalleNotaVentaSerializer(serializers.ModelSerializer):
     class Meta:
