@@ -170,6 +170,7 @@ class BalanceGeneralResponseSerializer(_BaseReporteMetaSerializer):
 class LibroMayorMovimientoSerializer(serializers.Serializer):
     id_detalle_asiento = serializers.UUIDField(read_only=True)
     id_asiento = serializers.UUIDField(read_only=True)
+    ambito = serializers.CharField(read_only=True)
     fecha_asiento = serializers.DateField(read_only=True)
     numero_asiento = serializers.CharField(read_only=True)
     descripcion_asiento = serializers.CharField(read_only=True)
@@ -182,6 +183,8 @@ class LibroMayorMovimientoSerializer(serializers.Serializer):
     nombre_cuenta = serializers.CharField(read_only=True)
     id_contacto = serializers.UUIDField(allow_null=True, read_only=True)
     contacto_nombre = serializers.CharField(allow_blank=True, read_only=True)
+    id_centro_costo = serializers.UUIDField(allow_null=True, read_only=True)
+    centro_costo_nombre = serializers.CharField(allow_blank=True, read_only=True)
     debe = serializers.DecimalField(max_digits=18, decimal_places=2, read_only=True)
     haber = serializers.DecimalField(max_digits=18, decimal_places=2, read_only=True)
     saldo_corrido = serializers.DecimalField(max_digits=18, decimal_places=2, read_only=True)

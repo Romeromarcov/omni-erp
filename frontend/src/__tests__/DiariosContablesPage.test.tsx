@@ -147,6 +147,8 @@ describe('DiariosContablesPage', () => {
     await user.click(screen.getByRole('button', { name: 'Nuevo diario' }));
     await user.type(screen.getByLabelText(/^Código/), 'CMP');
     await user.type(screen.getByLabelText(/^Nombre/), 'Diario Compras');
+    await user.click(screen.getByRole('combobox', { name: /Ámbito/ }));
+    await user.click(await screen.findByRole('option', { name: /Gerencial/ }));
     await user.type(screen.getByLabelText(/Prefijo de secuencia/), 'CMP');
 
     await user.click(screen.getByRole('button', { name: 'Guardar' }));
@@ -157,7 +159,7 @@ describe('DiariosContablesPage', () => {
         codigo: 'CMP',
         nombre: 'Diario Compras',
         tipo: 'VARIOS',
-        ambito: 'FISCAL',
+        ambito: 'GERENCIAL',
         prefijo_secuencia: 'CMP',
         siguiente_numero: 1,
         cuenta_defecto_debe: null,

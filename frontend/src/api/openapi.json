@@ -58292,6 +58292,12 @@
                     "format": "uuid",
                     "readOnly": true
                 },
+                "ambito": {
+                    "title": "Ambito",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
                 "fecha_asiento": {
                     "title": "Fecha asiento",
                     "type": "string",
@@ -58359,6 +58365,18 @@
                 },
                 "contacto_nombre": {
                     "title": "Contacto nombre",
+                    "type": "string",
+                    "readOnly": true
+                },
+                "id_centro_costo": {
+                    "title": "Id centro costo",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "centro_costo_nombre": {
+                    "title": "Centro costo nombre",
                     "type": "string",
                     "readOnly": true
                 },
@@ -62526,7 +62544,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-22T21:13:59.213994-04:00"
+                    "default": "2026-11-22T21:53:48.626335-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",

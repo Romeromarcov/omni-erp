@@ -384,6 +384,7 @@ export interface BalanceGeneralReport extends ReporteContableMeta {
 export interface LibroMayorMovimiento {
   id_detalle_asiento: string;
   id_asiento: string;
+  ambito?: AmbitoContable | string;
   fecha_asiento: string;
   numero_asiento: string;
   descripcion_asiento: string;
@@ -396,6 +397,8 @@ export interface LibroMayorMovimiento {
   nombre_cuenta: string;
   id_contacto: string | null;
   contacto_nombre: string;
+  id_centro_costo?: string | null;
+  centro_costo_nombre?: string;
   debe: string;
   haber: string;
   saldo_corrido: string;

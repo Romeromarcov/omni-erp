@@ -18995,6 +18995,8 @@ export interface components {
              * Format: uuid
              */
             readonly id_asiento?: string;
+            /** Ambito */
+            readonly ambito?: string;
             /**
              * Fecha asiento
              * Format: date
@@ -19031,6 +19033,13 @@ export interface components {
             readonly id_contacto?: string | null;
             /** Contacto nombre */
             readonly contacto_nombre?: string;
+            /**
+             * Id centro costo
+             * Format: uuid
+             */
+            readonly id_centro_costo?: string | null;
+            /** Centro costo nombre */
+            readonly centro_costo_nombre?: string;
             /**
              * Debe
              * Format: decimal
@@ -21633,7 +21642,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-22T21:13:59.213994-04:00
+             * @default 2026-11-22T21:53:48.626335-04:00
              */
             fecha_despacho: string;
             /**

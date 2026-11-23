@@ -140,12 +140,24 @@ class CentroCostoSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         empresa = attrs.get("id_empresa") or getattr(self.instance, "id_empresa", None)
+        if isinstance(self.instance, CentroCosto) and "id_empresa" in attrs:
+            if attrs["id_empresa"].pk != self.instance.id_empresa_id:
+                raise serializers.ValidationError(
+                    {"id_empresa": "No se puede cambiar la empresa de un centro de costo."}
+                )
         padre = attrs.get("id_padre") if "id_padre" in attrs else getattr(self.instance, "id_padre", None)
         if padre is not None:
-            if isinstance(self.instance, CentroCosto) and padre.pk == self.instance.pk:
-                raise serializers.ValidationError({"id_padre": "Un centro de costo no puede ser padre de sí mismo."})
             if empresa is not None and padre.id_empresa_id != empresa.pk:
                 raise serializers.ValidationError({"id_padre": "El centro de costo padre no pertenece a la empresa."})
+            actual: CentroCosto | None = padre
+            visitados: set[Any] = {self.instance.pk} if isinstance(self.instance, CentroCosto) else set()
+            while actual is not None:
+                if actual.pk in visitados:
+                    raise serializers.ValidationError(
+                        {"id_padre": "La jerarquía de centros de costo no puede contener ciclos."}
+                    )
+                visitados.add(actual.pk)
+                actual = actual.id_padre
         return attrs
 
 

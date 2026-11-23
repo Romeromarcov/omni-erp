@@ -158,13 +158,13 @@ def _valores_linea_moneda(det: DetalleAsiento, empresa: Empresa, moneda: str) ->
     if moneda == "BASE":
         return _q2(det.debe), _q2(det.haber)
     if moneda == "PAIS":
-        if det.debe_pais is not None or det.haber_pais is not None:
-            return _q2(det.debe_pais), _q2(det.haber_pais)
         base_id = getattr(empresa, "id_moneda_base_id", None)
         pais_id = getattr(empresa, "id_moneda_pais_id", None)
         if base_id is not None and pais_id is not None and base_id == pais_id:
-            return _q2(det.debe), _q2(det.haber)
-        return _CERO, _CERO
+            debe_val = det.debe_pais if det.debe_pais is not None else det.debe
+            haber_val = det.haber_pais if det.haber_pais is not None else det.haber
+            return _q2(debe_val), _q2(haber_val)
+        return _q2(det.debe_pais), _q2(det.haber_pais)
     return _q2(det.debe_referencia), _q2(det.haber_referencia)
 
 
@@ -195,25 +195,37 @@ def _meta_dual_y_analitica(
     }
 
 
+def _moneda_origen_reporte(empresa: Empresa, moneda: str) -> Any:
+    if moneda == "BASE":
+        return getattr(empresa, "id_moneda_base", None)
+    if moneda == "PAIS":
+        return getattr(empresa, "id_moneda_pais", None)
+    from apps.finanzas.services_trimonetario import obtener_moneda_referencia_empresa
+
+    return obtener_moneda_referencia_empresa(empresa)
+
+
 def _resolver_conversion_usd(
     empresa: Empresa,
     fecha_ref: date | None = None,
+    *,
+    moneda: str = "BASE",
 ) -> tuple[Decimal | None, bool, bool]:
-    """Resuelve ``(tasa, usd_disponible, es_inversa)`` para convertir montos de moneda base a USD.
+    """Resuelve ``(tasa, usd_disponible, es_inversa)`` para convertir montos de la moneda del reporte a USD.
 
-    - Si ``es_inversa=False``: ``tasa`` expresa cuántas unidades de ``moneda_base``
+    - Si ``es_inversa=False``: ``tasa`` expresa cuántas unidades de la moneda del reporte
       equivalen a 1 USD (``monto_usd = monto / tasa``).
     - Si ``es_inversa=True``: ``tasa`` proviene de una ``TasaCambio`` almacenada como
-      ``moneda_base -> USD`` (``monto_usd = monto * tasa``).
+      ``moneda_reporte -> USD`` (``monto_usd = monto * tasa``).
     """
     from apps.finanzas.models import Moneda
     from apps.finanzas.services import TasaCambioError, obtener_tasa_cambio
 
-    moneda_base = getattr(empresa, "id_moneda_base", None)
-    if moneda_base is None:
+    moneda_origen = _moneda_origen_reporte(empresa, moneda)
+    if moneda_origen is None:
         return None, False, False
 
-    if (moneda_base.codigo_iso or "").upper() == "USD":
+    if (moneda_origen.codigo_iso or "").upper() == "USD":
         return _TASA_UNO, True, False
 
     moneda_usd = Moneda.objects.filter(codigo_iso="USD", activo=True).order_by("-es_generica", "pk").first()
@@ -223,7 +235,7 @@ def _resolver_conversion_usd(
     ref = fecha_ref or timezone.localdate()
 
     try:
-        tasa_directa = obtener_tasa_cambio(moneda_usd, moneda_base, empresa=empresa, fecha=ref)
+        tasa_directa = obtener_tasa_cambio(moneda_usd, moneda_origen, empresa=empresa, fecha=ref)
         valor_directa = Decimal(str(tasa_directa.valor_tasa))
         if valor_directa > Decimal("0"):
             return valor_directa, True, False
@@ -231,7 +243,7 @@ def _resolver_conversion_usd(
         pass
 
     try:
-        tasa_inversa = obtener_tasa_cambio(moneda_base, moneda_usd, empresa=empresa, fecha=ref)
+        tasa_inversa = obtener_tasa_cambio(moneda_origen, moneda_usd, empresa=empresa, fecha=ref)
         valor_inversa = Decimal(str(tasa_inversa.valor_tasa))
         if valor_inversa > Decimal("0"):
             return valor_inversa, True, True
@@ -241,9 +253,14 @@ def _resolver_conversion_usd(
     return None, False, False
 
 
-def _resolver_tasa_usd(empresa: Empresa, fecha_ref: date | None = None) -> tuple[Decimal | None, bool]:
+def _resolver_tasa_usd(
+    empresa: Empresa,
+    fecha_ref: date | None = None,
+    *,
+    moneda: str = "BASE",
+) -> tuple[Decimal | None, bool]:
     """Retorna ``(tasa_usd, usd_disponible)`` sin inventar 1:1 cuando falta tasa."""
-    tasa, disponible, _es_inversa = _resolver_conversion_usd(empresa, fecha_ref=fecha_ref)
+    tasa, disponible, _es_inversa = _resolver_conversion_usd(empresa, fecha_ref=fecha_ref, moneda=moneda)
     return tasa, disponible
 
 
@@ -260,6 +277,7 @@ def _metadata_moneda_y_usd(
     *,
     incluir_equivalentes_usd: bool,
     fecha_ref: date | None,
+    moneda: str = "BASE",
 ) -> tuple[dict[str, Any], Decimal | None, bool, bool]:
     moneda_base = getattr(empresa, "id_moneda_base", None)
     moneda_codigo = str(moneda_base.codigo_iso) if moneda_base is not None else ""
@@ -271,7 +289,11 @@ def _metadata_moneda_y_usd(
     usd_mensaje = ""
 
     if incluir_equivalentes_usd:
-        tasa_usd, usd_disponible, es_inversa = _resolver_conversion_usd(empresa, fecha_ref=fecha_ref)
+        tasa_usd, usd_disponible, es_inversa = _resolver_conversion_usd(
+            empresa,
+            fecha_ref=fecha_ref,
+            moneda=moneda,
+        )
         if not usd_disponible:
             usd_mensaje = _SIN_TASA_USD_MSG
 
@@ -310,6 +332,7 @@ def generar_balance_comprobacion(
         empresa,
         incluir_equivalentes_usd=incluir_equivalentes_usd,
         fecha_ref=fecha_hasta,
+        moneda=moneda_norm,
     )
 
     qs = DetalleAsiento.objects.filter(
@@ -547,6 +570,7 @@ def generar_estado_resultados(
         empresa,
         incluir_equivalentes_usd=incluir_equivalentes_usd,
         fecha_ref=fecha_hasta,
+        moneda=moneda_norm,
     )
 
     qs = DetalleAsiento.objects.filter(
@@ -675,6 +699,7 @@ def generar_balance_general(
         empresa,
         incluir_equivalentes_usd=incluir_equivalentes_usd,
         fecha_ref=fecha_corte,
+        moneda=moneda_norm,
     )
 
     qs = DetalleAsiento.objects.filter(
@@ -824,6 +849,7 @@ def generar_libro_mayor_auxiliar(
         empresa,
         incluir_equivalentes_usd=incluir_equivalentes_usd,
         fecha_ref=fecha_hasta,
+        moneda=moneda_norm,
     )
 
     base_qs = DetalleAsiento.objects.filter(

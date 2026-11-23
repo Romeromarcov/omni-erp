@@ -27,9 +27,11 @@ from apps.contabilidad.models import (
     MapeoContable,
     PlanCuentas,
 )
+from apps.contabilidad.serializers import CentroCostoSerializer
 from apps.contabilidad.services import (
     AsientoError,
     aprobar_asiento,
+    cerrar_ejercicio_contable,
     generar_asiento,
     generar_asiento_o_fallar,
     revertir_asiento,
@@ -191,9 +193,20 @@ def test_centro_costo_api_crud_jerarquia_y_aislamiento(client_a, client_b, empre
     hijo_id = res_hijo.json()["id_centro_costo"]
     assert res_hijo.json()["padre_nombre"] == "Operaciones"
 
-    # Autociclo rechazado (400)
+    # Autociclo y ciclo transitivo de 2 saltos rechazados (400)
     res_ciclo = client_a.patch(f"{URL_CC}{padre_id}/", {"id_padre": padre_id}, format="json")
     assert res_ciclo.status_code == 400
+    res_ciclo2 = client_a.patch(f"{URL_CC}{padre_id}/", {"id_padre": hijo_id}, format="json")
+    assert res_ciclo2.status_code == 400
+
+    # id_empresa inmutable en update de CentroCostoSerializer
+    ser_mut = CentroCostoSerializer(
+        instance=CentroCosto.objects.get(pk=padre_id),
+        data={"id_empresa": str(empresa_b.pk)},
+        partial=True,
+    )
+    assert not ser_mut.is_valid()
+    assert "id_empresa" in ser_mut.errors
 
     # B no ve los centros de costo de A (404 / lista vacía)
     assert client_b.get(f"{URL_CC}{padre_id}/").status_code == 404
@@ -332,6 +345,21 @@ def test_generar_y_revertir_asiento_dual_trimonetario_y_centro_costo(
     assert contra_haber.haber_pais == Decimal("4000.00")
     assert contra_haber.haber_referencia == Decimal("105.00")
     assert contra_haber.tasa_bcv_aplicada == Decimal("40.00000000")
+
+    # TasaCambioError parcial: sin tasa USDT persiste igualmente monto País/BCV (MEDIO-2)
+    TasaCambio.objects.filter(id_empresa=empresa_a, id_moneda_destino=monedas_trimonetarias["usdt"]).delete()
+    asiento_parcial = generar_asiento(
+        "FACTURA_VENTA",
+        SimpleNamespace(pk=uuid.uuid4(), id_empresa=empresa_a, numero_factura="F-PAR"),
+        empresa_a,
+        monto=Decimal("50.00"),
+        ambito="FISCAL",
+    )
+    det_parcial = asiento_parcial.detalleasiento_set.get(debe__gt=0)
+    assert det_parcial.debe_pais == Decimal("2000.00")
+    assert det_parcial.tasa_bcv_aplicada == Decimal("40.00000000")
+    assert det_parcial.debe_referencia is None
+    assert det_parcial.tasa_referencia_aplicada is None
 
 
 def test_asiento_trimonetario_fallback_sin_tasas_y_misma_moneda_pais(empresa_b, moneda_usd):
@@ -507,3 +535,45 @@ def test_reportes_dual_trimonetario_analitico_http_y_mcp(
         tok, emp_id, id_cuenta_contable=str(plan_dual["caja"].pk), ambito="FISCAL", moneda="PAIS"
     )
     assert mcp_mayor["total_debe"] == "4000.00"
+    assert mcp_mayor["movimientos"][0]["ambito"] == "FISCAL"
+    assert mcp_mayor["movimientos"][0]["id_centro_costo"] == str(cc_norte.pk)
+    assert mcp_mayor["movimientos"][0]["centro_costo_nombre"] == "Zona Norte"
+
+    # Equivalente USD correcto cuando moneda es PAIS o REFERENCIA (ALTO-1)
+    pnl_pais_usd = generar_estado_resultados(
+        empresa_a,
+        fecha_desde=hoy,
+        fecha_hasta=hoy,
+        ambito="FISCAL",
+        moneda="PAIS",
+        incluir_equivalentes_usd=True,
+    )
+    assert pnl_pais_usd["usd_disponible"] is True
+    assert pnl_pais_usd["total_ingresos"] == Decimal("4000.00")
+    assert pnl_pais_usd["total_ingresos_usd"] == Decimal("100.00")
+
+    pnl_ref_usd = generar_estado_resultados(
+        empresa_a,
+        fecha_desde=hoy,
+        fecha_hasta=hoy,
+        ambito="GERENCIAL",
+        moneda="REFERENCIA",
+        incluir_equivalentes_usd=True,
+    )
+    assert pnl_ref_usd["usd_disponible"] is True
+    assert pnl_ref_usd["total_gastos"] == Decimal("42.00")
+    assert pnl_ref_usd["total_gastos_usd"] == Decimal("40.00")
+
+    # Cierre anual segregado por ámbito + trimonetario mantiene ecuación patrimonial cuadrada (MEDIO-4)
+    cta_res_acum = _cuenta(empresa_a, "3.2.01", "Resultados Acumulados", "PATRIMONIO", "ACREEDORA")
+    cierre = cerrar_ejercicio_contable(empresa_a, hoy.year, cta_res_acum, fecha_cierre=hoy)
+    assert len(cierre["asientos_cierre"]) == 2
+    assert {a.ambito for a in cierre["asientos_cierre"]} == {"FISCAL", "GERENCIAL"}
+    bg_fiscal_post = generar_balance_general(empresa_a, fecha_corte=hoy, ambito="FISCAL", moneda="PAIS")
+    assert bg_fiscal_post["ecuacion_cuadrada"] is True
+    assert bg_fiscal_post["total_patrimonio"] == Decimal("4000.00")
+    assert bg_fiscal_post["resultado_periodo"] == Decimal("0.00")
+    bg_ger_post = generar_balance_general(empresa_a, fecha_corte=hoy, ambito="GERENCIAL", moneda="REFERENCIA")
+    assert bg_ger_post["ecuacion_cuadrada"] is True
+    assert bg_ger_post["total_patrimonio"] == Decimal("-42.00")
+    assert bg_ger_post["resultado_periodo"] == Decimal("0.00")
