@@ -295,12 +295,7 @@ class TestMigracionesInmutabilidadReversibles:
             assert _existe_trigger("trg_prevent_registro_auditoria_mutation") is False
         finally:
             executor = MigrationExecutor(connection)
-            executor.migrate(
-                [
-                    ("auditoria", "0005_inmutabilidad_logauditoria"),
-                    ("core", "0025_inmutabilidad_registro_auditoria"),
-                ]
-            )
+            executor.migrate(executor.loader.graph.leaf_nodes())
 
         assert _existe_trigger("trg_prevent_logauditoria_mutation") is True
         assert _existe_trigger("trg_prevent_registro_auditoria_mutation") is True

@@ -67,6 +67,9 @@ def _unseed(apps, schema_editor):
     Concepto = apps.get_model("fiscal", "ConceptoRetencionISLR")
     codigos = [row[0] for row in _CONCEPTOS_DECRETO_1808]
     Concepto.objects.filter(codigo__in=codigos).delete()
+    if schema_editor is not None and schema_editor.connection.vendor == "postgresql":
+        # Desencadena checks de FK diferidas antes de que 0011 elimine la tabla en la misma TX.
+        schema_editor.execute("SET CONSTRAINTS ALL IMMEDIATE")
 
 
 class Migration(migrations.Migration):
