@@ -81,13 +81,17 @@ def _empresa_de_request(view, request):
     """
     Resuelve la empresa (tenant) dueña de la operación para scoping de la clave.
 
-    Reusa ``get_empresa_primaria`` (visibilidad multi-tenant del usuario). Si el
-    usuario no tiene empresa, devuelve None y el decorador omite la idempotencia
-    (la vista decidirá si rechaza por falta de empresa).
+    Soporta tanto ``Usuarios`` multi-tenant (vía ``get_empresa_primaria``) como
+    principales dedicados de portal con atributo ``.empresa`` explícito.
     """
+    user = getattr(request, "user", None)
+    empresa_attr = getattr(user, "empresa", None)
+    if empresa_attr is not None:
+        return empresa_attr
+
     from apps.core.viewsets import get_empresa_primaria
 
-    return get_empresa_primaria(request.user)
+    return get_empresa_primaria(user)
 
 
 def idempotent(scope: str):
@@ -121,14 +125,20 @@ def idempotent(scope: str):
                 # Sin tenant resoluble no podemos scoping; delega en la vista.
                 return view_func(self, request, *args, **kwargs)
 
-            from apps.core.models import ClaveIdempotencia
+            from apps.core.models import ClaveIdempotencia, Usuarios
 
-            usuario = request.user if request.user.is_authenticated else None
+            user_obj = getattr(request, "user", None)
+            is_auth = bool(getattr(user_obj, "is_authenticated", False))
+            usuario = user_obj if isinstance(user_obj, Usuarios) else None
+            scope_efectivo = scope
+            if usuario is None and is_auth and getattr(user_obj, "cliente", None) is not None:
+                scope_efectivo = f"{scope}:cli:{user_obj.cliente.pk}"[:100]
+
             payload_hash = _hash_payload(request.data)
             filtro = {
                 "empresa": empresa,
                 "usuario": usuario,
-                "scope": scope,
+                "scope": scope_efectivo,
                 "clave": clave,
             }
 

@@ -1042,3 +1042,96 @@ class ComisionVenta(models.Model):
 
     def __str__(self):
         return f"Comisión {self.nota_venta_id} — {self.monto} ({self.estado})"
+
+
+class TokenPortalCliente(models.Model):
+    """Token OTP efímero (hashed) y token opaco de sesión del Portal de Clientes B2B/B2C (Plan 09 Fase 7.3)."""
+
+    CANALES = [
+        ("WHATSAPP", "WhatsApp"),
+        ("EMAIL", "Correo Electrónico"),
+    ]
+
+    id_token = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="tokens_portal_cliente")
+    id_cliente = models.ForeignKey("crm.Cliente", on_delete=models.CASCADE, related_name="tokens_portal")
+    canal = models.CharField(max_length=15, choices=CANALES, default="WHATSAPP")
+    destino = models.CharField(max_length=150, blank=True, default="")
+    codigo_hash = models.CharField(max_length=128)
+    sesion_token_hash = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    expira_en = models.DateTimeField()
+    intentos = models.PositiveSmallIntegerField(default=0)
+    usado = models.BooleanField(default=False)
+    revocado = models.BooleanField(default=False)
+    activo = models.BooleanField(default=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "ventas_token_portal_cliente"
+        verbose_name = "Token Portal Cliente"
+        verbose_name_plural = "Tokens Portal Clientes"
+        ordering = ["-fecha_creacion"]
+        indexes = [
+            models.Index(fields=["id_empresa", "id_cliente", "revocado"]),
+            models.Index(fields=["sesion_token_hash"]),
+        ]
+
+    def __str__(self):
+        return f"TokenPortal {self.id_cliente_id} ({self.canal})"
+
+
+class PagoPortalCliente(models.Model):
+    """Reporte de pago cargado por Cliente Self-Service o Vendedor SFA pendiente de validación (Fase 7.2/7.3)."""
+
+    ESTADOS = [
+        ("PENDIENTE_VALIDACION", "Pendiente de Validación"),
+        ("APROBADO", "Aprobado"),
+        ("RECHAZADO", "Rechazado"),
+    ]
+
+    id_pago_portal = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="pagos_portal_cliente")
+    id_cliente = models.ForeignKey("crm.Cliente", on_delete=models.PROTECT, related_name="pagos_portal")
+    id_vendedor_reporta = models.ForeignKey(
+        "core.Usuarios",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="pagos_portal_reportados",
+    )
+    monto = models.DecimalField(max_digits=18, decimal_places=4)
+    id_moneda = models.ForeignKey("finanzas.Moneda", on_delete=models.PROTECT, related_name="pagos_portal")
+    id_metodo_pago = models.ForeignKey("finanzas.MetodoPago", on_delete=models.PROTECT, related_name="pagos_portal")
+    tasa = models.DecimalField(max_digits=18, decimal_places=4, default=Decimal("1.0000"))
+    referencia = models.CharField(max_length=100, blank=True, default="")
+    comprobante_url = models.CharField(max_length=500, blank=True, default="")
+    ocr_extraido_json = models.JSONField(default=dict, blank=True)
+    estado = models.CharField(max_length=25, choices=ESTADOS, default="PENDIENTE_VALIDACION")
+    observaciones = models.TextField(blank=True, default="")
+    id_pago_finanzas = models.ForeignKey(
+        "finanzas.Pago",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="pagos_portal_origen",
+    )
+    activo = models.BooleanField(default=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "ventas_pago_portal_cliente"
+        verbose_name = "Pago Reportado Portal"
+        verbose_name_plural = "Pagos Reportados Portal"
+        ordering = ["-fecha_creacion"]
+        constraints = [
+            models.CheckConstraint(condition=models.Q(monto__gt=0), name="ventas_pago_portal_monto_gt_0"),
+            models.CheckConstraint(condition=models.Q(tasa__gt=0), name="ventas_pago_portal_tasa_gt_0"),
+        ]
+        indexes = [
+            models.Index(fields=["id_empresa", "id_cliente", "estado"]),
+        ]
+
+    def __str__(self):
+        return f"PagoPortal {self.id_cliente_id} {self.monto} [{self.estado}]"

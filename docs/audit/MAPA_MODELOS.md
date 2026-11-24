@@ -82,6 +82,7 @@
 | crm | Etapa | ✅ | ✅ | — |
 | crm | Lead | ✅ | ✅ | — |
 | crm | Pipeline | ✅ | ✅ | — |
+| crm | VisitaGPSVendedor | ✅ | ✅ | — |
 | cuentas_por_cobrar | AbonoCxC | — | — | — |
 | cuentas_por_cobrar | CuentaPorCobrar | ✅ | — | — |
 | cuentas_por_pagar | AbonoCxP | — | ✅ | — |
@@ -289,7 +290,9 @@
 | ventas | NotaCreditoVenta | ✅ | ✅ | id_empresa+numero_nota_credito |
 | ventas | NotaDebitoFiscal | ✅ | ✅ | — |
 | ventas | NotaVenta | ✅ | ✅ | id_empresa+numero_nota |
+| ventas | PagoPortalCliente | ✅ | ✅ | — |
 | ventas | Pedido | ✅ | ✅ | id_empresa+numero_pedido |
 | ventas | ReglaPrecioDinamico | ✅ | ✅ | id_empresa+codigo |
+| ventas | TokenPortalCliente | ✅ | ✅ | — |
 
-_Total modelos: 289_
+_Total modelos: 292_

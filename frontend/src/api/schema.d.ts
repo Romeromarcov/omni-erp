@@ -7501,6 +7501,61 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/despacho/portal-conductor/mis-rutas/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Lista rutas PLANIFICADA/EN_CURSO asignadas al conductor autenticado (o todas si es supervisor). */
+        get: operations["despacho_portal-conductor_mis_rutas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/despacho/portal-conductor/paradas/{parada_id}/epod/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                parada_id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Registra ePOD (foto, firma, GPS) y cobro en sitio tolerante a reintentos offline. */
+        post: operations["despacho_portal-conductor_paradas_registrar_epod"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/despacho/portal-conductor/paradas/{parada_id}/escanear-bulto/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                parada_id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Valida el código de barras o SKU del bulto contra los productos del despacho. */
+        post: operations["despacho_portal-conductor_paradas_escanear_bulto"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/despacho/rutas/": {
         parameters: {
             query?: never;
@@ -17407,6 +17462,210 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ventas/portal-cliente/auth/solicitar-otp/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Solicita un OTP efímero de acceso por WhatsApp o Email sin filtrar el código en la respuesta. */
+        post: operations["ventas_portal-cliente_auth_solicitar-otp_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ventas/portal-cliente/auth/verificar-otp/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Verifica OTP (máx 5 intentos) y entrega token de sesión opaco para el Portal de Clientes. */
+        post: operations["ventas_portal-cliente_auth_verificar-otp_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ventas/portal-cliente/pagos/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Carga de pagos por el cliente con soporte OCR/IA determinista de comprobantes. */
+        post: operations["ventas_portal-cliente_pagos_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ventas/portal-cliente/pedidos/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Permite al cliente autenticado generar pedidos self-service en estado PENDIENTE. */
+        post: operations["ventas_portal-cliente_pedidos_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ventas/portal-cliente/resumen/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Resumen del cliente B2B/B2C: historial de facturas/notas, estado de cuenta trimonetario y PDFs. */
+        get: operations["ventas_portal-cliente_resumen_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ventas/portal-cliente/tracking/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Despachos y paradas en curso del cliente autenticado (sin exponer PII ni otros clientes). */
+        get: operations["ventas_portal-cliente_tracking_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ventas/portal-vendedor/cartera/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Cartera propia del vendedor con saldo CxC pendiente y mora real. */
+        get: operations["ventas_portal-vendedor_cartera"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ventas/portal-vendedor/catalogo/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Catálogo de productos con stock neto disponible y equivalencias trimonetarias. */
+        get: operations["ventas_portal-vendedor_catalogo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ventas/portal-vendedor/checkin/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Registra un check-in GPS del vendedor en campo calculando distancia al cliente. */
+        post: operations["ventas_portal-vendedor_checkin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ventas/portal-vendedor/cobros/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Registra un cobro reportado en campo con foto/comprobante pendiente de validación. */
+        post: operations["ventas_portal-vendedor_cobros"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ventas/portal-vendedor/metas-comisiones/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Tablero de metas y comisiones devengadas/liquidadas del vendedor. */
+        get: operations["ventas_portal-vendedor_metas_comisiones"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ventas/portal-vendedor/pedidos/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Crea un pedido PENDIENTE desde campo atribuido al vendedor autenticado. */
+        post: operations["ventas_portal-vendedor_pedidos"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ventas/reglas-precio-dinamico/": {
         parameters: {
             query?: never;
@@ -22700,6 +22959,12 @@ export interface components {
              * Format: uuid
              */
             contacto?: string | null;
+            /**
+             * Id vendedor asignado
+             * Format: uuid
+             * @description Vendedor responsable de la cartera en el Portal SFA (Plan 09 Fase 7.2).
+             */
+            id_vendedor_asignado?: string | null;
         };
         ContactoCliente: {
             /**
@@ -23995,6 +24260,12 @@ export interface components {
             readonly id_empresa?: string;
             /** Id empleado */
             id_empleado?: number | null;
+            /**
+             * Id usuario
+             * Format: uuid
+             * @description Usuario asignado al Portal de Conductores (Plan 09 Fase 7.4).
+             */
+            id_usuario?: string | null;
             /** Nombre completo */
             nombre_completo: string;
             /** Cedula */
@@ -24104,7 +24375,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-23T08:20:54.253917-04:00
+             * @default 2026-11-24T18:22:14.220620-04:00
              */
             fecha_despacho: string;
             /**
@@ -24377,6 +24648,15 @@ export interface components {
              */
             motivo_rechazo: string;
             cobro?: components["schemas"]["CobroEnSitioInput"];
+        };
+        EscanearBultoInput: {
+            /** Codigo bulto */
+            codigo_bulto: string;
+            /**
+             * Observacion
+             * @default
+             */
+            observacion: string;
         };
         RutaDespacho: {
             /**
@@ -34186,6 +34466,211 @@ export interface components {
              */
             id_vendedor?: string | null;
         };
+        SolicitarOTPPortalInput: {
+            /** Rif */
+            rif: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa?: string | null;
+            /**
+             * Canal
+             * @default WHATSAPP
+             * @enum {string}
+             */
+            canal: "WHATSAPP" | "EMAIL";
+            /**
+             * Destino
+             * @default
+             */
+            destino: string;
+        };
+        VerificarOTPPortalInput: {
+            /**
+             * Id token
+             * Format: uuid
+             */
+            id_token?: string | null;
+            /** Rif */
+            rif: string;
+            /** Codigo */
+            codigo: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa?: string | null;
+        };
+        PagoPortalClienteInput: {
+            /**
+             * Monto
+             * Format: decimal
+             */
+            monto: string;
+            /**
+             * Id moneda
+             * Format: uuid
+             */
+            id_moneda: string;
+            /**
+             * Id metodo pago
+             * Format: uuid
+             */
+            id_metodo_pago: string;
+            /**
+             * Tasa
+             * Format: decimal
+             * @default 1.0000
+             */
+            tasa: string;
+            /**
+             * Referencia
+             * @default
+             */
+            referencia: string;
+            /**
+             * Comprobante url
+             * @default
+             */
+            comprobante_url: string;
+            /**
+             * Texto comprobante ocr
+             * @default
+             */
+            texto_comprobante_ocr: string;
+            /**
+             * Observaciones
+             * @default
+             */
+            observaciones: string;
+        };
+        LineaPedidoClienteInput: {
+            /**
+             * Id producto
+             * Format: uuid
+             */
+            id_producto: string;
+            /**
+             * Cantidad
+             * Format: decimal
+             */
+            cantidad: string;
+        };
+        PedidoPortalClienteInput: {
+            /**
+             * Observaciones
+             * @default
+             */
+            observaciones: string;
+            lineas: components["schemas"]["LineaPedidoClienteInput"][];
+        };
+        CheckinVendedorInput: {
+            /**
+             * Id cliente
+             * Format: uuid
+             */
+            id_cliente: string;
+            /**
+             * Latitud
+             * Format: decimal
+             */
+            latitud: string;
+            /**
+             * Longitud
+             * Format: decimal
+             */
+            longitud: string;
+            /**
+             * Precision m
+             * Format: decimal
+             */
+            precision_m?: string | null;
+            /**
+             * Resultado
+             * @default EFECTIVA
+             * @enum {string}
+             */
+            resultado: "EFECTIVA" | "SIN_CONTACTO" | "COBRANZA" | "PEDIDO" | "OTRO";
+            /**
+             * Notas
+             * @default
+             */
+            notas: string;
+        };
+        CobroVendedorInput: {
+            /**
+             * Id cliente
+             * Format: uuid
+             */
+            id_cliente: string;
+            /**
+             * Monto
+             * Format: decimal
+             */
+            monto: string;
+            /**
+             * Id moneda
+             * Format: uuid
+             */
+            id_moneda: string;
+            /**
+             * Id metodo pago
+             * Format: uuid
+             */
+            id_metodo_pago: string;
+            /**
+             * Tasa
+             * Format: decimal
+             * @default 1.0000
+             */
+            tasa: string;
+            /**
+             * Referencia
+             * @default
+             */
+            referencia: string;
+            /**
+             * Comprobante url
+             * @default
+             */
+            comprobante_url: string;
+            /**
+             * Observaciones
+             * @default
+             */
+            observaciones: string;
+        };
+        LineaPedidoPortalInput: {
+            /**
+             * Id producto
+             * Format: uuid
+             */
+            id_producto: string;
+            /**
+             * Cantidad
+             * Format: decimal
+             */
+            cantidad: string;
+        };
+        PedidoVendedorInput: {
+            /**
+             * Id cliente
+             * Format: uuid
+             */
+            id_cliente: string;
+            /**
+             * Observaciones
+             * @default
+             */
+            observaciones: string;
+            /**
+             * Referencia externa
+             * @default
+             */
+            referencia_externa: string;
+            lineas: components["schemas"]["LineaPedidoPortalInput"][];
+        };
         ReglaPrecioDinamico: {
             /**
              * Id regla
@@ -35074,6 +35559,11 @@ export interface components {
         Vinculacion: {
             content: {
                 "application/json": components["schemas"]["Vinculacion"];
+            };
+        };
+        RegistrarEPODInput: {
+            content: {
+                "application/json": components["schemas"]["RegistrarEPODInput"];
             };
         };
         RutaDespacho: {
@@ -51630,11 +52120,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RegistrarEPODInput"];
-            };
-        };
+        requestBody: components["requestBodies"]["RegistrarEPODInput"];
         responses: {
             201: {
                 headers: {
@@ -51664,6 +52150,69 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ParadaEntrega"];
+                };
+            };
+        };
+    };
+    "despacho_portal-conductor_mis_rutas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "despacho_portal-conductor_paradas_registrar_epod": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                parada_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: components["requestBodies"]["RegistrarEPODInput"];
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrarEPODInput"];
+                };
+            };
+        };
+    };
+    "despacho_portal-conductor_paradas_escanear_bulto": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                parada_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EscanearBultoInput"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EscanearBultoInput"];
                 };
             };
         };
@@ -76145,6 +76694,252 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Pedido"];
+                };
+            };
+        };
+    };
+    "ventas_portal-cliente_auth_solicitar-otp_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SolicitarOTPPortalInput"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SolicitarOTPPortalInput"];
+                };
+            };
+        };
+    };
+    "ventas_portal-cliente_auth_verificar-otp_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerificarOTPPortalInput"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VerificarOTPPortalInput"];
+                };
+            };
+        };
+    };
+    "ventas_portal-cliente_pagos_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PagoPortalClienteInput"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagoPortalClienteInput"];
+                };
+            };
+        };
+    };
+    "ventas_portal-cliente_pedidos_create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PedidoPortalClienteInput"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PedidoPortalClienteInput"];
+                };
+            };
+        };
+    };
+    "ventas_portal-cliente_resumen_list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "ventas_portal-cliente_tracking_list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "ventas_portal-vendedor_cartera": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "ventas_portal-vendedor_catalogo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "ventas_portal-vendedor_checkin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckinVendedorInput"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckinVendedorInput"];
+                };
+            };
+        };
+    };
+    "ventas_portal-vendedor_cobros": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CobroVendedorInput"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobroVendedorInput"];
+                };
+            };
+        };
+    };
+    "ventas_portal-vendedor_metas_comisiones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    "ventas_portal-vendedor_pedidos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PedidoVendedorInput"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PedidoVendedorInput"];
                 };
             };
         };

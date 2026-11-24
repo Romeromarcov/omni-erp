@@ -1,6 +1,15 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
+from .portal_cliente import (
+    PortalClientePagosView,
+    PortalClientePedidosView,
+    PortalClienteResumenView,
+    PortalClienteTrackingView,
+    SolicitarOTPPortalView,
+    VerificarOTPPortalView,
+)
+from .portal_vendedor import PortalVendedorViewSet
 from .views import (
     ComisionVentaViewSet,
     CotizacionViewSet,
@@ -49,7 +58,14 @@ router.register(r"reglas-precio-dinamico", ReglaPrecioDinamicoViewSet)
 router.register(r"esquemas-comision", EsquemaComisionViewSet)
 router.register(r"esquemas-comision-categorias", EsquemaComisionCategoriaViewSet)
 router.register(r"comisiones", ComisionVentaViewSet)
+router.register(r"portal-vendedor", PortalVendedorViewSet, basename="portal-vendedor")
 
 urlpatterns = [
+    path("portal-cliente/auth/solicitar-otp/", SolicitarOTPPortalView.as_view(), name="portal-cliente-solicitar-otp"),
+    path("portal-cliente/auth/verificar-otp/", VerificarOTPPortalView.as_view(), name="portal-cliente-verificar-otp"),
+    path("portal-cliente/resumen/", PortalClienteResumenView.as_view(), name="portal-cliente-resumen"),
+    path("portal-cliente/pagos/", PortalClientePagosView.as_view(), name="portal-cliente-pagos"),
+    path("portal-cliente/pedidos/", PortalClientePedidosView.as_view(), name="portal-cliente-pedidos"),
+    path("portal-cliente/tracking/", PortalClienteTrackingView.as_view(), name="portal-cliente-tracking"),
     path("", include(router.urls)),
 ]

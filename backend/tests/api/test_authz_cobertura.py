@@ -43,6 +43,14 @@ PUBLIC_ALLOWLIST: dict[str, str] = {
         "Plan 09 Fase 6.4: tracking público en vivo de parada vía token_tracking UUIDv7 opaco, "
         "sin PII (sin cédula/firma), con AnonRateThrottle y lookup puntual."
     ),
+    "api/ventas/portal-cliente/auth/solicitar-otp/": (
+        "Plan 09 Fase 7.3: solicitud OTP efímero para Portal Clientes B2B/B2C, con AnonRateThrottle, "
+        "rls_bypass interno y sin filtrar código en la respuesta HTTP."
+    ),
+    "api/ventas/portal-cliente/auth/verificar-otp/": (
+        "Plan 09 Fase 7.3: verificación OTP (máx 5 intentos) que emite token de sesión opaco SHA-256 "
+        "acotado al cliente y tenant; usa AnonRateThrottle y rls_bypass interno."
+    ),
     "swagger": "Esquema OpenAPI / Swagger UI (drf-yasg).",
     "redoc": "Documentación ReDoc (drf-yasg).",
 }

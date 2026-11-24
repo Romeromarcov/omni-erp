@@ -71,7 +71,26 @@ class ClienteSerializer(serializers.ModelSerializer):
             "bloquear_por_mora",
             "id_empresa",
             "contacto",
+            "id_vendedor_asignado",
         ]
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        attrs = super().validate(attrs)
+        inst = self.instance if isinstance(self.instance, Cliente) else None
+        vendedor = attrs.get("id_vendedor_asignado")
+        if vendedor is None and "id_vendedor_asignado" not in attrs and inst is not None:
+            vendedor = inst.id_vendedor_asignado
+        empresa = (
+            attrs.get("id_empresa") or (inst.id_empresa if inst is not None else None) or _empresa_desde_contexto(self)
+        )
+        if (
+            vendedor is not None
+            and empresa is not None
+            and not (getattr(vendedor, "es_superusuario_omni", False) or getattr(vendedor, "is_superuser", False))
+            and not vendedor.empresas.filter(pk=empresa.pk).exists()
+        ):
+            raise serializers.ValidationError({"id_vendedor_asignado": "El vendedor no pertenece a esta empresa."})
+        return attrs
 
 
 class ContactoClienteSerializer(serializers.ModelSerializer):

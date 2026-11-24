@@ -66,6 +66,14 @@ class Cliente(OmniBaseModel, IntegrationFieldsMixin):
         blank=True,
         related_name="cliente",
     )
+    id_vendedor_asignado = models.ForeignKey(
+        "core.Usuarios",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="clientes_asignados",
+        help_text="Vendedor responsable de la cartera en el Portal SFA (Plan 09 Fase 7.2).",
+    )
 
     class Meta:
         ordering = ["razon_social"]
@@ -77,6 +85,16 @@ class Cliente(OmniBaseModel, IntegrationFieldsMixin):
     def clean(self):
         super().clean()
         validar_misma_empresa(self, contacto=self.contacto)
+        if (
+            self.id_vendedor_asignado_id is not None
+            and self.id_empresa_id is not None
+            and not (
+                getattr(self.id_vendedor_asignado, "es_superusuario_omni", False)
+                or getattr(self.id_vendedor_asignado, "is_superuser", False)
+            )
+            and not self.id_vendedor_asignado.empresas.filter(pk=self.id_empresa_id).exists()
+        ):
+            raise ValidationError({"id_vendedor_asignado": "El vendedor no pertenece a esta empresa."})
 
 
 class ContactoCliente(OmniBaseModel):
@@ -396,3 +414,45 @@ class Actividad(OmniBaseModel):
                 and not usuario.empresas.filter(pk=self.id_empresa_id).exists()
             ):
                 raise ValidationError({campo: "El usuario no pertenece a esta empresa."})
+
+
+class VisitaGPSVendedor(OmniBaseModel):
+    """Registro de check-in GPS en campo realizado por un vendedor SFA (Plan 09 Fase 7.2)."""
+
+    RESULTADOS = [
+        ("EFECTIVA", "Visita Efectiva"),
+        ("SIN_CONTACTO", "Sin Contacto"),
+        ("COBRANZA", "Gestión de Cobranza"),
+        ("PEDIDO", "Levantamiento de Pedido"),
+        ("OTRO", "Otro"),
+    ]
+
+    id_visita = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey("core.Empresa", on_delete=models.CASCADE, related_name="visitas_gps_vendedor")
+    id_vendedor = models.ForeignKey("core.Usuarios", on_delete=models.PROTECT, related_name="visitas_gps")
+    id_cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name="visitas_gps")
+    latitud = models.DecimalField(max_digits=9, decimal_places=6)
+    longitud = models.DecimalField(max_digits=9, decimal_places=6)
+    precision_m = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    distancia_cliente_m = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    resultado = models.CharField(max_length=20, choices=RESULTADOS, default="EFECTIVA")
+    notas = models.TextField(blank=True, default="")
+    fecha_visita = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "crm_visita_gps_vendedor"
+        verbose_name = "Visita GPS de Vendedor"
+        verbose_name_plural = "Visitas GPS de Vendedores"
+        ordering = ["-fecha_visita"]
+        indexes = [
+            models.Index(fields=["id_empresa", "id_vendedor", "fecha_visita"]),
+            models.Index(fields=["id_empresa", "id_cliente"]),
+        ]
+
+    def clean(self) -> None:
+        super().clean()
+        if self.id_cliente_id and self.id_empresa_id and self.id_cliente.id_empresa_id != self.id_empresa_id:
+            raise ValidationError({"id_cliente": "El cliente no pertenece a esta empresa."})
+
+    def __str__(self) -> str:
+        return f"Visita {self.id_cliente.razon_social} [{self.resultado}]"
