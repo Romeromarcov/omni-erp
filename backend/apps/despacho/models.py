@@ -332,6 +332,16 @@ class Conductor(OmniBaseModel):
             raise ValidationError({"id_vehiculo_asignado": "El vehículo no pertenece a la empresa indicada."})
         if self.id_empleado_id and self.id_empresa_id and self.id_empleado.empresa_id != self.id_empresa_id:
             raise ValidationError({"id_empleado": "El empleado no pertenece a la empresa indicada."})
+        if (
+            self.id_usuario_id
+            and self.id_empresa_id
+            and not (
+                getattr(self.id_usuario, "es_superusuario_omni", False)
+                or getattr(self.id_usuario, "is_superuser", False)
+            )
+            and not self.id_usuario.empresas.filter(pk=self.id_empresa_id).exists()
+        ):
+            raise ValidationError({"id_usuario": "El usuario asignado no pertenece a la empresa indicada."})
 
     def __str__(self):
         return f"{self.nombre_completo} ({self.cedula})"

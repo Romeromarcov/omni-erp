@@ -30,7 +30,6 @@ from apps.core.idempotency import idempotent
 from apps.core.throttling import EscrituraRateThrottle
 from apps.core.viewsets import get_empresa_primaria, get_empresas_visible, validar_uuid_param
 from apps.crm.models import Cliente, DireccionCliente, VisitaGPSVendedor
-from apps.cuentas_por_cobrar.models import CuentaPorCobrar
 from apps.despacho.services_vrp import distancia_haversine_km
 from apps.finanzas.models import MetodoPago, Moneda
 from apps.finanzas.services import TasaCambioError
@@ -39,6 +38,7 @@ from apps.inventario.models import Producto, StockActual
 
 from .models import ComisionVenta, DetallePedido, EsquemaComision, PagoPortalCliente, Pedido
 from .services import obtener_precio
+from .services_credito import evaluar_credito_cliente
 
 logger = logging.getLogger(__name__)
 
@@ -170,17 +170,14 @@ class PortalVendedorViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=["get"], url_path="cartera")
     def cartera(self, request):
-        """Cartera propia del vendedor con saldo CxC pendiente y mora real."""
+        """Cartera propia del vendedor con saldo neto CxC (descontando abonos/asignaciones) y mora real."""
         empresa = _resolver_empresa_vendedor(request)
         clientes = list(self._cartera_clientes_qs(request, empresa)[:200])
         hoy = timezone.localdate()
         resultado = []
         for cli in clientes:
-            cxc_qs = CuentaPorCobrar.objects.filter(
-                empresa=empresa, cliente=cli, estado__in=("pendiente", "vencida", "parcial")
-            )
-            agg = cxc_qs.aggregate(total_pendiente=Sum("monto"))
-            vencidas = cxc_qs.filter(fecha_vencimiento__lt=hoy).count()
+            cred = evaluar_credito_cliente(cli, empresa, fecha=hoy)
+            saldo_neto = Decimal(str(cred["saldo_pendiente"])).quantize(_Q2, rounding=ROUND_HALF_UP)
             resultado.append(
                 {
                     "id_cliente": str(cli.pk),
@@ -188,9 +185,9 @@ class PortalVendedorViewSet(viewsets.ViewSet):
                     "rif": cli.rif,
                     "tipo_cliente": cli.tipo_cliente,
                     "limite_credito": str(cli.limite_credito),
-                    "saldo_pendiente": str((agg["total_pendiente"] or _CERO).quantize(_Q2, rounding=ROUND_HALF_UP)),
-                    "cuentas_vencidas": vencidas,
-                    "bloquear_por_mora": bool(cli.bloquear_por_mora and vencidas > 0),
+                    "saldo_pendiente": str(saldo_neto),
+                    "cuentas_vencidas": int(cred["cxc_vencidas"]),
+                    "bloquear_por_mora": bool(cred["bloqueado_por_mora"]),
                 }
             )
         return Response({"empresa_id": str(empresa.pk), "clientes": resultado})
@@ -249,9 +246,12 @@ class PortalVendedorViewSet(viewsets.ViewSet):
         ser.is_valid(raise_exception=True)
         vd = ser.validated_data
 
-        cliente = Cliente.objects.filter(pk=vd["id_cliente"], id_empresa=empresa, activo=True).first()
+        cliente = self._cartera_clientes_qs(request, empresa).filter(pk=vd["id_cliente"]).first()
         if cliente is None:
-            return Response({"id_cliente": "Cliente no encontrado en la empresa."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"id_cliente": "Cliente no encontrado o fuera de su cartera asignada."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         dist_m: Decimal | None = None
         dir_cli = (
@@ -306,9 +306,12 @@ class PortalVendedorViewSet(viewsets.ViewSet):
         ser.is_valid(raise_exception=True)
         vd = ser.validated_data
 
-        cliente = Cliente.objects.filter(pk=vd["id_cliente"], id_empresa=empresa, activo=True).first()
+        cliente = self._cartera_clientes_qs(request, empresa).filter(pk=vd["id_cliente"]).first()
         if cliente is None:
-            return Response({"id_cliente": "Cliente no encontrado en la empresa."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"id_cliente": "Cliente no encontrado o fuera de su cartera asignada."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         with transaction.atomic():
             prods = {
@@ -382,9 +385,12 @@ class PortalVendedorViewSet(viewsets.ViewSet):
         ser.is_valid(raise_exception=True)
         vd = ser.validated_data
 
-        cliente = Cliente.objects.filter(pk=vd["id_cliente"], id_empresa=empresa, activo=True).first()
+        cliente = self._cartera_clientes_qs(request, empresa).filter(pk=vd["id_cliente"]).first()
         if cliente is None:
-            return Response({"id_cliente": "Cliente no encontrado en la empresa."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"id_cliente": "Cliente no encontrado o fuera de su cartera asignada."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         moneda = _scope_monedas_empresa(empresa).filter(pk=vd["id_moneda"]).first()
         metodo = _scope_metodos_empresa(empresa).filter(pk=vd["id_metodo_pago"]).first()

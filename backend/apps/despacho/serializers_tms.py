@@ -146,10 +146,20 @@ class ConductorSerializer(serializers.ModelSerializer):
         emp_ref = _empresa_efectiva(self)
         veh = attrs.get("id_vehiculo_asignado") or getattr(self.instance, "id_vehiculo_asignado", None)
         empl = attrs.get("id_empleado") or getattr(self.instance, "id_empleado", None)
+        usr = attrs.get("id_usuario")
+        if usr is None and "id_usuario" not in attrs and self.instance is not None:
+            usr = self.instance.id_usuario
         if veh is not None and emp_ref is not None and str(veh.id_empresa_id) != emp_ref:
             raise serializers.ValidationError({"id_vehiculo_asignado": "El vehículo no pertenece a la empresa."})
         if empl is not None and emp_ref is not None and str(empl.empresa_id) != emp_ref:
             raise serializers.ValidationError({"id_empleado": "El empleado no pertenece a la empresa."})
+        if (
+            usr is not None
+            and emp_ref is not None
+            and not (getattr(usr, "es_superusuario_omni", False) or getattr(usr, "is_superuser", False))
+            and not usr.empresas.filter(pk=emp_ref).exists()
+        ):
+            raise serializers.ValidationError({"id_usuario": "El usuario asignado no pertenece a la empresa."})
         return attrs
 
 

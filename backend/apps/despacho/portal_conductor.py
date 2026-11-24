@@ -15,7 +15,7 @@ from django.utils import timezone
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import permissions, serializers, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 
 from apps.core.exceptions import domain_error_response
@@ -80,8 +80,8 @@ class PortalConductorViewSet(viewsets.ViewSet):
             or getattr(request.user, "is_superuser", False)
             or getattr(request.user, "is_staff", False)
         )
-        if cond is not None and cond.id_usuario_id and cond.id_usuario_id != request.user.pk and not es_admin:
-            raise ValidationError({"detail": "Esta parada está asignada a otro conductor."})
+        if not es_admin and (cond is None or cond.id_usuario_id != request.user.pk):
+            raise PermissionDenied("Solo el conductor asignado o un administrador puede operar esta parada.")
         return parada
 
     @action(detail=False, methods=["get"], url_path="mis-rutas")
@@ -106,6 +106,13 @@ class PortalConductorViewSet(viewsets.ViewSet):
         )
         if conductor_param:
             cid = validar_uuid_param(conductor_param, "conductor")
+            if (
+                not es_admin
+                and not Conductor.objects.filter(
+                    pk=cid, id_empresa=empresa, id_usuario=request.user, activo=True
+                ).exists()
+            ):
+                raise PermissionDenied("No tiene permiso para consultar rutas de otro conductor.")
             qs = qs.filter(id_conductor_id=cid)
         else:
             cond = Conductor.objects.filter(id_empresa=empresa, id_usuario=request.user, activo=True).first()

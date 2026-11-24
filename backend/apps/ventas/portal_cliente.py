@@ -45,6 +45,7 @@ from apps.inventario.models import Producto
 from .models import DetallePedido, FacturaFiscal, NotaVenta, PagoPortalCliente, Pedido, TokenPortalCliente
 from .portal_vendedor import _equivalencias_seguras
 from .services import obtener_precio
+from .services_credito import _saldo_neto_cxc, evaluar_credito_cliente
 
 logger = logging.getLogger(__name__)
 
@@ -355,12 +356,15 @@ class PortalClienteResumenView(APIView):
         empresa = principal.empresa
         cliente = principal.cliente
 
-        cxc_pendientes = list(
-            CuentaPorCobrar.objects.filter(
+        cred = evaluar_credito_cliente(cliente, empresa)
+        saldo_total = Decimal(str(cred["saldo_pendiente"])).quantize(_Q2, rounding=ROUND_HALF_UP)
+        cxc_pendientes = [
+            c
+            for c in CuentaPorCobrar.objects.filter(
                 empresa=empresa, cliente=cliente, estado__in=("pendiente", "vencida", "parcial")
             ).order_by("fecha_vencimiento")
-        )
-        saldo_total = sum((c.monto for c in cxc_pendientes), _CERO).quantize(_Q2, rounding=ROUND_HALF_UP)
+            if _saldo_neto_cxc(c) > _CERO
+        ]
         moneda_base = getattr(empresa, "id_moneda_base", None)
         eq_saldo = _equivalencias_seguras(saldo_total, moneda_base, empresa)
 
@@ -419,6 +423,7 @@ class PortalClienteResumenView(APIView):
                     "saldo_pendiente": str(saldo_total),
                     "equivalencias": eq_saldo,
                     "documentos_pendientes": len(cxc_pendientes),
+                    "cuentas_vencidas": int(cred["cxc_vencidas"]),
                 },
                 "facturas_fiscales": facturas,
                 "notas_venta": notas,

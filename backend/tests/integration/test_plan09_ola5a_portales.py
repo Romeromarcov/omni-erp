@@ -613,7 +613,7 @@ class TestPortalConductorLogistica:
         client_sc = APIClient()
         client_sc.force_authenticate(user=u_sin_cond)
         assert client_sc.get("/api/despacho/portal-conductor/mis-rutas/").data["rutas"] == []
-        # Usuario distinto al conductor asignado recibe 400
+        # Usuario distinto al conductor asignado recibe 403 fail-closed
         assert (
             client_sc.post(
                 f"/api/despacho/portal-conductor/paradas/{ctx_a['parada'].pk}/escanear-bulto/",
@@ -621,7 +621,7 @@ class TestPortalConductorLogistica:
                 format="json",
                 HTTP_IDEMPOTENCY_KEY=str(uuid.uuid4()),
             ).status_code
-            == 400
+            == 403
         )
         # ePOD inválido (sin receptor_nombre) -> 400 TMSError
         assert (
@@ -713,3 +713,289 @@ class TestPortalConductorLogistica:
             and ParadaEntrega.objects.filter(id_empresa=empresa_a).exists()
         )
         assert ctx_b["cliente"] is not None
+
+
+class TestCierreHallazgosRevisionPortales:
+    """Pruebas unitarias/integración para los 5 hallazgos de revisión PR #346."""
+
+    def test_alto1_conductor_idor_mis_rutas_y_parada_sin_asignar(self, empresa_a, moneda_usd):
+        from rest_framework.test import APIClient
+
+        from apps.core.models import Usuarios
+        from apps.despacho.models import Conductor, Despacho, ParadaEntrega, RutaDespacho
+
+        ctx = _setup_portal_base(empresa_a, moneda_usd)
+        otro_user = Usuarios.objects.create_user(
+            username=f"cond2_{uuid.uuid4().hex[:6]}",
+            email=f"cond2_{uuid.uuid4().hex[:6]}@omni.test",
+            password="TestPass123!@#",
+        )
+        otro_user.empresas.add(empresa_a)
+        otro_cond = Conductor.objects.create(
+            id_empresa=empresa_a,
+            id_usuario=otro_user,
+            nombre_completo="Segundo Chofer",
+            cedula=f"V-{uuid.uuid4().hex[:7]}",
+        )
+
+        # Ruta sin conductor asignado (id_conductor=None) -> fail-closed 403 para conductor no-admin
+        desp2 = Despacho.objects.create(
+            id_empresa=empresa_a,
+            numero_despacho=f"DSP-NC-{uuid.uuid4().hex[:6]}",
+            id_nota_venta=ctx["parada"].id_despacho.id_nota_venta,
+            fecha_despacho=timezone.now(),
+            id_almacen_origen=ctx["ruta"].id_almacen_origen,
+            direccion_destino="Altamira",
+            estado_despacho="EN_RUTA",
+        )
+        ruta_sin_cond = RutaDespacho.objects.create(
+            id_empresa=empresa_a,
+            codigo=f"RUTA-NC-{uuid.uuid4().hex[:6]}",
+            fecha_ruta=timezone.localdate(),
+            id_almacen_origen=ctx["ruta"].id_almacen_origen,
+            id_conductor=None,
+            estado="EN_CURSO",
+        )
+        parada_sin_cond = ParadaEntrega.objects.create(
+            id_empresa=empresa_a,
+            id_ruta=ruta_sin_cond,
+            id_despacho=desp2,
+            secuencia=1,
+            direccion_texto="Altamira",
+        )
+
+        cli_cond2 = APIClient()
+        cli_cond2.force_authenticate(user=otro_user)
+
+        # IDOR query param ?conductor= de otro chofer -> 403
+        r_idor = cli_cond2.get(f"/api/despacho/portal-conductor/mis-rutas/?conductor={ctx['conductor'].pk}")
+        assert r_idor.status_code == 403
+
+        # Propio ?conductor= sí permitido -> 200
+        r_propio = cli_cond2.get(f"/api/despacho/portal-conductor/mis-rutas/?conductor={otro_cond.pk}")
+        assert r_propio.status_code == 200
+
+        # Operar parada de ruta sin conductor o de otro conductor -> 403 fail-closed
+        r_unassigned = cli_cond2.post(
+            f"/api/despacho/portal-conductor/paradas/{parada_sin_cond.pk}/escanear-bulto/",
+            {"codigo_bulto": "ANY"},
+            format="json",
+            HTTP_IDEMPOTENCY_KEY=str(uuid.uuid4()),
+        )
+        assert r_unassigned.status_code == 403
+
+        r_other = cli_cond2.post(
+            f"/api/despacho/portal-conductor/paradas/{ctx['parada'].pk}/escanear-bulto/",
+            {"codigo_bulto": "ANY"},
+            format="json",
+            HTTP_IDEMPOTENCY_KEY=str(uuid.uuid4()),
+        )
+        assert r_other.status_code == 403
+
+    def test_alto2_portal_cliente_idempotencia_replay(self, empresa_a, moneda_usd, metodo_efectivo):
+        from django.contrib.auth.hashers import make_password
+        from rest_framework.test import APIClient
+
+        from apps.core.models import ClaveIdempotencia
+        from apps.ventas.models import PagoPortalCliente, Pedido, TokenPortalCliente
+
+        ctx = _setup_portal_base(empresa_a, moneda_usd)
+        anon = APIClient()
+        r_otp = anon.post(
+            "/api/ventas/portal-cliente/auth/solicitar-otp/",
+            {"rif": ctx["cliente"].rif, "id_empresa": str(empresa_a.pk), "canal": "EMAIL"},
+            format="json",
+        )
+        tok = TokenPortalCliente.objects.get(pk=r_otp.data["id_token"])
+        tok.codigo_hash = make_password("123123")
+        tok.save(update_fields=["codigo_hash"])
+        sess = anon.post(
+            "/api/ventas/portal-cliente/auth/verificar-otp/",
+            {"id_token": str(tok.pk), "rif": ctx["cliente"].rif, "codigo": "123123"},
+            format="json",
+        ).data["session_token"]
+        hdrs = {"HTTP_X_PORTAL_CLIENTE_TOKEN": sess}
+
+        idem_pago = f"cli-pago-{uuid.uuid4()}"
+        pago_payload = {
+            "monto": "45.00",
+            "id_moneda": str(moneda_usd.pk),
+            "id_metodo_pago": str(metodo_efectivo.pk),
+            "referencia": "IDEMP-001",
+        }
+        r1 = anon.post(
+            "/api/ventas/portal-cliente/pagos/", pago_payload, format="json", HTTP_IDEMPOTENCY_KEY=idem_pago, **hdrs
+        )
+        r2 = anon.post(
+            "/api/ventas/portal-cliente/pagos/", pago_payload, format="json", HTTP_IDEMPOTENCY_KEY=idem_pago, **hdrs
+        )
+        assert r1.status_code == 201 and r2.status_code == 201
+        assert r1.data["id_pago_portal"] == r2.data["id_pago_portal"]
+        assert (
+            PagoPortalCliente.objects.filter(
+                id_empresa=empresa_a, id_cliente=ctx["cliente"], referencia="IDEMP-001"
+            ).count()
+            == 1
+        )
+        assert ClaveIdempotencia.objects.filter(empresa=empresa_a, usuario__isnull=True, clave=idem_pago).exists()
+
+        idem_ped = f"cli-ped-{uuid.uuid4()}"
+        ped_payload = {"lineas": [{"id_producto": str(ctx["prod"].pk), "cantidad": "2.0000"}]}
+        p1 = anon.post(
+            "/api/ventas/portal-cliente/pedidos/", ped_payload, format="json", HTTP_IDEMPOTENCY_KEY=idem_ped, **hdrs
+        )
+        p2 = anon.post(
+            "/api/ventas/portal-cliente/pedidos/", ped_payload, format="json", HTTP_IDEMPOTENCY_KEY=idem_ped, **hdrs
+        )
+        assert p1.status_code == 201 and p2.status_code == 201
+        assert p1.data["id_pedido"] == p2.data["id_pedido"]
+        assert Pedido.objects.filter(pk=p1.data["id_pedido"]).count() == 1
+
+    def test_medio1_vendedor_bloqueado_en_cliente_de_otro_vendedor(self, empresa_a, moneda_usd, metodo_efectivo):
+        from rest_framework.test import APIClient
+
+        from apps.core.models import Usuarios
+        from apps.crm.models import Cliente, VisitaGPSVendedor
+        from apps.ventas.models import PagoPortalCliente, Pedido
+
+        ctx = _setup_portal_base(empresa_a, moneda_usd)
+        otro_vend = Usuarios.objects.create_user(
+            username=f"vend2_{uuid.uuid4().hex[:6]}",
+            email=f"vend2_{uuid.uuid4().hex[:6]}@omni.test",
+            password="TestPass123!@#",
+        )
+        otro_vend.empresas.add(empresa_a)
+        cli_otro = Cliente.objects.create(
+            id_empresa=empresa_a,
+            razon_social="Cliente Otro Vendedor",
+            rif=f"J-{uuid.uuid4().hex[:8].upper()}",
+            id_vendedor_asignado=otro_vend,
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=ctx["vendedor"])
+        assert (
+            client.post(
+                "/api/ventas/portal-vendedor/checkin/",
+                {"id_cliente": str(cli_otro.pk), "latitud": "10.48", "longitud": "-66.85"},
+                format="json",
+                HTTP_IDEMPOTENCY_KEY=str(uuid.uuid4()),
+            ).status_code
+            == 404
+        )
+        assert (
+            client.post(
+                "/api/ventas/portal-vendedor/pedidos/",
+                {"id_cliente": str(cli_otro.pk), "lineas": [{"id_producto": str(ctx["prod"].pk), "cantidad": "1"}]},
+                format="json",
+                HTTP_IDEMPOTENCY_KEY=str(uuid.uuid4()),
+            ).status_code
+            == 404
+        )
+        assert (
+            client.post(
+                "/api/ventas/portal-vendedor/cobros/",
+                {
+                    "id_cliente": str(cli_otro.pk),
+                    "monto": "10.00",
+                    "id_moneda": str(moneda_usd.pk),
+                    "id_metodo_pago": str(metodo_efectivo.pk),
+                },
+                format="json",
+                HTTP_IDEMPOTENCY_KEY=str(uuid.uuid4()),
+            ).status_code
+            == 404
+        )
+        assert not VisitaGPSVendedor.objects.filter(id_cliente=cli_otro).exists()
+        assert not Pedido.objects.filter(id_cliente=cli_otro).exists()
+        assert not PagoPortalCliente.objects.filter(id_cliente=cli_otro).exists()
+
+    def test_medio2_saldo_neto_cxc_abono_y_gracia_mora(self, empresa_a, moneda_usd):
+        from django.contrib.auth.hashers import make_password
+        from rest_framework.test import APIClient
+
+        from apps.cuentas_por_cobrar.models import AbonoCxC, CuentaPorCobrar
+        from apps.ventas.models import TokenPortalCliente
+
+        ctx = _setup_portal_base(empresa_a, moneda_usd)
+        cli = ctx["cliente"]
+        cli.dias_gracia_mora = 10  # La CxC venció hace 5 días -> cubierta por 10 días de gracia
+        cli.save(update_fields=["dias_gracia_mora"])
+        cxc = CuentaPorCobrar.objects.get(empresa=empresa_a, cliente=cli)
+        AbonoCxC.objects.create(cuenta_por_cobrar=cxc, monto=Decimal("50.00"))
+
+        client_v = APIClient()
+        client_v.force_authenticate(user=ctx["vendedor"])
+        r_v = client_v.get("/api/ventas/portal-vendedor/cartera/")
+        assert r_v.status_code == 200
+        row = r_v.data["clientes"][0]
+        assert row["saldo_pendiente"] == "100.00"
+        assert row["cuentas_vencidas"] == 0
+        assert row["bloquear_por_mora"] is False
+
+        anon = APIClient()
+        r_otp = anon.post(
+            "/api/ventas/portal-cliente/auth/solicitar-otp/",
+            {"rif": cli.rif, "id_empresa": str(empresa_a.pk)},
+            format="json",
+        )
+        tok = TokenPortalCliente.objects.get(pk=r_otp.data["id_token"])
+        tok.codigo_hash = make_password("654321")
+        tok.save(update_fields=["codigo_hash"])
+        sess = anon.post(
+            "/api/ventas/portal-cliente/auth/verificar-otp/",
+            {"id_token": str(tok.pk), "rif": cli.rif, "codigo": "654321"},
+            format="json",
+        ).data["session_token"]
+        r_c = anon.get("/api/ventas/portal-cliente/resumen/", HTTP_X_PORTAL_CLIENTE_TOKEN=sess)
+        assert r_c.status_code == 200
+        ec = r_c.data["estado_cuenta_trimonetario"]
+        assert ec["saldo_pendiente"] == "100.00"
+        assert ec["cuentas_vencidas"] == 0
+        assert ec["documentos_pendientes"] == 1
+
+    def test_bajo1_validacion_cross_tenant_serializers_y_conductor(self, empresa_a, empresa_b):
+        from apps.core.models import Usuarios
+        from apps.crm.serializers import ClienteSerializer
+        from apps.despacho.models import Conductor
+        from apps.despacho.serializers_tms import ConductorSerializer
+
+        usr_a = Usuarios.objects.create_user(
+            username=f"ua_{uuid.uuid4().hex[:6]}", email=f"ua_{uuid.uuid4().hex[:6]}@omni.test", password="x"
+        )
+        usr_a.empresas.add(empresa_a)
+        usr_b = Usuarios.objects.create_user(
+            username=f"ub_{uuid.uuid4().hex[:6]}", email=f"ub_{uuid.uuid4().hex[:6]}@omni.test", password="x"
+        )
+        usr_b.empresas.add(empresa_b)
+
+        ser_cli = ClienteSerializer(
+            data={
+                "razon_social": "Bad Ser Cli",
+                "rif": f"J-{uuid.uuid4().int % 90000000 + 10000000}",
+                "id_empresa": str(empresa_a.pk),
+                "id_vendedor_asignado": str(usr_b.pk),
+            }
+        )
+        assert ser_cli.is_valid() is False
+        assert "id_vendedor_asignado" in ser_cli.errors
+
+        with pytest.raises(ValidationError):
+            Conductor(
+                id_empresa=empresa_a,
+                id_usuario=usr_b,
+                nombre_completo="Bad Cond",
+                cedula=f"V-{uuid.uuid4().hex[:7]}",
+            ).clean()
+
+        req = SimpleNamespace(user=usr_a)
+        ser_cond = ConductorSerializer(
+            data={
+                "id_usuario": str(usr_b.pk),
+                "nombre_completo": "Bad Cond Ser",
+                "cedula": f"V-{uuid.uuid4().hex[:7]}",
+            },
+            context={"request": req},
+        )
+        assert ser_cond.is_valid() is False
+        assert "id_usuario" in ser_cond.errors
