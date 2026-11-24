@@ -71,6 +71,7 @@ class ClienteSerializer(serializers.ModelSerializer):
             "bloquear_por_mora",
             "id_empresa",
             "contacto",
+            "id_vendedor_asignado",
         ]
 
 

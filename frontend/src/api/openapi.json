@@ -23016,6 +23016,92 @@
                 }
             ]
         },
+        "/despacho/portal-conductor/mis-rutas/": {
+            "get": {
+                "operationId": "despacho_portal-conductor_mis_rutas",
+                "description": "Lista rutas PLANIFICADA/EN_CURSO asignadas al conductor autenticado (o todas si es supervisor).",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "parameters": []
+        },
+        "/despacho/portal-conductor/paradas/{parada_id}/epod/": {
+            "post": {
+                "operationId": "despacho_portal-conductor_paradas_registrar_epod",
+                "description": "Registra ePOD (foto, firma, GPS) y cobro en sitio tolerante a reintentos offline.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/RegistrarEPODInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/RegistrarEPODInput"
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "parada_id",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        },
+        "/despacho/portal-conductor/paradas/{parada_id}/escanear-bulto/": {
+            "post": {
+                "operationId": "despacho_portal-conductor_paradas_escanear_bulto",
+                "description": "Valida el código de barras o SKU del bulto contra los productos del despacho.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/EscanearBultoInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/EscanearBultoInput"
+                        }
+                    }
+                },
+                "tags": [
+                    "despacho"
+                ]
+            },
+            "parameters": [
+                {
+                    "name": "parada_id",
+                    "in": "path",
+                    "required": true,
+                    "type": "string"
+                }
+            ]
+        },
         "/despacho/rutas/": {
             "get": {
                 "operationId": "despacho_rutas_list",
@@ -57381,6 +57467,282 @@
                 }
             ]
         },
+        "/ventas/portal-cliente/auth/solicitar-otp/": {
+            "post": {
+                "operationId": "ventas_portal-cliente_auth_solicitar-otp_create",
+                "description": "Solicita un OTP efímero de acceso por WhatsApp o Email sin filtrar el código en la respuesta.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/SolicitarOTPPortalInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/SolicitarOTPPortalInput"
+                        }
+                    }
+                },
+                "tags": [
+                    "ventas"
+                ]
+            },
+            "parameters": []
+        },
+        "/ventas/portal-cliente/auth/verificar-otp/": {
+            "post": {
+                "operationId": "ventas_portal-cliente_auth_verificar-otp_create",
+                "description": "Verifica OTP (máx 5 intentos) y entrega token de sesión opaco para el Portal de Clientes.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/VerificarOTPPortalInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/VerificarOTPPortalInput"
+                        }
+                    }
+                },
+                "tags": [
+                    "ventas"
+                ]
+            },
+            "parameters": []
+        },
+        "/ventas/portal-cliente/pagos/": {
+            "post": {
+                "operationId": "ventas_portal-cliente_pagos_create",
+                "description": "Carga de pagos por el cliente con soporte OCR/IA determinista de comprobantes.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PagoPortalClienteInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/PagoPortalClienteInput"
+                        }
+                    }
+                },
+                "tags": [
+                    "ventas"
+                ]
+            },
+            "parameters": []
+        },
+        "/ventas/portal-cliente/pedidos/": {
+            "post": {
+                "operationId": "ventas_portal-cliente_pedidos_create",
+                "description": "Permite al cliente autenticado generar pedidos self-service en estado PENDIENTE.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PedidoPortalClienteInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/PedidoPortalClienteInput"
+                        }
+                    }
+                },
+                "tags": [
+                    "ventas"
+                ]
+            },
+            "parameters": []
+        },
+        "/ventas/portal-cliente/resumen/": {
+            "get": {
+                "operationId": "ventas_portal-cliente_resumen_list",
+                "description": "Resumen del cliente B2B/B2C: historial de facturas/notas, estado de cuenta trimonetario y PDFs.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "ventas"
+                ]
+            },
+            "parameters": []
+        },
+        "/ventas/portal-cliente/tracking/": {
+            "get": {
+                "operationId": "ventas_portal-cliente_tracking_list",
+                "description": "Despachos y paradas en curso del cliente autenticado (sin exponer PII ni otros clientes).",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "ventas"
+                ]
+            },
+            "parameters": []
+        },
+        "/ventas/portal-vendedor/cartera/": {
+            "get": {
+                "operationId": "ventas_portal-vendedor_cartera",
+                "description": "Cartera propia del vendedor con saldo CxC pendiente y mora real.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "ventas"
+                ]
+            },
+            "parameters": []
+        },
+        "/ventas/portal-vendedor/catalogo/": {
+            "get": {
+                "operationId": "ventas_portal-vendedor_catalogo",
+                "description": "Catálogo de productos con stock neto disponible y equivalencias trimonetarias.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "ventas"
+                ]
+            },
+            "parameters": []
+        },
+        "/ventas/portal-vendedor/checkin/": {
+            "post": {
+                "operationId": "ventas_portal-vendedor_checkin",
+                "description": "Registra un check-in GPS del vendedor en campo calculando distancia al cliente.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CheckinVendedorInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/CheckinVendedorInput"
+                        }
+                    }
+                },
+                "tags": [
+                    "ventas"
+                ]
+            },
+            "parameters": []
+        },
+        "/ventas/portal-vendedor/cobros/": {
+            "post": {
+                "operationId": "ventas_portal-vendedor_cobros",
+                "description": "Registra un cobro reportado en campo con foto/comprobante pendiente de validación.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CobroVendedorInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/CobroVendedorInput"
+                        }
+                    }
+                },
+                "tags": [
+                    "ventas"
+                ]
+            },
+            "parameters": []
+        },
+        "/ventas/portal-vendedor/metas-comisiones/": {
+            "get": {
+                "operationId": "ventas_portal-vendedor_metas_comisiones",
+                "description": "Tablero de metas y comisiones devengadas/liquidadas del vendedor.",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "ventas"
+                ]
+            },
+            "parameters": []
+        },
+        "/ventas/portal-vendedor/pedidos/": {
+            "post": {
+                "operationId": "ventas_portal-vendedor_pedidos",
+                "description": "Crea un pedido PENDIENTE desde campo atribuido al vendedor autenticado.",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PedidoVendedorInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/PedidoVendedorInput"
+                        }
+                    }
+                },
+                "tags": [
+                    "ventas"
+                ]
+            },
+            "parameters": []
+        },
         "/ventas/reglas-precio-dinamico/": {
             "get": {
                 "operationId": "ventas_reglas-precio-dinamico_list",
@@ -66440,6 +66802,13 @@
                     "type": "string",
                     "format": "uuid",
                     "x-nullable": true
+                },
+                "id_vendedor_asignado": {
+                    "title": "Id vendedor asignado",
+                    "description": "Vendedor responsable de la cartera en el Portal SFA (Plan 09 Fase 7.2).",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
                 }
             }
         },
@@ -68552,6 +68921,13 @@
                     "type": "integer",
                     "x-nullable": true
                 },
+                "id_usuario": {
+                    "title": "Id usuario",
+                    "description": "Usuario asignado al Portal de Conductores (Plan 09 Fase 7.4).",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
                 "nombre_completo": {
                     "title": "Nombre completo",
                     "type": "string",
@@ -68733,7 +69109,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-23T08:20:54.253917-04:00"
+                    "default": "2026-11-24T18:22:14.220620-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",
@@ -69143,6 +69519,26 @@
                 },
                 "cobro": {
                     "$ref": "#/definitions/CobroEnSitioInput"
+                }
+            }
+        },
+        "EscanearBultoInput": {
+            "required": [
+                "codigo_bulto"
+            ],
+            "type": "object",
+            "properties": {
+                "codigo_bulto": {
+                    "title": "Codigo bulto",
+                    "type": "string",
+                    "maxLength": 120,
+                    "minLength": 1
+                },
+                "observacion": {
+                    "title": "Observacion",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 300
                 }
             }
         },
@@ -85087,6 +85483,323 @@
                     "type": "string",
                     "format": "uuid",
                     "x-nullable": true
+                }
+            }
+        },
+        "SolicitarOTPPortalInput": {
+            "required": [
+                "rif"
+            ],
+            "type": "object",
+            "properties": {
+                "rif": {
+                    "title": "Rif",
+                    "type": "string",
+                    "maxLength": 20,
+                    "minLength": 1
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "canal": {
+                    "title": "Canal",
+                    "type": "string",
+                    "enum": [
+                        "WHATSAPP",
+                        "EMAIL"
+                    ],
+                    "default": "WHATSAPP"
+                },
+                "destino": {
+                    "title": "Destino",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 150
+                }
+            }
+        },
+        "VerificarOTPPortalInput": {
+            "required": [
+                "rif",
+                "codigo"
+            ],
+            "type": "object",
+            "properties": {
+                "id_token": {
+                    "title": "Id token",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "rif": {
+                    "title": "Rif",
+                    "type": "string",
+                    "maxLength": 20,
+                    "minLength": 1
+                },
+                "codigo": {
+                    "title": "Codigo",
+                    "type": "string",
+                    "maxLength": 8,
+                    "minLength": 6
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                }
+            }
+        },
+        "PagoPortalClienteInput": {
+            "required": [
+                "monto",
+                "id_moneda",
+                "id_metodo_pago"
+            ],
+            "type": "object",
+            "properties": {
+                "monto": {
+                    "title": "Monto",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "id_moneda": {
+                    "title": "Id moneda",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "id_metodo_pago": {
+                    "title": "Id metodo pago",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "tasa": {
+                    "title": "Tasa",
+                    "type": "string",
+                    "format": "decimal",
+                    "default": "1.0000"
+                },
+                "referencia": {
+                    "title": "Referencia",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 100
+                },
+                "comprobante_url": {
+                    "title": "Comprobante url",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 500
+                },
+                "texto_comprobante_ocr": {
+                    "title": "Texto comprobante ocr",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 2000
+                },
+                "observaciones": {
+                    "title": "Observaciones",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 1000
+                }
+            }
+        },
+        "LineaPedidoClienteInput": {
+            "required": [
+                "id_producto",
+                "cantidad"
+            ],
+            "type": "object",
+            "properties": {
+                "id_producto": {
+                    "title": "Id producto",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "cantidad": {
+                    "title": "Cantidad",
+                    "type": "string",
+                    "format": "decimal"
+                }
+            }
+        },
+        "PedidoPortalClienteInput": {
+            "required": [
+                "lineas"
+            ],
+            "type": "object",
+            "properties": {
+                "observaciones": {
+                    "title": "Observaciones",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 1000
+                },
+                "lineas": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/LineaPedidoClienteInput"
+                    }
+                }
+            }
+        },
+        "CheckinVendedorInput": {
+            "required": [
+                "id_cliente",
+                "latitud",
+                "longitud"
+            ],
+            "type": "object",
+            "properties": {
+                "id_cliente": {
+                    "title": "Id cliente",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "latitud": {
+                    "title": "Latitud",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "longitud": {
+                    "title": "Longitud",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "precision_m": {
+                    "title": "Precision m",
+                    "type": "string",
+                    "format": "decimal",
+                    "x-nullable": true
+                },
+                "resultado": {
+                    "title": "Resultado",
+                    "type": "string",
+                    "enum": [
+                        "EFECTIVA",
+                        "SIN_CONTACTO",
+                        "COBRANZA",
+                        "PEDIDO",
+                        "OTRO"
+                    ],
+                    "default": "EFECTIVA"
+                },
+                "notas": {
+                    "title": "Notas",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 1000
+                }
+            }
+        },
+        "CobroVendedorInput": {
+            "required": [
+                "id_cliente",
+                "monto",
+                "id_moneda",
+                "id_metodo_pago"
+            ],
+            "type": "object",
+            "properties": {
+                "id_cliente": {
+                    "title": "Id cliente",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "monto": {
+                    "title": "Monto",
+                    "type": "string",
+                    "format": "decimal"
+                },
+                "id_moneda": {
+                    "title": "Id moneda",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "id_metodo_pago": {
+                    "title": "Id metodo pago",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "tasa": {
+                    "title": "Tasa",
+                    "type": "string",
+                    "format": "decimal",
+                    "default": "1.0000"
+                },
+                "referencia": {
+                    "title": "Referencia",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 100
+                },
+                "comprobante_url": {
+                    "title": "Comprobante url",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 500
+                },
+                "observaciones": {
+                    "title": "Observaciones",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 1000
+                }
+            }
+        },
+        "LineaPedidoPortalInput": {
+            "required": [
+                "id_producto",
+                "cantidad"
+            ],
+            "type": "object",
+            "properties": {
+                "id_producto": {
+                    "title": "Id producto",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "cantidad": {
+                    "title": "Cantidad",
+                    "type": "string",
+                    "format": "decimal"
+                }
+            }
+        },
+        "PedidoVendedorInput": {
+            "required": [
+                "id_cliente",
+                "lineas"
+            ],
+            "type": "object",
+            "properties": {
+                "id_cliente": {
+                    "title": "Id cliente",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "observaciones": {
+                    "title": "Observaciones",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 1000
+                },
+                "referencia_externa": {
+                    "title": "Referencia externa",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 100
+                },
+                "lineas": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/LineaPedidoPortalInput"
+                    }
                 }
             }
         },

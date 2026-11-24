@@ -126,6 +126,7 @@ class ConductorSerializer(serializers.ModelSerializer):
             "id_conductor",
             "id_empresa",
             "id_empleado",
+            "id_usuario",
             "nombre_completo",
             "cedula",
             "telefono",

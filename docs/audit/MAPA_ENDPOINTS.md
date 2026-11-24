@@ -1177,6 +1177,24 @@
 | `^politicas-acceso/mi-matriz/$` | PoliticaAccesoRolViewSet | PoliticaAccesoRol | ✅ | ✅ | IsAuthenticated |
 | `^politicas-acceso/mi-matriz\.(?P<format>[a-z0-9]+)/?$` | PoliticaAccesoRolViewSet | PoliticaAccesoRol | ✅ | ✅ | IsAuthenticated |
 | `^politicas-acceso\.(?P<format>[a-z0-9]+)/?$` | PoliticaAccesoRolViewSet | PoliticaAccesoRol | ✅ | ✅ | IsAuthenticated |
+| `^portal-conductor/mis-rutas/$` | PortalConductorViewSet | — | — | — | IsAuthenticated |
+| `^portal-conductor/mis-rutas\.(?P<format>[a-z0-9]+)/?$` | PortalConductorViewSet | — | — | — | IsAuthenticated |
+| `^portal-conductor/paradas/(?P<parada_id>[^/.]+)/epod/$` | PortalConductorViewSet | — | — | — | IsAuthenticated |
+| `^portal-conductor/paradas/(?P<parada_id>[^/.]+)/epod\.(?P<format>[a-z0-9]+)/?$` | PortalConductorViewSet | — | — | — | IsAuthenticated |
+| `^portal-conductor/paradas/(?P<parada_id>[^/.]+)/escanear-bulto/$` | PortalConductorViewSet | — | — | — | IsAuthenticated |
+| `^portal-conductor/paradas/(?P<parada_id>[^/.]+)/escanear-bulto\.(?P<format>[a-z0-9]+)/?$` | PortalConductorViewSet | — | — | — | IsAuthenticated |
+| `^portal-vendedor/cartera/$` | PortalVendedorViewSet | — | — | — | IsAuthenticated |
+| `^portal-vendedor/cartera\.(?P<format>[a-z0-9]+)/?$` | PortalVendedorViewSet | — | — | — | IsAuthenticated |
+| `^portal-vendedor/catalogo/$` | PortalVendedorViewSet | — | — | — | IsAuthenticated |
+| `^portal-vendedor/catalogo\.(?P<format>[a-z0-9]+)/?$` | PortalVendedorViewSet | — | — | — | IsAuthenticated |
+| `^portal-vendedor/checkin/$` | PortalVendedorViewSet | — | — | — | IsAuthenticated |
+| `^portal-vendedor/checkin\.(?P<format>[a-z0-9]+)/?$` | PortalVendedorViewSet | — | — | — | IsAuthenticated |
+| `^portal-vendedor/cobros/$` | PortalVendedorViewSet | — | — | — | IsAuthenticated |
+| `^portal-vendedor/cobros\.(?P<format>[a-z0-9]+)/?$` | PortalVendedorViewSet | — | — | — | IsAuthenticated |
+| `^portal-vendedor/metas-comisiones/$` | PortalVendedorViewSet | — | — | — | IsAuthenticated |
+| `^portal-vendedor/metas-comisiones\.(?P<format>[a-z0-9]+)/?$` | PortalVendedorViewSet | — | — | — | IsAuthenticated |
+| `^portal-vendedor/pedidos/$` | PortalVendedorViewSet | — | — | — | IsAuthenticated |
+| `^portal-vendedor/pedidos\.(?P<format>[a-z0-9]+)/?$` | PortalVendedorViewSet | — | — | — | IsAuthenticated |
 | `^precios-lista/$` | PrecioListaLubrikcaViewSet | PrecioListaLubrikca | ✅ | — | IsAuthenticated |
 | `^precios-lista/(?P<pk>[^/.]+)/$` | PrecioListaLubrikcaViewSet | PrecioListaLubrikca | ✅ | — | IsAuthenticated |
 | `^precios-lista/(?P<pk>[^/.]+)/activar/$` | PrecioListaLubrikcaViewSet | PrecioListaLubrikca | ✅ | — | IsAuthenticated |
@@ -1695,6 +1713,12 @@
 | `libro-ventas/` | LibroVentasView | — | — | — | IsAuthenticated |
 | `periodos-fiscales/` | PeriodoFiscalView | — | — | — | IsAuthenticated |
 | `periodos-fiscales/<int:año>/<int:mes>/cerrar/` | CerrarPeriodoFiscalView | — | — | — | IsAuthenticated |
+| `portal-cliente/auth/solicitar-otp/` | SolicitarOTPPortalView | — | — | — | AllowAny |
+| `portal-cliente/auth/verificar-otp/` | VerificarOTPPortalView | — | — | — | AllowAny |
+| `portal-cliente/pagos/` | PortalClientePagosView | — | — | — | IsPortalClienteAuthenticated |
+| `portal-cliente/pedidos/` | PortalClientePedidosView | — | — | — | IsPortalClienteAuthenticated |
+| `portal-cliente/resumen/` | PortalClienteResumenView | — | — | — | IsPortalClienteAuthenticated |
+| `portal-cliente/tracking/` | PortalClienteTrackingView | — | — | — | IsPortalClienteAuthenticated |
 | `pull/` | SyncPullView | — | — | — | IsAuthenticated |
 | `push/` | SyncPushView | — | — | — | IsAuthenticated |
 | `push/ventas/` | SyncPushVentasView | — | — | — | IsAuthenticated |
@@ -1715,4 +1739,4 @@
 | `validar-cuenta-ve/` | ValidarCuentaVeView | — | — | — | IsAuthenticated |
 | `validar-referencia/` | ValidarReferenciaView | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 302_
+_Total ViewSets: 310_

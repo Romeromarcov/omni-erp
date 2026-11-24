@@ -260,6 +260,7 @@ RLS_TABLES = {
     "crm_etapa": "id_empresa_id",
     "crm_lead": "id_empresa_id",
     "crm_actividad": "id_empresa_id",
+    "crm_visita_gps_vendedor": "id_empresa_id",
     "connect_perfil": "id_empresa_id",
     "connect_tarjeta": "id_empresa_id",
     "connect_toque": "id_empresa_id",
@@ -482,7 +483,9 @@ RLS_TABLES = {
     "ventas_nota_credito_fiscal": "id_empresa_id",
     "ventas_nota_credito_venta": "id_empresa_id",
     "ventas_nota_debito_fiscal": "id_empresa_id",
+    "ventas_pago_portal_cliente": "id_empresa_id",
     "ventas_regla_precio_dinamico": "id_empresa_id",
+    "ventas_token_portal_cliente": "id_empresa_id",
 }
 
 # Catálogos compartidos: la columna de empresa es *nullable* y una fila con

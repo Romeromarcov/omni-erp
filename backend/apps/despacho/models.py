@@ -297,6 +297,14 @@ class Conductor(OmniBaseModel):
     id_empleado = models.ForeignKey(
         "rrhh.Empleado", on_delete=models.SET_NULL, null=True, blank=True, related_name="conductor_tms"
     )
+    id_usuario = models.ForeignKey(
+        "core.Usuarios",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="perfiles_conductor",
+        help_text="Usuario asignado al Portal de Conductores (Plan 09 Fase 7.4).",
+    )
     nombre_completo = models.CharField(max_length=150)
     cedula = models.CharField(max_length=30)
     telefono = models.CharField(max_length=30, blank=True, default="")
