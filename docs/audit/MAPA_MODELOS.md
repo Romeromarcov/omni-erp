@@ -229,6 +229,7 @@
 | nomina | ProcesoNominaExtrasalarial | ✅ | ✅ | id_empresa+numero_proceso |
 | notificaciones | EventoNotificacion | ✅ | ✅ | codigo_evento+id_empresa |
 | notificaciones | LogNotificacion | — | ✅ | — |
+| notificaciones | MensajeChatterDocumento | ✅ | ✅ | — |
 | notificaciones | PlantillaNotificacion | — | ✅ | — |
 | notificaciones | SuscripcionNotificacion | — | ✅ | id_evento+id_usuario+canal |
 | personalizacion | EntidadInstancia | ✅ | ✅ | — |
@@ -295,4 +296,4 @@
 | ventas | ReglaPrecioDinamico | ✅ | ✅ | id_empresa+codigo |
 | ventas | TokenPortalCliente | ✅ | ✅ | — |
 
-_Total modelos: 292_
+_Total modelos: 293_

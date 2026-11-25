@@ -887,6 +887,50 @@
                 }
             ]
         },
+        "/agentes/operativos/catalogo/": {
+            "get": {
+                "operationId": "agentes_operativos_catalogo",
+                "description": "Catálogo y ejecución síncrona/determinista + LLM de los 5 Agentes IA Operativos (Plan 09 Fase 8.2).",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "agentes"
+                ]
+            },
+            "parameters": []
+        },
+        "/agentes/operativos/ejecutar/": {
+            "post": {
+                "operationId": "agentes_operativos_ejecutar",
+                "description": "Catálogo y ejecución síncrona/determinista + LLM de los 5 Agentes IA Operativos (Plan 09 Fase 8.2).",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/EjecutarAgenteOperativoInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/EjecutarAgenteOperativoInput"
+                        }
+                    }
+                },
+                "tags": [
+                    "agentes"
+                ]
+            },
+            "parameters": []
+        },
         "/agentes/predicciones/": {
             "get": {
                 "operationId": "agentes_predicciones_list",
@@ -45299,6 +45343,75 @@
             },
             "parameters": []
         },
+        "/notificaciones/chatter/": {
+            "get": {
+                "operationId": "notificaciones_chatter_list",
+                "description": "Chatter interno y despacho WhatsApp Business sobre documentos comerciales/logísticos (Plan 09 Fase 8.1).",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                },
+                "tags": [
+                    "notificaciones"
+                ]
+            },
+            "post": {
+                "operationId": "notificaciones_chatter_create",
+                "description": "Chatter interno y despacho WhatsApp Business sobre documentos comerciales/logísticos (Plan 09 Fase 8.1).",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CrearChatterInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/MensajeChatterDocumento"
+                        }
+                    }
+                },
+                "tags": [
+                    "notificaciones"
+                ]
+            },
+            "parameters": []
+        },
+        "/notificaciones/chatter/enviar-whatsapp/": {
+            "post": {
+                "operationId": "notificaciones_chatter_enviar_whatsapp",
+                "description": "Chatter interno y despacho WhatsApp Business sobre documentos comerciales/logísticos (Plan 09 Fase 8.1).",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/EnviarWhatsAppInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/MensajeChatterDocumento"
+                        }
+                    }
+                },
+                "tags": [
+                    "notificaciones"
+                ]
+            },
+            "parameters": []
+        },
         "/notificaciones/notificaciones/mis-notificaciones/": {
             "get": {
                 "operationId": "notificaciones_notificaciones_mis_notificaciones",
@@ -57614,7 +57727,7 @@
         "/ventas/portal-vendedor/cartera/": {
             "get": {
                 "operationId": "ventas_portal-vendedor_cartera",
-                "description": "Cartera propia del vendedor con saldo CxC pendiente y mora real.",
+                "description": "Cartera propia del vendedor con saldo neto CxC (descontando abonos/asignaciones) y mora real.",
                 "parameters": [],
                 "responses": {
                     "200": {
@@ -58264,70 +58377,6 @@
                 }
             }
         },
-        "ConsumoLLMPorModelo": {
-            "type": "object",
-            "properties": {
-                "modelo": {
-                    "title": "Modelo",
-                    "type": "string",
-                    "readOnly": true,
-                    "minLength": 1
-                },
-                "llamadas": {
-                    "title": "Llamadas",
-                    "type": "integer",
-                    "readOnly": true
-                },
-                "tokens_entrada_total": {
-                    "title": "Tokens entrada total",
-                    "type": "integer",
-                    "readOnly": true
-                },
-                "tokens_salida_total": {
-                    "title": "Tokens salida total",
-                    "type": "integer",
-                    "readOnly": true
-                },
-                "costo_total_usd": {
-                    "title": "Costo total usd",
-                    "type": "string",
-                    "format": "decimal",
-                    "readOnly": true
-                }
-            }
-        },
-        "ConsumoLLMPorUso": {
-            "type": "object",
-            "properties": {
-                "uso": {
-                    "title": "Uso",
-                    "type": "string",
-                    "readOnly": true,
-                    "minLength": 1
-                },
-                "llamadas": {
-                    "title": "Llamadas",
-                    "type": "integer",
-                    "readOnly": true
-                },
-                "tokens_entrada_total": {
-                    "title": "Tokens entrada total",
-                    "type": "integer",
-                    "readOnly": true
-                },
-                "tokens_salida_total": {
-                    "title": "Tokens salida total",
-                    "type": "integer",
-                    "readOnly": true
-                },
-                "costo_total_usd": {
-                    "title": "Costo total usd",
-                    "type": "string",
-                    "format": "decimal",
-                    "readOnly": true
-                }
-            }
-        },
         "ConsumoLLMResumen": {
             "type": "object",
             "properties": {
@@ -58356,20 +58405,6 @@
                     "title": "Latencia promedio ms",
                     "type": "integer",
                     "readOnly": true
-                },
-                "por_modelo": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/ConsumoLLMPorModelo"
-                    },
-                    "readOnly": true
-                },
-                "por_uso": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/ConsumoLLMPorUso"
-                    },
-                    "readOnly": true
                 }
             }
         },
@@ -58391,7 +58426,10 @@
                         "reorden_sugeridor",
                         "personalizacion_capa2",
                         "connect_calificador",
-                        "connect_seguimiento"
+                        "connect_seguimiento",
+                        "tesorero_conciliador",
+                        "logistico_ruteo",
+                        "cfo_copilot_trimonetario"
                     ],
                     "readOnly": true
                 },
@@ -58463,6 +58501,121 @@
                 }
             }
         },
+        "ConsumoLLMPorModelo": {
+            "type": "object",
+            "properties": {
+                "modelo": {
+                    "title": "Modelo",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "llamadas": {
+                    "title": "Llamadas",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "tokens_entrada_total": {
+                    "title": "Tokens entrada total",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "tokens_salida_total": {
+                    "title": "Tokens salida total",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "costo_total_usd": {
+                    "title": "Costo total usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                }
+            }
+        },
+        "ConsumoLLMPorUso": {
+            "type": "object",
+            "properties": {
+                "uso": {
+                    "title": "Uso",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "llamadas": {
+                    "title": "Llamadas",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "tokens_entrada_total": {
+                    "title": "Tokens entrada total",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "tokens_salida_total": {
+                    "title": "Tokens salida total",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "costo_total_usd": {
+                    "title": "Costo total usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                }
+            }
+        },
+        "EjecutarAgenteOperativoInput": {
+            "required": [
+                "agente"
+            ],
+            "type": "object",
+            "properties": {
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "agente": {
+                    "title": "Agente",
+                    "type": "string",
+                    "enum": [
+                        "COBRANZA",
+                        "TESORERO",
+                        "LOGISTICO",
+                        "COMPRADOR",
+                        "CFO_COPILOT"
+                    ]
+                },
+                "persistir": {
+                    "title": "Persistir",
+                    "type": "boolean",
+                    "default": true
+                },
+                "limite": {
+                    "title": "Limite",
+                    "type": "integer",
+                    "default": 25,
+                    "maximum": 100,
+                    "minimum": 1
+                },
+                "por_modelo": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ConsumoLLMPorModelo"
+                    },
+                    "readOnly": true
+                },
+                "por_uso": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ConsumoLLMPorUso"
+                    },
+                    "readOnly": true
+                }
+            }
+        },
         "PrediccionAgente": {
             "required": [
                 "agente",
@@ -58493,7 +58646,10 @@
                         "reorden_sugeridor",
                         "personalizacion_capa2",
                         "connect_calificador",
-                        "connect_seguimiento"
+                        "connect_seguimiento",
+                        "tesorero_conciliador",
+                        "logistico_ruteo",
+                        "cfo_copilot_trimonetario"
                     ]
                 },
                 "input_texto": {
@@ -69109,7 +69265,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-24T18:22:14.220620-04:00"
+                    "default": "2026-11-24T21:02:29.785174-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",
@@ -79725,6 +79881,238 @@
                     "title": "Id periodo nomina",
                     "type": "string",
                     "format": "uuid"
+                }
+            }
+        },
+        "CrearChatterInput": {
+            "required": [
+                "tipo_documento",
+                "documento_id",
+                "cuerpo"
+            ],
+            "type": "object",
+            "properties": {
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "tipo_documento": {
+                    "title": "Tipo documento",
+                    "type": "string",
+                    "enum": [
+                        "COTIZACION",
+                        "PEDIDO",
+                        "FACTURA",
+                        "NOTA_VENTA",
+                        "COBRANZA",
+                        "DESPACHO",
+                        "TICKET"
+                    ]
+                },
+                "documento_id": {
+                    "title": "Documento id",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "cuerpo": {
+                    "title": "Cuerpo",
+                    "type": "string",
+                    "maxLength": 4000,
+                    "minLength": 1
+                },
+                "es_nota_interna": {
+                    "title": "Es nota interna",
+                    "type": "boolean",
+                    "default": true
+                },
+                "canal": {
+                    "title": "Canal",
+                    "type": "string",
+                    "enum": [
+                        "IN_APP",
+                        "EMAIL",
+                        "WHATSAPP"
+                    ],
+                    "default": "IN_APP"
+                },
+                "destinatario_telefono": {
+                    "title": "Destinatario telefono",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 30
+                }
+            }
+        },
+        "MensajeChatterDocumento": {
+            "type": "object",
+            "properties": {
+                "id_mensaje": {
+                    "title": "Id mensaje",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "tipo_documento": {
+                    "title": "Tipo documento",
+                    "type": "string",
+                    "enum": [
+                        "COTIZACION",
+                        "PEDIDO",
+                        "FACTURA",
+                        "NOTA_VENTA",
+                        "COBRANZA",
+                        "DESPACHO",
+                        "TICKET"
+                    ],
+                    "readOnly": true
+                },
+                "documento_id": {
+                    "title": "Documento id",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true
+                },
+                "autor": {
+                    "title": "Autor",
+                    "type": "string",
+                    "format": "uuid",
+                    "readOnly": true,
+                    "x-nullable": true
+                },
+                "autor_username": {
+                    "title": "Autor username",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "canal": {
+                    "title": "Canal",
+                    "type": "string",
+                    "enum": [
+                        "IN_APP",
+                        "EMAIL",
+                        "WHATSAPP"
+                    ],
+                    "readOnly": true
+                },
+                "es_nota_interna": {
+                    "title": "Es nota interna",
+                    "type": "boolean",
+                    "readOnly": true
+                },
+                "destinatario_telefono": {
+                    "title": "Destinatario telefono",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "cuerpo": {
+                    "title": "Cuerpo",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "estado_envio": {
+                    "title": "Estado envio",
+                    "type": "string",
+                    "enum": [
+                        "REGISTRADO",
+                        "SIMULADO",
+                        "ENVIADO",
+                        "FALLIDO"
+                    ],
+                    "readOnly": true
+                },
+                "provider_message_id": {
+                    "title": "Provider message id",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "metadata_json": {
+                    "title": "Metadata json",
+                    "type": "object",
+                    "readOnly": true
+                },
+                "fecha_creacion": {
+                    "title": "Fecha creacion",
+                    "type": "string",
+                    "format": "date-time",
+                    "readOnly": true
+                }
+            }
+        },
+        "EnviarWhatsAppInput": {
+            "required": [
+                "tipo_documento",
+                "documento_id",
+                "telefono"
+            ],
+            "type": "object",
+            "properties": {
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "tipo_documento": {
+                    "title": "Tipo documento",
+                    "type": "string",
+                    "enum": [
+                        "COTIZACION",
+                        "PEDIDO",
+                        "FACTURA",
+                        "NOTA_VENTA",
+                        "COBRANZA",
+                        "DESPACHO",
+                        "TICKET"
+                    ]
+                },
+                "documento_id": {
+                    "title": "Documento id",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "telefono": {
+                    "title": "Telefono",
+                    "type": "string",
+                    "maxLength": 30,
+                    "minLength": 1
+                },
+                "plantilla": {
+                    "title": "Plantilla",
+                    "type": "string",
+                    "enum": [
+                        "libre",
+                        "cotizacion",
+                        "cobranza",
+                        "tracking"
+                    ],
+                    "default": "libre"
+                },
+                "cuerpo": {
+                    "title": "Cuerpo",
+                    "type": "string",
+                    "default": "",
+                    "maxLength": 4000
+                },
+                "contexto": {
+                    "title": "Contexto",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string",
+                        "x-nullable": true
+                    },
+                    "default": {}
                 }
             }
         },

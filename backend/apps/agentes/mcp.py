@@ -415,6 +415,59 @@ def agentes_proponer_seguimiento_connect(
         return res
 
 
+def agentes_listar_operativos(capability_token: str, empresa_id: str) -> dict[str, Any]:
+    """Lista los 5 agentes IA operativos (COBRANZA, TESORERO, LOGISTICO, COMPRADOR, CFO_COPILOT). Scope: ``agentes:read``."""
+    from apps.agentes.operativos import AGENTES_OPERATIVOS  # noqa: PLC0415
+
+    with _ctx(capability_token, f"{_SCOPE}:read", empresa_id=empresa_id) as ctx:
+        return {"empresa_id": str(ctx["empresa_id"]), "agentes": list(AGENTES_OPERATIVOS.values())}
+
+
+def agentes_ejecutar_operativo(
+    capability_token: str,
+    empresa_id: str,
+    agente: str,
+    persistir: bool = True,
+    limite: int = 25,
+) -> dict[str, Any]:
+    """Ejecuta un agente IA operativo para la empresa vía ``llm_gateway`` con fallback determinista. Scope: ``agentes:write``."""
+    from apps.agentes.operativos import AGENTES_OPERATIVOS, ejecutar_agente_operativo  # noqa: PLC0415
+    from apps.agentes.services import AgenteError  # noqa: PLC0415
+    from apps.core.models import CapabilityToken, Empresa  # noqa: PLC0415
+
+    with _ctx(capability_token, f"{_SCOPE}:write", empresa_id=empresa_id) as ctx:
+        codigo = str(agente or "").strip().upper()
+        if "\x00" in codigo or codigo not in AGENTES_OPERATIVOS:
+            return {"error": f"Agente operativo no soportado: {codigo}"}
+        empresa_uuid = uuid.UUID(str(ctx["empresa_id"]))
+        empresa = Empresa.objects.filter(pk=empresa_uuid, activo=True).first()
+        if empresa is None:
+            return {"error": "Empresa inactiva o no encontrada."}
+        token_obj = (
+            CapabilityToken.objects.select_related("creado_por")
+            .filter(token=capability_token, empresa=empresa, activo=True)
+            .first()
+        )
+        usuario = token_obj.creado_por if token_obj is not None else None
+        try:
+            return ejecutar_agente_operativo(
+                empresa,
+                codigo,
+                usuario=usuario,
+                persistir=bool(persistir),
+                limite=int(limite),
+            )
+        except Exception as exc:  # noqa: BLE001
+            return {
+                "error": sanitize_mcp_error(
+                    exc,
+                    logger=logger,
+                    tool_name="agentes_ejecutar_operativo",
+                    controlled_types=(AgenteError, ValueError),
+                )
+            }
+
+
 MCP_TOOLS: list[dict[str, Any]] = [
     {
         "fn": agentes_disparar_analisis,
@@ -444,6 +497,16 @@ MCP_TOOLS: list[dict[str, Any]] = [
     {
         "fn": agentes_proponer_seguimiento_connect,
         "name": "agentes_proponer_seguimiento_connect",
+        "scope": f"{_SCOPE}:write",
+    },
+    {
+        "fn": agentes_listar_operativos,
+        "name": "agentes_listar_operativos",
+        "scope": f"{_SCOPE}:read",
+    },
+    {
+        "fn": agentes_ejecutar_operativo,
+        "name": "agentes_ejecutar_operativo",
         "scope": f"{_SCOPE}:write",
     },
 ]

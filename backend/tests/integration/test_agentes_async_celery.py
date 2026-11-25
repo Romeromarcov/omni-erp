@@ -753,6 +753,8 @@ class TestMcpAgentesParity:
             "agentes_resumen_consumo_llm",
             "agentes_calificar_lead_connect",
             "agentes_proponer_seguimiento_connect",
+            "agentes_listar_operativos",
+            "agentes_ejecutar_operativo",
         }
         assert nombres.issubset(mcp_server._DISCOVERED_TOOLS.keys())
         registered = {tool.name for tool in asyncio.run(mcp_server.mcp.list_tools())}

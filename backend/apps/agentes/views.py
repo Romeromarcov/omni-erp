@@ -26,10 +26,12 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
+from apps.core.idempotency import idempotent
 from apps.core.throttling import EscrituraRateThrottle
 from apps.core.viewsets import BaseModelViewSet, NulSafeFilterMixin, get_empresas_visible, validar_uuid_param
 
 from .models import ConsumoLLM, EjecucionAgente, PrediccionAgente
+from .operativos import AGENTES_OPERATIVOS, ejecutar_agente_operativo
 from .serializers import (
     AnalizarCobranzaInputSerializer,
     AnalizarPersonalizacionInputSerializer,
@@ -39,6 +41,7 @@ from .serializers import (
     ConsumoLLMResumenSerializer,
     ConsumoLLMSerializer,
     EjecucionAgenteSerializer,
+    EjecutarAgenteOperativoInputSerializer,
     PrediccionAgenteSerializer,
     ProponerSeguimientoConnectInputSerializer,
 )
@@ -800,3 +803,41 @@ class ConsumoLLMViewSet(NulSafeFilterMixin, viewsets.ReadOnlyModelViewSet):
         resumen_data = calcular_resumen_consumo_llm(qs)
         serializer = ConsumoLLMResumenSerializer(resumen_data)
         return Response(serializer.data)
+
+
+class AgentesOperativosViewSet(viewsets.ViewSet):
+    """Catálogo y ejecución síncrona/determinista + LLM de los 5 Agentes IA Operativos (Plan 09 Fase 8.2)."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    @action(detail=False, methods=["get"], url_path="catalogo")
+    def catalogo(self, request):
+        empresa, _ = _resolver_empresa(request, request.query_params.get("empresa_id"))
+        if empresa is None:
+            raise ValidationError({"empresa_id": "Debe indicar una empresa visible."})
+        return Response({"empresa_id": str(empresa.pk), "agentes": list(AGENTES_OPERATIVOS.values())})
+
+    @swagger_auto_schema(request_body=EjecutarAgenteOperativoInputSerializer)
+    @idempotent(scope="agentes:ejecutar_operativo")
+    @action(
+        detail=False,
+        methods=["post"],
+        url_path="ejecutar",
+        throttle_classes=[*viewsets.ViewSet.throttle_classes, EscrituraRateThrottle],
+    )
+    def ejecutar(self, request):
+        ser = EjecutarAgenteOperativoInputSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        vd = ser.validated_data
+        raw_emp = vd.get("id_empresa")
+        empresa, _ = _resolver_empresa(request, str(raw_emp) if raw_emp else None)
+        if empresa is None:
+            return Response({"id_empresa": "Usuario sin empresa visible."}, status=status.HTTP_403_FORBIDDEN)
+        res = ejecutar_agente_operativo(
+            empresa,
+            vd["agente"],
+            usuario=request.user,
+            persistir=vd["persistir"],
+            limite=vd["limite"],
+        )
+        return Response(res, status=status.HTTP_200_OK)
