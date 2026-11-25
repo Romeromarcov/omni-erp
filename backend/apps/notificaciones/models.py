@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from apps.core.uuid import uuid7
@@ -6,6 +7,7 @@ from apps.core.uuid import uuid7
 class CanalNotificacion(models.TextChoices):
     IN_APP = "IN_APP", "En aplicación"
     EMAIL = "EMAIL", "Correo electrónico"
+    WHATSAPP = "WHATSAPP", "WhatsApp Business"
 
 
 class PlantillaNotificacion(models.Model):
@@ -121,3 +123,72 @@ class LogNotificacion(models.Model):
 
     def __str__(self):
         return f"{self.canal}→{self.destinatario} [{self.estado}]"
+
+
+class MensajeChatterDocumento(models.Model):
+    """Hilo de comentarios, notas internas y envíos WhatsApp Business ligados a documentos (Plan 09 Fase 8.1)."""
+
+    TIPOS_DOCUMENTO = [
+        ("COTIZACION", "Cotización"),
+        ("PEDIDO", "Pedido"),
+        ("FACTURA", "Factura Fiscal"),
+        ("NOTA_VENTA", "Nota de Venta"),
+        ("COBRANZA", "Gestión de Cobranza"),
+        ("DESPACHO", "Despacho / Ruta"),
+        ("TICKET", "Ticket Soporte"),
+    ]
+
+    ESTADOS_ENVIO = [
+        ("REGISTRADO", "Registrado"),
+        ("SIMULADO", "Simulado (sin credenciales Cloud API)"),
+        ("ENVIADO", "Enviado WhatsApp Business"),
+        ("FALLIDO", "Fallido"),
+    ]
+
+    id_mensaje = models.UUIDField(primary_key=True, default=uuid7, editable=False)
+    id_empresa = models.ForeignKey(
+        "core.Empresa",
+        on_delete=models.CASCADE,
+        related_name="mensajes_chatter",
+    )
+    tipo_documento = models.CharField(max_length=30, choices=TIPOS_DOCUMENTO, db_index=True)
+    documento_id = models.UUIDField(db_index=True)
+    autor = models.ForeignKey(
+        "core.Usuarios",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="mensajes_chatter",
+    )
+    canal = models.CharField(max_length=15, choices=CanalNotificacion.choices, default=CanalNotificacion.IN_APP)
+    es_nota_interna = models.BooleanField(default=True)
+    destinatario_telefono = models.CharField(max_length=30, blank=True, default="")
+    cuerpo = models.TextField()
+    estado_envio = models.CharField(max_length=20, choices=ESTADOS_ENVIO, default="REGISTRADO")
+    provider_message_id = models.CharField(max_length=120, blank=True, default="")
+    metadata_json = models.JSONField(default=dict, blank=True)
+    activo = models.BooleanField(default=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True, db_index=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "notificaciones_chatter_documento"
+        verbose_name = "Mensaje Chatter de Documento"
+        verbose_name_plural = "Mensajes Chatter de Documentos"
+        ordering = ["-fecha_creacion"]
+        indexes = [
+            models.Index(fields=["id_empresa", "tipo_documento", "documento_id"]),
+        ]
+
+    def clean(self):
+        super().clean()
+        if (
+            self.autor_id is not None
+            and self.id_empresa_id is not None
+            and not (getattr(self.autor, "es_superusuario_omni", False) or getattr(self.autor, "is_superuser", False))
+            and not self.autor.empresas.filter(pk=self.id_empresa_id).exists()
+        ):
+            raise ValidationError({"autor": "El autor no pertenece a la empresa indicada."})
+
+    def __str__(self):
+        return f"{self.tipo_documento}:{self.documento_id} [{self.canal}/{self.estado_envio}]"

@@ -193,6 +193,10 @@
 | `^centros-trabajo/(?P<pk>[^/.]+)/$` | CentroTrabajoViewSet | CentroTrabajo | ✅ | ✅ | IsAuthenticated |
 | `^centros-trabajo/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | CentroTrabajoViewSet | CentroTrabajo | ✅ | ✅ | IsAuthenticated |
 | `^centros-trabajo\.(?P<format>[a-z0-9]+)/?$` | CentroTrabajoViewSet | CentroTrabajo | ✅ | ✅ | IsAuthenticated |
+| `^chatter/$` | ChatterDocumentoViewSet | — | — | — | IsAuthenticated |
+| `^chatter/enviar-whatsapp/$` | ChatterDocumentoViewSet | — | — | — | IsAuthenticated |
+| `^chatter/enviar-whatsapp\.(?P<format>[a-z0-9]+)/?$` | ChatterDocumentoViewSet | — | — | — | IsAuthenticated |
+| `^chatter\.(?P<format>[a-z0-9]+)/?$` | ChatterDocumentoViewSet | — | — | — | IsAuthenticated |
 | `^clientes/$` | ClienteViewSet | Cliente | ✅ | ✅ | IsAuthenticated |
 | `^clientes/(?P<pk>[^/.]+)/$` | ClienteViewSet | Cliente | ✅ | ✅ | IsAuthenticated |
 | `^clientes/(?P<pk>[^/.]+)/credito-disponible/$` | ClienteViewSet | Cliente | ✅ | ✅ | IsAuthenticated |
@@ -969,6 +973,10 @@
 | `^operaciones-produccion/(?P<pk>[^/.]+)/$` | OperacionProduccionViewSet | OperacionProduccion | ✅ | ✅ | IsAuthenticated |
 | `^operaciones-produccion/(?P<pk>[^/.]+)\.(?P<format>[a-z0-9]+)/?$` | OperacionProduccionViewSet | OperacionProduccion | ✅ | ✅ | IsAuthenticated |
 | `^operaciones-produccion\.(?P<format>[a-z0-9]+)/?$` | OperacionProduccionViewSet | OperacionProduccion | ✅ | ✅ | IsAuthenticated |
+| `^operativos/catalogo/$` | AgentesOperativosViewSet | — | — | — | IsAuthenticated |
+| `^operativos/catalogo\.(?P<format>[a-z0-9]+)/?$` | AgentesOperativosViewSet | — | — | — | IsAuthenticated |
+| `^operativos/ejecutar/$` | AgentesOperativosViewSet | — | — | — | IsAuthenticated |
+| `^operativos/ejecutar\.(?P<format>[a-z0-9]+)/?$` | AgentesOperativosViewSet | — | — | — | IsAuthenticated |
 | `^ordenes-compra/$` | OrdenCompraViewSet | OrdenCompra | ✅ | ✅ | IsAuthenticated |
 | `^ordenes-compra/(?P<pk>[^/.]+)/$` | OrdenCompraViewSet | OrdenCompra | ✅ | ✅ | IsAuthenticated |
 | `^ordenes-compra/(?P<pk>[^/.]+)/aprobar/$` | OrdenCompraViewSet | OrdenCompra | ✅ | ✅ | IsAuthenticated |
@@ -1739,4 +1747,4 @@
 | `validar-cuenta-ve/` | ValidarCuentaVeView | — | — | — | IsAuthenticated |
 | `validar-referencia/` | ValidarReferenciaView | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 310_
+_Total ViewSets: 312_

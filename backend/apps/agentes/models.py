@@ -12,6 +12,9 @@ AGENTE_CHOICES = [
     ("personalizacion_capa2", "Personalización Capa 2"),
     ("connect_calificador", "Calificador de Leads Connect"),
     ("connect_seguimiento", "Seguimiento Comercial Connect"),
+    ("tesorero_conciliador", "Tesorero Pre-Conciliación Bancaria"),
+    ("logistico_ruteo", "Logístico Optimización y Re-Ruteo"),
+    ("cfo_copilot_trimonetario", "CFO Copilot Trimonetario"),
 ]
 
 

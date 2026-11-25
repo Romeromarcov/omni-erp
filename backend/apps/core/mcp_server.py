@@ -1224,6 +1224,7 @@ _MCP_DEFAULT_MODULE_PATHS = [
     "apps.connect.mcp",
     "apps.crm.mcp",
     "apps.sync.mcp",
+    "apps.notificaciones.mcp",
 ]
 
 

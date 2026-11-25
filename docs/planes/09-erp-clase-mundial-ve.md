@@ -140,7 +140,7 @@
 | **Ola 3B (P1)** | **Fase 4** (Nómina Dual VE LOTTT + Paquete Objetivo/Bonificaciones + Préstamos + TXT Bancarios/Parafiscales + Arqueo USD) | ✅ **COMPLETADA (`#343`)** |
 | **Ola 4A (P1)** | **Fase 5** (Costos en Destino/Landed Costs + Costo Reposición USD + Semáforo Margen + Conteo Cíclico Dual + Barcode Pick-Pack-Ship + Tránsito Inter-Almacén + 3-Way Matching) | ✅ **COMPLETADA (`#344`)** |
 | **Ola 4B (P1)** | **Fase 6** (Logística TMS IA/GPS/Delivery Externo/ePOD) | ✅ **COMPLETADA (`#345`)** |
-| **Ola 5 (P2)** | **Fase 7.2–7.4** (Portales independientes: Vendedores SFA, Clientes Self-Service, Conductores) + cierre operativo campo `CTF-008` | 🔄 **EN CURSO (`Ola 5A ✅ #346`; `Ola 5B FE` lista)** |
-| **Ola 6B / Fase 8 (P2/P3)** | **Fase 8** (WhatsApp/Chatter, Agentes IA operativos, RLS prod `CTF-012` + firma apps `CTF-010`, Migrador 1-Click Odoo) | Ola 3 + Ola 5 |
+| **Ola 5 (P2)** | **Fase 7.2–7.4** (Portales independientes: Vendedores SFA, Clientes Self-Service, Conductores) + cierre operativo campo `CTF-008` | ✅ **COMPLETADA (`#346` BE + `#347` FE)** *(resta campo `CTF-008 #4`)* |
+| **Ola 6B / Fase 8 (P2/P3)** | **Fase 8** (WhatsApp/Chatter, Agentes IA operativos, RLS prod `CTF-012` + firma apps `CTF-010`, Migrador 1-Click Odoo) | 🔄 **EN CURSO (`Ola 6B-1` 8.1+8.2; resta `Ola 6B-2` 8.4)** |
 
 Cada PR deberá cumplir íntegramente [`DEFINITION_OF_DONE.md`](../DEFINITION_OF_DONE.md) (`check`, `makemigrations --check --dry-run`, `mapa_superficie --check`, tests multi-tenant + RLS y `diff-cover ≥ 95 %`, `tsc -b`, `npm run lint`, `check:api-drift`, Vitest/Playwright) y recibir dictamen **`APROBADO`** de revisor independiente (`QA + Seguridad`) antes de merge a `develop`.

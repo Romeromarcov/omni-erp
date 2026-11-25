@@ -434,6 +434,7 @@ RLS_TABLES = {
     "nomina_proceso_nomina": "id_empresa_id",
     "nomina_proceso_nomina_extrasalarial": "id_empresa_id",
     # notificaciones
+    "notificaciones_chatter_documento": "id_empresa_id",
     "notificaciones_evento": "id_empresa_id",
     # personalizacion
     "personalizacion_entidad_instancia": "id_empresa_id",

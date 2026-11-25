@@ -279,6 +279,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/agentes/operativos/catalogo/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Catálogo y ejecución síncrona/determinista + LLM de los 5 Agentes IA Operativos (Plan 09 Fase 8.2). */
+        get: operations["agentes_operativos_catalogo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agentes/operativos/ejecutar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Catálogo y ejecución síncrona/determinista + LLM de los 5 Agentes IA Operativos (Plan 09 Fase 8.2). */
+        post: operations["agentes_operativos_ejecutar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/agentes/predicciones/": {
         parameters: {
             query?: never;
@@ -13989,6 +14023,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/notificaciones/chatter/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Chatter interno y despacho WhatsApp Business sobre documentos comerciales/logísticos (Plan 09 Fase 8.1). */
+        get: operations["notificaciones_chatter_list"];
+        put?: never;
+        /** @description Chatter interno y despacho WhatsApp Business sobre documentos comerciales/logísticos (Plan 09 Fase 8.1). */
+        post: operations["notificaciones_chatter_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/notificaciones/chatter/enviar-whatsapp/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Chatter interno y despacho WhatsApp Business sobre documentos comerciales/logísticos (Plan 09 Fase 8.1). */
+        post: operations["notificaciones_chatter_enviar_whatsapp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/notificaciones/notificaciones/mis-notificaciones/": {
         parameters: {
             query?: never;
@@ -17571,7 +17640,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Cartera propia del vendedor con saldo CxC pendiente y mora real. */
+        /** @description Cartera propia del vendedor con saldo neto CxC (descontando abonos/asignaciones) y mora real. */
         get: operations["ventas_portal-vendedor_cartera"];
         put?: never;
         post?: never;
@@ -17961,7 +18030,7 @@ export interface components {
              * Agente
              * @enum {string}
              */
-            readonly agente?: "clasificador_gastos" | "cobranza_estratega" | "reorden_sugeridor" | "personalizacion_capa2" | "connect_calificador" | "connect_seguimiento";
+            readonly agente?: "clasificador_gastos" | "cobranza_estratega" | "reorden_sugeridor" | "personalizacion_capa2" | "connect_calificador" | "connect_seguimiento" | "tesorero_conciliador" | "logistico_ruteo" | "cfo_copilot_trimonetario";
             /**
              * Estado
              * @enum {string}
@@ -18001,6 +18070,28 @@ export interface components {
              */
             readonly id_empresa?: string;
         };
+        EjecutarAgenteOperativoInput: {
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa?: string | null;
+            /**
+             * Agente
+             * @enum {string}
+             */
+            agente: "COBRANZA" | "TESORERO" | "LOGISTICO" | "COMPRADOR" | "CFO_COPILOT";
+            /**
+             * Persistir
+             * @default true
+             */
+            persistir: boolean;
+            /**
+             * Limite
+             * @default 25
+             */
+            limite: number;
+        };
         PrediccionAgente: {
             /**
              * Id prediccion
@@ -18013,7 +18104,7 @@ export interface components {
              * Agente
              * @enum {string}
              */
-            agente: "clasificador_gastos" | "cobranza_estratega" | "reorden_sugeridor" | "personalizacion_capa2" | "connect_calificador" | "connect_seguimiento";
+            agente: "clasificador_gastos" | "cobranza_estratega" | "reorden_sugeridor" | "personalizacion_capa2" | "connect_calificador" | "connect_seguimiento" | "tesorero_conciliador" | "logistico_ruteo" | "cfo_copilot_trimonetario";
             /** Input texto */
             input_texto: string;
             /**
@@ -24375,7 +24466,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-24T18:22:14.220620-04:00
+             * @default 2026-11-24T21:45:21.127883-04:00
              */
             fecha_despacho: string;
             /**
@@ -30941,6 +31032,132 @@ export interface components {
              */
             id_periodo_nomina: string;
         };
+        CrearChatterInput: {
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa?: string | null;
+            /**
+             * Tipo documento
+             * @enum {string}
+             */
+            tipo_documento: "COTIZACION" | "PEDIDO" | "FACTURA" | "NOTA_VENTA" | "COBRANZA" | "DESPACHO" | "TICKET";
+            /**
+             * Documento id
+             * Format: uuid
+             */
+            documento_id: string;
+            /** Cuerpo */
+            cuerpo: string;
+            /**
+             * Es nota interna
+             * @default true
+             */
+            es_nota_interna: boolean;
+            /**
+             * Canal
+             * @default IN_APP
+             * @enum {string}
+             */
+            canal: "IN_APP" | "EMAIL" | "WHATSAPP";
+            /**
+             * Destinatario telefono
+             * @default
+             */
+            destinatario_telefono: string;
+        };
+        MensajeChatterDocumento: {
+            /**
+             * Id mensaje
+             * Format: uuid
+             */
+            readonly id_mensaje?: string;
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            readonly id_empresa?: string;
+            /**
+             * Tipo documento
+             * @enum {string}
+             */
+            readonly tipo_documento?: "COTIZACION" | "PEDIDO" | "FACTURA" | "NOTA_VENTA" | "COBRANZA" | "DESPACHO" | "TICKET";
+            /**
+             * Documento id
+             * Format: uuid
+             */
+            readonly documento_id?: string;
+            /**
+             * Autor
+             * Format: uuid
+             */
+            readonly autor?: string | null;
+            /** Autor username */
+            readonly autor_username?: string;
+            /**
+             * Canal
+             * @enum {string}
+             */
+            readonly canal?: "IN_APP" | "EMAIL" | "WHATSAPP";
+            /** Es nota interna */
+            readonly es_nota_interna?: boolean;
+            /** Destinatario telefono */
+            readonly destinatario_telefono?: string;
+            /** Cuerpo */
+            readonly cuerpo?: string;
+            /**
+             * Estado envio
+             * @enum {string}
+             */
+            readonly estado_envio?: "REGISTRADO" | "SIMULADO" | "ENVIADO" | "FALLIDO";
+            /** Provider message id */
+            readonly provider_message_id?: string;
+            /** Metadata json */
+            readonly metadata_json?: Record<string, never>;
+            /**
+             * Fecha creacion
+             * Format: date-time
+             */
+            readonly fecha_creacion?: string;
+        };
+        EnviarWhatsAppInput: {
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa?: string | null;
+            /**
+             * Tipo documento
+             * @enum {string}
+             */
+            tipo_documento: "COTIZACION" | "PEDIDO" | "FACTURA" | "NOTA_VENTA" | "COBRANZA" | "DESPACHO" | "TICKET";
+            /**
+             * Documento id
+             * Format: uuid
+             */
+            documento_id: string;
+            /** Telefono */
+            telefono: string;
+            /**
+             * Plantilla
+             * @default libre
+             * @enum {string}
+             */
+            plantilla: "libre" | "cotizacion" | "cobranza" | "tracking";
+            /**
+             * Cuerpo
+             * @default
+             */
+            cuerpo: string;
+            /**
+             * Contexto
+             * @default {}
+             */
+            contexto: {
+                [key: string]: string | null;
+            };
+        };
         NotificacionApp: {
             /**
              * Id notificacion
@@ -36435,6 +36652,48 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["EjecucionAgente"];
                 };
+            };
+        };
+    };
+    agentes_operativos_catalogo: {
+        parameters: {
+            query?: {
+                /** @description UUID de empresa visible (obligatorio para superusuarios Omni sin empresa propia). */
+                empresa_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    agentes_operativos_ejecutar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EjecutarAgenteOperativoInput"];
+            };
+        };
+        responses: {
+            /** @description Resultado de ejecución del agente IA operativo. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -68006,6 +68265,69 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    notificaciones_chatter_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    notificaciones_chatter_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CrearChatterInput"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MensajeChatterDocumento"];
+                };
+            };
+        };
+    };
+    notificaciones_chatter_enviar_whatsapp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnviarWhatsAppInput"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MensajeChatterDocumento"];
+                };
             };
         };
     };
