@@ -26,6 +26,7 @@ import uuid
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
 from apps.almacenes.models import Almacen
@@ -620,7 +621,11 @@ def _normalizar_fila(entidad: str, fila: dict[str, Any]) -> dict[str, Any]:
             partes = [p for p in re.split(r"[.\-]", codigo) if p]
             nivel = max(1, len(partes))
         activo_raw = fila.get("activo")
-        activo = True if activo_raw in (None, "") else str(activo_raw).strip().lower() not in {"0", "false", "no", "inactivo"}
+        activo = (
+            True
+            if activo_raw in (None, "")
+            else str(activo_raw).strip().lower() not in {"0", "false", "no", "inactivo"}
+        )
         return {
             "codigo_cuenta": codigo[:50],
             "nombre_cuenta": nombre[:255],
@@ -795,13 +800,19 @@ def _aplicar_fila_normalizada(empresa: Any, entidad: str, norm: dict[str, Any]) 
         return estado_res
 
     if entidad == "productos":
-        moneda = Moneda.objects.filter(codigo_iso=norm["moneda"]).first()
+        moneda = (
+            Moneda.objects.filter(codigo_iso=norm["moneda"])
+            .filter(Q(empresa__isnull=True) | Q(empresa=empresa))
+            .first()
+        )
         if moneda is None:
             raise MigracionError(f"No existe una moneda con código ISO '{norm['moneda']}'.")
-        cat, _ = CategoriaProducto.objects.get_or_create(
-            id_empresa=empresa,
-            nombre_categoria=norm["categoria"],
-        )
+        cat = CategoriaProducto.objects.filter(id_empresa=empresa, nombre_categoria=norm["categoria"]).first()
+        if cat is None:
+            cat = CategoriaProducto.objects.create(
+                id_empresa=empresa,
+                nombre_categoria=norm["categoria"],
+            )
         unidad = UnidadMedida.objects.filter(id_empresa=empresa, abreviatura=norm["unidad_medida"]).first()
         if unidad is None:
             unidad = UnidadMedida.objects.create(
@@ -1000,10 +1011,7 @@ def listar_formatos_migracion() -> dict[str, Any]:
     return {
         "odoo_solo_lectura": True,
         "odoo_metodos_permitidos": sorted(ALLOWED_ODOO_METHODS),
-        "fuentes": [
-            {"codigo": code, **_SOURCE_HINTS[code]}
-            for code in FUENTES_SOPORTADAS
-        ],
+        "fuentes": [{"codigo": code, **_SOURCE_HINTS[code]} for code in FUENTES_SOPORTADAS],
         "entidades": list(ENTIDADES_SOPORTADAS),
         "columnas_canonicas": {
             entidad: {canon: list(aliases) for canon, aliases in campos.items()}

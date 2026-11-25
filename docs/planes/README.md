@@ -49,17 +49,17 @@ de esfuerzo, dependencias y **Definition of Done** alineado al gate de cierre
 | **06** | [`06-limpieza-y-estabilizacion.md`](06-limpieza-y-estabilizacion.md) | Limpieza y estabilización: runner, monedas, `uuid7` monótono, RLS real, higiene del repo | ~3–4 semanas (PRs pequeños) | **AUTOMATIZABLE CERRADO (`#288–#302`)** — deuda residual mypy/ruff/TZ en Ola 6 PR-31; restan ítems exclusivos de owner |
 | **07** | [`07-omni-connect.md`](07-omni-connect.md) | Omni Connect (tarjetas NFC + perfil público + CRM ligero + outbox Odoo + agentes) — ADR-014 | ~4–6 semanas (S2–S12) | **COMPLETADO (`100 %` ✅)** — S1 (`#261`) + S2–S12 (`#313–#317`); smoke live QA Connect→Odoo en Ola 6 PR-35 |
 | **08** | [`08-conciliacion-pagos-y-paridad-odoo.md`](08-conciliacion-pagos-y-paridad-odoo.md) | Conciliación N:M `AsignacionPago` sobre `core.Contacto` + Paridad ERP estilo Odoo (contabilidad, compras/aprobaciones, inventario/almacenes, banca/Hub) | ~5–7 semanas (PRs focales) | **COMPLETADO (`100 %` ✅)** — Bloques A + B + cierre `CTF-011` mergeados en `develop` |
-| **09** | [`09-erp-clase-mundial-ve.md`](09-erp-clase-mundial-ve.md) | ERP Clase Mundial VE: Motor Trimonetario (USD/VES/USDT) + Multi-Tasa, Contabilidad Dual (`FISCAL`/`GERENCIAL`), Blindaje SENIAT + Imprenta Digital, Precios por Brecha, Nómina Dual VE, Logística TMS IA/GPS/Delivery, Supply Chain, RBAC Granular y Portales (Vendedores, Clientes, Conductores) | 6 Olas (PRs focales) | **EN CURSO** — **Ola 1A** (Motor Trimonetario y Multi-Tasa ✅ `#318`); **Ola 6** (`PR-31..PR-35`) en ejecución antes de Contabilidad Dual |
+| **09** | [`09-erp-clase-mundial-ve.md`](09-erp-clase-mundial-ve.md) | ERP Clase Mundial VE: Motor Trimonetario (USD/VES/USDT) + Multi-Tasa, Contabilidad Dual (`FISCAL`/`GERENCIAL`), Blindaje SENIAT + Imprenta Digital, Precios por Brecha, Nómina Dual VE, Logística TMS IA/GPS/Delivery, Supply Chain, RBAC Granular y Portales (Vendedores, Clientes, Conductores) + Chatter/WhatsApp + 5 Agentes IA + Migrador 1-Click | 6 Olas (`#318`, `#338–#349`) | **✅ AUTOMATIZABLE COMPLETADO (`100 %`)** — Olas 1A–6B completas en `develop`; restan únicamente ítems `OWNER` (`CTF-012`, `P1-7`, `CTF-010`, `CTF-008 #4` + `1.F`) |
 
 ## Secuenciación recomendada
 
 ```
-Ahora ─┬─ Ola 6 (PR-31..PR-35)                  ← roadmap+mypy/ruff → l10n strangler-fig → sync push CTF-008 → 2FA/SaaS → smoke Odoo QA
-       ├─ Plan 0 (distribuidora online 1.F)     ← operación/datos, días (acción owner)
-       └─ Plan D / CxC Lubrikca go-live         ← validación Odoo real + promote develop→main
-Luego ─┬─ Plan 09 Ola 1B–6                      ← Contabilidad Dual, Blindaje SENIAT, Precios Brecha, Nómina Dual VE, TMS IA/GPS, Portales
-       └─ Plan B / RLS prod / Backups (OWNER)   ← firma de apps (CTF-010), rol omni_app (CTF-012), secrets BACKUP_*
-Futuro ── iOS · Billing/medición LLM · offline Nivel 3
+Completado ✅ ─┬─ Ola 6 (`#333–#337`)           ← roadmap+mypy/ruff → l10n strangler-fig → sync push CTF-008 → 2FA/SaaS → smoke Odoo QA
+               └─ Plan 09 Olas 1A–6B (`#318–#349`) ← Trimonetario, Dualidad, Precios, RBAC, SENIAT, Nómina VE, Supply Chain, TMS IA, Portales, WhatsApp/IA, Migrador 1-Click
+Ahora (OWNER) ─┬─ Plan 0 (distribuidora 1.F)     ← carga de datos reales + operación 30d + campo offline CTF-008 #4
+               ├─ Plan D / CxC Lubrikca go-live  ← validación Odoo real + promote develop→main
+               └─ Hardening / Firma / Backups    ← rol omni_app (CTF-012), secrets BACKUP_* (P1-7), firma apps (CTF-010)
+Futuro ────────── iOS · Billing/medición LLM · offline Nivel 3
 ```
 
 ## Deuda asociada (CTF)

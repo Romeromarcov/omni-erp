@@ -70,11 +70,7 @@ class DetalleErrorMigracionViewSet(BaseModelViewSet):
 
 def _resolver_empresa_migracion(request, id_empresa=None):
     visibles = get_empresas_visible(request.user)
-    raw_emp = (
-        id_empresa
-        or request.query_params.get("id_empresa")
-        or request.headers.get("X-Empresa-ID")
-    )
+    raw_emp = id_empresa or request.query_params.get("id_empresa") or request.headers.get("X-Empresa-ID")
     if raw_emp:
         uid = validar_uuid_param(str(raw_emp), "id_empresa")
         emp = visibles.filter(pk=uid).first()

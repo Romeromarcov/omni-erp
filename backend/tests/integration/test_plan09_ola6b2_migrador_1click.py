@@ -299,14 +299,16 @@ def test_saint_profit_galac_csv_parcial_y_errores(empresa_a, moneda_usd):
     assert DetalleErrorMigracion.objects.filter(id_proceso_migracion_id=ejec["id_proceso_migracion"]).count() == 1
 
     # PROFIT (artículos) + GALAC (cartera CxC)
-    csv_profit = "co_art;art_des;lin_des;co_uni;co_mone;cos_un;prec_vta1\nP-100;Filtro Aceite;Filtros;UND;USD;4.25;7.50\n"
+    csv_profit = (
+        "co_art;art_des;lin_des;co_uni;co_mone;cos_un;prec_vta1\nP-100;Filtro Aceite;Filtros;UND;USD;4.25;7.50\n"
+    )
     res_p = ejecutar_migracion_1click(empresa_a, user, fuente="PROFIT", entidad="productos", contenido_csv=csv_profit)
     assert res_p["estado_proceso"] == "COMPLETADO"
     assert Producto.objects.filter(id_empresa=empresa_a, sku="P-100").exists()
 
     csv_galac = (
         "Tipo,RIF,Documento,Saldo,Fecha,Vence\n"
-        f"CXC,J29888777-4,F-GALAC-1,\"1.250,75\",{date(2026, 11, 1)},{date(2026, 11, 30)}\n"
+        f'CXC,J29888777-4,F-GALAC-1,"1.250,75",{date(2026, 11, 1)},{date(2026, 11, 30)}\n'
     )
     res_g = ejecutar_migracion_1click(empresa_a, user, fuente="GALAC", entidad="cxc_cxp", contenido_csv=csv_galac)
     assert res_g["estado_proceso"] == "COMPLETADO"
@@ -396,9 +398,7 @@ def test_http_endpoints_idempotencia_aislamiento_y_mcp(empresa_a, empresa_b):
     assert "error" in migracion_preview_1click(tok, str(empresa_a.pk), "ODOO", "stock", id_conector="bad\x00")
     assert "error" in migracion_preview_1click(tok, str(empresa_a.pk), "ODOO", "stock", id_conector="not-a-uuid")
     assert "error" in migracion_preview_1click(tok, str(empresa_a.pk), "SAINT", "stock", contenido_csv="")
-    assert "error" in migracion_preview_1click(
-        tok, str(empresa_a.pk), "ODOO", "stock", id_conector=str(uuid.uuid4())
-    )
+    assert "error" in migracion_preview_1click(tok, str(empresa_a.pk), "ODOO", "stock", id_conector=str(uuid.uuid4()))
 
     # X-Empresa-ID header, empresa primaria sin id_empresa y errores serializer/endpoint
     no_emp_user = Usuarios.objects.create_user(
@@ -568,7 +568,9 @@ def test_migrador_1click_cobertura_bordes_y_errores(empresa_a, moneda_usd):
         "7.1\tTipoMal\tINVALIDO\tD\t1\t1\n"
         "8.1\tNivelMal\tACTIVO\tD\tabc\t1\n"
     )
-    r_plan = ejecutar_migracion_1click(empresa_a, user, fuente="OMNI_CSV", entidad="plan_cuentas", contenido_csv=csv_plan)
+    r_plan = ejecutar_migracion_1click(
+        empresa_a, user, fuente="OMNI_CSV", entidad="plan_cuentas", contenido_csv=csv_plan
+    )
     assert r_plan["estado_proceso"] == "COMPLETADO_CON_ERRORES"
     assert r_plan["total_exitosos"] == 3
     assert r_plan["total_fallidos"] == 2
@@ -584,7 +586,9 @@ def test_migrador_1click_cobertura_bordes_y_errores(empresa_a, moneda_usd):
     assert r_cont1["total_fallidos"] == 2
     # Update rol AMBOS segunda pasada
     csv_cont_up = "razon_social;rif;rol;tipo_cliente\nSocio Dual Upd;J-501112223;AMBOS;OTRO\n"
-    r_cont2 = ejecutar_migracion_1click(empresa_a, user, fuente="SAINT", entidad="contactos", contenido_csv=csv_cont_up)
+    r_cont2 = ejecutar_migracion_1click(
+        empresa_a, user, fuente="SAINT", entidad="contactos", contenido_csv=csv_cont_up
+    )
     assert r_cont2["actualizados"] == 1
 
     csv_prod = (
@@ -599,13 +603,27 @@ def test_migrador_1click_cobertura_bordes_y_errores(empresa_a, moneda_usd):
     assert r_prod["total_fallidos"] == 2
     # Update existing product + missing SKU on stock
     csv_prod_up = "sku;nombre_producto;moneda;tipo_producto\nSRV-1;Consultoria Upd;USD;service\n"
-    assert ejecutar_migracion_1click(empresa_a, user, fuente="SAINT", entidad="productos", contenido_csv=csv_prod_up)["actualizados"] == 1
+    assert (
+        ejecutar_migracion_1click(empresa_a, user, fuente="SAINT", entidad="productos", contenido_csv=csv_prod_up)[
+            "actualizados"
+        ]
+        == 1
+    )
 
     csv_stock = "sku;almacen;cantidad_disponible\nKIT-1;ALM-02;15\nNO-SKU;ALM-02;5\nKIT-1;NO-ALM;5\n"
     r_stk = ejecutar_migracion_1click(empresa_a, user, fuente="SAINT", entidad="stock", contenido_csv=csv_stock)
     assert r_stk["creados"] == 1
     assert r_stk["total_fallidos"] == 2
-    assert ejecutar_migracion_1click(empresa_a, user, fuente="SAINT", entidad="stock", contenido_csv="sku;almacen;cantidad_disponible\nKIT-1;ALM-02;20\n")["actualizados"] == 1
+    assert (
+        ejecutar_migracion_1click(
+            empresa_a,
+            user,
+            fuente="SAINT",
+            entidad="stock",
+            contenido_csv="sku;almacen;cantidad_disponible\nKIT-1;ALM-02;20\n",
+        )["actualizados"]
+        == 1
+    )
 
     # CXP crear + actualizar + errores totales FALLIDO
     csv_cxp = (

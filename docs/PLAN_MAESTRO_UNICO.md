@@ -1,7 +1,7 @@
 # Omni ERP — Plan Maestro Único
 
-**Versión:** 1.4 — Documento consolidado y única fuente de verdad
-**Fecha de consolidación:** 2026-05-28 · **Última actualización integral:** 2026-11-22 (estado real verificado sobre `origin/develop @ 61d2001`, cierre `#288–#320`;
+**Versión:** 1.5 — Documento consolidado y única fuente de verdad
+**Fecha de consolidación:** 2026-05-28 · **Última actualización integral:** 2026-11-24 (estado real verificado sobre `develop`, cierre `#288–#349`;
 auditoría base [`docs/AUDITORIA_2026-06-21.md`](AUDITORIA_2026-06-21.md);
 auditoría previa archivada en [`docs/auditorias/archivo/AUDITORIA_INTEGRAL_2026-06-10.md`](auditorias/archivo/AUDITORIA_INTEGRAL_2026-06-10.md))
 **Autor del proyecto:** Marco · Caracas, Venezuela
@@ -409,13 +409,13 @@ BLOQUE 1 — De idea a primer cliente piloto  [EN CURSO]
 │        + Cobranza Inteligente (apps/cxc) ..... ✅ COMPLETO (backend + frontend shippeado)
 ├── 1.F Distribuidora en producción .......... ⬜ SIGUIENTE HITO (software listo; falta datos+operación)
 ├── 1.G Específicos distribuidora (POS,
-│        comisiones, devoluciones, despacho) ... 🔶 backend + UI comisiones/listas/despacho hechos; falta POS táctil + offline FE
+│        comisiones, devoluciones, despacho) ... ✅ software/POS offline + push optimista (`#335`) listos; resta campo CTF-008 #4
 ├── 1.H Onboarding fábrica + BOM ............. 🔶 BOM/modelos/UI maestros hechos (`#244`); falta carga de datos reales
 ├── 1.I OF y costeo (manufactura) ............ ✅ software hecho (`costeo_real_orden`, `calcular_mrp`, `CostoProduccion`, UI `#235`/`#244`); falta operación
-└── 1.J Estabilización ....................... 🔄 EN CURSO (Plan 06 + Plan 05)
+└── 1.J Estabilización ....................... ✅ AUTOMATIZABLE CERRADO (Plan 05/06 + Ola 6 `#333–#337`); resta `OWNER` (`CTF-012`, `P1-7`)
 ```
 
-**Conclusión:** El núcleo común del MVP (1.A–1.E), las capacidades de manufactura/costeo/MRP (1.I) y todo el barrido de UI/E2E de módulos (`#215–#247`) están construidos en `develop`. **El trabajo ya no es "construir pantallas básicas" — es operar pilotos reales (1.F y go-live `cxc_lubrikca`), cerrar la estabilización (Plan 06 + seguridad residual), completar Omni Connect (Plan 07) y llevar contabilidad/compras/inventario/conciliación N:M a paridad ERP estilo Odoo (Plan 08).**
+**Conclusión:** Todo el alcance de software planificado —incluyendo núcleo MVP (`1.A–1.E`), manufactura (`1.I`), barrido UI/E2E (`#215–#247`), Plan 07 Omni Connect (`100 %`), Plan 08 Paridad Odoo (`100 %`), Ola 6 (`#333–#337`) y Plan 09 ERP Clase Mundial VE (`#318`, `#338–#349`)— está construido y verificado en `develop`. **Lo restante corresponde exclusivamente a operación de pilotos (`1.F`, go-live `cxc_lubrikca`, campo `CTF-008 #4`) y acciones del owner (`CTF-012`, `P1-7`, `CTF-010`, branch protection).**
 
 ## 5.1-bis Reglas de implementación autónoma
 
@@ -524,7 +524,7 @@ P0 (✅ #64–#73) + UI/E2E sweep (✅ #215–#247) + Olas 1–6B COMPLETADAS (#
 | Sub-fase | Datos (carga) | Lógica / software | UI | Operación |
 |---|---|---|---|---|
 | **1.F** Caja + migración | ⬜ cargar reales | ✅ caja, fiscal, CxC + **commands TRACK-1F-1..5** (`apps/migracion_datos`) | ✅ (caja/factura) | ⬜ 30 días |
-| **1.G** Devoluciones/POS | n/a | ✅ modelos/servicios devolución/NC, comisiones, despacho | 🔶 comisiones/listas/despacho ✅; falta POS táctil + offline | ⬜ |
+| **1.G** Devoluciones/POS | n/a | ✅ modelos/servicios devolución/NC, comisiones, despacho + sync push (`#335`) | ✅ POS offline (`PosPage` + conflictos 409) | ⬜ campo CTF-008 #4 |
 | **1.H** BOM | ⬜ cargar BOM | ✅ modelos/services `apps/manufactura` (`ListaMateriales`) | ✅ UI maestros (`#244`) | ⬜ |
 | **1.I** OF + costeo | ⬜ | ✅ `costeo_real_orden`, `calcular_mrp`, `CostoProduccion` | ✅ UI etapas/crear OF/consumir (`#235`) | ⬜ |
 
@@ -544,7 +544,7 @@ datos reales + operación 30 días** (los importadores ya están, ver
 - [x] Crear `apps/localizacion/` (framework: registro, resolución por empresa, puertos `MotorImpuestos`/`GeneradorDocumentoLegal`/`CalculadoraNomina`/`ProveedorTasas`/`MetodosPagoLocales`/`LibroLegal` + `NoOp`).
 - [x] Implementar **6/6 puertos** en `apps/localizacion_ve` (`#312`) cubriendo Capa A y Capa B.
 - [x] Añadir `Empresa.pais_codigo_iso` + flags `localizacion_legal_activa` / `localizacion_mercado_activa`.
-- [ ] **Cableado strangler fig (Ola 6 PR-32):** enrutar `fiscal/services.py`, `ventas/services.py` y `nomina` a través de `get_localizacion(empresa)` (`MotorImpuestos`, `GeneradorDocumentoLegal`, `LibroLegal`, `CalculadoraNomina`).
+- [x] **Cableado strangler fig (Ola 6 PR-32 / `#334`):** enrutar `fiscal/services.py`, `ventas/services.py` y `nomina` a través de `get_localizacion(empresa)` (`MotorImpuestos`, `GeneradorDocumentoLegal`, `LibroLegal`, `CalculadoraNomina`).
 - [ ] Portar insumos pendientes de `GestionCxC` que aún no están en Omni (ver [§6.8](#68-backlog-de-tropicalización-desde-gestioncxc)).
 
 **Criterio de salida (verificado en Ola 6 PR-32):** una empresa de prueba **no venezolana** (`pais_codigo_iso="US"`/`"CO"` o flags desactivados) opera el ciclo comercial completo (cotización→pedido→entrega/factura→cobro→asiento) usando adaptadores `NoOp` sin aplicar IVA 16 %/IGTF 3 % ni tasas/métodos VE, mientras la empresa venezolana mantiene paridad 100 %.
@@ -808,10 +808,9 @@ omni-erp/
 ```
 
 ## 9.5 Áreas de trabajo abiertas hoy
-- **Backend:** Plan 06 (Fases 1–4), seguridad residual Plan 05 (`P1-5`/`P1-6`/`P2-2`/`P2-3`/`P2-4`/`P2-6`), conciliación N:M `AsignacionPago` + paridad ERP Odoo (`Plan 08`), 4 adapters faltantes en `localizacion_ve` y nómina LOTTT de borde (cestaticket). *(Omni Connect `Plan 07` `S1`–`S12` ✅ completado en `#261` + PR-26..PR-30.)*
-- **Frontend:** ciclo offline POS (`CTF-008`), segunda pasada Decimal (Plan 06 Tarea 4.2) y UI de conciliación N:M / reportes contables (`Plan 08`). *(UI de Omni Connect `/c/:slug`, `/crm/pipeline`, `/connect/{perfil,tarjetas,analiticas}` ✅ completada en `Plan 07`.)*
-- **DevOps / Owner:** secrets `BACKUP_*` en GitHub (`P1-7`), rol `omni_app` + `RLS_ENABLED=True` (`CTF-012`), branch protection en GitHub, validación `cxc_lubrikca` contra Odoo real, SSL self-hosted (diferido) y Prometheus/Grafana.
-- **Datos:** migración de la distribuidora real (sub-fase 1.F).
+- **Backend / Frontend (software en `develop`):** alcance automatizable completado 100 % (`Plan 05–08`, `Ola 6 #333–#337`, `Plan 09 #318`, `#338–#349`, POS offline + push optimista `#335`, 2FA TOTP `#336`, TMS `#345`, Portales `#346–#347`, Chatter/WhatsApp + 5 Agentes IA `#348` y Migrador 1-Click Odoo `READ-ONLY`/CSV `#349`).
+- **DevOps / Owner:** secrets `BACKUP_*` en GitHub (`P1-7`), rol `omni_app` + `RLS_ENABLED=True` (`CTF-012`), firma Electron/Android (`CTF-010`), branch protection en GitHub, validación `cxc_lubrikca` contra Odoo real, SSL self-hosted (diferido) y Prometheus/Grafana.
+- **Datos / Campo:** migración de la distribuidora real (sub-fase `1.F` con Migrador 1-Click) y pruebas campo offline 8–24h (`CTF-008 #4`).
 
 ---
 

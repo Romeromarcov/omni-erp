@@ -12,8 +12,8 @@
 
 | Campo | Valor |
 |---|---|
-| **Estado** | **EN CURSO** — **Ola 1A (Motor Trimonetario y Multi-Tasa)** mergeada (`#318`); **Ola 6 (`#333–#337`)** completada ✅; **Ola 1B (Contabilidad Dual, Analítica, Perfil Fiscal VE y ND)** en ejecución (`R-PROC-2`) |
-| **Fecha** | 2026-11-22 (sincronizado con `develop @ 61d2001`, cierre `#288–#320`) |
+| **Estado** | **✅ AUTOMATIZABLE COMPLETADO** — **Olas 1A–6B** (`#318`, `#333–#349`) completadas en `develop` (restan únicamente ítems `OWNER`: `CTF-012`, `P1-7`, `CTF-010`, `CTF-008 #4` + `1.F`) |
+| **Fecha** | 2026-11-24 (sincronizado con `develop`, cierre Plan 09 Olas 1A–6B) |
 | **Apps involucradas** | `core`, `finanzas`, `contabilidad`, `tesoreria`, `fiscal`, `localizacion_ve`, `ventas`, `compras`, `inventario`, `almacenes`, `nomina`, `rrhh`, `control_asistencia`, `despacho`, `crm`, `proveedores`, `gestion_aprobaciones`, `personalizacion`, `configuracion_motor`, `agentes`, `integration_hub`, `migracion_datos` |
 | **Gate de cierre** | [`DEFINITION_OF_DONE.md`](../DEFINITION_OF_DONE.md) + aislamiento multi-tenant + RLS + paridad REST/MCP/UI |
 
