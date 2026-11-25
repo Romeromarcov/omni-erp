@@ -24,6 +24,7 @@ const FacturaFiscalDetailPage = lazy(() => import('../pages/Ventas/FacturasFisca
 const FacturaFiscalFormPage = lazy(() => import('../pages/Ventas/FacturasFiscales/FacturaFiscalFormPage'));
 const ListasPrecioPage = lazy(() => import('../pages/Ventas/ListasPrecioPage'));
 const ComisionesPage = lazy(() => import('../pages/Ventas/ComisionesPage'));
+const PortalVendedorPage = lazy(() => import('../pages/Ventas/PortalVendedorPage'));
 
 export function ventasRoutes() {
   return (
@@ -65,6 +66,7 @@ export function ventasRoutes() {
 
       <Route path="/ventas/listas-precio" element={<ListasPrecioPage />} />
       <Route path="/ventas/comisiones" element={<ComisionesPage />} />
+      <Route path="/ventas/portal-vendedor" element={<PortalVendedorPage />} />
     </>
   );
 }

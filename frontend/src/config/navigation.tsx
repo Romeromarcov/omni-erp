@@ -90,6 +90,7 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
         { label: 'Facturas Fiscales', path: '/ventas/facturas-fiscales' },
         { label: 'Listas de Precio', path: '/ventas/listas-precio' },
         { label: 'Comisiones', path: '/ventas/comisiones' },
+        { label: 'Portal Vendedores (SFA)', path: '/ventas/portal-vendedor' },
       ],
     },
     {
@@ -144,7 +145,10 @@ export function buildNavigation(empresaId: string, options: NavOptions = {}): Na
       id: 'despacho',
       label: 'Despacho',
       icon: <LocalShippingOutlined />,
-      items: [{ label: 'Despachos', path: '/despacho' }],
+      items: [
+        { label: 'Despachos', path: '/despacho' },
+        { label: 'Portal Conductores', path: '/despacho/portal-conductor' },
+      ],
     },
     {
       id: 'manufactura',
