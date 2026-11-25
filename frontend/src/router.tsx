@@ -3,6 +3,7 @@ import { BrowserRouter, HashRouter, Routes, Route } from 'react-router-dom';
 import { shouldUseHashRouter } from './platform';
 
 const PublicConnectCardPage = lazy(() => import('./pages/Connect/PublicConnectCardPage'));
+const PortalClientePage = lazy(() => import('./pages/Ventas/PortalClientePage'));
 const AuthenticatedApp = lazy(() => import('./AuthenticatedApp'));
 
 export default function AppRouter() {
@@ -15,6 +16,7 @@ export default function AppRouter() {
       <Suspense fallback={<div>Cargando…</div>}>
         <Routes>
           <Route path="/c/:slug" element={<PublicConnectCardPage />} />
+          <Route path="/portal/cliente" element={<PortalClientePage />} />
           <Route path="*" element={<AuthenticatedApp />} />
         </Routes>
       </Suspense>
