@@ -91,6 +91,7 @@ def _run_cobranza(empresa, limite: int) -> tuple[list[dict[str, Any]], dict[str,
 def _run_tesorero(empresa, limite: int) -> tuple[list[dict[str, Any]], dict[str, Any], str]:
     from apps.cuentas_por_cobrar.models import CuentaPorCobrar  # noqa: PLC0415
     from apps.ventas.models import PagoPortalCliente  # noqa: PLC0415
+    from apps.ventas.services_credito import _saldo_neto_cxc  # noqa: PLC0415
 
     cxc_abiertas = list(
         CuentaPorCobrar.objects.filter(
@@ -100,6 +101,7 @@ def _run_tesorero(empresa, limite: int) -> tuple[list[dict[str, Any]], dict[str,
         .select_related("cliente")
         .order_by("fecha_vencimiento")[:200]
     )
+    saldos_cxc = {c.pk: _saldo_neto_cxc(c) for c in cxc_abiertas}
     pagos_pendientes = list(
         PagoPortalCliente.objects.filter(id_empresa=empresa, estado="PENDIENTE_VALIDACION", activo=True)
         .select_related("id_cliente", "id_moneda", "id_metodo_pago")
@@ -108,9 +110,11 @@ def _run_tesorero(empresa, limite: int) -> tuple[list[dict[str, Any]], dict[str,
 
     propuestas: list[dict[str, Any]] = []
     for p in pagos_pendientes:
-        candidatas = [c for c in cxc_abiertas if c.cliente_id == p.id_cliente_id]
-        match_cxc = min(candidatas, key=lambda c: abs(c.monto - p.monto), default=None) if candidatas else None
-        dif = (match_cxc.monto - p.monto).quantize(_Q2, rounding=ROUND_HALF_UP) if match_cxc else None
+        candidatas = [c for c in cxc_abiertas if c.cliente_id == p.id_cliente_id and saldos_cxc[c.pk] > _CERO]
+        match_cxc = (
+            min(candidatas, key=lambda c: abs(saldos_cxc[c.pk] - p.monto), default=None) if candidatas else None
+        )
+        dif = (saldos_cxc[match_cxc.pk] - p.monto).quantize(_Q2, rounding=ROUND_HALF_UP) if match_cxc else None
         propuestas.append(
             {
                 "id_pago_portal": str(p.pk),
@@ -203,20 +207,17 @@ def _run_cfo_copilot(empresa, _limite: int) -> tuple[list[dict[str, Any]], dict[
     from apps.cuentas_por_pagar.models import CuentaPorPagar  # noqa: PLC0415
     from apps.finanzas.models import Pago  # noqa: PLC0415
     from apps.finanzas.services_trimonetario import calcular_equivalencias_trimonetarias  # noqa: PLC0415
+    from apps.ventas.services_credito import _saldo_neto_cxc  # noqa: PLC0415
 
     hoy = timezone.localdate()
-    cxc_total = (
-        CuentaPorCobrar.objects.filter(empresa=empresa, estado__in=("pendiente", "vencida", "parcial")).aggregate(
-            t=Sum("monto")
-        )["t"]
-        or _CERO
-    )
-    cxc_vencida = (
-        CuentaPorCobrar.objects.filter(
-            empresa=empresa, estado__in=("pendiente", "vencida", "parcial"), fecha_vencimiento__lt=hoy
-        ).aggregate(t=Sum("monto"))["t"]
-        or _CERO
-    )
+    cxc_qs = CuentaPorCobrar.objects.filter(empresa=empresa, estado__in=("pendiente", "vencida", "parcial"))
+    cxc_total = _CERO
+    cxc_vencida = _CERO
+    for cxc in cxc_qs:
+        saldo = _saldo_neto_cxc(cxc)
+        cxc_total += saldo
+        if cxc.fecha_vencimiento < hoy:
+            cxc_vencida += saldo
     cxp_total = (
         CuentaPorPagar.objects.filter(
             id_empresa=empresa, activo=True, estado__in=("PENDIENTE", "VENCIDA", "PARCIAL")

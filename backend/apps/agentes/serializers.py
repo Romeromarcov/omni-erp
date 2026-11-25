@@ -178,6 +178,8 @@ class ConsumoLLMResumenSerializer(serializers.Serializer):
         read_only=True,
     )
     latencia_promedio_ms = serializers.IntegerField(read_only=True)
+    por_modelo = ConsumoLLMPorModeloSerializer(many=True, read_only=True)
+    por_uso = ConsumoLLMPorUsoSerializer(many=True, read_only=True)
 
 
 class EjecutarAgenteOperativoInputSerializer(serializers.Serializer):
@@ -187,5 +189,3 @@ class EjecutarAgenteOperativoInputSerializer(serializers.Serializer):
     agente = serializers.ChoiceField(choices=["COBRANZA", "TESORERO", "LOGISTICO", "COMPRADOR", "CFO_COPILOT"])
     persistir = serializers.BooleanField(required=False, default=True)
     limite = serializers.IntegerField(required=False, default=25, min_value=1, max_value=100)
-    por_modelo = ConsumoLLMPorModeloSerializer(many=True, read_only=True)
-    por_uso = ConsumoLLMPorUsoSerializer(many=True, read_only=True)

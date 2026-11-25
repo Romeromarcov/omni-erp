@@ -82,6 +82,7 @@ class ChatterDocumentoViewSet(viewsets.ViewSet):
     """Chatter interno y despacho WhatsApp Business sobre documentos comerciales/logísticos (Plan 09 Fase 8.1)."""
 
     permission_classes = [IsAuthenticated]
+    throttle_classes = [*viewsets.ViewSet.throttle_classes, EscrituraRateThrottle]
 
     def list(self, request):
         empresa = _resolver_empresa_notificacion(request)
@@ -132,12 +133,7 @@ class ChatterDocumentoViewSet(viewsets.ViewSet):
         request_body=EnviarWhatsAppInputSerializer, responses={201: MensajeChatterDocumentoSerializer}
     )
     @idempotent(scope="notificaciones:chatter_whatsapp")
-    @action(
-        detail=False,
-        methods=["post"],
-        url_path="enviar-whatsapp",
-        throttle_classes=[*viewsets.ViewSet.throttle_classes, EscrituraRateThrottle],
-    )
+    @action(detail=False, methods=["post"], url_path="enviar-whatsapp")
     def enviar_whatsapp(self, request):
         ser = EnviarWhatsAppInputSerializer(data=request.data)
         ser.is_valid(raise_exception=True)

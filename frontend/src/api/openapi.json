@@ -891,7 +891,16 @@
             "get": {
                 "operationId": "agentes_operativos_catalogo",
                 "description": "Catálogo y ejecución síncrona/determinista + LLM de los 5 Agentes IA Operativos (Plan 09 Fase 8.2).",
-                "parameters": [],
+                "parameters": [
+                    {
+                        "name": "empresa_id",
+                        "in": "query",
+                        "description": "UUID de empresa visible (obligatorio para superusuarios Omni sin empresa propia).",
+                        "required": false,
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": ""
@@ -918,11 +927,8 @@
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "",
-                        "schema": {
-                            "$ref": "#/definitions/EjecutarAgenteOperativoInput"
-                        }
+                    "200": {
+                        "description": "Resultado de ejecución del agente IA operativo."
                     }
                 },
                 "tags": [
@@ -58377,6 +58383,70 @@
                 }
             }
         },
+        "ConsumoLLMPorModelo": {
+            "type": "object",
+            "properties": {
+                "modelo": {
+                    "title": "Modelo",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "llamadas": {
+                    "title": "Llamadas",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "tokens_entrada_total": {
+                    "title": "Tokens entrada total",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "tokens_salida_total": {
+                    "title": "Tokens salida total",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "costo_total_usd": {
+                    "title": "Costo total usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                }
+            }
+        },
+        "ConsumoLLMPorUso": {
+            "type": "object",
+            "properties": {
+                "uso": {
+                    "title": "Uso",
+                    "type": "string",
+                    "readOnly": true,
+                    "minLength": 1
+                },
+                "llamadas": {
+                    "title": "Llamadas",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "tokens_entrada_total": {
+                    "title": "Tokens entrada total",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "tokens_salida_total": {
+                    "title": "Tokens salida total",
+                    "type": "integer",
+                    "readOnly": true
+                },
+                "costo_total_usd": {
+                    "title": "Costo total usd",
+                    "type": "string",
+                    "format": "decimal",
+                    "readOnly": true
+                }
+            }
+        },
         "ConsumoLLMResumen": {
             "type": "object",
             "properties": {
@@ -58404,6 +58474,20 @@
                 "latencia_promedio_ms": {
                     "title": "Latencia promedio ms",
                     "type": "integer",
+                    "readOnly": true
+                },
+                "por_modelo": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ConsumoLLMPorModelo"
+                    },
+                    "readOnly": true
+                },
+                "por_uso": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ConsumoLLMPorUso"
+                    },
                     "readOnly": true
                 }
             }
@@ -58501,70 +58585,6 @@
                 }
             }
         },
-        "ConsumoLLMPorModelo": {
-            "type": "object",
-            "properties": {
-                "modelo": {
-                    "title": "Modelo",
-                    "type": "string",
-                    "readOnly": true,
-                    "minLength": 1
-                },
-                "llamadas": {
-                    "title": "Llamadas",
-                    "type": "integer",
-                    "readOnly": true
-                },
-                "tokens_entrada_total": {
-                    "title": "Tokens entrada total",
-                    "type": "integer",
-                    "readOnly": true
-                },
-                "tokens_salida_total": {
-                    "title": "Tokens salida total",
-                    "type": "integer",
-                    "readOnly": true
-                },
-                "costo_total_usd": {
-                    "title": "Costo total usd",
-                    "type": "string",
-                    "format": "decimal",
-                    "readOnly": true
-                }
-            }
-        },
-        "ConsumoLLMPorUso": {
-            "type": "object",
-            "properties": {
-                "uso": {
-                    "title": "Uso",
-                    "type": "string",
-                    "readOnly": true,
-                    "minLength": 1
-                },
-                "llamadas": {
-                    "title": "Llamadas",
-                    "type": "integer",
-                    "readOnly": true
-                },
-                "tokens_entrada_total": {
-                    "title": "Tokens entrada total",
-                    "type": "integer",
-                    "readOnly": true
-                },
-                "tokens_salida_total": {
-                    "title": "Tokens salida total",
-                    "type": "integer",
-                    "readOnly": true
-                },
-                "costo_total_usd": {
-                    "title": "Costo total usd",
-                    "type": "string",
-                    "format": "decimal",
-                    "readOnly": true
-                }
-            }
-        },
         "EjecutarAgenteOperativoInput": {
             "required": [
                 "agente"
@@ -58599,20 +58619,6 @@
                     "default": 25,
                     "maximum": 100,
                     "minimum": 1
-                },
-                "por_modelo": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/ConsumoLLMPorModelo"
-                    },
-                    "readOnly": true
-                },
-                "por_uso": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/ConsumoLLMPorUso"
-                    },
-                    "readOnly": true
                 }
             }
         },
@@ -69265,7 +69271,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-24T21:02:29.785174-04:00"
+                    "default": "2026-11-24T21:45:21.127883-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",

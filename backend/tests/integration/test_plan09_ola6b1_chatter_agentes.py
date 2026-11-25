@@ -484,7 +484,37 @@ class TestAgentesOperativosFase82:
         cli_sin = APIClient()
         cli_sin.force_authenticate(user=usr_sin)
         assert cli_sin.get("/api/notificaciones/chatter/").status_code == 400
-        assert cli_sin.get("/api/agentes/operativos/catalogo/").status_code == 400
+        assert cli_sin.get("/api/agentes/operativos/catalogo/").status_code == 403
+
+        # Hallazgos PR #348: validar_uuid_param (400 en vez de 500), err de _resolver_empresa, EscrituraRateThrottle y ConsumoLLMResumenSerializer
+        assert cli.get("/api/agentes/operativos/catalogo/?empresa_id=no-es-uuid").status_code == 400
+        assert cli.get("/api/agentes/operativos/catalogo/?empresa_id=").status_code == 400
+        assert cli.get(f"/api/agentes/operativos/catalogo/?empresa_id={empresa_b.pk}").status_code == 403
+        su = Usuarios.objects.create_user(
+            username=f"su_{uuid.uuid4().hex[:6]}",
+            email=f"su_{uuid.uuid4().hex[:6]}@omni.test",
+            password="x",
+            es_superusuario_omni=True,
+        )
+        cli_su = APIClient()
+        cli_su.force_authenticate(user=su)
+        assert (
+            cli_su.post(
+                "/api/agentes/operativos/ejecutar/",
+                {"agente": "COBRANZA"},
+                format="json",
+                HTTP_IDEMPOTENCY_KEY=str(uuid.uuid4()),
+            ).status_code
+            == 400
+        )
+
+        from apps.agentes.serializers import ConsumoLLMResumenSerializer
+        from apps.core.throttling import EscrituraRateThrottle
+        from apps.notificaciones.views import ChatterDocumentoViewSet
+
+        assert EscrituraRateThrottle in ChatterDocumentoViewSet.throttle_classes
+        resumen_fields = set(ConsumoLLMResumenSerializer().fields.keys())
+        assert {"por_modelo", "por_uso"}.issubset(resumen_fields)
 
         # MCP errores (UUID inválido, tipo inválido, teléfono inválido)
         cap = _crear_cap_token(empresa_a, usr_a, ["notificaciones:read", "notificaciones:write"])

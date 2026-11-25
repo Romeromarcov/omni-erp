@@ -17973,6 +17973,36 @@ export interface components {
              */
             readonly creado_en?: string;
         };
+        ConsumoLLMPorModelo: {
+            /** Modelo */
+            readonly modelo?: string;
+            /** Llamadas */
+            readonly llamadas?: number;
+            /** Tokens entrada total */
+            readonly tokens_entrada_total?: number;
+            /** Tokens salida total */
+            readonly tokens_salida_total?: number;
+            /**
+             * Costo total usd
+             * Format: decimal
+             */
+            readonly costo_total_usd?: string;
+        };
+        ConsumoLLMPorUso: {
+            /** Uso */
+            readonly uso?: string;
+            /** Llamadas */
+            readonly llamadas?: number;
+            /** Tokens entrada total */
+            readonly tokens_entrada_total?: number;
+            /** Tokens salida total */
+            readonly tokens_salida_total?: number;
+            /**
+             * Costo total usd
+             * Format: decimal
+             */
+            readonly costo_total_usd?: string;
+        };
         ConsumoLLMResumen: {
             /** Llamadas */
             readonly llamadas?: number;
@@ -17987,6 +18017,8 @@ export interface components {
             readonly costo_total_usd?: string;
             /** Latencia promedio ms */
             readonly latencia_promedio_ms?: number;
+            readonly por_modelo?: components["schemas"]["ConsumoLLMPorModelo"][];
+            readonly por_uso?: components["schemas"]["ConsumoLLMPorUso"][];
         };
         EjecucionAgente: {
             /**
@@ -18038,36 +18070,6 @@ export interface components {
              */
             readonly id_empresa?: string;
         };
-        ConsumoLLMPorModelo: {
-            /** Modelo */
-            readonly modelo?: string;
-            /** Llamadas */
-            readonly llamadas?: number;
-            /** Tokens entrada total */
-            readonly tokens_entrada_total?: number;
-            /** Tokens salida total */
-            readonly tokens_salida_total?: number;
-            /**
-             * Costo total usd
-             * Format: decimal
-             */
-            readonly costo_total_usd?: string;
-        };
-        ConsumoLLMPorUso: {
-            /** Uso */
-            readonly uso?: string;
-            /** Llamadas */
-            readonly llamadas?: number;
-            /** Tokens entrada total */
-            readonly tokens_entrada_total?: number;
-            /** Tokens salida total */
-            readonly tokens_salida_total?: number;
-            /**
-             * Costo total usd
-             * Format: decimal
-             */
-            readonly costo_total_usd?: string;
-        };
         EjecutarAgenteOperativoInput: {
             /**
              * Id empresa
@@ -18089,8 +18091,6 @@ export interface components {
              * @default 25
              */
             limite: number;
-            readonly por_modelo?: components["schemas"]["ConsumoLLMPorModelo"][];
-            readonly por_uso?: components["schemas"]["ConsumoLLMPorUso"][];
         };
         PrediccionAgente: {
             /**
@@ -24466,7 +24466,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-24T21:02:29.785174-04:00
+             * @default 2026-11-24T21:45:21.127883-04:00
              */
             fecha_despacho: string;
             /**
@@ -36657,7 +36657,10 @@ export interface operations {
     };
     agentes_operativos_catalogo: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description UUID de empresa visible (obligatorio para superusuarios Omni sin empresa propia). */
+                empresa_id?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -36685,13 +36688,12 @@ export interface operations {
             };
         };
         responses: {
-            201: {
+            /** @description Resultado de ejecución del agente IA operativo. */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["EjecutarAgenteOperativoInput"];
-                };
+                content?: never;
             };
         };
     };
