@@ -865,6 +865,12 @@
 | `^metodos-pago/buscar_reutilizar\.(?P<format>[a-z0-9]+)/?$` | MetodoPagoViewSet | MetodoPago | ✅ | ✅ | IsAuthenticated |
 | `^metodos-pago\.(?P<format>[a-z0-9]+)/?$` | MetodoPagoViewSet | MetodoPago | ✅ | — | IsAuthenticated |
 | `^metodos-pago\.(?P<format>[a-z0-9]+)/?$` | MetodoPagoViewSet | MetodoPago | ✅ | ✅ | IsAuthenticated |
+| `^migrador-1click/ejecutar/$` | Migrador1ClickViewSet | — | — | — | IsAuthenticated |
+| `^migrador-1click/ejecutar\.(?P<format>[a-z0-9]+)/?$` | Migrador1ClickViewSet | — | — | — | IsAuthenticated |
+| `^migrador-1click/formatos/$` | Migrador1ClickViewSet | — | — | — | IsAuthenticated |
+| `^migrador-1click/formatos\.(?P<format>[a-z0-9]+)/?$` | Migrador1ClickViewSet | — | — | — | IsAuthenticated |
+| `^migrador-1click/preview/$` | Migrador1ClickViewSet | — | — | — | IsAuthenticated |
+| `^migrador-1click/preview\.(?P<format>[a-z0-9]+)/?$` | Migrador1ClickViewSet | — | — | — | IsAuthenticated |
 | `^minutas/$` | MinutaReunionViewSet | MinutaReunion | ✅ | — | PermisoTareas |
 | `^minutas/(?P<pk>[0-9a-fA-F-]{36})/$` | MinutaReunionViewSet | MinutaReunion | ✅ | — | PermisoTareas |
 | `^minutas/(?P<pk>[0-9a-fA-F-]{36})/confirmar/$` | MinutaReunionViewSet | MinutaReunion | ✅ | — | PermisoTareas |
@@ -1747,4 +1753,4 @@
 | `validar-cuenta-ve/` | ValidarCuentaVeView | — | — | — | IsAuthenticated |
 | `validar-referencia/` | ValidarReferenciaView | — | — | — | IsAuthenticated |
 
-_Total ViewSets: 312_
+_Total ViewSets: 313_

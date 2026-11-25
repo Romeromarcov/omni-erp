@@ -141,6 +141,19 @@
 | **Ola 4A (P1)** | **Fase 5** (Costos en Destino/Landed Costs + Costo Reposición USD + Semáforo Margen + Conteo Cíclico Dual + Barcode Pick-Pack-Ship + Tránsito Inter-Almacén + 3-Way Matching) | ✅ **COMPLETADA (`#344`)** |
 | **Ola 4B (P1)** | **Fase 6** (Logística TMS IA/GPS/Delivery Externo/ePOD) | ✅ **COMPLETADA (`#345`)** |
 | **Ola 5 (P2)** | **Fase 7.2–7.4** (Portales independientes: Vendedores SFA, Clientes Self-Service, Conductores) + cierre operativo campo `CTF-008` | ✅ **COMPLETADA (`#346` BE + `#347` FE)** *(resta campo `CTF-008 #4`)* |
-| **Ola 6B / Fase 8 (P2/P3)** | **Fase 8** (WhatsApp/Chatter, Agentes IA operativos, RLS prod `CTF-012` + firma apps `CTF-010`, Migrador 1-Click Odoo) | 🔄 **EN CURSO (`Ola 6B-1` 8.1+8.2; resta `Ola 6B-2` 8.4)** |
+| **Ola 6B / Fase 8 (P2/P3)** | **Fase 8** (8.1 WhatsApp/Chatter + 8.2 5 Agentes IA Operativos ✅ `#348`; 8.4 Migrador 1-Click Odoo `READ-ONLY`/CSV ✅ `#349`; 8.3 Hardening prod `OWNER`) | ✅ **AUTOMATIZABLE COMPLETADO (`#348` + `#349`)** *(restan únicamente ítems `OWNER`: `CTF-012` rol `omni_app`, `P1-7` `BACKUP_*`, `CTF-010` firma apps)* |
 
 Cada PR deberá cumplir íntegramente [`DEFINITION_OF_DONE.md`](../DEFINITION_OF_DONE.md) (`check`, `makemigrations --check --dry-run`, `mapa_superficie --check`, tests multi-tenant + RLS y `diff-cover ≥ 95 %`, `tsc -b`, `npm run lint`, `check:api-drift`, Vitest/Playwright) y recibir dictamen **`APROBADO`** de revisor independiente (`QA + Seguridad`) antes de merge a `develop`.
+
+---
+
+## 5. Cierre de Alcance Automatizable vs Ítems `OWNER`
+
+Todo el alcance de software de **Plan 09 (Olas 1A–6B, PRs `#318`, `#333–#349`)** ha sido implementado, verificado y mergeado en `develop`:
+- **Motor Trimonetario y Multi-Tasa (`#318`)**, **Contabilidad Dual `FISCAL`/`GERENCIAL` (`#338`, `#339`)**, **Motor Comercial Dinámico + Nota Venta Gerencial (`#340`)**, **Access Studio RBAC/ABAC (`#341`)**, **Blindaje SENIAT 360° + Imprenta Digital (`#342`)**, **Nómina Dual VE LOTTT (`#343`)**, **Supply Chain (`#344`)**, **Logística TMS IA/GPS/Delivery Externo/ePOD (`#345`)**, **Portales Independientes Vendedores/Clientes/Conductores (`#346`, `#347`)**, **Chatter/WhatsApp + 5 Agentes IA Operativos (`#348`)** y **Migrador 1-Click Odoo Solo-Lectura + Saint/Profit/Galac CSV (`#349`)**.
+
+Únicamente permanecen fuera de automatización autónoma (acción directa del owner / operación):
+1. **`CTF-012` (`RLS_ENABLED=True` + rol BD `omni_app` no-dueño con `bypass='off'`)** en staging→producción.
+2. **`P1-7`** (carga de secrets `BACKUP_*` y validación de restore real en bucket S3/R2).
+3. **`CTF-010`** (certificados de firma de instaladores Electron/Android en CI).
+4. **`CTF-008 #4` + `1.F`** (pruebas reales de campo 8–24h sin red, carga de datos reales y operación 30 días).

@@ -322,11 +322,12 @@ Lo que la realidad económica del país obliga aunque ninguna ley lo pida. Es el
 
 # 4 — Estado actual real del proyecto
 
-> **Foto verificada contra `origin/develop @ 61d2001` el 2026-11-22** (sobre la base auditada
+> **Foto verificada contra `develop` el 2026-11-24** (sobre la base auditada
 > el 2026-06-21 en [`docs/AUDITORIA_2026-06-21.md`](AUDITORIA_2026-06-21.md), incorporando el
-> cierre real de `#288–#320`: Plan 05 P2 automatizable, Plan 06 automatizable, Plan 07 `S1–S12`
-> (`#261`, `#313–#317`), Plan 08 100 % (`Bloques A+B` + `CTF-011`), `localizacion_ve` 6/6 (`#312`),
-> POS offline FE, Plan B AppImage/updater y Plan 09 Ola 1A Motor Trimonetario/Multi-Tasa `#318`).
+> cierre real de `#288–#320`, **Ola 6 (`#333–#337`)** y **Plan 09 completo en código (`#318`, `#338–#349`)**:
+> Plan 05 P1–P3-1 automatizable, Plan 06 automatizable, Plan 07 `S1–S12` + smoke Odoo QA1,
+> Plan 08 100 %, `localizacion_ve` 6/6 + *strangler fig* `ADR-007`, `POST /api/sync/push/` optimista,
+> 2FA/TOTP + `SAAS_FAIL_CLOSED`, y Plan 09 Olas 1A–6B).
 
 ## 4.1 Estado actual
 
@@ -343,12 +344,13 @@ Lo que la realidad económica del país obliga aunque ninguna ley lo pida. Es el
   - **`apps/tareas` (ADR-015, PRs #286–#287):** áreas operativas, proyectos Kanban, plantillas recurrentes, minutas con IA, escalación gradual, `CapabilityToken` (`tareas:read`/`tareas:write`), tools MCP e interfaz frontend completa.
   - **`apps/activaciones` (PRs #266–#267):** calendarios, recursos con control de capacidad solapada, eventos de activación + sincronización Google Calendar vía Celery.
   - **`apps/bots_ingest` (PRs #266, #271, #277, #280–#282):** ingesta multi-tenant de bots Telegram con `CapabilityToken`, panel de flota/bitácora y push **opt-in** en borrador a Odoo para **7 tipos** (`contacto`, `pedido`, `pago`, `pago_proveedor`, `proveedor`, `factura_proveedor`, `gasto`).
-- **Hardening y estabilización (Plan 05 + Plan 06):**
-  - **Cerrados en Plan 05 (P1–P2 automatizable ✅):** `P1-1` throttling DRF global (`#84`), `P1-2` idempotencia pagos (`#86`), `P1-3` `django-axes` + política contraseñas (`#84`), `P1-4` revocación JWT verificada (`#84`), `P1-5`/`P1-6`/`P2-2`/`P2-3`/`P2-4`/`P2-6` automatizables cerrados (`#288–#302`), `P2-1` gateway LLM agnóstico con fallback y circuit breaker (`#99`), `P2-5` CSP enforce con `django-csp==4.0` (`#106`). **Pendientes:** `P3-1` (2FA/TOTP + hardening `SAAS_FAIL_CLOSED`, Ola 6 PR-34) y `P1-7` (cargar secrets `BACKUP_*` del owner).
-  - **Cerrados en Plan 06 (automatizable ✅ `#288–#302`):** Fase 0 completa, Fases 1–4 automatizables (`str(e)`, `ruff` baseline, `# noqa`/`eslint-disable`, segunda pasada Decimal FE, `uuid7` monótono) cerradas; resta limpieza residual mypy/ruff/TZ (Ola 6 PR-31) e ítems exclusivos del owner (`CTF-012` rol `omni_app`, backups reales y Railway).
+- **Hardening y estabilización (Plan 05 + Plan 06 + Ola 6 ✅ automatizable):**
+  - **Cerrados en Plan 05 (P1–P3-1 automatizable ✅):** `P1-1` throttling DRF (`#84`), `P1-2` idempotencia (`#86`), `P1-3` `django-axes` (`#84`), `P1-4` revocación JWT (`#84`), `P1-5`/`P1-6`/`P2-2`/`P2-3`/`P2-4`/`P2-6` (`#288–#302`), `P2-1` gateway LLM (`#99`), `P2-5` CSP (`#106`) y `P3-1` (`2FA/TOTP RFC 6238` + `SAAS_FAIL_CLOSED` + `X-Empresa-ID`, **`#336`**). **Pendiente `OWNER`:** `P1-7` (cargar secrets `BACKUP_*`).
+  - **Cerrados en Plan 06 (`#288–#302` + `#333`):** Fases 0–4 automatizables e higiene residual `mypy`/`ruff`/TZ (`#333`); restan ítems exclusivos del owner (`CTF-012` rol `omni_app`, backups reales y Railway).
 - **Plan 08 (Paridad ERP + Conciliación N:M ✅ 100 %):** `finanzas.AsignacionPago` N:M, diarios contables, reversión atómica, cierre de período/ejercicio, reportes P&L/Balance/Mayor, procurement (`RequisicionCompra`→`RFQ`→`Oferta`→`OC`), reglas de reabastecimiento, lotes y cierre de `CTF-011`.
-- **Plan 09 (ERP Clase Mundial VE — Ola 1A ✅ `#318`):** Motor Trimonetario y Multi-Tasa (`finanzas.TipoTasaCambio` extensible con RLS, `MonedaEmpresaActiva.es_moneda_referencia`, `services_trimonetario.py`, REST + MCP). Detalle en [`docs/planes/09-erp-clase-mundial-ve.md`](planes/09-erp-clase-mundial-ve.md).
-- **Offline-first del POS (ADR-012 / CTF-008):** ciclo POS offline frontend (`PosPage` + `salesOutbox` + `useOutboxFlush` + `POST /api/sync/push/ventas/`) ✅ completo; resta el push optimista de ediciones (`POST /api/sync/push/` con HTTP 409 en Ola 6 PR-33) y pruebas reales de campo 8–24h.
+- **Plan 09 (ERP Clase Mundial VE — Olas 1A–6B ✅ AUTOMATIZABLE COMPLETADO `#318`, `#338–#349`):**
+  - Motor Trimonetario y Multi-Tasa (`#318`), Contabilidad Dual `FISCAL`/`GERENCIAL` (`#338`, `#339`), Motor Comercial Dinámico y Nota de Venta Gerencial (`#340`), Access Studio RBAC/ABAC (`#341`), Blindaje SENIAT 360° + Imprenta Digital (`#342`), Nómina Dual VE LOTTT (`#343`), Supply Chain (`#344`), Logística TMS IA/GPS/Delivery Externo/ePOD (`#345`), Portales Independientes Vendedores/Clientes/Conductores (`#346`, `#347`), Chatter/WhatsApp + 5 Agentes IA Operativos (`#348`) y Migrador 1-Click Odoo `READ-ONLY` + Saint/Profit/Galac CSV (`#349`). Detalle en [`docs/planes/09-erp-clase-mundial-ve.md`](planes/09-erp-clase-mundial-ve.md).
+- **Offline-first del POS (ADR-012 / CTF-008):** ciclo POS offline frontend (`PosPage` + `salesOutbox` + `useOutboxFlush`) + `POST /api/sync/push/` optimista con HTTP 409 `CONFLICTO_VERSION` (`#335`) ✅ completo; restan únicamente pruebas reales de campo 8–24h (`CTF-008 #4`).
 - **Plan B (Multiplataforma):** AppImage y auto-updater implementados; pendiente firma de instaladores en CI (`CTF-010`, acción owner).
 
 ## 4.2 Módulos — estado verificado (`develop @ 61d2001`)
@@ -361,24 +363,21 @@ Lo que la realidad económica del país obliga aunque ninguna ley lo pida. Es el
 - **RRHH, nómina, manufactura y despacho:** `nomina` (cálculo LOTTT + extrasalarial + UI), `rrhh` (Empleado/Cargo/Beneficio/Licencia + UI), `control_asistencia` (+ UI), `manufactura` (BOM, rutas, centros, OF con etapas, costeo real, MRP + UI), `despacho` (máquina de estados, PDF + UI), `gastos` (flujo aprobación + reembolsos + UI), `costos` (+ UI), `servicio_cliente` (tickets/SLA/base conocimiento + UI).
 - **Localización (framework + VE):** `localizacion` instalada (6 puertos ABC + 6 `NoOp` + registry con alias `VE`/`VEN` + `GET /api/localizacion/estado/` + MCP `localizacion_estado_empresa`). `localizacion_ve` **6/6 puertos ✅** (`MotorImpuestosVE`, `GeneradorDocumentoLegalVE`, `CalculadoraNominaVE`, `LibroLegalVE`, `ProveedorTasasVE`, `MetodosPagoLocalesVE`). `eventos` (subsistema sin `models.py`). `sync` (pull deltas + `POST /api/sync/push/ventas/`).
 
-**🔶 PENDIENTE DE DESACOPLAMIENTO / CONSOLIDACIÓN (Ola 6 PR-31..PR-35)**
+**✅ CERRADOS EN OLA 6 (`#333–#337`) + PLAN 09 (`#318`, `#338–#349`)**
 
-- `fiscal` / `ventas` / `nomina` → cableado *strangler fig* vía `get_localizacion(empresa)` (**Ola 6 PR-32**).
-- `sync` → `POST /api/sync/push/` con concurrencia optimista 409 `CONFLICTO_VERSION` + UI conflictos (**Ola 6 PR-33**, cierre técnico `CTF-008`).
-- `saas` + `core` → `SAAS_FAIL_CLOSED` + `X-Empresa-ID` + autenticación 2FA/TOTP RFC 6238 (**Ola 6 PR-34**, `Plan 05 P3-1`).
+- `fiscal` / `ventas` / `nomina` → cableado *strangler fig* vía `get_localizacion(empresa)` (**`#334`** ✅).
+- `sync` → `POST /api/sync/push/` con concurrencia optimista 409 `CONFLICTO_VERSION` + UI conflictos (**`#335`** ✅, cierre técnico `CTF-008`).
+- `saas` + `core` → `SAAS_FAIL_CLOSED` + `X-Empresa-ID` + autenticación 2FA/TOTP RFC 6238 (**`#336`** ✅, `Plan 05 P3-1`).
+- `Plan 09` (Olas 1A–6B ✅): Contabilidad Dual (`#338`/`#339`), Precios brecha/Nota Venta Gerencial (`#340`), Access Studio RBAC/ABAC (`#341`), SENIAT 360° (`#342`), Nómina Dual VE (`#343`), Supply Chain (`#344`), Logística TMS IA/ePOD (`#345`), Portales Independientes (`#346`/`#347`), Chatter/WhatsApp + 5 Agentes IA (`#348`) y Migrador 1-Click Odoo `READ-ONLY`/CSV (`#349`).
 
 ## 4.3 Deuda técnica activa (verificada en código)
 
 > Inventario estático actualizado en [`docs/tech-debt/INVENTORY.md`](tech-debt/INVENTORY.md).
-> CTFs abiertos en [`docs/ctf/`](ctf/) (**fechas `Vence` intocadas por Plan 06 D3**): **CTF-008** (offline: ciclo FE POS cerrado, falta push optimista PR-33 y pruebas campo),
-> **CTF-010** (firma de apps), **CTF-012** (RLS en entornos reales; 12 CTFs cerrados, incl. **CTF-011** push Odoo).
+> CTFs abiertos en [`docs/ctf/`](ctf/) (**fechas `Vence` intocadas por Plan 06 D3**): **CTF-008** (cierre técnico `#335` listo; falta únicamente condición operativa #4 campo 8–24h),
+> **CTF-010** (firma de apps, acción owner), **CTF-012** (RLS en entornos reales, acción owner).
 
-- **Ola 6 (4 frentes concretos en ejecución, PR-31..PR-35):**
-  1. Limpieza técnica `mypy`/`ruff`/TZ (`apps/core`, `apps/agentes`, `apps/ventas`, tests sensibles a `localdate()`) + sincronización documental (**PR-31**).
-  2. Desacoplamiento efectivo *strangler fig* de `fiscal`, `ventas` y `nomina` vía `get_localizacion(empresa)` (`ADR-007`, **PR-32**).
-  3. Cierre técnico de concurrencia optimista offline en `apps/sync` + Frontend (`CTF-008` Nivel 2, **PR-33**) + endurecimiento `SAAS_FAIL_CLOSED` y 2FA/TOTP RFC 6238 (`Plan 05 P3-1`, **PR-34**).
-  4. Smoke test controlado Connect `EventoOutbox → crm.lead` en Odoo QA1 sin escrituras sobre `res.partner` (**PR-35**).
-- **Plan 06 / Plan 05 (ítems exclusivos del owner):** activar rol BD no-dueño `omni_app` con `bypass='off'` (`CTF-012`), cargar secrets `BACKUP_*` y probar restore (`P1-7`), branch protection en GitHub, ajustes Railway y firma de instaladores (`CTF-010`).
+- **Ola 6 (`#333–#337` ✅ COMPLETADA):** higiene mypy/ruff/TZ (`#333`), *strangler fig* (`#334`), sync push optimista (`#335`), `SAAS_FAIL_CLOSED` + 2FA/TOTP (`#336`) y smoke live QA1 Connect→Odoo `crm.lead` sin escrituras sobre `res.partner` (`#337`).
+- **Ítems exclusivos del `OWNER` / Operación real:** activar rol BD no-dueño `omni_app` con `bypass='off'` (`CTF-012`), cargar secrets `BACKUP_*` y probar restore (`P1-7`), branch protection en GitHub, ajustes Railway, firma de instaladores (`CTF-010`), carga de datos reales + pruebas campo `CTF-008 #4` y go-live `cxc_lubrikca`.
 
 ---
 
@@ -472,33 +471,33 @@ Hallazgos verificados línea por línea — detalle y explotabilidad en
 aislamiento + los tests nuevos de FK-injection en verde; los ~30 bugs del backfill Fase 3 que
 solapan con P0 quedan cubiertos y el resto triagéado en `docs/tech-debt/INVENTORY.md`.
 
-### Orden maestro de Olas pendientes (actualizado 2026-11-22)
+### Orden maestro de Olas pendientes (actualizado 2026-11-24)
 
 ```
-P0 (✅ #64–#73) + UI/E2E sweep (✅ #215–#247) + Olas 1–5 automatizables (✅ #288–#320)
-   ├─ Olas 1–4 + Ola 5 base ✅ COMPLETADAS (`#288–#320`):
-   │    • Plan 05 P1–P2 automatizable ✅ · Plan 06 Fases 1–4 automatizables ✅ · POS offline FE ✅
-   │    • Plan 07 Omni Connect S1–S12 ✅ (`#261`, `#313–#317`)
+P0 (✅ #64–#73) + UI/E2E sweep (✅ #215–#247) + Olas 1–6B COMPLETADAS (#288–#349)
+   ├─ Olas 1–5 + Plan 05–08 ✅ COMPLETADAS (#288–#320):
+   │    • Plan 05 P1–P2 ✅ · Plan 06 Fases 1–4 automatizables ✅ · POS offline FE ✅
+   │    • Plan 07 Omni Connect S1–S12 ✅ (#261, #313–#317)
    │    • Plan 08 Conciliación N:M + Paridad Odoo ✅ 100 % (incl. cierre CTF-011)
-   │    • localizacion_ve 6/6 adaptadores ✅ (`#312`) · Plan B AppImage/updater ✅
-   │    • Plan 09 Ola 1A Motor Trimonetario y Multi-Tasa ✅ (`#318`)
-   ├─ Ola 6 — Consolidación, Desacoplamiento y Hardening (PR-31 a PR-35 — EN CURSO):
-   │    • PR-31: Sincronización documental + higiene mypy/ruff/TZ
-   │    • PR-32: Strangler Fig de localización en fiscal, ventas y nomina (ADR-007 real + E2E VE vs no-VE)
-   │    • PR-33: Concurrencia optimista offline POST /api/sync/push/ + HTTP 409 + UI conflictos (CTF-008 Nivel 2)
-   │    • PR-34: Hardening SAAS_FAIL_CLOSED + X-Empresa-ID + Autenticación 2FA/TOTP RFC 6238 (Plan 05 P3-1)
-   │    • PR-35: Smoke test live controlado Connect EventoOutbox → crm.lead en Odoo QA1 (0 writes res.partner)
-   ├─ Pilotos y Owner:
-   │    • 1.F Distribuidora en producción (datos reales + 30d operación) + Go-live cxc_lubrikca
-   │    • Owner: rol BD omni_app (CTF-012), secrets BACKUP_* (P1-7), firma apps (CTF-010), branch protection
-   └─ Plan 09 (Olas 1B–6 — post Ola 6):
-        • Contabilidad Dual (FISCAL/GERENCIAL), Blindaje SENIAT + Imprenta Digital, Precios por Brecha,
-          Nómina Dual VE, Logística TMS IA/GPS/Delivery, Supply Chain, RBAC/ABAC y Portales independientes
+   │    • localizacion_ve 6/6 adaptadores ✅ (#312) · Plan B AppImage/updater ✅
+   ├─ Ola 6 — Consolidación, Desacoplamiento y Hardening ✅ COMPLETADA (#333–#337):
+   │    • PR-31 (#333): Sincronización documental + higiene mypy/ruff/TZ
+   │    • PR-32 (#334): Strangler Fig de localización en fiscal, ventas y nomina (ADR-007 real + E2E VE vs no-VE)
+   │    • PR-33 (#335): Concurrencia optimista offline POST /api/sync/push/ + HTTP 409 + UI conflictos (CTF-008 Nivel 2)
+   │    • PR-34 (#336): Hardening SAAS_FAIL_CLOSED + X-Empresa-ID + Autenticación 2FA/TOTP RFC 6238 (Plan 05 P3-1)
+   │    • PR-35 (#337): Smoke test live controlado Connect EventoOutbox → crm.lead en Odoo QA1 (0 writes res.partner)
+   ├─ Plan 09 (Olas 1A–6B) ✅ AUTOMATIZABLE COMPLETADO (#318, #338–#349):
+   │    • Motor Trimonetario (#318), Contabilidad Dual (#338–#339), Motor Comercial (#340),
+   │      Access Studio RBAC/ABAC (#341), SENIAT 360° (#342), Nómina Dual VE (#343), Supply Chain (#344),
+   │      TMS IA/GPS/ePOD (#345), Portales Independientes (#346–#347), Chatter/WhatsApp + 5 Agentes IA (#348),
+   │      y Migrador 1-Click Odoo READ-ONLY + Saint/Profit/Galac CSV (#349).
+   └─ ÚNICOS PENDIENTES — Pilotos y Owner (no autónomos):
+        • 1.F Distribuidora en producción (datos reales + 30d operación + CTF-008 #4) + Go-live cxc_lubrikca
+        • Owner: rol BD omni_app (CTF-012), secrets BACKUP_* (P1-7), firma apps (CTF-010), branch protection
 ```
 
 ### S1 — Seguridad residual (Plan 05) — detalle en [`planes/05-seguridad-hardening.md`](planes/05-seguridad-hardening.md)
-- **✅ Cerrados (automatizables):** `P1-1` throttling DRF global (`#84`), `P1-2` idempotencia pagos (`#86`), `P1-3` `django-axes` + política contraseñas (`#84`), `P1-4` revocación JWT (`#84`), `P1-5` auditoría inmutable, `P1-6` pasada IDOR, `P2-1` gateway LLM (`#99`), `P2-2`/`P2-3`/`P2-4`/`P2-6` (`#288–#302`), `P2-5` CSP Django (`#106`).
-- [ ] **Ola 6 PR-34:** `SAAS_FAIL_CLOSED` + `X-Empresa-ID` + `P3-1` (2FA/TOTP RFC 6238 nativo sin nuevas deps pip).
+- **✅ Cerrados (automatizables):** `P1-1` throttling DRF global (`#84`), `P1-2` idempotencia pagos (`#86`), `P1-3` `django-axes` + política contraseñas (`#84`), `P1-4` revocación JWT (`#84`), `P1-5` auditoría inmutable, `P1-6` pasada IDOR, `P2-1` gateway LLM (`#99`), `P2-2`/`P2-3`/`P2-4`/`P2-6` (`#288–#302`), `P2-5` CSP Django (`#106`), y **`P3-1`** (`#336`: `SAAS_FAIL_CLOSED` + `X-Empresa-ID` + `2FA/TOTP RFC 6238` nativo).
 - [ ] **CTF-012** (vence intacto por Plan 06 D3 — acción owner): rol de BD `omni_app` no-dueño + `bypass='off'` + `RLS_ENABLED=True` en staging→prod.
 - [ ] **P1-7 (acción owner):** secrets `BACKUP_*` del owner en GitHub Actions + restore probado (workflows `#96` listos).
 
@@ -506,9 +505,8 @@ P0 (✅ #64–#73) + UI/E2E sweep (✅ #215–#247) + Olas 1–5 automatizables 
 - **✅ Cerrado:** backend ≥92 % + `diff-cover ≥95 %`, frontend >80 % (`statements: 83`, `lines: 85`), `eslint-plugin-security` (CTF-006), `decimal.js` en flujos monetarios (FE-HIGH-7), E2E Playwright bloqueante en CI (`ubuntu-24.04`), `trivy` CRITICAL + `schemathesis` + `npm audit --audit-level=high` (CTF-007).
 - [ ] **Branch protection en GitHub — acción exclusiva del owner (Marco).**
 
-### F — Workstream frontend (cerrado en barrido #215–#247 + Planes 07/08; residual en Ola 6 / Plan 09)
-- **✅ Cerrado:** 16/16 FormPages en `react-hook-form` + `zod` (FE-CRIT-1), 15 apps + 9 sub-módulos con UI + `toList()` + E2E cross-módulo, `PosPage` offline (`salesOutbox` + `useOutboxFlush`), Kanban y consolas de `Omni Connect` (`Plan 07`) y UI `Plan 08`.
-- [ ] Pendiente en **Ola 6**: UI resolución de conflictos `409 CONFLICTO_VERSION` (**PR-33**) y UI/flujo 2FA TOTP en login y perfil (**PR-34**).
+### F — Workstream frontend (cerrado en barrido #215–#247 + Planes 07/08/09 + Ola 6)
+- **✅ Cerrado:** 16/16 FormPages en `react-hook-form` + `zod` (FE-CRIT-1), 15 apps + 9 sub-módulos con UI + `toList()` + E2E cross-módulo, `PosPage` offline (`salesOutbox` + `useOutboxFlush`), UI resolución de conflictos `409 CONFLICTO_VERSION` (`#335`), UI/flujo 2FA TOTP (`#336`), Kanban/consolas `Omni Connect` (`Plan 07`), UI `Plan 08` y Portales Independientes (`#347`).
 
 ### Sub-fases 1.F–1.J (pilotos distribuidora y fábrica)
 - **1.F Distribuidora en producción:** software listo; resta carga de datos reales de la distribuidora, configuración fiscal real y 30 días continuos de operación.

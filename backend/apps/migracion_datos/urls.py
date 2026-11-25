@@ -1,12 +1,18 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from .views import DetalleErrorMigracionViewSet, PlantillaMigracionViewSet, ProcesoMigracionViewSet
+from .views import (
+    DetalleErrorMigracionViewSet,
+    Migrador1ClickViewSet,
+    PlantillaMigracionViewSet,
+    ProcesoMigracionViewSet,
+)
 
 router = DefaultRouter()
 router.register(r"plantillas-migracion", PlantillaMigracionViewSet)
 router.register(r"procesos-migracion", ProcesoMigracionViewSet)
 router.register(r"detalles-error-migracion", DetalleErrorMigracionViewSet)
+router.register(r"migrador-1click", Migrador1ClickViewSet, basename="migrador-1click")
 
 urlpatterns = [
     path("", include(router.urls)),

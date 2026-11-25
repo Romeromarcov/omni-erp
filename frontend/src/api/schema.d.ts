@@ -13137,6 +13137,57 @@ export interface paths {
         patch: operations["migracion-datos_detalles-error-migracion_partial_update"];
         trace?: never;
     };
+    "/migracion-datos/migrador-1click/ejecutar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Migrador 1-Click desde Odoo (SOLO LECTURA) y CSV VE Saint/Profit/Galac (Plan 09 Fase 8.4). */
+        post: operations["migracion-datos_migrador-1click_ejecutar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/migracion-datos/migrador-1click/formatos/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Migrador 1-Click desde Odoo (SOLO LECTURA) y CSV VE Saint/Profit/Galac (Plan 09 Fase 8.4). */
+        get: operations["migracion-datos_migrador-1click_formatos"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/migracion-datos/migrador-1click/preview/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Migrador 1-Click desde Odoo (SOLO LECTURA) y CSV VE Saint/Profit/Galac (Plan 09 Fase 8.4). */
+        post: operations["migracion-datos_migrador-1click_preview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/migracion-datos/plantillas-migracion/": {
         parameters: {
             query?: never;
@@ -24466,7 +24517,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-24T21:45:21.127883-04:00
+             * @default 2026-11-24T22:38:21.427651-04:00
              */
             fecha_despacho: string;
             /**
@@ -30386,6 +30437,138 @@ export interface components {
              * Format: uuid
              */
             id_proceso_migracion: string;
+        };
+        Migrador1ClickInput: {
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa?: string | null;
+            /**
+             * Fuente
+             * @enum {string}
+             */
+            fuente: "ODOO" | "SAINT" | "PROFIT" | "GALAC" | "OMNI_CSV";
+            /**
+             * Entidad
+             * @enum {string}
+             */
+            entidad: "plan_cuentas" | "contactos" | "productos" | "stock" | "cxc_cxp";
+            /**
+             * Id conector
+             * Format: uuid
+             */
+            id_conector?: string | null;
+            /** Contenido csv */
+            contenido_csv?: string | null;
+            /**
+             * Limite
+             * @default 500
+             */
+            limite: number;
+        };
+        Migrador1ClickEjecutarResponse: {
+            /**
+             * Id proceso migracion
+             * Format: uuid
+             */
+            id_proceso_migracion: string;
+            /**
+             * Empresa id
+             * Format: uuid
+             */
+            empresa_id: string;
+            /** Fuente */
+            fuente: string;
+            /** Entidad */
+            entidad: string;
+            /** Estado proceso */
+            estado_proceso: string;
+            /** Total detectados */
+            total_detectados: number;
+            /** Total exitosos */
+            total_exitosos: number;
+            /** Creados */
+            creados: number;
+            /** Actualizados */
+            actualizados: number;
+            /** Total fallidos */
+            total_fallidos: number;
+            errores: {
+                [key: string]: string | null;
+            }[];
+        };
+        Migrador1ClickFormatosResponse: {
+            /** Odoo solo lectura */
+            odoo_solo_lectura: boolean;
+            odoo_metodos_permitidos: string[];
+            fuentes: {
+                [key: string]: string | null;
+            }[];
+            entidades: string[];
+            /** Columnas canonicas */
+            columnas_canonicas: {
+                [key: string]: string | null;
+            };
+        };
+        Migrador1ClickPreviewInput: {
+            /**
+             * Id empresa
+             * Format: uuid
+             */
+            id_empresa?: string | null;
+            /**
+             * Fuente
+             * @enum {string}
+             */
+            fuente: "ODOO" | "SAINT" | "PROFIT" | "GALAC" | "OMNI_CSV";
+            /**
+             * Entidad
+             * @enum {string}
+             */
+            entidad: "plan_cuentas" | "contactos" | "productos" | "stock" | "cxc_cxp";
+            /**
+             * Id conector
+             * Format: uuid
+             */
+            id_conector?: string | null;
+            /** Contenido csv */
+            contenido_csv?: string | null;
+            /**
+             * Limite
+             * @default 500
+             */
+            limite: number;
+            /**
+             * Muestra
+             * @default 10
+             */
+            muestra: number;
+        };
+        Migrador1ClickPreviewResponse: {
+            /**
+             * Empresa id
+             * Format: uuid
+             */
+            empresa_id: string;
+            /** Fuente */
+            fuente: string;
+            /** Entidad */
+            entidad: string;
+            /** Dry run */
+            dry_run: boolean;
+            /** Total detectados */
+            total_detectados: number;
+            /** Validos */
+            validos: number;
+            /** Invalidos */
+            invalidos: number;
+            muestra_normalizada: {
+                [key: string]: string | null;
+            }[];
+            errores: {
+                [key: string]: string | null;
+            }[];
         };
         PlantillaMigracion: {
             /**
@@ -66123,6 +66306,71 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DetalleErrorMigracion"];
+                };
+            };
+        };
+    };
+    "migracion-datos_migrador-1click_ejecutar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Migrador1ClickInput"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Migrador1ClickEjecutarResponse"];
+                };
+            };
+        };
+    };
+    "migracion-datos_migrador-1click_formatos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Migrador1ClickFormatosResponse"];
+                };
+            };
+        };
+    };
+    "migracion-datos_migrador-1click_preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Migrador1ClickPreviewInput"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Migrador1ClickPreviewResponse"];
                 };
             };
         };
