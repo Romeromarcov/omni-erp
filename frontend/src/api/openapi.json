@@ -42293,6 +42293,81 @@
                 }
             ]
         },
+        "/migracion-datos/migrador-1click/ejecutar/": {
+            "post": {
+                "operationId": "migracion-datos_migrador-1click_ejecutar",
+                "description": "Migrador 1-Click desde Odoo (SOLO LECTURA) y CSV VE Saint/Profit/Galac (Plan 09 Fase 8.4).",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Migrador1ClickInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Migrador1ClickEjecutarResponse"
+                        }
+                    }
+                },
+                "tags": [
+                    "migracion-datos"
+                ]
+            },
+            "parameters": []
+        },
+        "/migracion-datos/migrador-1click/formatos/": {
+            "get": {
+                "operationId": "migracion-datos_migrador-1click_formatos",
+                "description": "Migrador 1-Click desde Odoo (SOLO LECTURA) y CSV VE Saint/Profit/Galac (Plan 09 Fase 8.4).",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Migrador1ClickFormatosResponse"
+                        }
+                    }
+                },
+                "tags": [
+                    "migracion-datos"
+                ]
+            },
+            "parameters": []
+        },
+        "/migracion-datos/migrador-1click/preview/": {
+            "post": {
+                "operationId": "migracion-datos_migrador-1click_preview",
+                "description": "Migrador 1-Click desde Odoo (SOLO LECTURA) y CSV VE Saint/Profit/Galac (Plan 09 Fase 8.4).",
+                "parameters": [
+                    {
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/Migrador1ClickPreviewInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "schema": {
+                            "$ref": "#/definitions/Migrador1ClickPreviewResponse"
+                        }
+                    }
+                },
+                "tags": [
+                    "migracion-datos"
+                ]
+            },
+            "parameters": []
+        },
         "/migracion-datos/plantillas-migracion/": {
             "get": {
                 "operationId": "migracion-datos_plantillas-migracion_list",
@@ -69271,7 +69346,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-24T21:45:21.127883-04:00"
+                    "default": "2026-11-24T22:38:21.427651-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",
@@ -78832,6 +78907,313 @@
                     "title": "Id proceso migracion",
                     "type": "string",
                     "format": "uuid"
+                }
+            }
+        },
+        "Migrador1ClickInput": {
+            "required": [
+                "fuente",
+                "entidad"
+            ],
+            "type": "object",
+            "properties": {
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "fuente": {
+                    "title": "Fuente",
+                    "type": "string",
+                    "enum": [
+                        "ODOO",
+                        "SAINT",
+                        "PROFIT",
+                        "GALAC",
+                        "OMNI_CSV"
+                    ]
+                },
+                "entidad": {
+                    "title": "Entidad",
+                    "type": "string",
+                    "enum": [
+                        "plan_cuentas",
+                        "contactos",
+                        "productos",
+                        "stock",
+                        "cxc_cxp"
+                    ]
+                },
+                "id_conector": {
+                    "title": "Id conector",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "contenido_csv": {
+                    "title": "Contenido csv",
+                    "type": "string",
+                    "maxLength": 2000000,
+                    "x-nullable": true
+                },
+                "limite": {
+                    "title": "Limite",
+                    "type": "integer",
+                    "default": 500,
+                    "maximum": 2000,
+                    "minimum": 1
+                }
+            }
+        },
+        "Migrador1ClickEjecutarResponse": {
+            "required": [
+                "id_proceso_migracion",
+                "empresa_id",
+                "fuente",
+                "entidad",
+                "estado_proceso",
+                "total_detectados",
+                "total_exitosos",
+                "creados",
+                "actualizados",
+                "total_fallidos",
+                "errores"
+            ],
+            "type": "object",
+            "properties": {
+                "id_proceso_migracion": {
+                    "title": "Id proceso migracion",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "empresa_id": {
+                    "title": "Empresa id",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "fuente": {
+                    "title": "Fuente",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "entidad": {
+                    "title": "Entidad",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "estado_proceso": {
+                    "title": "Estado proceso",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "total_detectados": {
+                    "title": "Total detectados",
+                    "type": "integer"
+                },
+                "total_exitosos": {
+                    "title": "Total exitosos",
+                    "type": "integer"
+                },
+                "creados": {
+                    "title": "Creados",
+                    "type": "integer"
+                },
+                "actualizados": {
+                    "title": "Actualizados",
+                    "type": "integer"
+                },
+                "total_fallidos": {
+                    "title": "Total fallidos",
+                    "type": "integer"
+                },
+                "errores": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string",
+                            "x-nullable": true
+                        }
+                    }
+                }
+            }
+        },
+        "Migrador1ClickFormatosResponse": {
+            "required": [
+                "odoo_solo_lectura",
+                "odoo_metodos_permitidos",
+                "fuentes",
+                "entidades",
+                "columnas_canonicas"
+            ],
+            "type": "object",
+            "properties": {
+                "odoo_solo_lectura": {
+                    "title": "Odoo solo lectura",
+                    "type": "boolean"
+                },
+                "odoo_metodos_permitidos": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                "fuentes": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string",
+                            "x-nullable": true
+                        }
+                    }
+                },
+                "entidades": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                "columnas_canonicas": {
+                    "title": "Columnas canonicas",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string",
+                        "x-nullable": true
+                    }
+                }
+            }
+        },
+        "Migrador1ClickPreviewInput": {
+            "required": [
+                "fuente",
+                "entidad"
+            ],
+            "type": "object",
+            "properties": {
+                "id_empresa": {
+                    "title": "Id empresa",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "fuente": {
+                    "title": "Fuente",
+                    "type": "string",
+                    "enum": [
+                        "ODOO",
+                        "SAINT",
+                        "PROFIT",
+                        "GALAC",
+                        "OMNI_CSV"
+                    ]
+                },
+                "entidad": {
+                    "title": "Entidad",
+                    "type": "string",
+                    "enum": [
+                        "plan_cuentas",
+                        "contactos",
+                        "productos",
+                        "stock",
+                        "cxc_cxp"
+                    ]
+                },
+                "id_conector": {
+                    "title": "Id conector",
+                    "type": "string",
+                    "format": "uuid",
+                    "x-nullable": true
+                },
+                "contenido_csv": {
+                    "title": "Contenido csv",
+                    "type": "string",
+                    "maxLength": 2000000,
+                    "x-nullable": true
+                },
+                "limite": {
+                    "title": "Limite",
+                    "type": "integer",
+                    "default": 500,
+                    "maximum": 2000,
+                    "minimum": 1
+                },
+                "muestra": {
+                    "title": "Muestra",
+                    "type": "integer",
+                    "default": 10,
+                    "maximum": 50,
+                    "minimum": 1
+                }
+            }
+        },
+        "Migrador1ClickPreviewResponse": {
+            "required": [
+                "empresa_id",
+                "fuente",
+                "entidad",
+                "dry_run",
+                "total_detectados",
+                "validos",
+                "invalidos",
+                "muestra_normalizada",
+                "errores"
+            ],
+            "type": "object",
+            "properties": {
+                "empresa_id": {
+                    "title": "Empresa id",
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "fuente": {
+                    "title": "Fuente",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "entidad": {
+                    "title": "Entidad",
+                    "type": "string",
+                    "minLength": 1
+                },
+                "dry_run": {
+                    "title": "Dry run",
+                    "type": "boolean"
+                },
+                "total_detectados": {
+                    "title": "Total detectados",
+                    "type": "integer"
+                },
+                "validos": {
+                    "title": "Validos",
+                    "type": "integer"
+                },
+                "invalidos": {
+                    "title": "Invalidos",
+                    "type": "integer"
+                },
+                "muestra_normalizada": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string",
+                            "x-nullable": true
+                        }
+                    }
+                },
+                "errores": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string",
+                            "x-nullable": true
+                        }
+                    }
                 }
             }
         },

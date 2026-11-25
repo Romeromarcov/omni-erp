@@ -1225,6 +1225,7 @@ _MCP_DEFAULT_MODULE_PATHS = [
     "apps.crm.mcp",
     "apps.sync.mcp",
     "apps.notificaciones.mcp",
+    "apps.migracion_datos.mcp",
 ]
 
 
