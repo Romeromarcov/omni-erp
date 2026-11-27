@@ -96,9 +96,11 @@ def registrar_abono_cxp(
         return abono
 
     from apps.contabilidad.services import AsientoError, generar_asiento_o_fallar
+    from apps.core.base_models import resolver_ambito_documento
 
+    ambito_cxp = resolver_ambito_documento(cxp)
     try:
-        generar_asiento_o_fallar("PAGO_CXP", abono, cxp.id_empresa, monto, usuario=usuario)
+        generar_asiento_o_fallar("PAGO_CXP", abono, cxp.id_empresa, monto, usuario=usuario, ambito=ambito_cxp)
     except AsientoError as exc:
         logger.exception(
             "registrar_abono_cxp: asiento PAGO_CXP obligatorio falló | empresa=%s | cxp=%s",
@@ -160,10 +162,14 @@ def registrar_diferencia_cambiaria_cxp(
     )
 
     from apps.contabilidad.services import AsientoError, generar_asiento_o_fallar
+    from apps.core.base_models import resolver_ambito_documento
 
     tipo_asiento = "PERDIDA_CAMBIARIA" if tipo == "PERDIDA" else "GANANCIA_CAMBIARIA"
+    ambito_cxp = resolver_ambito_documento(abono.cuenta_por_pagar)
     try:
-        generar_asiento_o_fallar(tipo_asiento, diferencia, empresa, monto_diferencia, usuario=usuario)
+        generar_asiento_o_fallar(
+            tipo_asiento, diferencia, empresa, monto_diferencia, usuario=usuario, ambito=ambito_cxp
+        )
     except AsientoError as exc:
         logger.exception(
             "registrar_diferencia_cambiaria_cxp: asiento %s falló | empresa=%s | abono=%s",

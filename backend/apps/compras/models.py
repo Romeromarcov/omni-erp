@@ -44,6 +44,12 @@ class OrdenCompra(models.Model):
         ],
         default="BORRADOR",
     )
+    ambito = models.CharField(
+        max_length=12,
+        choices=AMBITO_CONTABLE_CHOICES,
+        default="FISCAL",
+        db_index=True,
+    )
     observaciones = models.TextField(null=True, blank=True)
     activo = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
@@ -77,6 +83,12 @@ class RecepcionMercancia(models.Model):
     documento_json = models.JSONField(null=True, blank=True)
     fecha_recepcion = models.DateField()
     monto_total = models.DecimalField(max_digits=18, decimal_places=4, default=0)
+    ambito = models.CharField(
+        max_length=12,
+        choices=AMBITO_CONTABLE_CHOICES,
+        default="FISCAL",
+        db_index=True,
+    )
     observaciones = models.TextField(null=True, blank=True)
     activo = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
@@ -85,6 +97,13 @@ class RecepcionMercancia(models.Model):
         db_table = "compras_recepcion_mercancia"
         verbose_name = "Recepción de Mercancía"
         verbose_name_plural = "Recepciones de Mercancía"
+
+    def clean(self):
+        super().clean()
+        if self.id_orden_compra_id and self.ambito != self.id_orden_compra.ambito:
+            raise ValidationError(
+                {"ambito": "El ámbito de la recepción debe coincidir con el ámbito de la orden de compra."}
+            )
 
     def __str__(self):
         return f"Recepción {self.id_recepcion!s:.8} — OC {self.id_orden_compra.numero_orden}"

@@ -167,6 +167,8 @@ def confirmar_pedido(
 
     reservas = []
     for detalle in detalles:
+        if getattr(detalle.id_producto, "tipo_producto", None) == "SERVICIO":
+            continue
         try:
             stock = reservar_stock(
                 empresa=pedido.id_empresa,
@@ -397,6 +399,8 @@ def entregar_nota_venta(nota_venta, almacen, usuario, *, permitir_stock_negativo
 
     movimientos = []
     for detalle in detalles:
+        if getattr(detalle.id_producto, "tipo_producto", None) == "SERVICIO":
+            continue
         # Liberar reserva creada en confirmar_pedido (best-effort: puede no existir si
         # la venta fue directa sin pedido previo)
         try:
@@ -555,6 +559,8 @@ def emitir_factura_fiscal(
     numero_factura: str | None = None,
     moneda=None,
     usuario=None,
+    *,
+    permitir_desde_gerencial: bool = True,
 ) -> dict:
     """
     Crea la FacturaFiscal desde la NotaVenta y genera el asiento contable (R-CODE-11).
@@ -588,6 +594,12 @@ def emitir_factura_fiscal(
 
     if nota_venta.estado != "ENTREGADA":
         raise VentaError(f"Solo se facturan notas en estado ENTREGADA. Estado actual: {nota_venta.estado}")
+    ambito_nota_orig = (getattr(nota_venta, "ambito", "FISCAL") or "FISCAL").strip().upper()
+    bloqueada_facturacion = bool((getattr(nota_venta, "documento_json", None) or {}).get("bloquear_facturacion"))
+    if ambito_nota_orig == "GERENCIAL" and (bloqueada_facturacion or not permitir_desde_gerencial):
+        raise VentaError(
+            "No se puede emitir una factura fiscal SENIAT desde una nota de venta marcada como exclusivamente GERENCIAL."
+        )
 
     empresa = nota_venta.id_empresa
 
@@ -684,7 +696,8 @@ def emitir_factura_fiscal(
     nota_venta.convertido_a_factura = True
     nota_venta.id_factura_resultante = factura
     nota_venta.estado = "FACTURADA"
-    nota_venta.save(update_fields=["convertido_a_factura", "id_factura_resultante", "estado"])
+    nota_venta.ambito = "FISCAL"
+    nota_venta.save(update_fields=["convertido_a_factura", "id_factura_resultante", "estado", "ambito"])
 
     # GAP-01 + BUG-A4: una sola CuentaPorCobrar por el total del flujo.
     # Si el pedido (confirmar_pedido) o la entrega (entregar_nota_venta) ya
@@ -701,6 +714,7 @@ def emitir_factura_fiscal(
     documento_json_cxc = {
         "id_factura": str(factura.id_factura),
         "id_nota_venta": str(nota_venta.id_nota_venta),
+        "ambito": "FISCAL",
         "base_imponible": str(subtotal),
         "monto_iva": str(monto_iva),
         "monto_igtf": str(monto_igtf),
@@ -855,10 +869,13 @@ def registrar_devolucion_pos(
         NotaVenta,
     )
 
+    from apps.core.base_models import resolver_ambito_documento
+
     # Lock de la venta: dos devoluciones simultáneas de la misma venta deben
     # serializar el chequeo de "no devolver más de lo vendido".
     nota_venta = NotaVenta.objects.select_for_update().get(pk=nota_venta.pk)
     empresa = nota_venta.id_empresa
+    ambito_nota = resolver_ambito_documento(nota_venta)
 
     # Enforcement de cierre de período fiscal: la devolución emite una nota de
     # crédito (fiscal o interna) con fecha de hoy; si ese período está cerrado
@@ -992,6 +1009,8 @@ def registrar_devolucion_pos(
     # ── 1. Reingreso de stock ────────────────────────────────────────────────
     movimientos = []
     for detalle, cantidad, _subtotal, _iva in lineas_calculadas:
+        if getattr(detalle.id_producto, "tipo_producto", None) == "SERVICIO":
+            continue
         try:
             mov = registrar_movimiento(
                 empresa=empresa,
@@ -1004,6 +1023,7 @@ def registrar_devolucion_pos(
                 nombre_modelo_origen="DevolucionVenta",
                 usuario=usuario,
                 observaciones=(f"Devolución {devolucion.numero_devolucion} de venta {nota_venta.numero_nota}"),
+                ambito=ambito_nota,
             )
         except (StockInsuficienteError, MovimientoInvalidoError) as exc:
             raise VentaError(str(exc)) from exc
@@ -1104,7 +1124,7 @@ def registrar_devolucion_pos(
     from apps.contabilidad.services import generar_asiento_o_fallar
 
     asiento, asiento_error = generar_asiento_o_fallar(
-        "DEVOLUCION_VENTA", devolucion, empresa, monto=total_devuelto, usuario=usuario
+        "DEVOLUCION_VENTA", devolucion, empresa, monto=total_devuelto, usuario=usuario, ambito=ambito_nota
     )
 
     asiento_iva = None
@@ -1119,7 +1139,7 @@ def registrar_devolucion_pos(
         iva_obligatorio = bool(config_fiscal and config_fiscal.contribuyente_iva)
         try:
             asiento_iva = generar_asiento(
-                "DEVOLUCION_VENTA_IVA", devolucion, empresa, monto=iva_devuelto, usuario=usuario
+                "DEVOLUCION_VENTA_IVA", devolucion, empresa, monto=iva_devuelto, usuario=usuario, ambito=ambito_nota
             )
         except (MapeoContableNoEncontrado, AsientoError) as exc:
             if iva_obligatorio:

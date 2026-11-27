@@ -61948,6 +61948,14 @@
                         "ANULADA"
                     ]
                 },
+                "ambito": {
+                    "title": "Ambito",
+                    "type": "string",
+                    "enum": [
+                        "FISCAL",
+                        "GERENCIAL"
+                    ]
+                },
                 "observaciones": {
                     "title": "Observaciones",
                     "type": "string",
@@ -62010,6 +62018,14 @@
                     "title": "Monto total",
                     "type": "string",
                     "format": "decimal"
+                },
+                "ambito": {
+                    "title": "Ambito",
+                    "type": "string",
+                    "enum": [
+                        "FISCAL",
+                        "GERENCIAL"
+                    ]
                 },
                 "observaciones": {
                     "title": "Observaciones",
@@ -69346,7 +69362,7 @@
                     "title": "Fecha despacho",
                     "type": "string",
                     "format": "date-time",
-                    "default": "2026-11-24T22:38:21.427651-04:00"
+                    "default": "2026-11-26T23:26:20.316928-04:00"
                 },
                 "id_almacen_origen": {
                     "title": "Id almacen origen",

@@ -20070,6 +20070,11 @@ export interface components {
              * @enum {string}
              */
             estado?: "BORRADOR" | "ENVIADA" | "APROBADA" | "RECHAZADA" | "CERRADA" | "ANULADA";
+            /**
+             * Ambito
+             * @enum {string}
+             */
+            ambito?: "FISCAL" | "GERENCIAL";
             /** Observaciones */
             observaciones?: string | null;
             /** Activo */
@@ -20116,6 +20121,11 @@ export interface components {
              * Format: decimal
              */
             monto_total?: string;
+            /**
+             * Ambito
+             * @enum {string}
+             */
+            ambito?: "FISCAL" | "GERENCIAL";
             /** Observaciones */
             observaciones?: string | null;
             /** Activo */
@@ -24517,7 +24527,7 @@ export interface components {
             /**
              * Fecha despacho
              * Format: date-time
-             * @default 2026-11-24T22:38:21.427651-04:00
+             * @default 2026-11-26T23:26:20.316928-04:00
              */
             fecha_despacho: string;
             /**

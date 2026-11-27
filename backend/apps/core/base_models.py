@@ -26,12 +26,39 @@ Regla de migración:
 
 from __future__ import annotations
 
+from typing import Any
+
 from django.db import models
 
 AMBITO_CONTABLE_CHOICES = [
     ("FISCAL", "Fiscal (Legal / SENIAT)"),
     ("GERENCIAL", "Gerencial (Interno)"),
 ]
+
+
+def _iter_candidatos_ambito(doc: Any):
+    """Genera candidatos de ámbito sin disparar FKs lazy si el documento ya tiene ámbito."""
+    yield getattr(doc, "ambito", None)
+    doc_json = getattr(doc, "documento_json", None)
+    if isinstance(doc_json, dict):
+        yield doc_json.get("ambito")
+    for attr in ("id_factura_compra", "id_recepcion", "id_orden_compra", "id_nota_venta_origen"):
+        rel = getattr(doc, attr, None)
+        if rel is not None:
+            yield getattr(rel, "ambito", None)
+
+
+def resolver_ambito_documento(doc: Any) -> str:
+    """Resuelve el ámbito contable (FISCAL/GERENCIAL) de un documento o sus relaciones."""
+    if doc is None:
+        return "FISCAL"
+    for raw in _iter_candidatos_ambito(doc):
+        if raw:
+            cand = str(raw).strip().upper()
+            if cand in ("FISCAL", "GERENCIAL"):
+                return cand
+    return "FISCAL"
+
 
 # ── 1. Auditoría temporal ────────────────────────────────────────────────────
 

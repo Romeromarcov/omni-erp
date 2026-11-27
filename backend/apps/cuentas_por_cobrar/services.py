@@ -89,9 +89,11 @@ def registrar_abono(cxc, monto: Decimal, usuario, descripcion: str = "") -> "Abo
     # asociada no hay contexto de tenant para el asiento y se omite.
     if cxc.empresa_id:
         from apps.contabilidad.services import AsientoError, generar_asiento_o_fallar
+        from apps.core.base_models import resolver_ambito_documento
 
+        ambito_cxc = resolver_ambito_documento(cxc)
         try:
-            generar_asiento_o_fallar("PAGO_CXC", abono, cxc.empresa, monto, usuario=usuario)
+            generar_asiento_o_fallar("PAGO_CXC", abono, cxc.empresa, monto, usuario=usuario, ambito=ambito_cxc)
         except AsientoError as exc:
             logger.exception(
                 "registrar_abono: asiento PAGO_CXC obligatorio falló | empresa=%s | cxc=%s",
