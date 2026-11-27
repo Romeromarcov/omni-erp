@@ -1518,6 +1518,9 @@ def aplicar_pago_a_documentos(
                     monto_doc=asignacion.monto_asignado_documento,
                     fecha_ref=fecha_ref_pago,
                 )
+                from apps.core.base_models import resolver_ambito_documento
+
+                ambito_doc = resolver_ambito_documento(doc_locked)
                 asiento = None
                 if monto_asiento is not None:
                     asiento, _err = generar_asiento_o_fallar(
@@ -1526,6 +1529,7 @@ def aplicar_pago_a_documentos(
                         empresa,
                         monto=monto_asiento,
                         usuario=usuario,
+                        ambito=ambito_doc,
                     )
                 diferencia_asiento = Decimal(str(asignacion.diferencia_cambiaria)).quantize(
                     _DOS_DECIMALES, rounding=ROUND_HALF_UP
@@ -1538,6 +1542,7 @@ def aplicar_pago_a_documentos(
                         empresa,
                         monto=diferencia_asiento,
                         usuario=usuario,
+                        ambito=ambito_doc,
                     )
             except AsientoError as exc:
                 logger.exception(

@@ -8,12 +8,14 @@ Flujo:
   registrar_factura_compra()  → FacturaCompra + AsientoContable(FACTURA_COMPRA)
 """
 
+from datetime import timedelta
 from decimal import Decimal
 
 from django.db import transaction
 from django.utils import timezone
 
 from apps.contabilidad.services import AsientoError, generar_asiento_o_fallar
+from apps.core.base_models import resolver_ambito_documento
 from apps.inventario.services import MovimientoInvalidoError, StockInsuficienteError, registrar_movimiento
 
 
@@ -43,6 +45,16 @@ def aprobar_orden_compra(orden_compra, usuario) -> None:
     """
     if orden_compra.estado not in ("BORRADOR", "ENVIADA"):
         raise CompraError(f"Solo se aprueban órdenes en BORRADOR o ENVIADA. Estado actual: {orden_compra.estado}")
+
+    no_comprables = [
+        det.id_producto.nombre_producto
+        for det in orden_compra.detalles.select_related("id_producto")
+        if not getattr(det.id_producto, "es_comprable", True)
+    ]
+    if no_comprables:
+        raise CompraError(
+            "Productos no comprables que no pueden incluirse en una orden: " + ", ".join(no_comprables) + "."
+        )
 
     from django.db.models import Sum
 
@@ -95,15 +107,17 @@ def registrar_recepcion(orden_compra, almacen, usuario, items: list[dict]) -> di
 
     empresa = orden_compra.id_empresa
     fecha_recepcion = timezone.now().date()
+    ambito = resolver_ambito_documento(orden_compra)
 
-    # Enforcement de cierre de período fiscal: la recepción postea un asiento
-    # (RECEPCION_MERCANCIA); no se permite contra un período ya cerrado.
-    from apps.fiscal.services import PeriodoCerradoError, validar_periodo_abierto
+    # Enforcement de cierre de período fiscal: la recepción fiscal postea en
+    # contabilidad fiscal; una compra GERENCIAL opera fuera de libros fiscales.
+    if ambito == "FISCAL":
+        from apps.fiscal.services import PeriodoCerradoError, validar_periodo_abierto
 
-    try:
-        validar_periodo_abierto(empresa, fecha_recepcion)
-    except PeriodoCerradoError as exc:
-        raise CompraError(str(exc)) from exc
+        try:
+            validar_periodo_abierto(empresa, fecha_recepcion)
+        except PeriodoCerradoError as exc:
+            raise CompraError(str(exc)) from exc
 
     monto_total = sum(Decimal(str(it["cantidad"])) * Decimal(str(it["costo_unitario"])) for it in items)
 
@@ -112,6 +126,7 @@ def registrar_recepcion(orden_compra, almacen, usuario, items: list[dict]) -> di
         id_orden_compra=orden_compra,
         fecha_recepcion=fecha_recepcion,
         monto_total=monto_total,
+        ambito=ambito,
     )
 
     movimientos = []
@@ -129,6 +144,9 @@ def registrar_recepcion(orden_compra, almacen, usuario, items: list[dict]) -> di
             subtotal=subtotal,
         )
 
+        if getattr(producto, "tipo_producto", None) == "SERVICIO":
+            continue
+
         try:
             mov = registrar_movimiento(
                 empresa=empresa,
@@ -142,6 +160,7 @@ def registrar_recepcion(orden_compra, almacen, usuario, items: list[dict]) -> di
                 nombre_modelo_origen="RecepcionMercancia",
                 usuario=usuario,
                 observaciones=f"Recepción OC {orden_compra.numero_orden}",
+                ambito=ambito,
             )
         except (StockInsuficienteError, MovimientoInvalidoError) as exc:
             raise CompraError(str(exc)) from exc
@@ -156,9 +175,10 @@ def registrar_recepcion(orden_compra, almacen, usuario, items: list[dict]) -> di
         monto_total=monto_total,
         monto_pendiente=monto_total,
         fecha_emision=timezone.now().date(),
-        fecha_vencimiento=timezone.now().date() + timezone.timedelta(days=dias_pago),
+        fecha_vencimiento=timezone.now().date() + timedelta(days=dias_pago),
         estado="PENDIENTE",
         observaciones=f"Recepción OC {orden_compra.numero_orden}",
+        documento_json={"ambito": ambito},
     )
 
     # H-BUG-1: R-CODE-11 centralizado. Si la empresa tiene contabilidad activa y
@@ -166,7 +186,9 @@ def registrar_recepcion(orden_compra, almacen, usuario, items: list[dict]) -> di
     # continúa sin asiento. Cualquier AsientoError real también propaga.
     asiento = None
     try:
-        asiento, _ = generar_asiento_o_fallar("RECEPCION_MERCANCIA", recepcion, empresa, usuario=usuario)
+        asiento, _ = generar_asiento_o_fallar(
+            "RECEPCION_MERCANCIA", recepcion, empresa, usuario=usuario, ambito=ambito
+        )
     except AsientoError as exc:
         raise CompraError(f"Error generando asiento de recepción: {exc}") from exc
 
@@ -182,7 +204,7 @@ def registrar_factura_compra(
     numero_factura: str,
     fecha_emision=None,
     usuario=None,
-    ambito: str = "FISCAL",
+    ambito: str | None = None,
 ) -> dict:
     """
     Registra la factura del proveedor asociada a una recepción y genera el asiento (R-CODE-11).
@@ -195,15 +217,22 @@ def registrar_factura_compra(
 
     empresa = recepcion.id_empresa
     fecha = fecha_emision or timezone.now().date()
+    ambito_origen = resolver_ambito_documento(recepcion)
+    ambito_eff = (ambito or ambito_origen).strip().upper()
+    if ambito_eff not in ("FISCAL", "GERENCIAL"):
+        raise CompraError(f"Ámbito de factura inválido: {ambito_eff!r}. Use 'FISCAL' o 'GERENCIAL'.")
+    if ambito_origen == "GERENCIAL" and ambito_eff == "FISCAL":
+        raise CompraError("No se puede emitir una factura de compra FISCAL sobre una recepción u orden GERENCIAL.")
 
-    # Enforcement de cierre de período fiscal: la factura de compra postea un
-    # asiento (FACTURA_COMPRA); no se emite contra un período ya cerrado.
-    from apps.fiscal.services import PeriodoCerradoError, validar_periodo_abierto
+    # Enforcement de cierre de período fiscal: la factura fiscal de compra
+    # postea en contabilidad FISCAL; no se emite contra un período cerrado.
+    if ambito_eff == "FISCAL":
+        from apps.fiscal.services import PeriodoCerradoError, validar_periodo_abierto
 
-    try:
-        validar_periodo_abierto(empresa, fecha)
-    except PeriodoCerradoError as exc:
-        raise CompraError(str(exc)) from exc
+        try:
+            validar_periodo_abierto(empresa, fecha)
+        except PeriodoCerradoError as exc:
+            raise CompraError(str(exc)) from exc
 
     factura = FacturaCompra.objects.create(
         id_empresa=empresa,
@@ -213,7 +242,7 @@ def registrar_factura_compra(
         numero_factura=numero_factura,
         fecha_emision=fecha,
         monto_total=recepcion.monto_total,
-        ambito=ambito,
+        ambito=ambito_eff,
     )
 
     # Re-vincula la CxP nacida en la recepción a la factura recién registrada.
@@ -233,7 +262,7 @@ def registrar_factura_compra(
     # H-BUG-1: R-CODE-11 centralizado (ver registrar_recepcion).
     asiento = None
     try:
-        asiento, _ = generar_asiento_o_fallar("FACTURA_COMPRA", factura, empresa, usuario=usuario)
+        asiento, _ = generar_asiento_o_fallar("FACTURA_COMPRA", factura, empresa, usuario=usuario, ambito=ambito_eff)
     except AsientoError as exc:
         raise CompraError(f"Error generando asiento de factura compra: {exc}") from exc
 

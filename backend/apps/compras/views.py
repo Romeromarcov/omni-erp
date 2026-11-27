@@ -83,7 +83,10 @@ class OrdenCompraViewSet(_NulSafeFilterMixin, EmpresaInjectMixin, BaseModelViewS
 
     def get_queryset(self):
         # R-CODE-1
-        return OrdenCompra.objects.filter(id_empresa__in=_empresas(self.request))
+        return filtrar_ambito_queryset(
+            OrdenCompra.objects.filter(id_empresa__in=_empresas(self.request)),
+            self.request,
+        )
 
     @action(detail=True, methods=["post"], url_path="aprobar")
     def aprobar(self, request, pk=None):
@@ -117,7 +120,10 @@ class RecepcionMercanciaViewSet(_NulSafeFilterMixin, EmpresaInjectMixin, BaseMod
 
     def get_queryset(self):
         # R-CODE-1
-        return RecepcionMercancia.objects.filter(id_empresa__in=_empresas(self.request))
+        return filtrar_ambito_queryset(
+            RecepcionMercancia.objects.filter(id_empresa__in=_empresas(self.request)),
+            self.request,
+        )
 
     @action(detail=False, methods=["post"], url_path="recepcionar")
     def recepcionar(self, request):
@@ -235,6 +241,7 @@ class FacturaCompraViewSet(_NulSafeFilterMixin, EmpresaInjectMixin, BaseModelVie
                 numero_factura=numero_factura,
                 fecha_emision=request.data.get("fecha_emision"),
                 usuario=request.user,
+                ambito=request.data.get("ambito"),
             )
         except CompraError as exc:
             return domain_error_response(exc, status_code=status.HTTP_400_BAD_REQUEST, key="detail")
