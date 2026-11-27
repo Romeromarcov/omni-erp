@@ -991,6 +991,82 @@ def test_e2e_empresa_venezolana_completa_desde_cero(db, moneda_usd, empresa_b):
     r_recs_ger = c_compras.get("/api/compras/recepciones-mercancia/?ambito=GERENCIAL")
     assert r_recs_ger.status_code == 200
 
+    # Paridad CRUD serializers + acción facturar() contra bypass FISCAL/GERENCIAL y fechas inválidas
+    assert (
+        c_compras.patch(
+            f"/api/compras/ordenes-compra/{oc_fiscal.pk}/",
+            {"ambito": "GERENCIAL"},
+            format="json",
+        ).status_code
+        == 400
+    )
+    assert (
+        c_compras.post(
+            "/api/compras/recepciones-mercancia/",
+            {
+                "id_orden_compra": str(oc_ger.pk),
+                "fecha_recepcion": f_t0.isoformat(),
+                "monto_total": "10.00",
+                "ambito": "FISCAL",
+            },
+            format="json",
+        ).status_code
+        == 400
+    )
+    assert (
+        c_compras.post(
+            "/api/compras/facturas-compra/",
+            {
+                "id_orden_compra": str(oc_ger.pk),
+                "id_recepcion": str(rec_ger["recepcion"].pk),
+                "id_proveedor": str(proveedor_esp.pk),
+                "numero_factura": "FC-BYPASS-GER",
+                "fecha_emision": f_t0.isoformat(),
+                "monto_total": "10.00",
+                "ambito": "FISCAL",
+            },
+            format="json",
+        ).status_code
+        == 400
+    )
+    assert (
+        c_compras.post(
+            "/api/compras/facturas-compra/facturar/",
+            {
+                "recepcion_id": str(rec_srv_c["recepcion"].pk),
+                "numero_factura": "FC-BAD-DATE",
+                "fecha_emision": "fecha-invalida",
+            },
+            format="json",
+        ).status_code
+        == 400
+    )
+    assert (
+        c_compras.post(
+            "/api/compras/facturas-compra/facturar/",
+            {
+                "recepcion_id": str(rec_srv_c["recepcion"].pk),
+                "numero_factura": "FC-BAD-AMB",
+                "ambito": 123,
+            },
+            format="json",
+        ).status_code
+        == 400
+    )
+    assert (
+        c_compras.post(
+            "/api/compras/facturas-compra/facturar/",
+            {
+                "recepcion_id": str(rec_srv_c["recepcion"].pk),
+                "numero_factura": "FC-SRV-GER-01",
+                "fecha_emision": f_t0.isoformat(),
+                "ambito": "GERENCIAL",
+            },
+            format="json",
+        ).status_code
+        == 201
+    )
+
     # Guard: producto es_comprable=False (SERV-01) no debe aprobarse en OC
     oc_no_comp_kwargs = {
         "id_empresa": empresa,

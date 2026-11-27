@@ -82,6 +82,13 @@ class OrdenCompraSerializer(serializers.ModelSerializer):
         # H-API-2: id_empresa nunca lo fija el cliente; lo inyecta el ViewSet.
         read_only_fields = ("id_empresa", "id_orden_compra", "fecha_creacion")
 
+    def validate_ambito(self, value):
+        if self.instance is not None and self.instance.estado != "BORRADOR" and value != self.instance.ambito:
+            raise serializers.ValidationError(
+                "No se puede cambiar el ámbito de una orden de compra después de BORRADOR."
+            )
+        return value
+
     def validate(self, attrs):
         attrs = super().validate(attrs)
         prov = attrs["id_proveedor"] if "id_proveedor" in attrs else getattr(self.instance, "id_proveedor", None)
@@ -143,6 +150,18 @@ class RecepcionMercanciaSerializer(serializers.ModelSerializer):
         exclude = ("referencia_externa", "documento_json")  # SEC-NEW-3: ocultar campos internos
         # H-API-2: id_empresa nunca lo fija el cliente; lo inyecta el ViewSet.
         read_only_fields = ("id_empresa", "id_recepcion", "fecha_creacion")
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        orden = (
+            attrs["id_orden_compra"] if "id_orden_compra" in attrs else getattr(self.instance, "id_orden_compra", None)
+        )
+        ambito = attrs.get("ambito", getattr(self.instance, "ambito", None))
+        if orden is not None and ambito is not None and ambito != orden.ambito:
+            raise serializers.ValidationError(
+                {"ambito": "El ámbito de la recepción debe coincidir con el ámbito de la orden de compra."}
+            )
+        return attrs
 
 
 class FacturaCompraSerializer(serializers.ModelSerializer):
@@ -209,6 +228,15 @@ class FacturaCompraSerializer(serializers.ModelSerializer):
             )
         if orden is not None and prov is None:
             attrs["id_proveedor"] = orden.id_proveedor
+
+        ambito_eff = attrs.get("ambito", getattr(self.instance, "ambito", None)) or "FISCAL"
+        origen_gerencial = (recepcion is not None and recepcion.ambito == "GERENCIAL") or (
+            orden is not None and orden.ambito == "GERENCIAL"
+        )
+        if origen_gerencial and ambito_eff == "FISCAL":
+            raise serializers.ValidationError(
+                {"ambito": "No se puede emitir una factura de compra FISCAL sobre una recepción u orden GERENCIAL."}
+            )
 
         return attrs
 

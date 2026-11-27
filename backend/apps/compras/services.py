@@ -8,11 +8,12 @@ Flujo:
   registrar_factura_compra()  → FacturaCompra + AsientoContable(FACTURA_COMPRA)
 """
 
-from datetime import timedelta
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 from django.db import transaction
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 
 from apps.contabilidad.services import AsientoError, generar_asiento_o_fallar
 from apps.core.base_models import resolver_ambito_documento
@@ -216,11 +217,20 @@ def registrar_factura_compra(
     from apps.compras.models import FacturaCompra
 
     empresa = recepcion.id_empresa
-    fecha = fecha_emision or timezone.now().date()
+    if not fecha_emision:
+        fecha = timezone.now().date()
+    elif isinstance(fecha_emision, date):
+        fecha = fecha_emision.date() if isinstance(fecha_emision, datetime) else fecha_emision
+    elif isinstance(fecha_emision, str) and (parsed := parse_date(fecha_emision.strip())) is not None:
+        fecha = parsed
+    else:
+        raise CompraError("fecha_emision debe ser una fecha válida en formato YYYY-MM-DD.")
+
     ambito_origen = resolver_ambito_documento(recepcion)
-    ambito_eff = (ambito or ambito_origen).strip().upper()
+    ambito_raw = ambito_origen if ambito is None or ambito == "" else ambito
+    ambito_eff = ambito_raw.strip().upper() if isinstance(ambito_raw, str) else ""
     if ambito_eff not in ("FISCAL", "GERENCIAL"):
-        raise CompraError(f"Ámbito de factura inválido: {ambito_eff!r}. Use 'FISCAL' o 'GERENCIAL'.")
+        raise CompraError(f"Ámbito de factura inválido: {ambito!r}. Use 'FISCAL' o 'GERENCIAL'.")
     if ambito_origen == "GERENCIAL" and ambito_eff == "FISCAL":
         raise CompraError("No se puede emitir una factura de compra FISCAL sobre una recepción u orden GERENCIAL.")
 

@@ -36,20 +36,23 @@ AMBITO_CONTABLE_CHOICES = [
 ]
 
 
+def _iter_candidatos_ambito(doc: Any):
+    """Genera candidatos de ámbito sin disparar FKs lazy si el documento ya tiene ámbito."""
+    yield getattr(doc, "ambito", None)
+    doc_json = getattr(doc, "documento_json", None)
+    if isinstance(doc_json, dict):
+        yield doc_json.get("ambito")
+    for attr in ("id_factura_compra", "id_recepcion", "id_orden_compra", "id_nota_venta_origen"):
+        rel = getattr(doc, attr, None)
+        if rel is not None:
+            yield getattr(rel, "ambito", None)
+
+
 def resolver_ambito_documento(doc: Any) -> str:
     """Resuelve el ámbito contable (FISCAL/GERENCIAL) de un documento o sus relaciones."""
     if doc is None:
         return "FISCAL"
-    doc_json = getattr(doc, "documento_json", None)
-    candidatos = [
-        getattr(doc, "ambito", None),
-        doc_json.get("ambito") if isinstance(doc_json, dict) else None,
-        *(
-            getattr(getattr(doc, attr, None), "ambito", None)
-            for attr in ("id_factura_compra", "id_recepcion", "id_orden_compra", "id_nota_venta_origen")
-        ),
-    ]
-    for raw in candidatos:
+    for raw in _iter_candidatos_ambito(doc):
         if raw:
             cand = str(raw).strip().upper()
             if cand in ("FISCAL", "GERENCIAL"):
